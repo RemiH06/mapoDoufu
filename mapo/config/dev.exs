@@ -27,7 +27,11 @@ config :mapo, MapoWeb.Endpoint,
   secret_key_base: "5LVoEfj7ucqmYIbES3ABOYGkhJJrLrNKly1cgNuF3k45heMnRumDGwr5iSSCuWdZ",
   watchers: [
     esbuild: {Esbuild, :install_and_run, [:mapo, ~w(--sourcemap=inline --watch)]},
-    tailwind: {Tailwind, :install_and_run, [:mapo, ~w(--watch)]}
+    # El watcher de tailwind no detecta cambios de archivo en este entorno
+    # (Docker Desktop), ni de host ni de dentro del contenedor. Ver nota
+    # en MAPO_FUNDAMENTOS.md: hay que recompilar a mano tras editar CSS
+    # con `docker compose exec mapo mix tailwind mapo`.
+    tailwind: {Tailwind, :install_and_run, [:mapo, ~w(--watch=always)]}
   ]
 
 # ## SSL Support
