@@ -22,17 +22,17 @@ defmodule Mapo.Accounts.UserNotifier do
   Deliver instructions to update a user email.
   """
   def deliver_update_email_instructions(user, url) do
-    deliver(user.email, "Update email instructions", """
+    deliver(user.email, "Instrucciones para cambiar tu correo", """
 
     ==============================
 
-    Hi #{user.email},
+    Hola #{user.email},
 
-    You can change your email by visiting the URL below:
+    Puedes cambiar tu correo visitando el siguiente enlace:
 
     #{url}
 
-    If you didn't request this change, please ignore this.
+    Si tú no pediste este cambio, puedes ignorar este mensaje.
 
     ==============================
     """)
@@ -49,34 +49,34 @@ defmodule Mapo.Accounts.UserNotifier do
   end
 
   defp deliver_magic_link_instructions(user, url) do
-    deliver(user.email, "Log in instructions", """
+    deliver(user.email, "Instrucciones para iniciar sesión", """
 
     ==============================
 
-    Hi #{user.email},
+    Hola #{user.email},
 
-    You can log into your account by visiting the URL below:
+    Puedes iniciar sesión en tu cuenta visitando el siguiente enlace:
 
     #{url}
 
-    If you didn't request this email, please ignore this.
+    Si tú no pediste este correo, puedes ignorar este mensaje.
 
     ==============================
     """)
   end
 
   defp deliver_confirmation_instructions(user, url) do
-    deliver(user.email, "Confirmation instructions", """
+    deliver(user.email, "Instrucciones de confirmación", """
 
     ==============================
 
-    Hi #{user.email},
+    Hola #{user.email},
 
-    You can confirm your account by visiting the URL below:
+    Puedes confirmar tu cuenta visitando el siguiente enlace:
 
     #{url}
 
-    If you didn't create an account with us, please ignore this.
+    Si tú no creaste una cuenta con nosotros, puedes ignorar este mensaje.
 
     ==============================
     """)

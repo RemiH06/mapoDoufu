@@ -11,16 +11,16 @@ defmodule MapoWeb.UserLive.Login do
       <div class="mx-auto max-w-sm space-y-4">
         <div class="text-center">
           <.header>
-            <p>Log in</p>
+            <p>Iniciar sesión</p>
             <:subtitle>
               <%= if @current_scope do %>
-                You need to reauthenticate to perform sensitive actions on your account.
+                Necesitas volver a autenticarte para realizar acciones sensibles en tu cuenta.
               <% else %>
-                Don't have an account? <.link
+                ¿No tienes cuenta? <.link
                   navigate={~p"/users/register"}
                   class="font-semibold text-brand hover:underline"
                   phx-no-format
-                >Sign up</.link> for an account now.
+                >Regístrate</.link> ahora.
               <% end %>
             </:subtitle>
           </.header>
@@ -29,9 +29,9 @@ defmodule MapoWeb.UserLive.Login do
         <div :if={local_mail_adapter?()} class="alert alert-info">
           <.icon name="hero-information-circle" class="size-6 shrink-0" />
           <div>
-            <p>You are running the local mail adapter.</p>
+            <p>Estás usando el adaptador de correo local.</p>
             <p>
-              To see sent emails, visit <.link href="/dev/mailbox" class="underline">the mailbox page</.link>.
+              Para ver los correos enviados, visita <.link href="/dev/mailbox" class="underline">la bandeja de pruebas</.link>.
             </p>
           </div>
         </div>
@@ -47,18 +47,18 @@ defmodule MapoWeb.UserLive.Login do
             readonly={!!@current_scope}
             field={f[:email]}
             type="email"
-            label="Email"
+            label="Correo electrónico"
             autocomplete="username"
             spellcheck="false"
             required
             phx-mounted={JS.focus()}
           />
           <.button class="btn btn-primary w-full">
-            Log in with email <span aria-hidden="true">→</span>
+            Iniciar sesión con correo <span aria-hidden="true">→</span>
           </.button>
         </.form>
 
-        <div class="divider">or</div>
+        <div class="divider">o</div>
 
         <.form
           :let={f}
@@ -72,7 +72,7 @@ defmodule MapoWeb.UserLive.Login do
             readonly={!!@current_scope}
             field={f[:email]}
             type="email"
-            label="Email"
+            label="Correo electrónico"
             autocomplete="username"
             spellcheck="false"
             required
@@ -80,15 +80,15 @@ defmodule MapoWeb.UserLive.Login do
           <.input
             field={@form[:password]}
             type="password"
-            label="Password"
+            label="Contraseña"
             autocomplete="current-password"
             spellcheck="false"
           />
           <.button class="btn btn-primary w-full" name={@form[:remember_me].name} value="true">
-            Log in and stay logged in <span aria-hidden="true">→</span>
+            Iniciar sesión y mantenerme conectado <span aria-hidden="true">→</span>
           </.button>
           <.button class="btn btn-primary btn-soft w-full mt-2">
-            Log in only this time
+            Iniciar sesión solo esta vez
           </.button>
         </.form>
       </div>
@@ -121,7 +121,7 @@ defmodule MapoWeb.UserLive.Login do
     end
 
     info =
-      "If your email is in our system, you will receive instructions for logging in shortly."
+      "Si tu correo está registrado, recibirás instrucciones para iniciar sesión en breve."
 
     {:noreply,
      socket

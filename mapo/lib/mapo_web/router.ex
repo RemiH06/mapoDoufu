@@ -54,6 +54,10 @@ defmodule MapoWeb.Router do
       on_mount: [{MapoWeb.UserAuth, :require_authenticated}] do
       live "/users/settings", UserLive.Settings, :edit
       live "/users/settings/confirm-email/:token", UserLive.Settings, :confirm_email
+
+      live "/teams", TeamLive.Index, :index
+      live "/teams/new", TeamLive.New, :new
+      live "/teams/:id", TeamLive.Show, :show
     end
 
     post "/users/update-password", UserSessionController, :update_password

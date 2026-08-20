@@ -18,7 +18,7 @@ defmodule MapoWeb.UserLive.ConfirmationTest do
         end)
 
       {:ok, _lv, html} = live(conn, ~p"/users/log-in/#{token}")
-      assert html =~ "Confirm and stay logged in"
+      assert html =~ "Confirmar y mantenerme conectado"
     end
 
     test "renders login page for confirmed user", %{conn: conn, confirmed_user: user} do
@@ -29,7 +29,7 @@ defmodule MapoWeb.UserLive.ConfirmationTest do
 
       {:ok, _lv, html} = live(conn, ~p"/users/log-in/#{token}")
       refute html =~ "Confirm my account"
-      assert html =~ "Keep me logged in on this device"
+      assert html =~ "Mantenerme conectado en este dispositivo"
     end
 
     test "renders login page for already logged in user", %{conn: conn, confirmed_user: user} do
@@ -42,7 +42,7 @@ defmodule MapoWeb.UserLive.ConfirmationTest do
 
       {:ok, _lv, html} = live(conn, ~p"/users/log-in/#{token}")
       refute html =~ "Confirm my account"
-      assert html =~ "Log in"
+      assert html =~ "Iniciar sesión"
     end
 
     test "confirms the given token once", %{conn: conn, unconfirmed_user: user} do
@@ -59,7 +59,7 @@ defmodule MapoWeb.UserLive.ConfirmationTest do
       conn = follow_trigger_action(form, conn)
 
       assert Phoenix.Flash.get(conn.assigns.flash, :info) =~
-               "User confirmed successfully"
+               "Cuenta confirmada con éxito"
 
       assert Accounts.get_user!(user.id).confirmed_at
       # we are logged in now
@@ -73,7 +73,7 @@ defmodule MapoWeb.UserLive.ConfirmationTest do
         live(conn, ~p"/users/log-in/#{token}")
         |> follow_redirect(conn, ~p"/users/log-in")
 
-      assert html =~ "Magic link is invalid or it has expired"
+      assert html =~ "El enlace mágico no es válido o ya expiró"
     end
 
     test "logs confirmed user in without changing confirmed_at", %{
@@ -93,7 +93,7 @@ defmodule MapoWeb.UserLive.ConfirmationTest do
       conn = follow_trigger_action(form, conn)
 
       assert Phoenix.Flash.get(conn.assigns.flash, :info) =~
-               "Welcome back!"
+               "¡Bienvenido de vuelta!"
 
       assert Accounts.get_user!(user.id).confirmed_at == user.confirmed_at
 
@@ -104,7 +104,7 @@ defmodule MapoWeb.UserLive.ConfirmationTest do
         live(conn, ~p"/users/log-in/#{token}")
         |> follow_redirect(conn, ~p"/users/log-in")
 
-      assert html =~ "Magic link is invalid or it has expired"
+      assert html =~ "El enlace mágico no es válido o ya expiró"
     end
 
     test "raises error for invalid token", %{conn: conn} do
@@ -112,7 +112,7 @@ defmodule MapoWeb.UserLive.ConfirmationTest do
         live(conn, ~p"/users/log-in/invalid-token")
         |> follow_redirect(conn, ~p"/users/log-in")
 
-      assert html =~ "Magic link is invalid or it has expired"
+      assert html =~ "El enlace mágico no es válido o ya expiró"
     end
   end
 end

@@ -1,4 +1,5 @@
 ![Made with Python](https://forthebadge.com/images/badges/made-with-python.svg)
+[![forthebadge](https://forthebadge.com/badges/made-with-elixir.svg)](https://forthebadge.com)
 ![Uses Git](http://ForTheBadge.com/images/badges/uses-git.svg)
 ![Build with Love](http://ForTheBadge.com/images/badges/built-with-love.svg)
 

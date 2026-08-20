@@ -9,23 +9,40 @@ defmodule MapoWeb.UserLive.Settings do
   def render(assigns) do
     ~H"""
     <Layouts.app flash={@flash} current_scope={@current_scope}>
+      <canvas id="metro-bg" phx-hook="MetroBg" phx-update="ignore" class="fixed inset-0 -z-10"></canvas>
       <div class="text-center">
         <.header>
-          Account Settings
-          <:subtitle>Manage your account email address and password settings</:subtitle>
+          Configuración de la cuenta
+          <:subtitle>Administra el correo y la contraseña de tu cuenta</:subtitle>
         </.header>
+      </div>
+
+      <div class="card bg-base-200 flex flex-row items-center justify-between gap-4 p-4 mb-4">
+        <div>
+          <p class="font-semibold">Fondo animado</p>
+          <p class="text-sm text-base-content/70">
+            Anima el fondo en pantallas como esta y la de inicio de sesión.
+          </p>
+        </div>
+        <input
+          type="checkbox"
+          id="bg-animation-toggle"
+          phx-hook="BgAnimationToggle"
+          phx-update="ignore"
+          class="toggle toggle-primary"
+        />
       </div>
 
       <.form for={@email_form} id="email_form" phx-submit="update_email" phx-change="validate_email">
         <.input
           field={@email_form[:email]}
           type="email"
-          label="Email"
+          label="Correo electrónico"
           autocomplete="username"
           spellcheck="false"
           required
         />
-        <.button variant="primary" phx-disable-with="Changing...">Change Email</.button>
+        <.button variant="primary" phx-disable-with="Cambiando...">Cambiar correo</.button>
       </.form>
 
       <div class="divider" />
@@ -49,7 +66,7 @@ defmodule MapoWeb.UserLive.Settings do
         <.input
           field={@password_form[:password]}
           type="password"
-          label="New password"
+          label="Contraseña nueva"
           autocomplete="new-password"
           spellcheck="false"
           required
@@ -57,12 +74,12 @@ defmodule MapoWeb.UserLive.Settings do
         <.input
           field={@password_form[:password_confirmation]}
           type="password"
-          label="Confirm new password"
+          label="Confirmar contraseña nueva"
           autocomplete="new-password"
           spellcheck="false"
         />
-        <.button variant="primary" phx-disable-with="Saving...">
-          Save Password
+        <.button variant="primary" phx-disable-with="Guardando...">
+          Guardar contraseña
         </.button>
       </.form>
     </Layouts.app>
@@ -74,10 +91,10 @@ defmodule MapoWeb.UserLive.Settings do
     socket =
       case Accounts.update_user_email(socket.assigns.current_scope.user, token) do
         {:ok, _user} ->
-          put_flash(socket, :info, "Email changed successfully.")
+          put_flash(socket, :info, "Correo cambiado con éxito.")
 
         {:error, _} ->
-          put_flash(socket, :error, "Email change link is invalid or it has expired.")
+          put_flash(socket, :error, "El enlace para cambiar de correo no es válido o ya expiró.")
       end
 
     {:ok, push_navigate(socket, to: ~p"/users/settings")}
@@ -124,7 +141,7 @@ defmodule MapoWeb.UserLive.Settings do
           &url(~p"/users/settings/confirm-email/#{&1}")
         )
 
-        info = "A link to confirm your email change has been sent to the new address."
+        info = "Se envió un enlace de confirmación a la nueva dirección de correo."
         {:noreply, socket |> put_flash(:info, info)}
 
       changeset ->

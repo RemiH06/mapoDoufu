@@ -8,16 +8,17 @@ defmodule MapoWeb.UserLive.Registration do
   def render(assigns) do
     ~H"""
     <Layouts.app flash={@flash} current_scope={@current_scope}>
+      <canvas id="metro-bg" phx-hook="MetroBg" phx-update="ignore" class="fixed inset-0 -z-10"></canvas>
       <div class="mx-auto max-w-sm">
         <div class="text-center">
           <.header>
-            Register for an account
+            Crear una cuenta
             <:subtitle>
-              Already registered?
+              ¿Ya tienes cuenta?
               <.link navigate={~p"/users/log-in"} class="font-semibold text-brand hover:underline">
-                Log in
+                Inicia sesión
               </.link>
-              to your account now.
+              en tu cuenta ahora.
             </:subtitle>
           </.header>
         </div>
@@ -26,15 +27,15 @@ defmodule MapoWeb.UserLive.Registration do
           <.input
             field={@form[:email]}
             type="email"
-            label="Email"
+            label="Correo electrónico"
             autocomplete="username"
             spellcheck="false"
             required
             phx-mounted={JS.focus()}
           />
 
-          <.button phx-disable-with="Creating account..." class="btn btn-primary w-full">
-            Create an account
+          <.button phx-disable-with="Creando cuenta..." class="btn btn-primary w-full">
+            Crear cuenta
           </.button>
         </.form>
       </div>
@@ -68,7 +69,7 @@ defmodule MapoWeb.UserLive.Registration do
          socket
          |> put_flash(
            :info,
-           "An email was sent to #{user.email}, please access it to confirm your account."
+           "Se envió un correo a #{user.email}, revísalo para confirmar tu cuenta."
          )
          |> push_navigate(to: ~p"/users/log-in")}
 

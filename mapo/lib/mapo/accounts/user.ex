@@ -34,7 +34,7 @@ defmodule Mapo.Accounts.User do
       changeset
       |> validate_required([:email])
       |> validate_format(:email, ~r/^[^@,;\s]+@[^@,;\s]+$/,
-        message: "must have the @ sign and no spaces"
+        message: "debe tener un signo @ y sin espacios"
       )
       |> validate_length(:email, max: 160)
 
@@ -50,7 +50,7 @@ defmodule Mapo.Accounts.User do
 
   defp validate_email_changed(changeset) do
     if get_field(changeset, :email) && get_change(changeset, :email) == nil do
-      add_error(changeset, :email, "did not change")
+      add_error(changeset, :email, "no cambió")
     else
       changeset
     end
@@ -74,7 +74,7 @@ defmodule Mapo.Accounts.User do
   def password_changeset(user, attrs, opts \\ []) do
     user
     |> cast(attrs, [:password])
-    |> validate_confirmation(:password, message: "does not match password")
+    |> validate_confirmation(:password, message: "no coincide con la contraseña")
     |> validate_password(opts)
   end
 

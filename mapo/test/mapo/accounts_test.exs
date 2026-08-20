@@ -58,7 +58,7 @@ defmodule Mapo.AccountsTest do
     test "validates email when given" do
       {:error, changeset} = Accounts.register_user(%{email: "not valid"})
 
-      assert %{email: ["must have the @ sign and no spaces"]} = errors_on(changeset)
+      assert %{email: ["debe tener un signo @ y sin espacios"]} = errors_on(changeset)
     end
 
     test "validates maximum values for email for security" do
@@ -216,7 +216,7 @@ defmodule Mapo.AccountsTest do
 
       assert %{
                password: ["should be at least 12 character(s)"],
-               password_confirmation: ["does not match password"]
+               password_confirmation: ["no coincide con la contraseña"]
              } = errors_on(changeset)
     end
 

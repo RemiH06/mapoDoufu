@@ -4,6 +4,7 @@ defmodule Mapo.Teams.Team do
 
   schema "teams" do
     field :name, :string
+    has_many :memberships, Mapo.Teams.Membership
 
     timestamps(type: :utc_datetime)
   end

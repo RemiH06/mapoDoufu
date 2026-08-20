@@ -4,8 +4,8 @@ defmodule Mapo.Teams.Membership do
 
   schema "team_memberships" do
     field :role, Ecto.Enum, values: [:owner, :admin, :member]
-    field :team_id, :id
-    field :user_id, :id
+    belongs_to :team, Mapo.Teams.Team
+    belongs_to :user, Mapo.Accounts.User
 
     timestamps(type: :utc_datetime)
   end

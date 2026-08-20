@@ -193,7 +193,47 @@ defmodule Mapo.Teams do
   Returns the list of memberships for a given team.
   """
   def list_team_memberships(team_id) do
-    Repo.all(from m in Membership, where: m.team_id == ^team_id)
+    Repo.all(from m in Membership, where: m.team_id == ^team_id, order_by: m.inserted_at)
+    |> Repo.preload(:user)
+  end
+
+  @doc """
+  Agrega a un usuario existente (por correo) como miembro de un equipo.
+  Requiere que el scope sea `:owner` o `:admin` del equipo. No permite
+  agregar con rol `:owner` desde aqui (evita mintear dueños de paso).
+
+  Devuelve `{:error, :not_found}` si no existe una cuenta con ese correo.
+  """
+  def add_member_by_email(%Scope{} = scope, %Team{} = team, email, role)
+      when role in [:member, :admin] do
+    true = role_in_team(scope, team.id) in [:owner, :admin]
+
+    case Mapo.Accounts.get_user_by_email(email) do
+      nil -> {:error, :not_found}
+      user -> create_membership(%{team_id: team.id, user_id: user.id, role: role})
+    end
+  end
+
+  @doc """
+  Quita a un miembro de un equipo. Requiere que el scope sea `:owner`
+  o `:admin`. No permite dejar el equipo sin ningun `:owner`.
+  """
+  def remove_member(%Scope{} = scope, %Team{} = team, %Membership{} = membership) do
+    true = role_in_team(scope, team.id) in [:owner, :admin]
+    true = membership.team_id == team.id
+
+    if membership.role == :owner and count_owners(team.id) <= 1 do
+      {:error, :last_owner}
+    else
+      delete_membership(membership)
+    end
+  end
+
+  defp count_owners(team_id) do
+    Repo.aggregate(
+      from(m in Membership, where: m.team_id == ^team_id and m.role == :owner),
+      :count
+    )
   end
 
   @doc """
