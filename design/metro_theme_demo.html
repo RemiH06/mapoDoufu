@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>metro_theme — Demo</title>
+<link rel="preconnect" href="https://fonts.bunny.net">
+<link href="https://fonts.bunny.net/css?family=space-mono:400,700&family=dm-sans:300,400,500,600&display=swap" rel="stylesheet">
+<style>
+.metro{--bg:#F5F0E8;--bg2:#EDE8DC;--bg3:#E4DDD0;--text:#1A1410;--text2:#6B5E50;--border:#C8BFB0;--red:#8B1A1A;--yellow:#C4691A;--green:#2A6B3A;--blue:#1A3A6B;--purple:#4A1A6B;--orange:#A84510;--pink:#8B1A4A;--brown:#5C3317;--black:#0D0A08;--white:#FAF7F2;--gray:#9A8E82;--accent:#6B1A2A;--accent2:#C4691A;--ok:#2A6B3A;--warn:#C4691A;--danger:#8B1A1A;--mono:'Space Mono','Courier New',monospace;--sans:'DM Sans',system-ui,sans-serif;--radius:4px;--radius-lg:8px}
+.metro.dark{--bg:#0a0c10;--bg2:#0f1219;--bg3:#161b26;--text:#e8eaf0;--text2:#7a8099;--border:#1e2535;--red:#ff4560;--yellow:#f5a623;--green:#00e5a0;--blue:#457BFF;--purple:#9B6DFF;--orange:#FF7A30;--pink:#FF4D8F;--brown:#C4855A;--black:#000000;--white:#ffffff;--gray:#4a5568;--accent:#00e5a0;--accent2:#457BFF;--ok:#00e5a0;--warn:#f5a623;--danger:#ff4560}
+.metro *,.metro *::before,.metro *::after{box-sizing:border-box;margin:0;padding:0}
+.metro{background:var(--bg);color:var(--text);font-family:var(--sans);font-size:14px;line-height:1.7;transition:background .3s,color .3s}
+.metro ::-webkit-scrollbar{width:5px}.metro ::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
+.metro h2{font-family:var(--mono);font-size:15px;font-weight:700;color:var(--text);margin:40px 0 16px;padding-bottom:8px;border-bottom:1px solid var(--border);letter-spacing:-.5px}
+.metro h3{font-family:var(--mono);font-size:13px;font-weight:700;color:var(--accent);margin:24px 0 10px}
+.metro h4{font-size:13px;font-weight:600;color:var(--text);margin-bottom:6px}
+.metro p{margin-bottom:14px;line-height:1.8}.metro p.muted{color:var(--text2);font-size:13px}
+.metro strong{font-weight:600;color:var(--text)}.metro a{color:var(--accent);text-decoration:none}.metro a:hover{text-decoration:underline}
+.metro code{font-family:var(--mono);font-size:12px;background:var(--bg3);border:1px solid var(--border);padding:1px 6px;border-radius:var(--radius);color:var(--accent)}
+.metro pre{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:16px 20px;margin:16px 0;overflow-x:auto;font-family:var(--mono);font-size:12px;line-height:1.7;color:var(--text)}
+.metro pre code{background:none;border:none;padding:0;color:inherit}
+.metro pre .kw{color:var(--blue)}.metro pre .cm{color:var(--text2);font-style:italic}.metro pre .str{color:var(--green)}.metro pre .num{color:var(--yellow)}.metro pre .fn{color:var(--purple)}
+.metro .callout{border-left:3px solid var(--accent);background:var(--bg2);padding:14px 18px;margin:20px 0;border-radius:0 var(--radius) var(--radius) 0}
+.metro .callout-title{font-family:var(--mono);font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--accent);margin-bottom:6px}
+.metro .callout p{margin-bottom:0;font-size:13px}
+.metro .callout.ok{border-color:var(--ok)}.metro .callout.ok .callout-title{color:var(--ok)}
+.metro .callout.warn{border-color:var(--warn)}.metro .callout.warn .callout-title{color:var(--warn)}
+.metro .callout.danger{border-color:var(--danger)}.metro .callout.danger .callout-title{color:var(--danger)}
+.metro .callout.blue{border-color:var(--blue)}.metro .callout.blue .callout-title{color:var(--blue)}
+.metro .callout.purple{border-color:var(--purple)}.metro .callout.purple .callout-title{color:var(--purple)}
+.metro .callout.orange{border-color:var(--orange)}.metro .callout.orange .callout-title{color:var(--orange)}
+.metro .callout.pink{border-color:var(--pink)}.metro .callout.pink .callout-title{color:var(--pink)}
+.metro .callout.brown{border-color:var(--brown)}.metro .callout.brown .callout-title{color:var(--brown)}
+.metro .callout.gray{border-color:var(--gray)}.metro .callout.gray .callout-title{color:var(--gray)}
+.metro table{width:100%;border-collapse:collapse;margin:16px 0;font-size:13px}
+.metro th{background:var(--bg3);padding:8px 12px;text-align:left;font-family:var(--mono);font-size:10px;font-weight:700;letter-spacing:.08em;color:var(--text2);border-bottom:1px solid var(--border)}
+.metro td{padding:9px 12px;border-bottom:1px solid var(--border);vertical-align:top}
+.metro tr:hover td{background:var(--bg3)}
+.metro .btn{display:inline-block;font-family:var(--mono);font-size:11px;font-weight:700;padding:6px 14px;border:1px solid var(--border);border-radius:var(--radius);background:var(--bg2);color:var(--text);cursor:pointer;transition:all .15s;text-decoration:none}
+.metro .btn:hover{border-color:var(--accent);color:var(--accent)}
+.metro .btn.primary{background:color-mix(in srgb,var(--accent) 15%,transparent);border-color:var(--accent);color:var(--accent)}
+.metro .btn.ok{border-color:var(--ok);color:var(--ok)}.metro .btn.warn{border-color:var(--warn);color:var(--warn)}.metro .btn.danger{border-color:var(--danger);color:var(--danger)}
+.metro .btn.blue{border-color:var(--blue);color:var(--blue)}.metro .btn.purple{border-color:var(--purple);color:var(--purple)}.metro .btn.orange{border-color:var(--orange);color:var(--orange)}.metro .btn.pink{border-color:var(--pink);color:var(--pink)}
+.metro .badge{display:inline-block;font-family:var(--mono);font-size:10px;padding:2px 8px;border:1px solid var(--border);border-radius:var(--radius);color:var(--text2)}
+.metro .badge.accent{border-color:var(--accent);color:var(--accent)}.metro .badge.ok{border-color:var(--ok);color:var(--ok)}.metro .badge.warn{border-color:var(--warn);color:var(--warn)}.metro .badge.danger{border-color:var(--danger);color:var(--danger)}
+.metro .badge.blue{border-color:var(--blue);color:var(--blue)}.metro .badge.purple{border-color:var(--purple);color:var(--purple)}.metro .badge.orange{border-color:var(--orange);color:var(--orange)}.metro .badge.pink{border-color:var(--pink);color:var(--pink)}.metro .badge.brown{border-color:var(--brown);color:var(--brown)}.metro .badge.gray{border-color:var(--gray);color:var(--gray)}
+.metro .card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:16px 20px;margin-bottom:12px;transition:border-color .2s}.metro .card:hover{border-color:var(--accent)}
+.metro .metrics-row{display:flex;gap:12px;flex-wrap:wrap;margin:16px 0}
+.metro .metric{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:12px 18px;flex:1;min-width:100px}
+.metro .metric-val{font-family:var(--mono);font-size:22px;font-weight:700;color:var(--accent)}
+.metro .metric-lbl{font-size:11px;color:var(--text2);margin-top:2px}
+.metro .metric-val.red{color:var(--red)}.metro .metric-val.yellow{color:var(--yellow)}.metro .metric-val.green{color:var(--green)}.metro .metric-val.blue{color:var(--blue)}.metro .metric-val.purple{color:var(--purple)}
+.metro .divider{border:none;border-top:1px solid var(--border);margin:32px 0}
+.metro .grid-2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+@media(max-width:600px){.metro .grid-2{grid-template-columns:1fr}}
+.metro .step-row{display:flex;gap:16px;align-items:flex-start;margin:16px 0;padding:16px;background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius)}
+.metro .step-num{font-family:var(--mono);font-size:20px;font-weight:700;color:var(--accent);min-width:32px;line-height:1;margin-top:2px}
+.metro .timeline{margin:16px 0}
+.metro .timeline-item{display:flex;gap:16px;padding:12px 0;border-bottom:1px solid var(--border)}
+.metro .timeline-item:last-child{border-bottom:none}
+.metro .timeline-dot{width:28px;height:28px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:10px;font-weight:700;margin-top:2px;border:1px solid var(--border);color:var(--text2);background:var(--bg3)}
+.metro .timeline-dot.done{background:color-mix(in srgb,var(--ok) 15%,transparent);border-color:var(--ok);color:var(--ok)}
+.metro .timeline-dot.pending{background:var(--bg3);border-color:var(--border);color:var(--text2)}
+.metro .timeline-dot.warn{background:color-mix(in srgb,var(--warn) 15%,transparent);border-color:var(--warn);color:var(--warn)}
+.metro .timeline-dot.danger{background:color-mix(in srgb,var(--danger) 15%,transparent);border-color:var(--danger);color:var(--danger)}
+.metro .theme-btn{font-family:var(--mono);font-size:11px;padding:5px 12px;background:none;border:1px solid var(--border);border-radius:var(--radius);color:var(--text2);cursor:pointer;transition:all .2s}
+.metro .theme-btn:hover{border-color:var(--accent);color:var(--accent)}
+/* layout */
+html,body{height:100%}
+body{padding:40px;max-width:860px;margin:0 auto;position:relative;z-index:1}
+#metro-bg{position:fixed;inset:0;z-index:0;pointer-events:none}
+body>*{position:relative;z-index:1}
+.swatch-row{display:flex;gap:10px;flex-wrap:wrap;margin:16px 0}
+.swatch{width:80px;font-family:var(--mono);font-size:9px;color:var(--text2);text-align:center}
+.swatch-box{height:48px;border-radius:4px;margin-bottom:6px;border:1px solid var(--border);position:relative}
+.swatch-hex{position:absolute;bottom:4px;left:5px;font-family:var(--mono);font-size:9px;color:rgba(255,255,255,.75);mix-blend-mode:difference;letter-spacing:-.3px;line-height:1;pointer-events:none}
+.metro-title-anim{transition:color .6s ease}
+</style>
+</head>
+<body class="metro">
+
+<canvas id="metro-bg"></canvas>
+
+<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:48px">
+  <div style="font-family:var(--mono);font-size:28px;font-weight:700;letter-spacing:-2px">
+    metro<span class="metro-title-anim">_theme</span>
+  </div>
+  <button class="theme-btn" id="metro-toggle" onclick="metroToggle()">☾ Dark</button>
+</div>
+
+<h2>Paleta de colores</h2>
+<p class="muted">Tokens disponibles como variables CSS. Cambian automáticamente con el tema.</p>
+<h3>Semáforo</h3>
+<div class="swatch-row">
+  <div class="swatch"><div class="swatch-box" style="background:var(--red)"><span class="swatch-hex" id="hex-red"></span></div>--red</div>
+  <div class="swatch"><div class="swatch-box" style="background:var(--yellow)"><span class="swatch-hex" id="hex-yellow"></span></div>--yellow</div>
+  <div class="swatch"><div class="swatch-box" style="background:var(--green)"><span class="swatch-hex" id="hex-green"></span></div>--green</div>
+</div>
+<h3>Paleta extendida</h3>
+<div class="swatch-row">
+  <div class="swatch"><div class="swatch-box" style="background:var(--blue)"><span class="swatch-hex" id="hex-blue"></span></div>--blue</div>
+  <div class="swatch"><div class="swatch-box" style="background:var(--purple)"><span class="swatch-hex" id="hex-purple"></span></div>--purple</div>
+  <div class="swatch"><div class="swatch-box" style="background:var(--orange)"><span class="swatch-hex" id="hex-orange"></span></div>--orange</div>
+  <div class="swatch"><div class="swatch-box" style="background:var(--pink)"><span class="swatch-hex" id="hex-pink"></span></div>--pink</div>
+  <div class="swatch"><div class="swatch-box" style="background:var(--brown)"><span class="swatch-hex" id="hex-brown"></span></div>--brown</div>
+</div>
+<h3>Neutros y semánticos</h3>
+<div class="swatch-row">
+  <div class="swatch"><div class="swatch-box" style="background:var(--black)"><span class="swatch-hex" id="hex-black"></span></div>--black</div>
+  <div class="swatch"><div class="swatch-box" style="background:var(--gray)"><span class="swatch-hex" id="hex-gray"></span></div>--gray</div>
+  <div class="swatch"><div class="swatch-box" style="background:var(--white)"><span class="swatch-hex" id="hex-white"></span></div>--white</div>
+  <div class="swatch"><div class="swatch-box" style="background:var(--accent)"><span class="swatch-hex" id="hex-accent"></span></div>--accent</div>
+  <div class="swatch"><div class="swatch-box" style="background:var(--ok)"><span class="swatch-hex" id="hex-ok"></span></div>--ok</div>
+  <div class="swatch"><div class="swatch-box" style="background:var(--warn)"><span class="swatch-hex" id="hex-warn"></span></div>--warn</div>
+  <div class="swatch"><div class="swatch-box" style="background:var(--danger)"><span class="swatch-hex" id="hex-danger"></span></div>--danger</div>
+</div>
+
+<hr class="divider">
+
+<h2>Callouts</h2>
+<div class="callout"><div class="callout-title">Acento (default)</div><p>Notas generales e información importante.</p></div>
+<div class="callout ok"><div class="callout-title">OK · Verde</div><p>Confirmaciones, resultados exitosos, pasos completados.</p></div>
+<div class="callout warn"><div class="callout-title">Warn · Amarillo</div><p>Advertencias, pendientes, cosas a revisar.</p></div>
+<div class="callout danger"><div class="callout-title">Danger · Rojo</div><p>Errores, restricciones críticas, cosas que no hacer.</p></div>
+<div class="callout blue"><div class="callout-title">Blue</div><p>Información técnica, referencias, documentación.</p></div>
+<div class="callout purple"><div class="callout-title">Purple</div><p>Experimental, features en desarrollo, ideas.</p></div>
+<div class="callout orange"><div class="callout-title">Orange</div><p>Rendimiento, optimizaciones, métricas clave.</p></div>
+<div class="callout pink"><div class="callout-title">Pink</div><p>Diseño, UI, experiencia de usuario.</p></div>
+<div class="callout brown"><div class="callout-title">Brown</div><p>Histórico, legado, contexto del proyecto.</p></div>
+<div class="callout gray"><div class="callout-title">Gray</div><p>Notas secundarias, información opcional.</p></div>
+
+<hr class="divider">
+
+<h2>Badges</h2>
+<div style="display:flex;gap:8px;flex-wrap:wrap;margin:16px 0">
+  <span class="badge accent">accent</span><span class="badge ok">ok</span><span class="badge warn">warn</span><span class="badge danger">danger</span>
+  <span class="badge blue">blue</span><span class="badge purple">purple</span><span class="badge orange">orange</span><span class="badge pink">pink</span><span class="badge brown">brown</span><span class="badge gray">gray</span><span class="badge">default</span>
+</div>
+
+<hr class="divider">
+
+<h2>Botones</h2>
+<div style="display:flex;gap:8px;flex-wrap:wrap;margin:16px 0">
+  <button class="btn primary">Primary</button><button class="btn">Default</button>
+  <button class="btn ok">OK</button><button class="btn warn">Warn</button><button class="btn danger">Danger</button>
+  <button class="btn blue">Blue</button><button class="btn purple">Purple</button><button class="btn orange">Orange</button><button class="btn pink">Pink</button>
+</div>
+
+<hr class="divider">
+
+<h2>Métricas</h2>
+<div class="metrics-row">
+  <div class="metric"><div class="metric-val">354</div><div class="metric-lbl">Nodos</div></div>
+  <div class="metric"><div class="metric-val green">1,036</div><div class="metric-lbl">Llegadas</div></div>
+  <div class="metric"><div class="metric-val red">367</div><div class="metric-lbl">Detenidos</div></div>
+  <div class="metric"><div class="metric-val blue">672</div><div class="metric-lbl">Aristas</div></div>
+  <div class="metric"><div class="metric-val purple">550</div><div class="metric-lbl">Episodios</div></div>
+  <div class="metric"><div class="metric-val yellow">15×</div><div class="metric-lbl">Mejora</div></div>
+</div>
+
+<hr class="divider">
+
+<h2>Código</h2>
+<p>Inline: <code>metroToggle()</code> alterna entre modo claro y oscuro.</p>
+<pre><span class="cm"># Ejemplo de uso</span>
+<span class="kw">import</span> metro_theme
+
+<span class="fn">def</span> <span class="kw">setup</span>():
+    theme = metro_theme.getTheme()  <span class="cm"># 'dark' | 'light'</span>
+    colors = {
+        <span class="str">'accent'</span>: <span class="str">'#00e5a0'</span>,
+        <span class="str">'danger'</span>: <span class="str">'#ff4560'</span>,
+        <span class="str">'value'</span>:  <span class="num">42</span>,
+    }
+    <span class="kw">return</span> colors</pre>
+
+<hr class="divider">
+
+<h2>Tabla</h2>
+<table>
+  <tr><th>Token</th><th>Claro</th><th>Oscuro</th><th>Uso</th></tr>
+  <tr><td><code>--accent</code></td><td>#6B1A2A</td><td>#00e5a0</td><td>Color principal de la UI</td></tr>
+  <tr><td><code>--red</code></td><td>#8B1A1A</td><td>#ff4560</td><td>Semáforo rojo · peligro</td></tr>
+  <tr><td><code>--yellow</code></td><td>#C4691A</td><td>#f5a623</td><td>Semáforo amarillo · advertencia</td></tr>
+  <tr><td><code>--green</code></td><td>#2A6B3A</td><td>#00e5a0</td><td>Semáforo verde · OK</td></tr>
+  <tr><td><code>--blue</code></td><td>#1A3A6B</td><td>#457BFF</td><td>Info técnica · links</td></tr>
+  <tr><td><code>--purple</code></td><td>#4A1A6B</td><td>#9B6DFF</td><td>Experimental · RL</td></tr>
+  <tr><td><code>--orange</code></td><td>#A84510</td><td>#FF7A30</td><td>Rendimiento · alertas</td></tr>
+  <tr><td><code>--pink</code></td><td>#8B1A4A</td><td>#FF4D8F</td><td>Diseño · UI</td></tr>
+  <tr><td><code>--brown</code></td><td>#5C3317</td><td>#C4855A</td><td>Histórico · contexto</td></tr>
+</table>
+
+<hr class="divider">
+
+<h2>Timeline</h2>
+<div class="timeline">
+  <div class="timeline-item"><div class="timeline-dot done">✓</div><div><h4>Paso completado</h4><p style="font-size:12px;color:var(--text2)">Hito finalizado y verificado.</p></div></div>
+  <div class="timeline-item"><div class="timeline-dot warn">!</div><div><h4>En progreso</h4><p style="font-size:12px;color:var(--text2)">Trabajo en curso, pendiente de revisión.</p></div></div>
+  <div class="timeline-item"><div class="timeline-dot pending">—</div><div><h4>Pendiente</h4><p style="font-size:12px;color:var(--text2)">Aún no iniciado.</p></div></div>
+  <div class="timeline-item"><div class="timeline-dot danger">✕</div><div><h4>Bloqueado</h4><p style="font-size:12px;color:var(--text2)">Requiere resolución de dependencia.</p></div></div>
+</div>
+
+<hr class="divider">
+
+<h2>Pasos de proceso</h2>
+<div class="step-row"><div class="step-num">1</div><div><h4>Primer paso</h4><p style="font-size:13px;color:var(--text2)">Descripción del primer paso del proceso.</p></div></div>
+<div class="step-row"><div class="step-num">2</div><div><h4>Segundo paso</h4><p style="font-size:13px;color:var(--text2)">Descripción del segundo paso del proceso.</p></div></div>
+
+<hr class="divider">
+
+<h2>Cards</h2>
+<div class="grid-2">
+  <div class="card"><strong>Card básica</strong><p style="font-size:13px;margin-top:8px;color:var(--text2)">Contenido libre dentro de un card con borde y fondo bg2.</p></div>
+  <div class="card"><strong>Card con badge</strong><span class="badge ok" style="margin-left:8px">activo</span><p style="font-size:13px;margin-top:8px;color:var(--text2)">Cards con cualquier contenido interno.</p></div>
+</div>
+
+<hr class="divider">
+<p class="muted" style="text-align:center;margin-top:32px;font-family:var(--mono);font-size:11px">
+  metro_theme · by RemiH06 · iroFactory · AGPL-3.0
+</p>
+
+<script>
+// ── Toggle ────────────────────────────────────────────
+let metroDark = false;
+const changeListeners = [];
+function metroToggle() {
+  metroDark = !metroDark;
+  document.body.classList.toggle('dark', metroDark);
+  document.getElementById('metro-toggle').textContent = metroDark ? '☀ Light' : '☾ Dark';
+  changeListeners.forEach(fn => fn());
+  updateHexes();
+  rebuildNodes();
+}
+
+// ── Fondo: grafo de nodos animado ─────────────────────
+const canvas = document.getElementById('metro-bg');
+const ctx    = canvas.getContext('2d');
+let W, H, nodes = [];
+
+const COLS_D = ['#ff4560','#f5a623','#00e5a0'];
+const COLS_L = ['#8B1A1A','#C4691A','#2A6B3A'];
+
+function rebuildNodes() {
+  W = canvas.width  = window.innerWidth;
+  H = canvas.height = window.innerHeight;
+  const cols = metroDark ? COLS_D : COLS_L;
+  nodes = Array.from({length:36}, () => ({
+    x: Math.random()*W, y: Math.random()*H,
+    vx:(Math.random()-.5)*.5, vy:(Math.random()-.5)*.5,
+    r: 2+Math.random()*3,
+    col: cols[Math.floor(Math.random()*cols.length)],
+    alpha: 0.35+Math.random()*.45,
+  }));
+}
+
+function drawBg() {
+  ctx.clearRect(0,0,W,H);
+  // Fondo
+  ctx.fillStyle = metroDark ? '#0a0c10' : '#F5F0E8';
+  ctx.fillRect(0,0,W,H);
+  // Grid
+  const gc = metroDark ? 'rgba(30,37,53,0.55)' : 'rgba(200,191,176,0.30)';
+  ctx.strokeStyle = gc; ctx.lineWidth = 1;
+  for(let x=0;x<W;x+=40){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,H);ctx.stroke();}
+  for(let y=0;y<H;y+=40){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(W,y);ctx.stroke();}
+  // Mover
+  nodes.forEach(n=>{
+    n.x+=n.vx; n.y+=n.vy;
+    if(n.x<0||n.x>W) n.vx*=-1;
+    if(n.y<0||n.y>H) n.vy*=-1;
+  });
+  // Edges
+  const maxD = Math.min(W,H)*0.20;
+  for(let i=0;i<nodes.length;i++){
+    for(let j=i+1;j<nodes.length;j++){
+      const dx=nodes[i].x-nodes[j].x, dy=nodes[i].y-nodes[j].y;
+      const d=Math.sqrt(dx*dx+dy*dy);
+      if(d<maxD){
+        const s=1-d/maxD;
+        ctx.beginPath(); ctx.moveTo(nodes[i].x,nodes[i].y); ctx.lineTo(nodes[j].x,nodes[j].y);
+        ctx.strokeStyle = metroDark ? `rgba(30,37,53,${s*.9})` : `rgba(200,191,176,${s*.7})`;
+        ctx.lineWidth = s*1.5; ctx.stroke();
+      }
+    }
+  }
+  // Nodos — cuadrados
+  nodes.forEach(n=>{
+    const s = n.r * 2; // tamaño del cuadrado
+    if(metroDark){
+      const g=ctx.createRadialGradient(n.x,n.y,0,n.x,n.y,s*2.5);
+      g.addColorStop(0,n.col+'55'); g.addColorStop(1,n.col+'00');
+      ctx.beginPath(); ctx.arc(n.x,n.y,s*2.5,0,Math.PI*2);
+      ctx.fillStyle=g; ctx.fill();
+    }
+    ctx.fillStyle=n.col; ctx.globalAlpha=n.alpha;
+    ctx.fillRect(n.x - s/2, n.y - s/2, s, s);
+    ctx.globalAlpha=1;
+  });
+  requestAnimationFrame(drawBg);
+}
+
+// ── Ciclo de color "_theme" ───────────────────────────
+(function(){
+  const el=document.querySelector('.metro-title-anim');
+  if(!el) return;
+  const toks=['--red','--yellow','--green']; let i=0;
+  function cycle(){ el.style.color=getComputedStyle(document.body).getPropertyValue(toks[i]).trim(); i=(i+1)%3; }
+  cycle(); setInterval(cycle,1200);
+  changeListeners.push(()=>{i=0;cycle();});
+})();
+
+// ── Hexes ─────────────────────────────────────────────
+function cssVar(n){return getComputedStyle(document.body).getPropertyValue(n).trim();}
+function updateHexes(){
+  const m={'hex-red':'--red','hex-yellow':'--yellow','hex-green':'--green','hex-blue':'--blue','hex-purple':'--purple','hex-orange':'--orange','hex-pink':'--pink','hex-brown':'--brown','hex-black':'--black','hex-gray':'--gray','hex-white':'--white','hex-accent':'--accent','hex-ok':'--ok','hex-warn':'--warn','hex-danger':'--danger'};
+  Object.entries(m).forEach(([id,tok])=>{const el=document.getElementById(id);if(el)el.textContent=cssVar(tok);});
+}
+
+window.addEventListener('resize', rebuildNodes);
+rebuildNodes();
+updateHexes();
+requestAnimationFrame(drawBg);
+</script>
+</body>
+</html>

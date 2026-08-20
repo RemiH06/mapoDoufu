@@ -1,0 +1,706 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>elixir_theme — Demo</title>
+<link rel="preconnect" href="https://fonts.bunny.net">
+<link href="https://fonts.bunny.net/css?family=iosevka:400,700&display=swap" rel="stylesheet">
+<style>
+/* ── TOKENS CLARO ── */
+body {
+  --bg:      #EEF0F5;
+  --bg2:     #E4E7EF;
+  --bg3:     #D8DCE8;
+  --text:    #0E1018;
+  --text2:   #4A5068;
+  --border:  #B8BDD0;
+  --input:   #2A3A7A;
+  --train:   #0A5C58;
+  --output:  #1A5C30;
+  --teal:    #0A5C58;
+  --indigo:  #2A3A7A;
+  --pine:    #1A5C30;
+  --slate:   #3A4A6A;
+  --steel:   #2A3C52;
+  --violet:  #3A2A6A;
+  --arctic:  #1A4A6A;
+  --black:   #080C14;
+  --white:   #F4F6FA;
+  --gray:    #7A80A0;
+  --accent:  #0A5C58;
+  --accent2: #2A3A7A;
+  --ok:      #1A5C30;
+  --warn:    #7A5A0A;
+  --danger:  #7A1A2A;
+  --mono:    'Iosevka', 'Fira Code', monospace;
+  --radius:  3px;
+  --scanline-color: rgba(0,0,0,.022);
+}
+
+/* ── TOKENS OSCURO ── */
+body.dark {
+  --bg:      #080C14;
+  --bg2:     #0C1018;
+  --bg3:     #10161E;
+  --text:    #DCE0F0;
+  --text2:   #5A6080;
+  --border:  #181E2E;
+  --input:   #4D8FFF;
+  --train:   #00E8D8;
+  --output:  #00F090;
+  --teal:    #00E8D8;
+  --indigo:  #4D8FFF;
+  --pine:    #00F090;
+  --slate:   #7090C0;
+  --steel:   #5080A0;
+  --violet:  #8060FF;
+  --arctic:  #00C8FF;
+  --black:   #040608;
+  --white:   #ECF0F8;
+  --gray:    #303850;
+  --accent:  #00E8D8;
+  --accent2: #4D8FFF;
+  --ok:      #00F090;
+  --warn:    #F0C000;
+  --danger:  #F04050;
+  --scanline-color: rgba(255,255,255,.025);
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body { height: 100%; }
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--mono);
+  font-size: 13px;
+  line-height: 1.75;
+  transition: background .3s, color .3s;
+}
+
+/* Scanlines */
+body::after {
+  content: '';
+  position: fixed; inset: 0;
+  pointer-events: none;
+  z-index: 9998;
+  background: repeating-linear-gradient(
+    to bottom,
+    transparent 0px, transparent 2px,
+    var(--scanline-color) 2px, var(--scanline-color) 4px
+  );
+}
+
+/* Fondo diamantes */
+body::before {
+  content: '';
+  position: fixed; inset: 0;
+  background-image:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='48' height='41.57'%3E%3Cpolyline points='0,41.57 24,0 48,41.57' fill='none' stroke='%23777777' stroke-width='1.5'/%3E%3C/svg%3E"),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='48' height='41.57'%3E%3Cpolyline points='0,0 24,41.57 48,0' fill='none' stroke='%23777777' stroke-width='1.5'/%3E%3C/svg%3E");
+  background-size: 48px 41.57px, 48px 41.57px;
+  background-position: 0 0, 48px 20px;
+  opacity: .12;
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* Canvas grafo */
+#elixir-graph {
+  position: fixed; inset: 0;
+  pointer-events: none;
+  z-index: 1;
+  opacity: .55;
+}
+
+/* Contenido sobre todo */
+.page {
+  position: relative;
+  z-index: 2;
+  padding: 40px;
+  max-width: 860px;
+  margin: 0 auto;
+}
+
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-thumb { background: var(--border); }
+
+/* ── TIPOGRAFÍA ── */
+h2 {
+  font-size: 12px; font-weight: 700;
+  color: var(--text);
+  margin: 38px 0 14px;
+  padding-bottom: 7px;
+  border-bottom: 1px solid var(--border);
+  letter-spacing: .08em; text-transform: uppercase;
+}
+h3 {
+  font-size: 11px; font-weight: 700;
+  color: var(--accent);
+  margin: 22px 0 10px;
+  letter-spacing: .1em; text-transform: uppercase;
+}
+h4 { font-size: 12px; font-weight: 700; color: var(--text); margin-bottom: 5px; }
+p  { margin-bottom: 14px; line-height: 1.85; }
+p.muted { color: var(--text2); font-size: 12px; }
+
+/* ── CÓDIGO ── */
+code {
+  font-family: var(--mono); font-size: 12px;
+  background: var(--bg3); border: 1px solid var(--border);
+  padding: 1px 6px; border-radius: var(--radius); color: var(--accent);
+}
+pre {
+  background: var(--bg2); border: 1px solid var(--border);
+  border-left: 2px solid var(--accent); border-radius: var(--radius);
+  padding: 14px 18px; margin: 14px 0; overflow-x: auto;
+  font-family: var(--mono); font-size: 12px; line-height: 1.75;
+  color: var(--text); position: relative;
+}
+pre::before {
+  content: attr(data-lang); position: absolute; top: 6px; right: 10px;
+  font-size: 9px; color: var(--text2); letter-spacing: .1em; text-transform: uppercase;
+}
+pre code { background: none; border: none; padding: 0; color: inherit; }
+pre .kw  { color: var(--indigo); }
+pre .fn  { color: var(--teal);   }
+pre .str { color: var(--pine);   }
+pre .num { color: var(--arctic); }
+pre .cm  { color: var(--text2);  font-style: italic; }
+pre .tp  { color: var(--violet); }
+
+/* ── CALLOUTS ── */
+.callout {
+  border-left: 2px solid var(--accent); background: var(--bg2);
+  padding: 12px 16px; margin: 10px 0; border-radius: 0 var(--radius) var(--radius) 0;
+}
+.callout-title {
+  font-size: 9px; font-weight: 700; letter-spacing: .14em;
+  text-transform: uppercase; color: var(--accent); margin-bottom: 5px;
+}
+.callout p { margin-bottom: 0; font-size: 12px; }
+.callout.ok      { border-color: var(--ok);     } .callout.ok      .callout-title { color: var(--ok);     }
+.callout.warn    { border-color: var(--warn);   } .callout.warn    .callout-title { color: var(--warn);   }
+.callout.danger  { border-color: var(--danger); } .callout.danger  .callout-title { color: var(--danger); }
+.callout.input   { border-color: var(--input);  } .callout.input   .callout-title { color: var(--input);  }
+.callout.train   { border-color: var(--train);  } .callout.train   .callout-title { color: var(--train);  }
+.callout.output  { border-color: var(--output); } .callout.output  .callout-title { color: var(--output); }
+.callout.teal    { border-color: var(--teal);   } .callout.teal    .callout-title { color: var(--teal);   }
+.callout.indigo  { border-color: var(--indigo); } .callout.indigo  .callout-title { color: var(--indigo); }
+.callout.pine    { border-color: var(--pine);   } .callout.pine    .callout-title { color: var(--pine);   }
+.callout.violet  { border-color: var(--violet); } .callout.violet  .callout-title { color: var(--violet); }
+.callout.arctic  { border-color: var(--arctic); } .callout.arctic  .callout-title { color: var(--arctic); }
+.callout.gray    { border-color: var(--gray);   } .callout.gray    .callout-title { color: var(--gray);   }
+
+/* ── TABLA ── */
+table { width: 100%; border-collapse: collapse; margin: 14px 0; font-size: 12px; }
+th {
+  background: var(--bg3); padding: 7px 12px; text-align: left;
+  font-size: 9px; font-weight: 700; letter-spacing: .1em;
+  text-transform: uppercase; color: var(--text2); border-bottom: 1px solid var(--border);
+}
+td { padding: 8px 12px; border-bottom: 1px solid var(--border); vertical-align: top; }
+tr:hover td { background: var(--bg3); }
+
+/* ── BOTONES ── */
+.btn {
+  display: inline-block; font-family: var(--mono); font-size: 11px; font-weight: 700;
+  padding: 6px 14px; border: 1px solid var(--border); border-radius: var(--radius);
+  background: var(--bg2); color: var(--text2); cursor: pointer;
+  transition: all .15s; letter-spacing: .04em;
+}
+.btn:hover        { border-color: var(--accent); color: var(--accent); }
+.btn.primary      { border-color: var(--accent); color: var(--accent); }
+.btn.ok           { border-color: var(--ok);     color: var(--ok);     }
+.btn.warn         { border-color: var(--warn);   color: var(--warn);   }
+.btn.danger       { border-color: var(--danger); color: var(--danger); }
+.btn.input        { border-color: var(--input);  color: var(--input);  }
+.btn.train        { border-color: var(--train);  color: var(--train);  }
+.btn.output       { border-color: var(--output); color: var(--output); }
+.btn.teal         { border-color: var(--teal);   color: var(--teal);   }
+.btn.indigo       { border-color: var(--indigo); color: var(--indigo); }
+.btn.pine         { border-color: var(--pine);   color: var(--pine);   }
+.btn.violet       { border-color: var(--violet); color: var(--violet); }
+.btn.arctic       { border-color: var(--arctic); color: var(--arctic); }
+
+/* ── BADGES ── */
+.badge {
+  display: inline-block; font-family: var(--mono); font-size: 9px; font-weight: 700;
+  padding: 2px 7px; border: 1px solid var(--border); border-radius: var(--radius);
+  color: var(--text2); letter-spacing: .06em; text-transform: uppercase;
+}
+.badge.accent  { border-color: var(--accent);  color: var(--accent);  }
+.badge.ok      { border-color: var(--ok);      color: var(--ok);      }
+.badge.warn    { border-color: var(--warn);    color: var(--warn);    }
+.badge.danger  { border-color: var(--danger);  color: var(--danger);  }
+.badge.input   { border-color: var(--input);   color: var(--input);   }
+.badge.train   { border-color: var(--train);   color: var(--train);   }
+.badge.output  { border-color: var(--output);  color: var(--output);  }
+.badge.teal    { border-color: var(--teal);    color: var(--teal);    }
+.badge.indigo  { border-color: var(--indigo);  color: var(--indigo);  }
+.badge.pine    { border-color: var(--pine);    color: var(--pine);    }
+.badge.slate   { border-color: var(--slate);   color: var(--slate);   }
+.badge.violet  { border-color: var(--violet);  color: var(--violet);  }
+.badge.arctic  { border-color: var(--arctic);  color: var(--arctic);  }
+.badge.gray    { border-color: var(--gray);    color: var(--gray);    }
+
+/* ── CARDS ── */
+.card {
+  background: var(--bg2); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 16px 18px; margin-bottom: 10px;
+  transition: border-color .15s;
+}
+.card:hover { border-color: var(--accent); }
+
+/* ── MÉTRICAS ── */
+.metrics-row { display: flex; gap: 10px; flex-wrap: wrap; margin: 14px 0; }
+.metric {
+  background: var(--bg2); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 12px 16px; flex: 1; min-width: 100px;
+}
+.metric-val { font-size: 22px; font-weight: 700; color: var(--accent); letter-spacing: -1px; }
+.metric-lbl { font-size: 10px; color: var(--text2); margin-top: 3px; letter-spacing: .05em; }
+.metric-val.output { color: var(--output); }
+.metric-val.train  { color: var(--train);  }
+.metric-val.teal   { color: var(--teal);   }
+.metric-val.violet { color: var(--violet); }
+.metric-val.arctic { color: var(--arctic); }
+
+/* ── DIVIDER ── */
+hr.divider { border: none; border-top: 1px solid var(--border); margin: 28px 0; }
+
+/* ── RUN LOG ── */
+.run-log { margin: 14px 0; }
+.run-entry {
+  display: flex; gap: 14px; padding: 10px 0;
+  border-bottom: 1px solid var(--border); align-items: flex-start;
+}
+.run-entry:last-child { border-bottom: none; }
+.run-dot {
+  width: 26px; height: 26px; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 10px; font-weight: 700; margin-top: 2px;
+  border: 1px solid var(--border); color: var(--text2); background: var(--bg3);
+  clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%);
+}
+.run-dot.done    { border-color: var(--ok);     color: var(--ok);     }
+.run-dot.running { border-color: var(--train);  color: var(--train);  }
+.run-dot.pending { border-color: var(--border); color: var(--text2);  }
+.run-dot.failed  { border-color: var(--danger); color: var(--danger); }
+
+/* ── PIPELINE ── */
+.pipeline-row {
+  display: flex; gap: 16px; align-items: flex-start;
+  margin: 10px 0; padding: 13px 16px;
+  background: var(--bg2); border: 1px solid var(--border);
+  border-left: 2px solid var(--accent); border-radius: var(--radius);
+}
+.pipeline-step {
+  font-size: 9px; font-weight: 700; color: var(--accent);
+  min-width: 56px; line-height: 1; margin-top: 3px;
+  letter-spacing: .1em; text-transform: uppercase;
+}
+
+/* ── TOGGLE ── */
+.theme-btn {
+  font-family: var(--mono); font-size: 11px; font-weight: 700;
+  padding: 5px 12px; background: none;
+  border: 1px solid var(--border); border-radius: var(--radius);
+  color: var(--text2); cursor: pointer; transition: all .15s; letter-spacing: .04em;
+}
+.theme-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+/* ── LAYOUT ── */
+.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.swatch-row { display: flex; gap: 10px; flex-wrap: wrap; margin: 14px 0; }
+.swatch { width: 84px; text-align: center; font-size: 9px; color: var(--text2); }
+.swatch-box {
+  height: 48px; border-radius: var(--radius); margin-bottom: 6px;
+  border: 1px solid var(--border); position: relative;
+}
+.swatch-hex {
+  position: absolute; bottom: 4px; left: 5px; font-size: 9px;
+  color: rgba(255,255,255,.75); mix-blend-mode: difference;
+  letter-spacing: -.3px; line-height: 1; pointer-events: none;
+}
+</style>
+</head>
+<body>
+
+<canvas id="elixir-graph"></canvas>
+
+<div class="page">
+
+<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:48px">
+  <div style="font-size:26px;font-weight:700;letter-spacing:-1px">
+    elixir<span id="accent-span" style="color:var(--accent)">_theme</span>
+  </div>
+  <button class="theme-btn" id="toggle-btn" onclick="toggleTheme()">◐ dark</button>
+</div>
+
+<!-- ── Paleta ── -->
+<h2>Paleta de colores</h2>
+<p class="muted">Tokens disponibles como variables CSS. Cambian automáticamente con el tema.</p>
+
+<h3>Señal de modelo</h3>
+<div class="swatch-row">
+  <div class="swatch"><div class="swatch-box" style="background:var(--input)"><span class="swatch-hex" id="hex-input"></span></div>--input</div>
+  <div class="swatch"><div class="swatch-box" style="background:var(--train)"><span class="swatch-hex" id="hex-train"></span></div>--train</div>
+  <div class="swatch"><div class="swatch-box" style="background:var(--output)"><span class="swatch-hex" id="hex-output"></span></div>--output</div>
+</div>
+
+<h3>Paleta analítica</h3>
+<div class="swatch-row">
+  <div class="swatch"><div class="swatch-box" style="background:var(--teal)"><span class="swatch-hex" id="hex-teal"></span></div>--teal</div>
+  <div class="swatch"><div class="swatch-box" style="background:var(--indigo)"><span class="swatch-hex" id="hex-indigo"></span></div>--indigo</div>
+  <div class="swatch"><div class="swatch-box" style="background:var(--pine)"><span class="swatch-hex" id="hex-pine"></span></div>--pine</div>
+  <div class="swatch"><div class="swatch-box" style="background:var(--slate)"><span class="swatch-hex" id="hex-slate"></span></div>--slate</div>
+  <div class="swatch"><div class="swatch-box" style="background:var(--steel)"><span class="swatch-hex" id="hex-steel"></span></div>--steel</div>
+  <div class="swatch"><div class="swatch-box" style="background:var(--violet)"><span class="swatch-hex" id="hex-violet"></span></div>--violet</div>
+  <div class="swatch"><div class="swatch-box" style="background:var(--arctic)"><span class="swatch-hex" id="hex-arctic"></span></div>--arctic</div>
+</div>
+
+<h3>Neutros y semánticos</h3>
+<div class="swatch-row">
+  <div class="swatch"><div class="swatch-box" style="background:var(--black)"><span class="swatch-hex" id="hex-black"></span></div>--black</div>
+  <div class="swatch"><div class="swatch-box" style="background:var(--gray)"><span class="swatch-hex" id="hex-gray"></span></div>--gray</div>
+  <div class="swatch"><div class="swatch-box" style="background:var(--white)"><span class="swatch-hex" id="hex-white"></span></div>--white</div>
+  <div class="swatch"><div class="swatch-box" style="background:var(--accent)"><span class="swatch-hex" id="hex-accent"></span></div>--accent</div>
+  <div class="swatch"><div class="swatch-box" style="background:var(--ok)"><span class="swatch-hex" id="hex-ok"></span></div>--ok</div>
+  <div class="swatch"><div class="swatch-box" style="background:var(--warn)"><span class="swatch-hex" id="hex-warn"></span></div>--warn</div>
+  <div class="swatch"><div class="swatch-box" style="background:var(--danger)"><span class="swatch-hex" id="hex-danger"></span></div>--danger</div>
+</div>
+
+<hr class="divider">
+
+<!-- ── Callouts ── -->
+<h2>Callouts</h2>
+<div class="callout"><div class="callout-title">Acento (default)</div><p>Documentación del pipeline, notas de implementación y referencias.</p></div>
+<div class="callout ok"><div class="callout-title">OK · Pine</div><p>Predicción validada. Métrica dentro del umbral esperado.</p></div>
+<div class="callout warn"><div class="callout-title">Warn</div><p>Overfitting detectado. Revisar regularización antes de continuar.</p></div>
+<div class="callout danger"><div class="callout-title">Danger</div><p>Datos corruptos en el batch. Pipeline detenido.</p></div>
+<div class="callout input"><div class="callout-title">Input</div><p>Datos crudos entrando al pipeline. Validación de esquema pendiente.</p></div>
+<div class="callout train"><div class="callout-title">Train</div><p>Entrenamiento activo. Epoch 14/50 · loss decreciendo.</p></div>
+<div class="callout output"><div class="callout-title">Output</div><p>Predicción lista. Confianza 94.3% sobre la clase objetivo.</p></div>
+<div class="callout teal"><div class="callout-title">Teal</div><p>Conexión al scraper activa. Extrayendo registros en paralelo.</p></div>
+<div class="callout indigo"><div class="callout-title">Indigo</div><p>Modelo base cargado. Pesos inicializados desde checkpoint.</p></div>
+<div class="callout pine"><div class="callout-title">Pine</div><p>Clasificación completada. 3 clases diferenciadas sin ambigüedad.</p></div>
+<div class="callout violet"><div class="callout-title">Violet</div><p>Feature experimental. Embeddings de segunda generación en prueba.</p></div>
+<div class="callout arctic"><div class="callout-title">Arctic</div><p>Stream de datos frío. Procesamiento en batch diferido.</p></div>
+<div class="callout gray"><div class="callout-title">Gray</div><p>Notas de contexto. Información secundaria del experimento.</p></div>
+
+<hr class="divider">
+
+<!-- ── Badges ── -->
+<h2>Badges</h2>
+<div style="display:flex;gap:8px;flex-wrap:wrap;margin:14px 0">
+  <span class="badge accent">accent</span>
+  <span class="badge ok">ok</span>
+  <span class="badge warn">warn</span>
+  <span class="badge danger">danger</span>
+  <span class="badge input">input</span>
+  <span class="badge train">train</span>
+  <span class="badge output">output</span>
+  <span class="badge teal">teal</span>
+  <span class="badge indigo">indigo</span>
+  <span class="badge pine">pine</span>
+  <span class="badge slate">slate</span>
+  <span class="badge violet">violet</span>
+  <span class="badge arctic">arctic</span>
+  <span class="badge gray">gray</span>
+  <span class="badge">default</span>
+</div>
+
+<hr class="divider">
+
+<!-- ── Botones ── -->
+<h2>Botones</h2>
+<div style="display:flex;gap:8px;flex-wrap:wrap;margin:14px 0">
+  <button class="btn primary">primary</button>
+  <button class="btn">default</button>
+  <button class="btn ok">ok</button>
+  <button class="btn warn">warn</button>
+  <button class="btn danger">danger</button>
+  <button class="btn input">input</button>
+  <button class="btn train">train</button>
+  <button class="btn output">output</button>
+  <button class="btn teal">teal</button>
+  <button class="btn indigo">indigo</button>
+  <button class="btn pine">pine</button>
+  <button class="btn violet">violet</button>
+  <button class="btn arctic">arctic</button>
+</div>
+
+<hr class="divider">
+
+<!-- ── Métricas ── -->
+<h2>Métricas</h2>
+<div class="metrics-row">
+  <div class="metric"><div class="metric-val">94.3%</div><div class="metric-lbl">accuracy (accent)</div></div>
+  <div class="metric"><div class="metric-val output">0.021</div><div class="metric-lbl">loss (output)</div></div>
+  <div class="metric"><div class="metric-val train">14/50</div><div class="metric-lbl">epoch (train)</div></div>
+  <div class="metric"><div class="metric-val teal">2.4M</div><div class="metric-lbl">registros (teal)</div></div>
+  <div class="metric"><div class="metric-val violet">768</div><div class="metric-lbl">dims (violet)</div></div>
+  <div class="metric"><div class="metric-val arctic">12ms</div><div class="metric-lbl">latencia (arctic)</div></div>
+</div>
+
+<hr class="divider">
+
+<!-- ── Código ── -->
+<h2>Código</h2>
+<p>Inline: <code>toggleTheme()</code> alterna entre modo claro y oscuro.</p>
+<pre data-lang="python"><span class="cm"># Pipeline de clasificación supervisada</span>
+<span class="kw">from</span> sklearn.pipeline <span class="kw">import</span> Pipeline
+<span class="kw">from</span> sklearn.preprocessing <span class="kw">import</span> LabelEncoder
+
+<span class="tp">@dataclass</span>
+<span class="kw">class</span> <span class="tp">Experimento</span>:
+    nombre: <span class="tp">str</span>
+    epochs: <span class="tp">int</span>  = <span class="num">50</span>
+    lr:     <span class="tp">float</span> = <span class="num">1e-4</span>
+
+    <span class="fn">def</span> entrenar(<span class="kw">self</span>, X, y):
+        modelo = Pipeline([
+            (<span class="str">'enc'</span>, LabelEncoder()),
+            (<span class="str">'clf'</span>, self._build()),
+        ])
+        <span class="kw">return</span> modelo.fit(X, y)   <span class="cm"># → clasificador listo</span></pre>
+
+<hr class="divider">
+
+<!-- ── Tabla ── -->
+<h2>Tabla</h2>
+<table>
+  <tr><th>Token</th><th>Claro</th><th>Oscuro</th><th>Semántica</th></tr>
+  <tr><td><code>--accent</code></td><td>#0A5C58</td><td>#00E8D8</td><td>Acento principal · teal pizarra</td></tr>
+  <tr><td><code>--input</code></td><td>#2A3A7A</td><td>#4D8FFF</td><td>Dato entrante · validación pendiente</td></tr>
+  <tr><td><code>--train</code></td><td>#0A5C58</td><td>#00E8D8</td><td>Entrenamiento activo · epoch en curso</td></tr>
+  <tr><td><code>--output</code></td><td>#1A5C30</td><td>#00F090</td><td>Predicción lista · resultado validado</td></tr>
+  <tr><td><code>--teal</code></td><td>#0A5C58</td><td>#00E8D8</td><td>Scraper activo · conexión</td></tr>
+  <tr><td><code>--indigo</code></td><td>#2A3A7A</td><td>#4D8FFF</td><td>Modelo base · checkpoint</td></tr>
+  <tr><td><code>--pine</code></td><td>#1A5C30</td><td>#00F090</td><td>Verde pizarra · clasificación OK</td></tr>
+  <tr><td><code>--violet</code></td><td>#3A2A6A</td><td>#8060FF</td><td>Experimental · embeddings</td></tr>
+  <tr><td><code>--arctic</code></td><td>#1A4A6A</td><td>#00C8FF</td><td>Stream frío · batch diferido</td></tr>
+</table>
+
+<hr class="divider">
+
+<!-- ── Run Log ── -->
+<h2>Run Log</h2>
+<div class="run-log">
+  <div class="run-entry">
+    <div class="run-dot done">✓</div>
+    <div><h4>Preprocesamiento completado</h4><p class="muted">2.4M registros normalizados. Sin valores nulos.</p></div>
+  </div>
+  <div class="run-entry">
+    <div class="run-dot done">✓</div>
+    <div><h4>Feature engineering</h4><p class="muted">768 dimensiones generadas. Embeddings en caché.</p></div>
+  </div>
+  <div class="run-entry">
+    <div class="run-dot running">▶</div>
+    <div><h4>Entrenamiento en curso</h4><p class="muted">Epoch 14/50 · loss 0.021 · mejorando.</p></div>
+  </div>
+  <div class="run-entry">
+    <div class="run-dot pending">—</div>
+    <div><h4>Evaluación pendiente</h4><p class="muted">Esperando fin del entrenamiento para correr el test set.</p></div>
+  </div>
+  <div class="run-entry">
+    <div class="run-dot failed">✕</div>
+    <div><h4>Scraper fallido</h4><p class="muted">Timeout en la fuente. Reintentando con backoff exponencial.</p></div>
+  </div>
+</div>
+
+<hr class="divider">
+
+<!-- ── Pipeline ── -->
+<h2>Pipeline</h2>
+<div class="pipeline-row">
+  <div class="pipeline-step">ingest</div>
+  <div><h4>Extracción de datos</h4><p class="muted">Scraper conectado a la fuente. Validación de esquema en cada registro.</p></div>
+</div>
+<div class="pipeline-row">
+  <div class="pipeline-step">transform</div>
+  <div><h4>Preprocesamiento</h4><p class="muted">Normalización, tokenización y generación de embeddings.</p></div>
+</div>
+<div class="pipeline-row">
+  <div class="pipeline-step">train</div>
+  <div><h4>Entrenamiento del modelo</h4><p class="muted">Clasificador supervisado con validación cruzada de 5 folds.</p></div>
+</div>
+<div class="pipeline-row">
+  <div class="pipeline-step">eval</div>
+  <div><h4>Evaluación y exportación</h4><p class="muted">Métricas sobre el test set. Exportación a ONNX para inferencia.</p></div>
+</div>
+
+<hr class="divider">
+
+<!-- ── Cards ── -->
+<h2>Cards</h2>
+<div class="grid-2">
+  <div class="card">
+    <strong>Clasificador base</strong>
+    <span class="badge slate" style="margin-left:8px">v3.1.0</span>
+    <p class="muted" style="margin-top:8px">Modelo de texto entrenado sobre corpus multilingüe. 94.3% accuracy en test.</p>
+  </div>
+  <div class="card">
+    <strong>Scraper async</strong>
+    <span class="badge teal" style="margin-left:8px">activo</span>
+    <p class="muted" style="margin-top:8px">Extracción concurrente con rate limiting configurable y retry automático.</p>
+  </div>
+</div>
+
+<hr class="divider">
+<p class="muted" style="text-align:center;margin-top:32px;font-size:11px;letter-spacing:.04em">
+  elixir_theme · by RemiH06 · iroFactory · AGPL-3.0
+</p>
+
+</div><!-- .page -->
+
+<script>
+// ── Toggle tema ───────────────────────────────────────
+let dark = false;
+
+function toggleTheme() {
+  dark = !dark;
+  document.body.classList.toggle('dark', dark);
+  document.getElementById('toggle-btn').textContent = dark ? '◑ light' : '◐ dark';
+  updateHexes();
+  syncGraphColors();
+}
+
+// ── Hexes ─────────────────────────────────────────────
+function cssVar(name) {
+  return getComputedStyle(document.body).getPropertyValue(name).trim();
+}
+function updateHexes() {
+  const map = {
+    'hex-input':'--input','hex-train':'--train','hex-output':'--output',
+    'hex-teal':'--teal','hex-indigo':'--indigo','hex-pine':'--pine',
+    'hex-slate':'--slate','hex-steel':'--steel','hex-violet':'--violet',
+    'hex-arctic':'--arctic','hex-black':'--black','hex-gray':'--gray',
+    'hex-white':'--white','hex-accent':'--accent','hex-ok':'--ok',
+    'hex-warn':'--warn','hex-danger':'--danger',
+  };
+  Object.entries(map).forEach(([id, token]) => {
+    const el = document.getElementById(id);
+    if (el) el.textContent = cssVar(token);
+  });
+}
+
+// ── Neural Graph ──────────────────────────────────────
+const PALETTES = {
+  light: {
+    nodes: ['#0A5C58','#2A3A7A','#1A5C30','#3A2A6A','#1A4A6A','#3A4A6A'],
+    edge:  '#B8BDD0',
+    pulse: ['#0A5C58','#2A3A7A','#1A5C30','#3A2A6A','#1A4A6A'],
+  },
+  dark: {
+    nodes: ['#00E8D8','#4D8FFF','#00F090','#8060FF','#00C8FF','#7090C0'],
+    edge:  '#2A3A5A',
+    pulse: ['#00E8D8','#4D8FFF','#00F090','#8060FF','#00C8FF'],
+  },
+};
+
+const canvas = document.getElementById('elixir-graph');
+const ctx    = canvas.getContext('2d');
+let W, H, nodes = [], raf, last = 0;
+
+const N     = 40;
+const DIST  = 150;
+const SPEED = 0.25;
+
+function pal() { return dark ? PALETTES.dark : PALETTES.light; }
+function rnd(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
+
+function makeNode() {
+  return {
+    x: Math.random() * W, y: Math.random() * H,
+    vx: (Math.random() - .5) * SPEED,
+    vy: (Math.random() - .5) * SPEED,
+    r: 3.5 + Math.random() * 3,
+    color: rnd(pal().nodes),
+    pColor: null, pT: 0, pDur: 0,
+  };
+}
+
+function resize() {
+  W = canvas.width  = window.innerWidth;
+  H = canvas.height = window.innerHeight;
+}
+
+function syncGraphColors() {
+  const p = pal();
+  nodes.forEach(n => { n.color = rnd(p.nodes); });
+}
+
+function spawnPulse() {
+  const n = nodes[Math.floor(Math.random() * nodes.length)];
+  n.pColor = rnd(pal().pulse);
+  n.pT = 0;
+  n.pDur = 600 + Math.random() * 900;
+  setTimeout(spawnPulse, 250 + Math.random() * 900);
+}
+
+function draw(ts) {
+  const dt = Math.min(ts - last, 50);
+  last = ts;
+  ctx.clearRect(0, 0, W, H);
+  const p = pal();
+
+  // aristas
+  for (let i = 0; i < nodes.length; i++) {
+    for (let j = i + 1; j < nodes.length; j++) {
+      const a = nodes[i], b = nodes[j];
+      const dx = a.x - b.x, dy = a.y - b.y;
+      const d  = Math.sqrt(dx*dx + dy*dy);
+      if (d < DIST) {
+        ctx.beginPath();
+        ctx.moveTo(a.x, a.y);
+        ctx.lineTo(b.x, b.y);
+        ctx.strokeStyle = p.edge;
+        ctx.globalAlpha = (1 - d/DIST) * 1.0;
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
+      }
+    }
+  }
+
+  // nodos
+  for (const n of nodes) {
+    n.x += n.vx; n.y += n.vy;
+    if (n.x < 0 || n.x > W) { n.vx *= -1; n.x = Math.max(0, Math.min(W, n.x)); }
+    if (n.y < 0 || n.y > H) { n.vy *= -1; n.y = Math.max(0, Math.min(H, n.y)); }
+
+    let color = n.color, r = n.r;
+    if (n.pColor && n.pDur > 0) {
+      n.pT += dt;
+      const t    = Math.min(n.pT / n.pDur, 1);
+      const ease = t < .5 ? 2*t*t : -1 + (4 - 2*t)*t;
+      r          = n.r + ease * 6;
+      color      = n.pColor;
+      ctx.globalAlpha = .5 + ease * .5;
+      if (n.pT >= n.pDur) { n.color = n.pColor; n.pColor = null; n.pDur = 0; }
+    } else {
+      ctx.globalAlpha = .92;
+    }
+
+    ctx.beginPath();
+    ctx.arc(n.x, n.y, r, 0, Math.PI * 2);
+    ctx.fillStyle = color;
+    ctx.fill();
+  }
+
+  ctx.globalAlpha = 1;
+  raf = requestAnimationFrame(draw);
+}
+
+// Arrancar
+resize();
+nodes = Array.from({length: N}, makeNode);
+setTimeout(spawnPulse, 400);
+raf = requestAnimationFrame(draw);
+window.addEventListener('resize', resize);
+updateHexes();
+</script>
+</body>
+</html>

@@ -1,0 +1,33 @@
+GAIARDA_ESTADO.md
+MAPO_FUNDAMENTOS.md
+Gaiarda-main.zip
+
+# -- Python (mapo_core/) --
+__pycache__/
+*.pyc
+*.egg-info/
+.pytest_cache/
+.venv/
+venv/
+build/
+dist/
+.env
+
+# -- Elixir / Phoenix (mapo/) --
+# mapo/ trae su propio .gitignore generado por Phoenix (_build, deps,
+# assets compilados, etc.), no se duplica aqui.
+mapo/.elixir_ls/
+
+# -- Docker --
+*.pid
+
+# -- Editor / SO (todos) --
+.vscode/*
+!.vscode/extensions.json
+.idea/
+.DS_Store
+*.suo
+*.log
+
+# -- Claude Code (estado/config local, no de equipo) --
+.claude/

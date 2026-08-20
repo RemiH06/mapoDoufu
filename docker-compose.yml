@@ -1,0 +1,40 @@
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: mapo_dev
+    volumes:
+      - mapo_db_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+
+  mapo_core:
+    build: ./mapo_core
+    ports:
+      - "8010:8010"
+    environment:
+      GAIARDA_API_URL: ${GAIARDA_API_URL:-http://host.docker.internal:8420}
+    volumes:
+      - ./mapo_core/src:/app/src
+
+  mapo:
+    build: ./mapo
+    ports:
+      - "4000:4000"
+    environment:
+      DATABASE_HOST: db
+      MAPO_CORE_URL: http://mapo_core:8010
+    depends_on:
+      - db
+      - mapo_core
+    volumes:
+      - ./mapo:/app
+      - mapo_build:/app/_build
+      - mapo_deps:/app/deps
+
+volumes:
+  mapo_db_data:
+  mapo_build:
+  mapo_deps:
