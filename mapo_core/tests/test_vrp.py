@@ -105,3 +105,35 @@ def test_ventana_de_tiempo_holgada_si_tiene_solucion():
     solucion = resolver_vrp(paradas, vehiculos)
 
     assert solucion is not None
+
+
+def test_matriz_km_precalculada_se_usa_en_vez_de_haversine():
+    # Distancia real muy distinta a la haversine (~100km), a proposito,
+    # para poder confirmar que sí se uso la matriz dada.
+    paradas = [DEPOSITO, PUEBLA]
+    vehiculos = [Vehiculo(capacidad=10)]
+    matriz_falsa = [[0, 999], [999, 0]]
+
+    solucion = resolver_vrp(paradas, vehiculos, matriz_km=matriz_falsa)
+
+    assert solucion is not None
+    assert solucion.distancia_total_km == pytest.approx(999 * 2, abs=0.01)
+
+
+def test_matriz_min_precalculada_se_usa_para_ventanas_de_tiempo():
+    # Con la matriz de distancia normal, a 40km/h esta parada es
+    # alcanzable en la ventana. Si en vez de eso se manda una matriz de
+    # tiempo (matriz_min) que dice que tarda mucho mas, debe volverse
+    # infactible: confirma que si se esta usando matriz_min y no
+    # recalculando desde matriz_km/velocidad_kmh.
+    lejos = Parada(lat=19.0414, lon=-98.2063, ventana_inicio_min=0, ventana_fin_min=60)
+    paradas = [DEPOSITO, lejos]
+    vehiculos = [Vehiculo(capacidad=10)]
+    matriz_km = matriz_haversine_km(paradas)
+    matriz_min_lenta = [[0, 500], [500, 0]]  # muy por encima de la ventana de 60 min
+
+    solucion = resolver_vrp(
+        paradas, vehiculos, matriz_km=matriz_km, matriz_min=matriz_min_lenta
+    )
+
+    assert solucion is None

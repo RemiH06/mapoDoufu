@@ -86,16 +86,24 @@ def resolver_vrp(
     deposito: int = 0,
     velocidad_kmh: float = 40.0,
     tiempo_limite_segundos: int = 5,
+    matriz_km: list[list[float]] | None = None,
+    matriz_min: list[list[float]] | None = None,
 ) -> SolucionVRP | None:
     """Resuelve el VRP. Regresa `None` si no hay solucion factible con
     esas restricciones (ej. la demanda total no cabe en la capacidad
     disponible, o una ventana de tiempo es imposible de cumplir), en
     vez de forzar una respuesta incorrecta.
+
+    `matriz_km`/`matriz_min`: si se dan (ej. del cliente OSRM,
+    distancia y duracion real por carretera), se usan tal cual en vez
+    de estimarlas. Sin ellas, cae a linea recta (haversine) para
+    distancia, y a `distancia / velocidad_kmh` para tiempo, igual que
+    el fallback honesto que ya usa Gaiarda cuando OSRM no responde.
     """
     if not paradas or not vehiculos:
         return None
 
-    matriz_km = matriz_haversine_km(paradas)
+    matriz_km = matriz_km if matriz_km is not None else matriz_haversine_km(paradas)
     n = len(paradas)
 
     manager = pywrapcp.RoutingIndexManager(n, len(vehiculos), deposito)
@@ -126,6 +134,8 @@ def resolver_vrp(
         def tiempo_callback(desde_idx: int, hasta_idx: int) -> int:
             desde = manager.IndexToNode(desde_idx)
             hasta = manager.IndexToNode(hasta_idx)
+            if matriz_min is not None:
+                return round(matriz_min[desde][hasta])
             horas = matriz_km[desde][hasta] / velocidad_kmh
             return round(horas * 60)
 

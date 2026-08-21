@@ -4,11 +4,14 @@ from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 
 from mapo_core.gaiarda_client import GaiardaClient
+from mapo_core.isocronas import calcular_isocrona
+from mapo_core.osrm_client import OSRMClient
 from mapo_core.vrp import Parada, Vehiculo, resolver_vrp
 
 app = FastAPI(title="mapo_core")
 
 _gaiarda_client: GaiardaClient | None = None
+_osrm_client: OSRMClient | None = None
 
 
 def get_gaiarda_client() -> GaiardaClient:
@@ -16,6 +19,13 @@ def get_gaiarda_client() -> GaiardaClient:
     if _gaiarda_client is None:
         _gaiarda_client = GaiardaClient()
     return _gaiarda_client
+
+
+def get_osrm_client() -> OSRMClient:
+    global _osrm_client
+    if _osrm_client is None:
+        _osrm_client = OSRMClient()
+    return _osrm_client
 
 
 @app.exception_handler(httpx.TransportError)
@@ -71,10 +81,16 @@ class SolicitudVRP(BaseModel):
 
 
 @app.post("/vrp/calcular")
-def vrp_calcular(solicitud: SolicitudVRP) -> dict:
-    """VRP con capacidad y ventanas de tiempo, via OR-Tools. Distancia
-    en linea recta (haversine) por ahora, no OSRM todavia (ver
-    MAPO_PENDIENTES.md)."""
+async def vrp_calcular(
+    solicitud: SolicitudVRP, osrm: OSRMClient = Depends(get_osrm_client)
+) -> dict:
+    """VRP con capacidad y ventanas de tiempo, via OR-Tools. Intenta
+    distancia y duracion real por carretera (OSRM) primero; si el
+    servicio no responde o algun tramo no es alcanzable, cae de vuelta
+    a linea recta (haversine), igual que el fallback honesto que ya
+    usa Gaiarda. El campo `metodo` de la respuesta siempre dice cual
+    de los dos se uso, nunca se le hace pasar una aproximacion por un
+    dato confirmado."""
     if solicitud.deposito < 0 or solicitud.deposito >= len(solicitud.paradas):
         raise HTTPException(400, "deposito debe ser un indice valido de paradas")
 
@@ -90,12 +106,25 @@ def vrp_calcular(solicitud: SolicitudVRP) -> dict:
     ]
     vehiculos = [Vehiculo(capacidad=c) for c in solicitud.capacidades_vehiculos]
 
-    solucion = resolver_vrp(
-        paradas,
-        vehiculos,
-        deposito=solicitud.deposito,
-        velocidad_kmh=solicitud.velocidad_kmh,
-    )
+    resultado_osrm = await osrm.matriz_carretera([(p.lat, p.lon) for p in paradas])
+
+    if resultado_osrm is not None:
+        solucion = resolver_vrp(
+            paradas,
+            vehiculos,
+            deposito=solicitud.deposito,
+            matriz_km=resultado_osrm["distancias_km"],
+            matriz_min=resultado_osrm["duraciones_min"],
+        )
+        metodo = "carretera_real"
+    else:
+        solucion = resolver_vrp(
+            paradas,
+            vehiculos,
+            deposito=solicitud.deposito,
+            velocidad_kmh=solicitud.velocidad_kmh,
+        )
+        metodo = "linea_recta_aproximada"
 
     if solucion is None:
         raise HTTPException(
@@ -112,5 +141,35 @@ def vrp_calcular(solicitud: SolicitudVRP) -> dict:
             for r in solucion.rutas
         ],
         "distancia_total_km": solucion.distancia_total_km,
-        "metodo": "linea_recta_aproximada",
+        "metodo": metodo,
     }
+
+
+class SolicitudIsocrona(BaseModel):
+    lat: float
+    lon: float
+    minutos: float
+    num_direcciones: int = 16
+
+
+@app.post("/isocronas/calcular")
+async def isocronas_calcular(
+    solicitud: SolicitudIsocrona, osrm: OSRMClient = Depends(get_osrm_client)
+) -> dict:
+    """Poligono del area alcanzable desde (lat, lon) en `minutos`,
+    por carretera real (OSRM) si esta disponible; circulo aproximado
+    si no. El campo `metodo` siempre dice cual de los dos se uso."""
+    if solicitud.minutos <= 0:
+        raise HTTPException(400, "minutos debe ser mayor que 0")
+    if solicitud.num_direcciones < 3:
+        raise HTTPException(400, "num_direcciones debe ser al menos 3")
+
+    resultado = await calcular_isocrona(
+        osrm,
+        solicitud.lat,
+        solicitud.lon,
+        solicitud.minutos,
+        num_direcciones=solicitud.num_direcciones,
+    )
+
+    return {"poligono": resultado.poligono, "metodo": resultado.metodo}
