@@ -2,6 +2,7 @@
    https://tailwindcss.com/docs/configuration */
 
 @import url("https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=Space+Mono:wght@400;700&display=swap");
+@import "../vendor/leaflet/leaflet.css";
 @import "tailwindcss" source(none);
 @import "phoenix-colocated/mapo/colocated.css";
 @source "../css";

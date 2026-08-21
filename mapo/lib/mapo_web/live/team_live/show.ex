@@ -2,6 +2,7 @@ defmodule MapoWeb.TeamLive.Show do
   use MapoWeb, :live_view
 
   alias Mapo.Teams
+  alias Mapo.Sesiones
 
   @role_labels %{owner: "Dueño", admin: "Administrador", member: "Miembro"}
 
@@ -54,6 +55,27 @@ defmodule MapoWeb.TeamLive.Show do
           </.button>
         </.form>
       </div>
+
+      <h3 class="font-mono text-sm font-bold mt-8 mb-2">Sesiones</h3>
+      <p :if={@sesiones == []} class="text-sm text-base-content/70">
+        Este equipo todavía no tiene ninguna sesión.
+      </p>
+      <ul class="space-y-2">
+        <li :for={s <- @sesiones} class="card bg-base-200 p-3">
+          <.link navigate={~p"/sesiones/#{s}"} class="font-semibold hover:underline">
+            {s.nombre}
+          </.link>
+        </li>
+      </ul>
+
+      <.form for={@sesion_form} id="sesion_form" phx-submit="crear_sesion" class="mt-4 flex gap-2 items-start">
+        <div class="flex-1">
+          <.input field={@sesion_form[:nombre]} type="text" label="Nueva sesión" required />
+        </div>
+        <.button phx-disable-with="Creando..." class="btn btn-primary mt-6">
+          Crear
+        </.button>
+      </.form>
     </Layouts.app>
     """
   end
@@ -73,7 +95,9 @@ defmodule MapoWeb.TeamLive.Show do
        memberships: memberships,
        owner_count: Enum.count(memberships, &(&1.role == :owner)),
        add_form: to_form(%{"email" => "", "role" => "member"}, as: "member"),
-       role_labels: @role_labels
+       role_labels: @role_labels,
+       sesiones: Sesiones.list_sesiones(scope, team.id),
+       sesion_form: to_form(%{"nombre" => ""}, as: "sesion")
      )}
   end
 
@@ -124,6 +148,19 @@ defmodule MapoWeb.TeamLive.Show do
       {:error, :last_owner} ->
         {:noreply,
          put_flash(socket, :error, "No puedes quitar al único dueño del equipo.")}
+    end
+  end
+
+  def handle_event("crear_sesion", %{"sesion" => %{"nombre" => nombre}}, socket) do
+    scope = socket.assigns.current_scope
+    team = socket.assigns.team
+
+    case Sesiones.create_sesion(scope, team.id, %{"nombre" => nombre}) do
+      {:ok, sesion} ->
+        {:noreply, push_navigate(socket, to: ~p"/sesiones/#{sesion}")}
+
+      {:error, changeset} ->
+        {:noreply, assign(socket, sesion_form: to_form(changeset, action: :insert, as: "sesion"))}
     end
   end
 end

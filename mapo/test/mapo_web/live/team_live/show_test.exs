@@ -102,4 +102,31 @@ defmodule MapoWeb.TeamLive.ShowTest do
     assert {:redirect, %{to: path}} = redirect
     assert path == ~p"/users/log-in"
   end
+
+  test "creates a sesion and redirects straight to its collaborative map", %{
+    conn: conn,
+    scope: scope
+  } do
+    team = team_fixture(scope)
+
+    {:ok, lv, _html} = live(conn, ~p"/teams/#{team}")
+
+    {:ok, sesion_live, html} =
+      lv
+      |> form("#sesion_form", sesion: %{nombre: "Mapa de arranque"})
+      |> render_submit()
+      |> follow_redirect(conn)
+
+    assert html =~ "Mapa de arranque"
+    assert sesion_live
+  end
+
+  test "lists existing sesiones", %{conn: conn, scope: scope} do
+    team = team_fixture(scope)
+    sesion = Mapo.SesionesFixtures.sesion_fixture(scope, team, %{"nombre" => "Ya existente"})
+
+    {:ok, _lv, html} = live(conn, ~p"/teams/#{team}")
+
+    assert html =~ sesion.nombre
+  end
 end

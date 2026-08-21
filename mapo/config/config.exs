@@ -24,6 +24,10 @@ config :mapo,
   ecto_repos: [Mapo.Repo],
   generators: [timestamp_type: :utc_datetime]
 
+# Le enseña a Postgrex los tipos de geometria de PostGIS (Geo.Point,
+# etc.), para las anotaciones de las sesiones colaborativas.
+config :mapo, Mapo.Repo, types: Mapo.PostgresTypes
+
 # Configure the endpoint
 config :mapo, MapoWeb.Endpoint,
   url: [host: "localhost"],

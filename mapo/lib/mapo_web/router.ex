@@ -58,6 +58,8 @@ defmodule MapoWeb.Router do
       live "/teams", TeamLive.Index, :index
       live "/teams/new", TeamLive.New, :new
       live "/teams/:id", TeamLive.Show, :show
+
+      live "/sesiones/:id", SesionLive.Show, :show
     end
 
     post "/users/update-password", UserSessionController, :update_password
