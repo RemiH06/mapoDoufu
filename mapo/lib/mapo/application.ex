@@ -12,6 +12,7 @@ defmodule Mapo.Application do
       Mapo.Repo,
       {DNSCluster, query: Application.get_env(:mapo, :dns_cluster_query) || :ignore},
       {Phoenix.PubSub, name: Mapo.PubSub},
+      MapoWeb.Presence,
       # Start a worker by calling: Mapo.Worker.start_link(arg)
       # {Mapo.Worker, arg},
       # Start to serve requests, typically the last entry

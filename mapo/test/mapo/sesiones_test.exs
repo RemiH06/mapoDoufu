@@ -90,5 +90,72 @@ defmodule Mapo.SesionesTest do
       assert b.id == segunda.id
       assert a.user.email == scope.user.email
     end
+
+    test "update_anotacion/4 changes the text and broadcasts it, any team member can do it" do
+      owner_scope = user_scope_fixture()
+      team = team_fixture(owner_scope)
+      sesion = sesion_fixture(owner_scope, team)
+      {:ok, anotacion} = Sesiones.create_anotacion(owner_scope, sesion, 19.0, -99.0, "original")
+
+      otro_miembro = user_fixture()
+      {:ok, _} = Mapo.Teams.create_membership(%{team_id: team.id, user_id: otro_miembro.id, role: :member})
+      otro_scope = Mapo.Accounts.Scope.for_user(otro_miembro)
+
+      Sesiones.subscribe_sesion(sesion.id)
+
+      assert {:ok, actualizada} = Sesiones.update_anotacion(otro_scope, sesion, anotacion, "editado")
+      assert actualizada.texto == "editado"
+      assert_received {:anotacion_actualizada, ^actualizada}
+    end
+
+    test "update_anotacion/4 requires the scope to be a team member" do
+      owner_scope = user_scope_fixture()
+      team = team_fixture(owner_scope)
+      sesion = sesion_fixture(owner_scope, team)
+      {:ok, anotacion} = Sesiones.create_anotacion(owner_scope, sesion, 19.0, -99.0, "original")
+      outsider = user_scope_fixture()
+
+      assert_raise MatchError, fn ->
+        Sesiones.update_anotacion(outsider, sesion, anotacion, "hackeo")
+      end
+    end
+
+    test "update_anotacion/4 rejects an annotation that belongs to a different session" do
+      owner_scope = user_scope_fixture()
+      team = team_fixture(owner_scope)
+      sesion_a = sesion_fixture(owner_scope, team)
+      sesion_b = sesion_fixture(owner_scope, team)
+      {:ok, anotacion_de_a} = Sesiones.create_anotacion(owner_scope, sesion_a, 19.0, -99.0, "de a")
+
+      assert_raise MatchError, fn ->
+        Sesiones.update_anotacion(owner_scope, sesion_b, anotacion_de_a, "hackeo")
+      end
+    end
+
+    test "delete_anotacion/3 removes it and broadcasts the id" do
+      scope = user_scope_fixture()
+      team = team_fixture(scope)
+      sesion = sesion_fixture(scope, team)
+      {:ok, anotacion} = Sesiones.create_anotacion(scope, sesion, 19.0, -99.0, "borrame")
+
+      Sesiones.subscribe_sesion(sesion.id)
+
+      assert {:ok, _} = Sesiones.delete_anotacion(scope, sesion, anotacion)
+      assert_raise Ecto.NoResultsError, fn -> Sesiones.get_anotacion!(anotacion.id) end
+      id = anotacion.id
+      assert_received {:anotacion_borrada, ^id}
+    end
+
+    test "delete_anotacion/3 requires the scope to be a team member" do
+      owner_scope = user_scope_fixture()
+      team = team_fixture(owner_scope)
+      sesion = sesion_fixture(owner_scope, team)
+      {:ok, anotacion} = Sesiones.create_anotacion(owner_scope, sesion, 19.0, -99.0, "original")
+      outsider = user_scope_fixture()
+
+      assert_raise MatchError, fn ->
+        Sesiones.delete_anotacion(outsider, sesion, anotacion)
+      end
+    end
   end
 end

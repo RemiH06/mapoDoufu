@@ -5,10 +5,11 @@ defmodule Mapo.Sesiones do
   MAPO_FUNDAMENTOS.md, seccion de base de datos, para el porque de
   PostGIS especificamente para esto.
 
-  Autorizacion: cualquier miembro del equipo (cualquier rol) puede ver
-  y anotar una sesion. No hay niveles distintos aqui todavia (a
-  diferencia de Teams, donde editar/borrar el equipo si distingue
-  owner/admin/member).
+  Autorizacion: cualquier miembro del equipo (cualquier rol) puede ver,
+  anotar, editar y borrar anotaciones de una sesion. No hay niveles
+  distintos aqui todavia (a diferencia de Teams, donde editar/borrar el
+  equipo si distingue owner/admin/member): es un pizarron compartido
+  del equipo, no algo con dueno individual por anotacion.
   """
 
   import Ecto.Query, warn: false
@@ -61,12 +62,20 @@ defmodule Mapo.Sesiones do
 
   @topic_prefix "sesion:"
 
+  @doc """
+  Nombre del topico de PubSub de una sesion. Se comparte entre los
+  broadcasts de anotaciones de este modulo y el tracking de presencia
+  (`MapoWeb.Presence`) en `SesionLive.Show`: no hay razon para tener
+  dos canales separados para "quien esta viendo" y "que esta pasando".
+  """
+  def topico_sesion(sesion_id), do: @topic_prefix <> to_string(sesion_id)
+
   def subscribe_sesion(sesion_id) do
-    Phoenix.PubSub.subscribe(Mapo.PubSub, @topic_prefix <> to_string(sesion_id))
+    Phoenix.PubSub.subscribe(Mapo.PubSub, topico_sesion(sesion_id))
   end
 
   defp broadcast_sesion(sesion_id, mensaje) do
-    Phoenix.PubSub.broadcast(Mapo.PubSub, @topic_prefix <> to_string(sesion_id), mensaje)
+    Phoenix.PubSub.broadcast(Mapo.PubSub, topico_sesion(sesion_id), mensaje)
   end
 
   @doc """
@@ -87,6 +96,41 @@ defmodule Mapo.Sesiones do
     with {:ok, anotacion} <- %Anotacion{} |> Anotacion.changeset(attrs) |> Repo.insert() do
       anotacion = Repo.preload(anotacion, :user)
       broadcast_sesion(sesion.id, {:anotacion_creada, anotacion})
+      {:ok, anotacion}
+    end
+  end
+
+  @doc "Trae una anotacion por id. No valida pertenencia a ninguna sesion: eso lo hacen update/delete."
+  def get_anotacion!(id), do: Repo.get!(Anotacion, id)
+
+  @doc """
+  Cambia el texto de una anotacion existente y transmite el cambio en
+  vivo. Requiere que el scope sea miembro del equipo dueno, y que la
+  anotacion de verdad pertenezca a `sesion` (no a otra sesion cuyo id
+  alguien haya adivinado).
+  """
+  def update_anotacion(%Scope{} = scope, %Sesion{} = sesion, %Anotacion{} = anotacion, texto) do
+    true = Teams.role_in_team(scope, sesion.team_id) != nil
+    true = anotacion.sesion_id == sesion.id
+
+    with {:ok, anotacion} <-
+           anotacion |> Anotacion.changeset(%{"texto" => texto}) |> Repo.update() do
+      anotacion = Repo.preload(anotacion, :user)
+      broadcast_sesion(sesion.id, {:anotacion_actualizada, anotacion})
+      {:ok, anotacion}
+    end
+  end
+
+  @doc """
+  Borra una anotacion y transmite el borrado en vivo. Mismas
+  validaciones que `update_anotacion/4`.
+  """
+  def delete_anotacion(%Scope{} = scope, %Sesion{} = sesion, %Anotacion{} = anotacion) do
+    true = Teams.role_in_team(scope, sesion.team_id) != nil
+    true = anotacion.sesion_id == sesion.id
+
+    with {:ok, anotacion} <- Repo.delete(anotacion) do
+      broadcast_sesion(sesion.id, {:anotacion_borrada, anotacion.id})
       {:ok, anotacion}
     end
   end
