@@ -16,29 +16,34 @@
 ![Maintained](https://img.shields.io/badge/Maintained%3F-yes-green.svg?style=for-the-badge)
 ![MIT](https://img.shields.io/badge/License-MIT-blue.svg?style=for-the-badge)
 
-## :compass: ¿Qué es Mapo?
+## Qué es Mapo
 
-Gaiarda contesta "qué hay": descarga y organiza datos abiertos de
-México en un dashboard explorable. **Mapo contesta "qué deberías hacer
-con eso"**: cruza esos datos para responder preguntas con una decisión
-implícita adentro (dónde poner un negocio, en qué colonias buscar
-cierto perfil de gente, dónde le faltan servicios públicos al
-gobierno).
+Mapo es un sistema de apoyo a decisiones construido sobre datos
+abiertos de México. A partir de información geoespacial, demográfica,
+económica y de seguridad, ayuda a responder preguntas que ya traen una
+decisión implícita: dónde conviene abrir un negocio, en qué colonias
+buscar cierto perfil de población, o dónde le faltan servicios
+públicos al gobierno.
+
+Se construye sobre Gaiarda, el proyecto hermano que descarga y
+organiza esos datos. Gaiarda contesta qué hay; Mapo contesta qué
+conviene hacer con eso.
 
 **Mapo, powered by Gaiarda.**
 
-Dos modos de uso:
+Ofrece dos formas de consultarlo:
 
-- **Modo técnico**: mapas personalizables, capas y estadísticas
+- **Modo técnico**: mapas personalizables, con capas y estadísticas
   cruzadas de múltiples fuentes, isócronas y otras vistas espaciales.
 - **Modo buscador**: preguntas simples en lenguaje natural acotado
-  ("¿dónde pongo una floristería?"), resueltas por un sistema experto
-  contra la misma data del modo técnico, sin generar texto libre.
+  (por ejemplo, "¿dónde pongo una floristería?"), resueltas por un
+  sistema experto sobre los mismos datos del modo técnico, sin generar
+  texto libre.
 
-El detalle completo de producto vive en `MAPO_FUNDAMENTOS.md` (fuera
-de este repo público, documento de trabajo interno).
+El detalle completo del producto vive en `MAPO_FUNDAMENTOS.md`, fuera
+de este repositorio público, como documento de trabajo interno.
 
-## :building_construction: Estructura de este repositorio
+## Estructura del repositorio
 
 ```
 .
@@ -54,30 +59,31 @@ de este repo público, documento de trabajo interno).
 └── docker-compose.yml
 ```
 
-`mapo` y `mapo_core` se hablan por HTTP. `mapo_core` no vuelve a
-descargar ni normalizar nada que Gaiarda ya resuelve, solo agrega lo
-que Gaiarda no necesita: el motor de logística comercial.
+`mapo` y `mapo_core` se comunican por HTTP. `mapo_core` no vuelve a
+descargar ni normalizar nada que Gaiarda ya resuelve; solo agrega lo
+que Gaiarda no necesita, como el motor de logística comercial.
 
-## :rocket: Arranque rápido
+## Arranque rápido
 
 ```bash
 docker compose up
 ```
 
-Levanta la base de datos (Postgres, para sesiones de Mapo), el
-servicio de datos/decisión en Python y la app Elixir/Phoenix.
+Levanta la base de datos (Postgres, para las sesiones de Mapo), el
+servicio de datos y decisión en Python, y la aplicación Elixir/Phoenix.
 
-## :art: Identidad visual
+## Identidad visual
 
-Dos temas, mismo lenguaje visual, pensados para partes distintas del
-producto:
+Dos temas, con el mismo lenguaje visual, pensados para partes
+distintas del producto:
 
-- **metro**: tema principal, para prácticamente toda la app.
-- **elixir** (sin relación con el lenguaje Elixir): para el apartado
-  de análisis de mapas/datos y cualquier dashboard.
+- **metro**: tema principal, usado en prácticamente toda la
+  aplicación.
+- **elixir** (sin relación con el lenguaje Elixir): reservado para el
+  apartado de análisis de mapas y datos, y para cualquier dashboard.
 
-Ambos con modo claro/oscuro y animaciones de fondo, que se pueden
-apagar desde configuración. Ver `design/`.
+Ambos incluyen modo claro/oscuro y animaciones de fondo, que se pueden
+desactivar desde configuración. Ver `design/`.
 
 ## Licencia
 
