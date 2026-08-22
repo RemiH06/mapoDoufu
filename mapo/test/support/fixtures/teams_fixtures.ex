@@ -37,4 +37,18 @@ defmodule Mapo.TeamsFixtures do
     {:ok, membership} = Mapo.Teams.create_membership(attrs)
     membership
   end
+
+  @doc """
+  Generate a pending invitacion for `team`, invited by `scope`'s user.
+  """
+  def invitacion_fixture(scope, team, attrs \\ %{}) do
+    attrs = Enum.into(attrs, %{})
+    email = attrs[:email] || "invitado#{System.unique_integer()}@example.com"
+    role = attrs[:role] || :member
+
+    {:ok, invitacion} =
+      Mapo.Teams.invitar_por_correo(scope, team, email, role, fn token -> "http://localhost/invitaciones/#{token}" end)
+
+    invitacion
+  end
 end

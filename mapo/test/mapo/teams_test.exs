@@ -155,4 +155,119 @@ defmodule Mapo.TeamsTest do
       assert %Ecto.Changeset{} = Teams.change_membership(membership)
     end
   end
+
+  describe "invitaciones" do
+    alias Mapo.Teams.Invitacion
+
+    import Mapo.AccountsFixtures, only: [user_scope_fixture: 0, user_fixture: 1]
+    import Mapo.TeamsFixtures
+
+    test "invitar_por_correo/5 creates a pending invitacion and emails the invite url" do
+      scope = user_scope_fixture()
+      team = team_fixture(scope)
+      test_pid = self()
+
+      assert {:ok, %Invitacion{} = invitacion} =
+               Teams.invitar_por_correo(scope, team, "nadie@example.com", :member, fn token ->
+                 send(test_pid, {:invite_url, token})
+                 "http://localhost/invitaciones/#{token}"
+               end)
+
+      assert invitacion.email == "nadie@example.com"
+      assert invitacion.estado == :pendiente
+      assert invitacion.token != nil
+      assert_received {:invite_url, token}
+      assert token == invitacion.token
+    end
+
+    test "invitar_por_correo/5 reuses the same token for a repeat invite to the same email" do
+      scope = user_scope_fixture()
+      team = team_fixture(scope)
+
+      {:ok, first} = Teams.invitar_por_correo(scope, team, "nadie@example.com", :member, &"/#{&1}")
+      {:ok, second} = Teams.invitar_por_correo(scope, team, "nadie@example.com", :admin, &"/#{&1}")
+
+      assert first.token == second.token
+      assert second.role == :admin
+      assert Teams.list_invitaciones_pendientes(scope, team) |> length() == 1
+    end
+
+    test "invitar_por_correo/5 with a scope that is not owner/admin raises" do
+      scope = user_scope_fixture()
+      other_scope = user_scope_fixture()
+      team = team_fixture(scope)
+
+      assert_raise MatchError, fn ->
+        Teams.invitar_por_correo(other_scope, team, "nadie@example.com", :member, &"/#{&1}")
+      end
+    end
+
+    test "get_invitacion_por_token/1 returns the invitacion with its team preloaded" do
+      scope = user_scope_fixture()
+      team = team_fixture(scope)
+      invitacion = invitacion_fixture(scope, team)
+
+      found = Teams.get_invitacion_por_token(invitacion.token)
+      assert found.id == invitacion.id
+      assert found.team.id == team.id
+    end
+
+    test "get_invitacion_por_token/1 returns nil for an unknown token" do
+      assert Teams.get_invitacion_por_token("no-existe") == nil
+    end
+
+    test "aceptar_invitacion/2 creates a membership and marks the invitacion as aceptada" do
+      owner_scope = user_scope_fixture()
+      team = team_fixture(owner_scope)
+      invitado = user_fixture(%{email: "invitado@example.com"})
+      invitado_scope = Mapo.Accounts.Scope.for_user(invitado)
+
+      invitacion = invitacion_fixture(owner_scope, team, %{email: "invitado@example.com"})
+
+      assert {:ok, aceptada} = Teams.aceptar_invitacion(invitado_scope, invitacion)
+      assert aceptada.estado == :aceptada
+      assert Teams.role_in_team(invitado_scope, team.id) == :member
+    end
+
+    test "aceptar_invitacion/2 with a mismatched email raises" do
+      owner_scope = user_scope_fixture()
+      team = team_fixture(owner_scope)
+      otro_scope = user_scope_fixture()
+
+      invitacion = invitacion_fixture(owner_scope, team, %{email: "alguien@example.com"})
+
+      assert_raise MatchError, fn ->
+        Teams.aceptar_invitacion(otro_scope, invitacion)
+      end
+    end
+
+    test "list_invitaciones_pendientes/2 lists only pending invitaciones for the team" do
+      scope = user_scope_fixture()
+      team = team_fixture(scope)
+      invitacion_fixture(scope, team, %{email: "a@example.com"})
+      invitacion_fixture(scope, team, %{email: "b@example.com"})
+
+      assert Teams.list_invitaciones_pendientes(scope, team) |> length() == 2
+    end
+
+    test "cancelar_invitacion/2 deletes a pending invitacion" do
+      scope = user_scope_fixture()
+      team = team_fixture(scope)
+      invitacion = invitacion_fixture(scope, team)
+
+      assert {:ok, %Invitacion{}} = Teams.cancelar_invitacion(scope, invitacion)
+      assert Teams.list_invitaciones_pendientes(scope, team) == []
+    end
+
+    test "cancelar_invitacion/2 with a scope that is not owner/admin raises" do
+      scope = user_scope_fixture()
+      other_scope = user_scope_fixture()
+      team = team_fixture(scope)
+      invitacion = invitacion_fixture(scope, team)
+
+      assert_raise MatchError, fn ->
+        Teams.cancelar_invitacion(other_scope, invitacion)
+      end
+    end
+  end
 end

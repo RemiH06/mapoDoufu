@@ -56,6 +56,29 @@ defmodule MapoWeb.TeamLive.Show do
         </.form>
       </div>
 
+      <div :if={@can_manage? and @invitaciones_pendientes != []} class="mt-8">
+        <h3 class="font-mono text-sm font-bold mb-2">Invitaciones pendientes</h3>
+        <ul class="space-y-2">
+          <li
+            :for={i <- @invitaciones_pendientes}
+            class="card bg-base-200 p-3 flex flex-row items-center justify-between"
+          >
+            <div>
+              <span>{i.email}</span>
+              <span class="badge ml-2">{@role_labels[i.role]}</span>
+            </div>
+            <.button
+              phx-click="cancelar_invitacion"
+              phx-value-id={i.id}
+              data-confirm="¿Cancelar esta invitación?"
+              class="btn btn-sm btn-soft btn-error"
+            >
+              Cancelar
+            </.button>
+          </li>
+        </ul>
+      </div>
+
       <h3 class="font-mono text-sm font-bold mt-8 mb-2">Sesiones</h3>
       <p :if={@sesiones == []} class="text-sm text-base-content/70">
         Este equipo todavía no tiene ninguna sesión.
@@ -96,6 +119,7 @@ defmodule MapoWeb.TeamLive.Show do
        owner_count: Enum.count(memberships, &(&1.role == :owner)),
        add_form: to_form(%{"email" => "", "role" => "member"}, as: "member"),
        role_labels: @role_labels,
+       invitaciones_pendientes: Teams.list_invitaciones_pendientes(scope, team),
        sesiones: Sesiones.list_sesiones(scope, team.id),
        sesion_form: to_form(%{"nombre" => ""}, as: "sesion")
      )}
@@ -120,12 +144,39 @@ defmodule MapoWeb.TeamLive.Show do
          )}
 
       {:error, :not_found} ->
-        {:noreply, put_flash(socket, :error, "No existe ninguna cuenta con ese correo.")}
+        role_atom = String.to_existing_atom(role)
+
+        case Teams.invitar_por_correo(scope, team, email, role_atom, &url(~p"/invitaciones/#{&1}")) do
+          {:ok, _invitacion} ->
+            {:noreply,
+             socket
+             |> put_flash(:info, "Se envió una invitación a #{email}.")
+             |> assign(
+               invitaciones_pendientes: Teams.list_invitaciones_pendientes(scope, team),
+               add_form: to_form(%{"email" => "", "role" => "member"}, as: "member")
+             )}
+
+          {:error, %Ecto.Changeset{}} ->
+            {:noreply, put_flash(socket, :error, "No se pudo enviar la invitación.")}
+        end
 
       {:error, %Ecto.Changeset{}} ->
         {:noreply,
          put_flash(socket, :error, "Esa persona ya es miembro de este equipo.")}
     end
+  end
+
+  def handle_event("cancelar_invitacion", %{"id" => id}, socket) do
+    scope = socket.assigns.current_scope
+    team = socket.assigns.team
+    invitacion = Teams.get_invitacion!(id)
+
+    {:ok, _invitacion} = Teams.cancelar_invitacion(scope, invitacion)
+
+    {:noreply,
+     socket
+     |> put_flash(:info, "Invitación cancelada.")
+     |> assign(invitaciones_pendientes: Teams.list_invitaciones_pendientes(scope, team))}
   end
 
   def handle_event("remove_member", %{"id" => id}, socket) do

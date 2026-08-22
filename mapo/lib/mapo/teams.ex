@@ -8,6 +8,8 @@ defmodule Mapo.Teams do
 
   alias Mapo.Teams.Team
   alias Mapo.Teams.Membership
+  alias Mapo.Teams.Invitacion
+  alias Mapo.Teams.TeamNotifier
   alias Mapo.Accounts.Scope
 
   @doc """
@@ -315,5 +317,106 @@ defmodule Mapo.Teams do
   """
   def change_membership(%Membership{} = membership, attrs \\ %{}) do
     Membership.changeset(membership, attrs)
+  end
+
+  @doc """
+  Invita por correo a alguien a un equipo, tenga o no cuenta en Mapo
+  todavia. Requiere que el scope sea `:owner` o `:admin` del equipo.
+
+  Si ya existe una invitacion pendiente para ese correo en ese equipo,
+  la reutiliza (no duplica) y reenvia el correo.
+  """
+  def invitar_por_correo(%Scope{} = scope, %Team{} = team, email, role, url_fn)
+      when role in [:member, :admin] and is_function(url_fn, 1) do
+    true = role_in_team(scope, team.id) in [:owner, :admin]
+
+    invitacion =
+      Repo.get_by(Invitacion, team_id: team.id, email: email, estado: :pendiente) ||
+        %Invitacion{}
+
+    attrs = %{
+      email: email,
+      role: role,
+      token: invitacion.token || generar_token(),
+      estado: :pendiente,
+      team_id: team.id,
+      invitado_por_id: scope.user.id
+    }
+
+    with {:ok, invitacion} <-
+           invitacion
+           |> Invitacion.changeset(attrs)
+           |> Repo.insert_or_update() do
+      TeamNotifier.deliver_invitacion(invitacion, team, url_fn.(invitacion.token))
+      {:ok, invitacion}
+    end
+  end
+
+  defp generar_token do
+    :crypto.strong_rand_bytes(32) |> Base.url_encode64(padding: false)
+  end
+
+  @doc """
+  Busca una invitacion pendiente o aceptada por su token. Devuelve `nil`
+  si no existe. Precarga `:team`.
+  """
+  def get_invitacion_por_token(token) do
+    Repo.get_by(Invitacion, token: token) |> Repo.preload(:team)
+  end
+
+  @doc """
+  Gets a single invitacion.
+
+  Raises `Ecto.NoResultsError` if the Invitacion does not exist.
+  """
+  def get_invitacion!(id), do: Repo.get!(Invitacion, id)
+
+  @doc """
+  Returns the list of pending invitaciones for a team. Requires the scoped
+  user to belong to the team.
+  """
+  def list_invitaciones_pendientes(%Scope{} = scope, %Team{} = team) do
+    true = role_in_team(scope, team.id) != nil
+
+    Repo.all(
+      from i in Invitacion,
+        where: i.team_id == ^team.id and i.estado == :pendiente,
+        order_by: i.inserted_at
+    )
+  end
+
+  @doc """
+  Acepta una invitacion pendiente para el usuario del scope. Requiere que
+  el correo de la invitacion coincida (sin distinguir mayusculas) con el
+  correo del usuario. Crea la membresia y marca la invitacion como
+  aceptada, todo en una transaccion.
+  """
+  def aceptar_invitacion(%Scope{} = scope, %Invitacion{estado: :pendiente} = invitacion) do
+    true = String.downcase(invitacion.email) == String.downcase(scope.user.email)
+
+    Repo.transaction(fn ->
+      with {:ok, _membership} <-
+             create_membership(%{
+               team_id: invitacion.team_id,
+               user_id: scope.user.id,
+               role: invitacion.role
+             }),
+           {:ok, invitacion} <-
+             invitacion |> Invitacion.changeset(%{estado: :aceptada}) |> Repo.update() do
+        invitacion
+      else
+        {:error, changeset} -> Repo.rollback(changeset)
+      end
+    end)
+  end
+
+  @doc """
+  Cancela (borra) una invitacion pendiente. Requiere que el scope sea
+  `:owner` o `:admin` del equipo de la invitacion.
+  """
+  def cancelar_invitacion(%Scope{} = scope, %Invitacion{} = invitacion) do
+    true = role_in_team(scope, invitacion.team_id) in [:owner, :admin]
+
+    Repo.delete(invitacion)
   end
 end

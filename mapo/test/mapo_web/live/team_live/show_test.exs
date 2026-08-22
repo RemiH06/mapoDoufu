@@ -57,7 +57,7 @@ defmodule MapoWeb.TeamLive.ShowTest do
     assert Teams.role_in_team(scope, team.id) |> is_atom()
   end
 
-  test "adding a member with an unknown email shows an error", %{conn: conn, scope: scope} do
+  test "adding a member with an unknown email sends an invitation", %{conn: conn, scope: scope} do
     team = team_fixture(scope)
 
     {:ok, lv, _html} = live(conn, ~p"/teams/#{team}")
@@ -67,7 +67,29 @@ defmodule MapoWeb.TeamLive.ShowTest do
       |> form("#add_member_form", member: %{email: "nadie@example.com", role: "member"})
       |> render_submit()
 
-    assert html =~ "No existe ninguna cuenta con ese correo."
+    assert html =~ "Se envió una invitación a nadie@example.com."
+    assert html =~ "Invitaciones pendientes"
+    assert html =~ "nadie@example.com"
+    assert Teams.list_invitaciones_pendientes(scope, team) |> length() == 1
+  end
+
+  test "owner cancels a pending invitation", %{conn: conn, scope: scope} do
+    team = team_fixture(scope)
+
+    {:ok, lv, _html} = live(conn, ~p"/teams/#{team}")
+
+    lv
+    |> form("#add_member_form", member: %{email: "nadie@example.com", role: "member"})
+    |> render_submit()
+
+    html =
+      lv
+      |> element("[phx-click='cancelar_invitacion']")
+      |> render_click()
+
+    assert html =~ "Invitación cancelada."
+    refute html =~ "nadie@example.com"
+    assert Teams.list_invitaciones_pendientes(scope, team) == []
   end
 
   test "owner removes a member", %{conn: conn, scope: scope} do
