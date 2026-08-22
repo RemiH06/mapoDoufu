@@ -103,6 +103,31 @@ async def test_censo_poblacion_devuelve_lista():
 
 
 @pytest.mark.asyncio
+async def test_choropleth_censo_poblacion_manda_indicador_y_cve_ent():
+    capturado = {}
+    geojson = {"type": "FeatureCollection", "features": []}
+    cliente = _cliente_con_respuesta(capturado, geojson)
+
+    resultado = await cliente.choropleth_censo_poblacion("pobtot", "14")
+
+    assert capturado["path"] == "/choropleth/censo_poblacion"
+    assert capturado["params"] == {"indicador": "pobtot", "cve_ent": "14"}
+    assert resultado == geojson
+    await cliente.aclose()
+
+
+@pytest.mark.asyncio
+async def test_choropleth_censo_poblacion_incluye_cve_mun_si_se_da():
+    capturado = {}
+    cliente = _cliente_con_respuesta(capturado, {"type": "FeatureCollection", "features": []})
+
+    await cliente.choropleth_censo_poblacion("pobtot", "14", cve_mun="039")
+
+    assert capturado["params"] == {"indicador": "pobtot", "cve_ent": "14", "cve_mun": "039"}
+    await cliente.aclose()
+
+
+@pytest.mark.asyncio
 async def test_sesnsp_manda_filtros_de_anio_como_string():
     capturado = {}
     cliente = _cliente_con_respuesta(capturado, [])

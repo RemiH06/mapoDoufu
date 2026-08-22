@@ -58,11 +58,26 @@ async def gaiarda_status(client: GaiardaClient = Depends(get_gaiarda_client)) ->
     return await client.status()
 
 
+@app.get("/gaiarda/estados")
+async def gaiarda_estados(client: GaiardaClient = Depends(get_gaiarda_client)) -> dict:
+    return await client.estados()
+
+
 @app.get("/gaiarda/municipios")
 async def gaiarda_municipios(
     cve_ent: str | None = None, client: GaiardaClient = Depends(get_gaiarda_client)
 ) -> dict:
     return await client.municipios(cve_ent=cve_ent)
+
+
+@app.get("/gaiarda/choropleth/censo_poblacion")
+async def gaiarda_choropleth_censo_poblacion(
+    indicador: str,
+    cve_ent: str,
+    cve_mun: str | None = None,
+    client: GaiardaClient = Depends(get_gaiarda_client),
+) -> dict:
+    return await client.choropleth_censo_poblacion(indicador, cve_ent, cve_mun=cve_mun)
 
 
 class ParadaEntrada(BaseModel):

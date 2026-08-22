@@ -26,6 +26,13 @@ config :mapo, MapoWeb.Endpoint,
 # In test we don't send emails
 config :mapo, Mapo.Mailer, adapter: Swoosh.Adapters.Test
 
+# En test nunca se pega a mapo_core de verdad: Req.Test intercepta la
+# llamada, cada test controla la respuesta con Req.Test.stub/2.
+# `retry: false` evita que los tests de status distinto de 200 tarden
+# varios segundos en los reintentos automaticos de Req.
+config :mapo, :mapo_core_url, "http://mapo_core.test"
+config :mapo, :mapo_core_req_options, plug: {Req.Test, Mapo.MapoCore}, retry: false
+
 # Disable swoosh api client as it is only required for production adapters
 config :swoosh, :api_client, false
 

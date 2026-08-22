@@ -88,6 +88,21 @@ class GaiardaClient:
             params=_sin_none(cve_ent=cve_ent, cve_mun=cve_mun, nivel=nivel),
         )
 
+    async def choropleth_censo_poblacion(
+        self,
+        indicador: str,
+        cve_ent: str,
+        cve_mun: str | None = None,
+    ) -> dict:
+        """FeatureCollection de AGEBs (poligono real) con el valor del
+        indicador del censo ya cruzado en `properties.valor_choropleth`.
+        Un AGEB sin dato de censo trae `valor_choropleth: null`, no se
+        inventa un cero."""
+        return await self._get(
+            "/choropleth/censo_poblacion",
+            params=_sin_none(indicador=indicador, cve_ent=cve_ent, cve_mun=cve_mun),
+        )
+
     async def sesnsp(
         self,
         cve_ent: str | None = None,

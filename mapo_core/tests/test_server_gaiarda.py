@@ -19,8 +19,18 @@ class _ClienteFalso:
             raise self._error
         return {"version": "0.3.0"}
 
+    async def estados(self):
+        self.llamadas.append(("estados", {}))
+        return {"type": "FeatureCollection", "features": []}
+
     async def municipios(self, cve_ent=None):
         self.llamadas.append(("municipios", {"cve_ent": cve_ent}))
+        return {"type": "FeatureCollection", "features": []}
+
+    async def choropleth_censo_poblacion(self, indicador, cve_ent, cve_mun=None):
+        self.llamadas.append(
+            ("choropleth_censo_poblacion", {"indicador": indicador, "cve_ent": cve_ent, "cve_mun": cve_mun})
+        )
         return {"type": "FeatureCollection", "features": []}
 
 
@@ -49,6 +59,43 @@ def test_gaiarda_municipios_pasa_el_query_param():
 
     assert respuesta.status_code == 200
     assert falso.llamadas == [("municipios", {"cve_ent": "14"})]
+    app.dependency_overrides.clear()
+
+
+def test_gaiarda_estados():
+    falso = _ClienteFalso()
+    cliente = _cliente_de_prueba(falso)
+
+    respuesta = cliente.get("/gaiarda/estados")
+
+    assert respuesta.status_code == 200
+    assert falso.llamadas == [("estados", {})]
+    app.dependency_overrides.clear()
+
+
+def test_gaiarda_choropleth_censo_poblacion_pasa_los_query_params():
+    falso = _ClienteFalso()
+    cliente = _cliente_de_prueba(falso)
+
+    respuesta = cliente.get(
+        "/gaiarda/choropleth/censo_poblacion",
+        params={"indicador": "pobtot", "cve_ent": "14", "cve_mun": "039"},
+    )
+
+    assert respuesta.status_code == 200
+    assert falso.llamadas == [
+        ("choropleth_censo_poblacion", {"indicador": "pobtot", "cve_ent": "14", "cve_mun": "039"})
+    ]
+    app.dependency_overrides.clear()
+
+
+def test_gaiarda_choropleth_censo_poblacion_requiere_indicador_y_cve_ent():
+    falso = _ClienteFalso()
+    cliente = _cliente_de_prueba(falso)
+
+    respuesta = cliente.get("/gaiarda/choropleth/censo_poblacion")
+
+    assert respuesta.status_code == 422
     app.dependency_overrides.clear()
 
 
