@@ -1,4 +1,4 @@
-defmodule MapoWeb.CoropletaLive.Index do
+defmodule MapoWeb.VoronoiLive.Index do
   use MapoWeb, :live_view
 
   alias Mapo.MapoCore
@@ -8,9 +8,9 @@ defmodule MapoWeb.CoropletaLive.Index do
     ~H"""
     <Layouts.app flash={@flash} current_scope={@current_scope}>
       <.header>
-        Coropletas del censo
+        Áreas de influencia (Voronoi)
         <:subtitle>
-          Un indicador del Censo de Población y Vivienda 2020, coloreado por AGEB.
+          De los negocios de DENUE en un municipio, a cuál le queda más cerca cada lugar.
         </:subtitle>
       </.header>
 
@@ -19,7 +19,7 @@ defmodule MapoWeb.CoropletaLive.Index do
         disponible ahorita mismo, o todavía no se han descargado estados.
       </p>
 
-      <.form for={@form} id="coropleta_form" phx-change="cambiar" phx-submit="generar" class="mt-4">
+      <.form for={@form} id="voronoi_form" phx-change="cambiar" phx-submit="generar" class="mt-4">
         <div class="flex gap-2 items-start flex-wrap">
           <div class="w-52">
             <.input
@@ -34,27 +34,32 @@ defmodule MapoWeb.CoropletaLive.Index do
             <.input
               field={@form[:cve_mun]}
               type="select"
-              label="Municipio (opcional)"
+              label="Municipio"
               options={@municipios}
-              prompt="Todos los municipios del estado"
+              prompt="Selecciona un municipio"
             />
           </div>
-          <div class="w-64">
-            <.input field={@form[:indicador]} type="select" label="Indicador" options={@indicadores} />
+          <div class="w-56">
+            <.input
+              field={@form[:clase_actividad]}
+              type="text"
+              label="Giro (opcional)"
+              placeholder="ej. papelería, farmacia"
+            />
           </div>
         </div>
         <.button
           phx-disable-with="Generando..."
           class="btn btn-primary mt-4"
-          disabled={@form[:cve_ent].value in [nil, ""]}
+          disabled={@form[:cve_mun].value in [nil, ""]}
         >
           Generar mapa
         </.button>
       </.form>
 
       <div
-        id="coropleta-map"
-        phx-hook="CoropletaMap"
+        id="voronoi-map"
+        phx-hook="VoronoiMap"
         phx-update="ignore"
         class="w-full h-[32rem] mt-6 rounded-box overflow-hidden border border-base-300"
       >
@@ -71,19 +76,16 @@ defmodule MapoWeb.CoropletaLive.Index do
         {:error, _} -> []
       end
 
-    indicadores = Enum.map(MapoCore.indicadores_censo(), fn {codigo, etiqueta} -> {etiqueta, codigo} end)
-
     {:ok,
      assign(socket,
        estados: estados,
        municipios: [],
-       indicadores: indicadores,
-       form: to_form(%{"cve_ent" => "", "cve_mun" => "", "indicador" => "pobtot"}, as: "coropleta")
+       form: to_form(%{"cve_ent" => "", "cve_mun" => "", "clase_actividad" => ""}, as: "voronoi")
      )}
   end
 
   @impl true
-  def handle_event("cambiar", %{"coropleta" => params}, socket) do
+  def handle_event("cambiar", %{"voronoi" => params}, socket) do
     cve_ent_previo = socket.assigns.form[:cve_ent].value
 
     socket =
@@ -93,30 +95,28 @@ defmodule MapoWeb.CoropletaLive.Index do
         socket
       end
 
-    {:noreply, assign(socket, form: to_form(params, as: "coropleta"))}
+    {:noreply, assign(socket, form: to_form(params, as: "voronoi"))}
   end
 
-  def handle_event("generar", %{"coropleta" => params}, socket) do
+  def handle_event("generar", %{"voronoi" => params}, socket) do
     cve_ent = params["cve_ent"]
-    cve_mun = if params["cve_mun"] in [nil, ""], do: nil, else: params["cve_mun"]
-    indicador = params["indicador"]
+    cve_mun = params["cve_mun"]
+    clase_actividad = if params["clase_actividad"] in [nil, ""], do: nil, else: params["clase_actividad"]
 
-    if cve_ent in [nil, ""] do
-      {:noreply, put_flash(socket, :error, "Selecciona un estado primero.")}
+    if cve_ent in [nil, ""] or cve_mun in [nil, ""] do
+      {:noreply, put_flash(socket, :error, "Selecciona un estado y un municipio primero.")}
     else
-      case MapoCore.coropleta_censo_poblacion(indicador, cve_ent, cve_mun) do
-        {:ok, %{"features" => []}} ->
+      case MapoCore.voronoi_denue(cve_ent, cve_mun, clase_actividad) do
+        {:ok, %{"celdas" => geojson}} ->
+          {:noreply, push_event(socket, "voronoi", %{geojson: geojson})}
+
+        {:error, {:status, 404, _}} ->
           {:noreply,
-           put_flash(
-             socket,
-             :error,
-             "Gaiarda no tiene AGEBs o censo descargados para ese estado/municipio todavía."
-           )}
+           put_flash(socket, :error, "Ese municipio no está descargado en Gaiarda todavía.")}
 
-        {:ok, geojson} ->
-          etiqueta = etiqueta_indicador(indicador)
-
-          {:noreply, push_event(socket, "coropleta", %{geojson: geojson, etiqueta: etiqueta})}
+        {:error, {:status, 422, body}} ->
+          mensaje = if is_map(body), do: body["detail"], else: nil
+          {:noreply, put_flash(socket, :error, mensaje || "No hay suficientes negocios con ese filtro.")}
 
         {:error, _} ->
           {:noreply,
@@ -142,16 +142,12 @@ defmodule MapoWeb.CoropletaLive.Index do
     |> Enum.sort()
   end
 
-  # El `cvegeo` de un municipio son 5 digitos (cve_ent + cve_mun); el
-  # endpoint de coropletas pide `cve_mun` por separado (3 digitos), así
+  # El `cvegeo` de un municipio son 5 digitos (cve_ent + cve_mun); los
+  # endpoints de Gaiarda piden `cve_mun` por separado (3 digitos), así
   # que hay que usar esa propiedad, no `cvegeo`.
   defp opciones_municipios(features) do
     features
     |> Enum.map(fn %{"properties" => props} -> {props["nomgeo"], props["cve_mun"]} end)
     |> Enum.sort()
-  end
-
-  defp etiqueta_indicador(codigo) do
-    Enum.find_value(MapoCore.indicadores_censo(), codigo, fn {c, e} -> if c == codigo, do: e end)
   end
 end

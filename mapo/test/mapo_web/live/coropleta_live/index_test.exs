@@ -9,6 +9,14 @@ defmodule MapoWeb.CoropletaLive.IndexTest do
     %{"type" => "Feature", "properties" => %{"cvegeo" => cvegeo, "nomgeo" => nomgeo}, "geometry" => %{}}
   end
 
+  defp municipio_feature(cve_ent, cve_mun, nomgeo) do
+    %{
+      "type" => "Feature",
+      "properties" => %{"cvegeo" => cve_ent <> cve_mun, "cve_mun" => cve_mun, "nomgeo" => nomgeo},
+      "geometry" => %{}
+    }
+  end
+
   test "shows a warning when mapo_core/Gaiarda is not reachable", %{conn: conn} do
     Req.Test.stub(Mapo.MapoCore, fn conn ->
       Plug.Conn.send_resp(conn, 502, Jason.encode!(%{"error" => "no disponible"}))
@@ -27,7 +35,11 @@ defmodule MapoWeb.CoropletaLive.IndexTest do
 
         "/gaiarda/municipios" ->
           assert conn.params["cve_ent"] == "14"
-          Req.Test.json(conn, %{"type" => "FeatureCollection", "features" => [feature("14039", "Guadalajara")]})
+
+          Req.Test.json(conn, %{
+            "type" => "FeatureCollection",
+            "features" => [municipio_feature("14", "039", "Guadalajara")]
+          })
       end
     end)
 
@@ -40,6 +52,7 @@ defmodule MapoWeb.CoropletaLive.IndexTest do
       |> render_change()
 
     assert html =~ "Guadalajara"
+    assert html =~ ~s(value="039")
   end
 
   test "generar pushes a coropleta event with the geojson", %{conn: conn} do
@@ -72,6 +85,37 @@ defmodule MapoWeb.CoropletaLive.IndexTest do
     |> render_submit()
 
     assert_push_event(lv, "coropleta", %{etiqueta: "Población total"})
+  end
+
+  test "generar with a chosen municipio sends its cve_mun (3 digits), not the 5-digit cvegeo", %{
+    conn: conn
+  } do
+    Req.Test.stub(Mapo.MapoCore, fn conn ->
+      case conn.request_path do
+        "/gaiarda/estados" ->
+          Req.Test.json(conn, %{"type" => "FeatureCollection", "features" => [feature("14", "Jalisco")]})
+
+        "/gaiarda/municipios" ->
+          Req.Test.json(conn, %{
+            "type" => "FeatureCollection",
+            "features" => [municipio_feature("14", "039", "Guadalajara")]
+          })
+
+        "/gaiarda/choropleth/censo_poblacion" ->
+          assert conn.params["cve_mun"] == "039"
+          Req.Test.json(conn, %{"type" => "FeatureCollection", "features" => []})
+      end
+    end)
+
+    {:ok, lv, _html} = live(conn, ~p"/coropletas")
+
+    lv
+    |> form("#coropleta_form", coropleta: %{"cve_ent" => "14", "cve_mun" => "", "indicador" => "pobtot"})
+    |> render_change()
+
+    lv
+    |> form("#coropleta_form", coropleta: %{"cve_ent" => "14", "cve_mun" => "039", "indicador" => "pobtot"})
+    |> render_submit()
   end
 
   test "generar without an estado shows a flash instead of calling mapo_core", %{conn: conn} do

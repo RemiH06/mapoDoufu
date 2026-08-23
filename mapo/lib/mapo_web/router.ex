@@ -62,6 +62,7 @@ defmodule MapoWeb.Router do
       live "/sesiones/:id", SesionLive.Show, :show
 
       live "/coropletas", CoropletaLive.Index, :index
+      live "/voronoi", VoronoiLive.Index, :index
     end
 
     post "/users/update-password", UserSessionController, :update_password

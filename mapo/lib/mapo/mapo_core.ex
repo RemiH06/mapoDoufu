@@ -59,6 +59,17 @@ defmodule Mapo.MapoCore do
     get("/gaiarda/choropleth/censo_poblacion", params)
   end
 
+  @doc """
+  Diagrama de Voronoi de los negocios de DENUE en un municipio
+  (opcionalmente filtrados por texto en `clase_actividad`), recortado
+  al polígono real del municipio: para cada negocio, el área que le
+  queda más cerca a él que a cualquier otro de la lista.
+  """
+  def voronoi_denue(cve_ent, cve_mun, clase_actividad \\ nil) do
+    params = [cve_ent: cve_ent, cve_mun: cve_mun] |> maybe_put(:clase_actividad, clase_actividad)
+    get("/voronoi/denue", params)
+  end
+
   defp maybe_put(params, _key, nil), do: params
   defp maybe_put(params, key, value), do: params ++ [{key, value}]
 

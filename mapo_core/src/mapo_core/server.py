@@ -6,6 +6,7 @@ from pydantic import BaseModel
 from mapo_core.gaiarda_client import GaiardaClient
 from mapo_core.isocronas import calcular_isocrona
 from mapo_core.osrm_client import OSRMClient
+from mapo_core.voronoi import PuntoVoronoi, calcular_voronoi
 from mapo_core.vrp import Parada, Vehiculo, resolver_vrp
 
 app = FastAPI(title="mapo_core")
@@ -188,3 +189,79 @@ async def isocronas_calcular(
     )
 
     return {"poligono": resultado.poligono, "metodo": resultado.metodo}
+
+
+class PuntoVoronoiEntrada(BaseModel):
+    lat: float
+    lon: float
+    id: str
+    nombre: str | None = None
+
+
+class SolicitudVoronoi(BaseModel):
+    puntos: list[PuntoVoronoiEntrada]
+    limite: dict | None = None
+
+
+@app.post("/voronoi/calcular")
+def voronoi_calcular(solicitud: SolicitudVoronoi) -> dict:
+    """Diagrama de Voronoi de `puntos`: para cada uno, el area mas
+    cercana a el que a cualquier otro. Recortado a `limite` (geometria
+    GeoJSON) si se da, o a la caja envolvente de los puntos si no. El
+    campo `metodo` siempre dice cual de los dos se uso."""
+    puntos = [PuntoVoronoi(lat=p.lat, lon=p.lon, id=p.id, nombre=p.nombre) for p in solicitud.puntos]
+
+    try:
+        resultado = calcular_voronoi(puntos, limite=solicitud.limite)
+    except ValueError as exc:
+        raise HTTPException(422, str(exc)) from None
+
+    return {"celdas": resultado.celdas, "metodo": resultado.metodo}
+
+
+@app.get("/voronoi/denue")
+async def voronoi_denue(
+    cve_ent: str,
+    cve_mun: str,
+    clase_actividad: str | None = None,
+    client: GaiardaClient = Depends(get_gaiarda_client),
+) -> dict:
+    """Voronoi de los negocios de DENUE en un municipio (opcionalmente
+    filtrados por `clase_actividad`), recortado al poligono real del
+    municipio: "a cual de estos negocios le queda mas cerca cada
+    lugar dentro del municipio"."""
+    municipios = await client.municipios(cve_ent=cve_ent)
+    cvegeo_municipio = f"{cve_ent}{cve_mun}"
+    municipio = next(
+        (f for f in municipios["features"] if f.get("properties", {}).get("cvegeo") == cvegeo_municipio),
+        None,
+    )
+    if municipio is None:
+        raise HTTPException(
+            404,
+            f"No se encontro el municipio {cvegeo_municipio} (¿ya se corrio 'gaiarda municipios' para ese estado?).",
+        )
+
+    negocios = await client.denue(cve_ent=cve_ent, cve_mun=cve_mun, clase_actividad=clase_actividad)
+    puntos = [
+        PuntoVoronoi(
+            lat=f["geometry"]["coordinates"][1],
+            lon=f["geometry"]["coordinates"][0],
+            id=str(f["properties"]["id"]),
+            nombre=f["properties"].get("nombre"),
+        )
+        for f in negocios["features"]
+    ]
+
+    if len(puntos) < 3:
+        raise HTTPException(
+            422,
+            f"Solo hay {len(puntos)} negocio(s) con esos filtros; se necesitan al menos 3 para un diagrama de Voronoi.",
+        )
+
+    try:
+        resultado = calcular_voronoi(puntos, limite=municipio["geometry"])
+    except ValueError as exc:
+        raise HTTPException(422, str(exc)) from None
+
+    return {"celdas": resultado.celdas, "metodo": resultado.metodo, "num_negocios": len(puntos)}

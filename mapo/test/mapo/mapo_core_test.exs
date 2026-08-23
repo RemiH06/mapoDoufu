@@ -43,6 +43,27 @@ defmodule Mapo.MapoCoreTest do
     assert {:ok, _} = MapoCore.coropleta_censo_poblacion("pobtot", "14", "039")
   end
 
+  test "voronoi_denue/3 manda cve_ent y cve_mun, sin clase_actividad por defecto" do
+    Req.Test.stub(Mapo.MapoCore, fn conn ->
+      assert conn.request_path == "/voronoi/denue"
+      assert conn.params["cve_ent"] == "14"
+      assert conn.params["cve_mun"] == "039"
+      refute Map.has_key?(conn.params, "clase_actividad")
+      Req.Test.json(conn, %{"celdas" => %{"type" => "FeatureCollection", "features" => []}, "metodo" => "recortado_a_limite"})
+    end)
+
+    assert {:ok, %{"metodo" => "recortado_a_limite"}} = MapoCore.voronoi_denue("14", "039")
+  end
+
+  test "voronoi_denue/3 incluye clase_actividad cuando se da" do
+    Req.Test.stub(Mapo.MapoCore, fn conn ->
+      assert conn.params["clase_actividad"] == "papeleria"
+      Req.Test.json(conn, %{"celdas" => %{"type" => "FeatureCollection", "features" => []}, "metodo" => "recortado_a_limite"})
+    end)
+
+    assert {:ok, _} = MapoCore.voronoi_denue("14", "039", "papeleria")
+  end
+
   test "regresa {:error, _} si mapo_core responde un status distinto de 200" do
     Req.Test.stub(Mapo.MapoCore, fn conn ->
       Plug.Conn.send_resp(conn, 502, Jason.encode!(%{"error" => "no disponible"}))
