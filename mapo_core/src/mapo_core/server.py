@@ -3,6 +3,7 @@ from fastapi import Depends, FastAPI, HTTPException, Request
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 
+from mapo_core.coloreado_mapa import PoligonoColoreable, colorear_mapa
 from mapo_core.gaiarda_client import GaiardaClient
 from mapo_core.isocronas import calcular_isocrona
 from mapo_core.osrm_client import OSRMClient
@@ -265,3 +266,52 @@ async def voronoi_denue(
         raise HTTPException(422, str(exc)) from None
 
     return {"celdas": resultado.celdas, "metodo": resultado.metodo, "num_negocios": len(puntos)}
+
+
+class PoligonoColoreableEntrada(BaseModel):
+    id: str
+    geometria: dict
+
+
+class SolicitudColoreado(BaseModel):
+    poligonos: list[PoligonoColoreableEntrada]
+
+
+@app.post("/coloreado/calcular")
+def coloreado_calcular(solicitud: SolicitudColoreado) -> dict:
+    """Coloreado tipo "teorema de las 4 colores": un indice de color
+    por poligono, para que dos poligonos vecinos nunca compartan
+    color. `num_colores` dice honestamente cuantos hicieron falta (el
+    algoritmo greedy no siempre llega exactamente a 4, aunque el
+    teorema garantice que alcanzan)."""
+    poligonos = [PoligonoColoreable(id=p.id, geometria=p.geometria) for p in solicitud.poligonos]
+    resultado = colorear_mapa(poligonos)
+    return {"color_por_id": resultado.color_por_id, "num_colores": resultado.num_colores}
+
+
+@app.get("/coloreado/municipios")
+async def coloreado_municipios(
+    cve_ent: str, client: GaiardaClient = Depends(get_gaiarda_client)
+) -> dict:
+    """Los municipios de un estado, cada uno con su `color_indice` ya
+    calculado para que dos municipios vecinos nunca se vean del mismo
+    color en un mapa categorico."""
+    municipios = await client.municipios(cve_ent=cve_ent)
+
+    poligonos = [
+        PoligonoColoreable(id=f["properties"]["cvegeo"], geometria=f["geometry"])
+        for f in municipios["features"]
+    ]
+    resultado = colorear_mapa(poligonos)
+
+    features = []
+    for f in municipios["features"]:
+        cvegeo = f["properties"]["cvegeo"]
+        f = {**f, "properties": {**f["properties"], "color_indice": resultado.color_por_id.get(cvegeo)}}
+        features.append(f)
+
+    return {
+        "type": "FeatureCollection",
+        "features": features,
+        "num_colores": resultado.num_colores,
+    }

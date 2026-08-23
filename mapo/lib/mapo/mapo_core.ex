@@ -70,6 +70,13 @@ defmodule Mapo.MapoCore do
     get("/voronoi/denue", params)
   end
 
+  @doc """
+  Los municipios de un estado, cada uno con `properties.color_indice`
+  ya calculado (teorema de las 4 colores: dos municipios vecinos nunca
+  traen el mismo índice), listos para pintar en un mapa categórico.
+  """
+  def coloreado_municipios(cve_ent), do: get("/coloreado/municipios", cve_ent: cve_ent)
+
   defp maybe_put(params, _key, nil), do: params
   defp maybe_put(params, key, value), do: params ++ [{key, value}]
 

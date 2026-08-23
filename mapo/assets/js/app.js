@@ -29,12 +29,13 @@ import {BgAnimationToggle} from "./bg_animation_toggle"
 import {CollabMap} from "./collab_map"
 import {CoropletaMap} from "./coropleta_map"
 import {VoronoiMap} from "./voronoi_map"
+import {ColoreadoMap} from "./coloreado_map"
 
 const csrfToken = document.querySelector("meta[name='csrf-token']").getAttribute("content")
 const liveSocket = new LiveSocket("/live", Socket, {
   longPollFallbackMs: 2500,
   params: {_csrf_token: csrfToken},
-  hooks: {...colocatedHooks, MetroBg, BgAnimationToggle, CollabMap, CoropletaMap, VoronoiMap},
+  hooks: {...colocatedHooks, MetroBg, BgAnimationToggle, CollabMap, CoropletaMap, VoronoiMap, ColoreadoMap},
 })
 
 // Show progress bar on live navigation and form submits

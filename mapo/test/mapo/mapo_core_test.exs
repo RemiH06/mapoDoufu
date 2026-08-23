@@ -64,6 +64,16 @@ defmodule Mapo.MapoCoreTest do
     assert {:ok, _} = MapoCore.voronoi_denue("14", "039", "papeleria")
   end
 
+  test "coloreado_municipios/1 manda cve_ent" do
+    Req.Test.stub(Mapo.MapoCore, fn conn ->
+      assert conn.request_path == "/coloreado/municipios"
+      assert conn.params["cve_ent"] == "14"
+      Req.Test.json(conn, %{"type" => "FeatureCollection", "features" => [], "num_colores" => 0})
+    end)
+
+    assert {:ok, %{"num_colores" => 0}} = MapoCore.coloreado_municipios("14")
+  end
+
   test "regresa {:error, _} si mapo_core responde un status distinto de 200" do
     Req.Test.stub(Mapo.MapoCore, fn conn ->
       Plug.Conn.send_resp(conn, 502, Jason.encode!(%{"error" => "no disponible"}))
