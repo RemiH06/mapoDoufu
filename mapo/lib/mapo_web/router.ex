@@ -65,6 +65,7 @@ defmodule MapoWeb.Router do
       live "/voronoi", VoronoiLive.Index, :index
       live "/coloreado", ColoreadoLive.Index, :index
       live "/mapa", MapaLive.Index, :index
+      live "/perfil", PerfilLive.Index, :index
     end
 
     post "/users/update-password", UserSessionController, :update_password

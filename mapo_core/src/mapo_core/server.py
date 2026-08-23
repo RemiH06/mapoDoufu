@@ -7,6 +7,7 @@ from mapo_core.coloreado_mapa import PoligonoColoreable, colorear_mapa
 from mapo_core.gaiarda_client import GaiardaClient
 from mapo_core.isocronas import calcular_isocrona
 from mapo_core.osrm_client import OSRMClient
+from mapo_core.perfil_zona import construir_perfil
 from mapo_core.voronoi import PuntoVoronoi, calcular_voronoi
 from mapo_core.vrp import Parada, Vehiculo, resolver_vrp
 
@@ -314,4 +315,35 @@ async def coloreado_municipios(
         "type": "FeatureCollection",
         "features": features,
         "num_colores": resultado.num_colores,
+    }
+
+
+@app.get("/perfil_zona")
+async def perfil_zona(
+    cve_ent: str, cve_mun: str, client: GaiardaClient = Depends(get_gaiarda_client)
+) -> dict:
+    """Perfil de un municipio: comercio (DENUE), demografia (censo),
+    consumo (ENIGH) y seguridad (SESNSP) juntos, para responder
+    preguntas de decision reales sin consultar cada fuente por
+    separado. Cada numero viene directo de Gaiarda, nada se pondera ni
+    se resume en un puntaje unico. `laboral_disponible: false` es a
+    proposito: Gaiarda todavia no expone un endpoint de consulta para
+    ENOE (solo de descarga)."""
+    perfil = await construir_perfil(client, cve_ent, cve_mun)
+
+    return {
+        "cve_ent": perfil.cve_ent,
+        "cve_mun": perfil.cve_mun,
+        "comercio": {
+            "total_negocios": perfil.comercio.total_negocios,
+            "top_clases_actividad": perfil.comercio.top_clases_actividad,
+        },
+        "demografia": perfil.demografia,
+        "consumo": perfil.consumo,
+        "seguridad": {
+            "total_incidentes": perfil.seguridad.total_incidentes,
+            "anio_mas_reciente": perfil.seguridad.anio_mas_reciente,
+            "por_tipo_delito": perfil.seguridad.por_tipo_delito,
+        },
+        "laboral_disponible": False,
     }

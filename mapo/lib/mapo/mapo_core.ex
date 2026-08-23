@@ -91,6 +91,16 @@ defmodule Mapo.MapoCore do
     })
   end
 
+  @doc """
+  Perfil de un municipio: comercio (DENUE), demografía (censo),
+  consumo (ENIGH) y seguridad (SESNSP) juntos, para responder
+  preguntas de decisión reales sin consultar cada fuente por
+  separado. `"laboral_disponible" => false` en el resultado es a
+  propósito: Gaiarda todavía no expone un endpoint de consulta para
+  ENOE (solo de descarga).
+  """
+  def perfil_zona(cve_ent, cve_mun), do: get("/perfil_zona", cve_ent: cve_ent, cve_mun: cve_mun)
+
   defp maybe_put(params, _key, nil), do: params
   defp maybe_put(params, key, value), do: params ++ [{key, value}]
 
