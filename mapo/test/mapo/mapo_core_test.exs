@@ -74,6 +74,20 @@ defmodule Mapo.MapoCoreTest do
     assert {:ok, %{"num_colores" => 0}} = MapoCore.coloreado_municipios("14")
   end
 
+  test "isocrona_calcular/4 manda un POST con el cuerpo correcto" do
+    Req.Test.stub(Mapo.MapoCore, fn conn ->
+      assert conn.method == "POST"
+      assert conn.request_path == "/isocronas/calcular"
+
+      {:ok, body, conn} = Plug.Conn.read_body(conn)
+      assert Jason.decode!(body) == %{"lat" => 19.4, "lon" => -99.1, "minutos" => 10, "num_direcciones" => 16}
+
+      Req.Test.json(conn, %{"poligono" => [], "metodo" => "circulo_aproximado"})
+    end)
+
+    assert {:ok, %{"metodo" => "circulo_aproximado"}} = MapoCore.isocrona_calcular(19.4, -99.1, 10)
+  end
+
   test "regresa {:error, _} si mapo_core responde un status distinto de 200" do
     Req.Test.stub(Mapo.MapoCore, fn conn ->
       Plug.Conn.send_resp(conn, 502, Jason.encode!(%{"error" => "no disponible"}))

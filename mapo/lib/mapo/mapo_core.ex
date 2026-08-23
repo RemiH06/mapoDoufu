@@ -77,6 +77,20 @@ defmodule Mapo.MapoCore do
   """
   def coloreado_municipios(cve_ent), do: get("/coloreado/municipios", cve_ent: cve_ent)
 
+  @doc """
+  Polígono del área alcanzable desde `(lat, lon)` en `minutos`, por
+  carretera real (OSRM) si está disponible, o un círculo aproximado si
+  no. `metodo` en el resultado siempre dice cuál de los dos se usó.
+  """
+  def isocrona_calcular(lat, lon, minutos, num_direcciones \\ 16) do
+    post("/isocronas/calcular", %{
+      lat: lat,
+      lon: lon,
+      minutos: minutos,
+      num_direcciones: num_direcciones
+    })
+  end
+
   defp maybe_put(params, _key, nil), do: params
   defp maybe_put(params, key, value), do: params ++ [{key, value}]
 
@@ -85,10 +99,18 @@ defmodule Mapo.MapoCore do
       [base_url: Application.fetch_env!(:mapo, :mapo_core_url), url: path, params: params] ++
         Application.get_env(:mapo, :mapo_core_req_options, [])
 
-    case Req.get(opts) do
-      {:ok, %Req.Response{status: 200, body: body}} -> {:ok, body}
-      {:ok, %Req.Response{status: status, body: body}} -> {:error, {:status, status, body}}
-      {:error, exception} -> {:error, exception}
-    end
+    request(Req.get(opts))
   end
+
+  defp post(path, json) do
+    opts =
+      [base_url: Application.fetch_env!(:mapo, :mapo_core_url), url: path, json: json] ++
+        Application.get_env(:mapo, :mapo_core_req_options, [])
+
+    request(Req.post(opts))
+  end
+
+  defp request({:ok, %Req.Response{status: 200, body: body}}), do: {:ok, body}
+  defp request({:ok, %Req.Response{status: status, body: body}}), do: {:error, {:status, status, body}}
+  defp request({:error, exception}), do: {:error, exception}
 end

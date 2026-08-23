@@ -30,12 +30,22 @@ import {CollabMap} from "./collab_map"
 import {CoropletaMap} from "./coropleta_map"
 import {VoronoiMap} from "./voronoi_map"
 import {ColoreadoMap} from "./coloreado_map"
+import {MapaTecnico} from "./mapa_tecnico"
 
 const csrfToken = document.querySelector("meta[name='csrf-token']").getAttribute("content")
 const liveSocket = new LiveSocket("/live", Socket, {
   longPollFallbackMs: 2500,
   params: {_csrf_token: csrfToken},
-  hooks: {...colocatedHooks, MetroBg, BgAnimationToggle, CollabMap, CoropletaMap, VoronoiMap, ColoreadoMap},
+  hooks: {
+    ...colocatedHooks,
+    MetroBg,
+    BgAnimationToggle,
+    CollabMap,
+    CoropletaMap,
+    VoronoiMap,
+    ColoreadoMap,
+    MapaTecnico,
+  },
 })
 
 // Show progress bar on live navigation and form submits
