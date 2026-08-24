@@ -6,7 +6,7 @@ defmodule MapoWeb.ColoreadoLive.Index do
   @impl true
   def render(assigns) do
     ~H"""
-    <Layouts.app flash={@flash} current_scope={@current_scope}>
+    <Layouts.app flash={@flash} current_scope={@current_scope} full_width?={true}>
       <.header>
         Coloreado de mapa
         <:subtitle>
@@ -44,7 +44,7 @@ defmodule MapoWeb.ColoreadoLive.Index do
         id="coloreado-map"
         phx-hook="ColoreadoMap"
         phx-update="ignore"
-        class="w-full h-[32rem] mt-6 rounded-box overflow-hidden border border-base-300"
+        class="w-full h-[70vh] mt-6 rounded-box overflow-hidden border border-base-300"
       >
       </div>
     </Layouts.app>

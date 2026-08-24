@@ -24,7 +24,7 @@ import {Socket} from "phoenix"
 import {LiveSocket} from "phoenix_live_view"
 import {hooks as colocatedHooks} from "phoenix-colocated/mapo"
 import topbar from "../vendor/topbar"
-import {MetroBg} from "./metro_bg"
+import {iniciarFondoAnimado} from "./metro_bg"
 import {BgAnimationToggle} from "./bg_animation_toggle"
 import {CollabMap} from "./collab_map"
 import {CoropletaMap} from "./coropleta_map"
@@ -38,7 +38,6 @@ const liveSocket = new LiveSocket("/live", Socket, {
   params: {_csrf_token: csrfToken},
   hooks: {
     ...colocatedHooks,
-    MetroBg,
     BgAnimationToggle,
     CollabMap,
     CoropletaMap,
@@ -47,6 +46,12 @@ const liveSocket = new LiveSocket("/live", Socket, {
     MapaTecnico,
   },
 })
+
+// El fondo animado vive en root.html.heex, fuera del contenido que
+// controla cada LiveView, para que no se reinicie al navegar entre
+// pantallas (ver metro_bg.js). Se inicializa una sola vez aqui, no
+// como hook de LiveView.
+iniciarFondoAnimado()
 
 // Show progress bar on live navigation and form submits
 topbar.config({barColors: {0: "#29d"}, shadowColor: "rgba(0, 0, 0, .3)"})

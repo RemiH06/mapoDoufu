@@ -39,41 +39,42 @@
     </script>
   </head>
   <body>
+    <canvas id="metro-bg" class="fixed inset-0 w-screen h-screen -z-10"></canvas>
     <ul class="menu menu-horizontal w-full relative z-10 flex items-center gap-4 px-4 sm:px-6 lg:px-8 justify-end">
       <%= if @current_scope do %>
         <li>
           {@current_scope.user.email}
         </li>
         <li>
-          <.link href={~p"/teams"}>Mis equipos</.link>
+          <.link navigate={~p"/teams"}>Mis equipos</.link>
         </li>
         <li>
-          <.link href={~p"/coropletas"}>Coropletas</.link>
+          <.link navigate={~p"/coropletas"}>Coropletas</.link>
         </li>
         <li>
-          <.link href={~p"/voronoi"}>Voronoi</.link>
+          <.link navigate={~p"/voronoi"}>Voronoi</.link>
         </li>
         <li>
-          <.link href={~p"/coloreado"}>Coloreado</.link>
+          <.link navigate={~p"/coloreado"}>Coloreado</.link>
         </li>
         <li>
-          <.link href={~p"/mapa"}>Mapa técnico</.link>
+          <.link navigate={~p"/mapa"}>Mapa técnico</.link>
         </li>
         <li>
-          <.link href={~p"/perfil"}>Perfil de zona</.link>
+          <.link navigate={~p"/perfil"}>Perfil de zona</.link>
         </li>
         <li>
-          <.link href={~p"/users/settings"}>Configuración</.link>
+          <.link navigate={~p"/users/settings"}>Configuración</.link>
         </li>
         <li>
           <.link href={~p"/users/log-out"} method="delete">Cerrar sesión</.link>
         </li>
       <% else %>
         <li>
-          <.link href={~p"/users/register"}>Registrarme</.link>
+          <.link navigate={~p"/users/register"}>Registrarme</.link>
         </li>
         <li>
-          <.link href={~p"/users/log-in"}>Iniciar sesión</.link>
+          <.link navigate={~p"/users/log-in"}>Iniciar sesión</.link>
         </li>
       <% end %>
     </ul>

@@ -6,7 +6,7 @@ defmodule MapoWeb.MapaLive.Index do
   @impl true
   def render(assigns) do
     ~H"""
-    <Layouts.app flash={@flash} current_scope={@current_scope}>
+    <Layouts.app flash={@flash} current_scope={@current_scope} full_width?={true}>
       <.header>
         Mapa técnico
         <:subtitle>Coropletas, Voronoi, coloreado e isócronas, como capas independientes.</:subtitle>
@@ -17,121 +17,120 @@ defmodule MapoWeb.MapaLive.Index do
         disponible ahorita mismo, o todavía no se han descargado estados.
       </p>
 
-      <.form for={@form} id="ubicacion_form" phx-change="cambiar_ubicacion" class="mt-4">
-        <div class="flex gap-2 items-start flex-wrap">
-          <div class="w-52">
-            <.input
-              field={@form[:cve_ent]}
-              type="select"
-              label="Estado"
-              options={@estados}
-              prompt="Selecciona un estado"
-            />
+      <div class="lg:flex lg:gap-4 lg:items-start mt-4">
+        <aside class="lg:w-80 lg:shrink-0 space-y-3">
+          <div class="card bg-base-200 p-3">
+            <h3 class="font-mono text-sm font-bold mb-2">Ubicación</h3>
+            <.form for={@form} id="ubicacion_form" phx-change="cambiar_ubicacion" class="space-y-2">
+              <.input
+                field={@form[:cve_ent]}
+                type="select"
+                label="Estado"
+                options={@estados}
+                prompt="Selecciona un estado"
+              />
+              <.input
+                field={@form[:cve_mun]}
+                type="select"
+                label="Municipio"
+                options={@municipios}
+                prompt="Todos los municipios del estado"
+              />
+            </.form>
           </div>
-          <div class="w-56">
-            <.input
-              field={@form[:cve_mun]}
-              type="select"
-              label="Municipio"
-              options={@municipios}
-              prompt="Todos los municipios del estado"
-            />
-          </div>
-        </div>
-      </.form>
 
-      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-6">
-        <div class="card bg-base-200 p-3">
-          <h3 class="font-mono text-sm font-bold mb-2">Coropleta del censo</h3>
-          <.form for={@coropleta_form} id="coropleta_capa_form" phx-submit="mostrar_coropleta">
-            <.input
-              field={@coropleta_form[:indicador]}
-              type="select"
-              label="Indicador"
-              options={@indicadores}
-            />
+          <div class="card bg-base-200 p-3">
+            <h3 class="font-mono text-sm font-bold mb-2">Coropleta del censo</h3>
+            <.form for={@coropleta_form} id="coropleta_capa_form" phx-submit="mostrar_coropleta">
+              <.input
+                field={@coropleta_form[:indicador]}
+                type="select"
+                label="Indicador"
+                options={@indicadores}
+              />
+              <div class="flex gap-2 mt-2">
+                <.button phx-disable-with="Mostrando..." class="btn btn-primary btn-sm">Mostrar</.button>
+                <.button
+                  :if={@coropleta_activa?}
+                  type="button"
+                  phx-click="quitar_coropleta"
+                  class="btn btn-soft btn-sm"
+                >
+                  Quitar
+                </.button>
+              </div>
+            </.form>
+          </div>
+
+          <div class="card bg-base-200 p-3">
+            <h3 class="font-mono text-sm font-bold mb-2">Voronoi de negocios (DENUE)</h3>
+            <.form for={@voronoi_form} id="voronoi_capa_form" phx-submit="mostrar_voronoi">
+              <.input
+                field={@voronoi_form[:clase_actividad]}
+                type="text"
+                label="Giro (opcional)"
+                placeholder="ej. papelería"
+              />
+              <p class="text-xs text-base-content/70 mt-1">Necesita un municipio elegido arriba.</p>
+              <div class="flex gap-2 mt-2">
+                <.button phx-disable-with="Mostrando..." class="btn btn-primary btn-sm">Mostrar</.button>
+                <.button
+                  :if={@voronoi_activa?}
+                  type="button"
+                  phx-click="quitar_voronoi"
+                  class="btn btn-soft btn-sm"
+                >
+                  Quitar
+                </.button>
+              </div>
+            </.form>
+          </div>
+
+          <div class="card bg-base-200 p-3">
+            <h3 class="font-mono text-sm font-bold mb-2">Coloreado de municipios</h3>
+            <p class="text-xs text-base-content/70">Colorea todos los municipios del estado elegido.</p>
             <div class="flex gap-2 mt-2">
-              <.button phx-disable-with="Mostrando..." class="btn btn-primary btn-sm">Mostrar</.button>
+              <.button phx-click="mostrar_coloreado" class="btn btn-primary btn-sm">Mostrar</.button>
               <.button
-                :if={@coropleta_activa?}
+                :if={@coloreado_activa?}
                 type="button"
-                phx-click="quitar_coropleta"
+                phx-click="quitar_coloreado"
                 class="btn btn-soft btn-sm"
               >
                 Quitar
               </.button>
             </div>
-          </.form>
-        </div>
-
-        <div class="card bg-base-200 p-3">
-          <h3 class="font-mono text-sm font-bold mb-2">Voronoi de negocios (DENUE)</h3>
-          <.form for={@voronoi_form} id="voronoi_capa_form" phx-submit="mostrar_voronoi">
-            <.input
-              field={@voronoi_form[:clase_actividad]}
-              type="text"
-              label="Giro (opcional)"
-              placeholder="ej. papelería"
-            />
-            <p class="text-xs text-base-content/70 mt-1">Necesita un municipio elegido arriba.</p>
-            <div class="flex gap-2 mt-2">
-              <.button phx-disable-with="Mostrando..." class="btn btn-primary btn-sm">Mostrar</.button>
-              <.button
-                :if={@voronoi_activa?}
-                type="button"
-                phx-click="quitar_voronoi"
-                class="btn btn-soft btn-sm"
-              >
-                Quitar
-              </.button>
-            </div>
-          </.form>
-        </div>
-
-        <div class="card bg-base-200 p-3">
-          <h3 class="font-mono text-sm font-bold mb-2">Coloreado de municipios</h3>
-          <p class="text-xs text-base-content/70">Colorea todos los municipios del estado elegido.</p>
-          <div class="flex gap-2 mt-2">
-            <.button phx-click="mostrar_coloreado" class="btn btn-primary btn-sm">Mostrar</.button>
-            <.button
-              :if={@coloreado_activa?}
-              type="button"
-              phx-click="quitar_coloreado"
-              class="btn btn-soft btn-sm"
-            >
-              Quitar
-            </.button>
           </div>
-        </div>
 
-        <div class="card bg-base-200 p-3">
-          <h3 class="font-mono text-sm font-bold mb-2">Isócrona</h3>
-          <.form for={@isocrona_form} id="isocrona_capa_form" phx-submit="activar_isocrona">
-            <.input field={@isocrona_form[:minutos]} type="number" label="Minutos" min="1" />
-            <p :if={@isocrona_activa?} class="text-xs text-base-content/70 mt-1">
-              Haz clic en el mapa para elegir el punto de origen.
-            </p>
-            <div class="flex gap-2 mt-2">
-              <.button phx-disable-with="Activando..." class="btn btn-primary btn-sm">Activar</.button>
-              <.button
-                :if={@isocrona_activa?}
-                type="button"
-                phx-click="quitar_isocrona"
-                class="btn btn-soft btn-sm"
-              >
-                Quitar
-              </.button>
-            </div>
-          </.form>
-        </div>
-      </div>
+          <div class="card bg-base-200 p-3">
+            <h3 class="font-mono text-sm font-bold mb-2">Isócrona</h3>
+            <.form for={@isocrona_form} id="isocrona_capa_form" phx-submit="activar_isocrona">
+              <.input field={@isocrona_form[:minutos]} type="number" label="Minutos" min="1" />
+              <p :if={@isocrona_activa?} class="text-xs text-base-content/70 mt-1">
+                Haz clic en el mapa para elegir el punto de origen.
+              </p>
+              <div class="flex gap-2 mt-2">
+                <.button phx-disable-with="Activando..." class="btn btn-primary btn-sm">Activar</.button>
+                <.button
+                  :if={@isocrona_activa?}
+                  type="button"
+                  phx-click="quitar_isocrona"
+                  class="btn btn-soft btn-sm"
+                >
+                  Quitar
+                </.button>
+              </div>
+            </.form>
+          </div>
+        </aside>
 
-      <div
-        id="mapa-tecnico"
-        phx-hook="MapaTecnico"
-        phx-update="ignore"
-        class="w-full h-[36rem] mt-6 rounded-box overflow-hidden border border-base-300"
-      >
+        <div
+          id="mapa-tecnico"
+          phx-hook="MapaTecnico"
+          phx-update="ignore"
+          class="w-full h-[75vh] mt-6 lg:mt-0 rounded-box overflow-hidden border border-base-300"
+        >
+        </div>
       </div>
     </Layouts.app>
     """

@@ -31,6 +31,10 @@ defmodule MapoWeb.Layouts do
     default: nil,
     doc: "the current [scope](https://phoenix.hexdocs.pm/scopes.html)"
 
+  attr :full_width?, :boolean,
+    default: false,
+    doc: "quita el límite de max-w-2xl, para pantallas que necesitan usar todo el ancho (ej. mapas)"
+
   slot :inner_block, required: true
 
   def app(assigns) do
@@ -51,8 +55,8 @@ defmodule MapoWeb.Layouts do
       </div>
     </header>
 
-    <main class="px-4 py-20 sm:px-6 lg:px-8">
-      <div class="mx-auto max-w-2xl space-y-4">
+    <main class={["px-4 py-8 sm:px-6 lg:px-8", !@full_width? && "py-20"]}>
+      <div class={[!@full_width? && "mx-auto max-w-2xl", "space-y-4"]}>
         {render_slot(@inner_block)}
       </div>
     </main>

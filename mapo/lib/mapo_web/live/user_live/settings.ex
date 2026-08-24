@@ -9,7 +9,6 @@ defmodule MapoWeb.UserLive.Settings do
   def render(assigns) do
     ~H"""
     <Layouts.app flash={@flash} current_scope={@current_scope}>
-      <canvas id="metro-bg" phx-hook="MetroBg" phx-update="ignore" class="fixed inset-0 -z-10"></canvas>
       <div class="text-center">
         <.header>
           Configuración de la cuenta

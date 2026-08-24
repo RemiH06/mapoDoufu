@@ -6,7 +6,7 @@ defmodule MapoWeb.VoronoiLive.Index do
   @impl true
   def render(assigns) do
     ~H"""
-    <Layouts.app flash={@flash} current_scope={@current_scope}>
+    <Layouts.app flash={@flash} current_scope={@current_scope} full_width?={true}>
       <.header>
         Áreas de influencia (Voronoi)
         <:subtitle>
@@ -61,7 +61,7 @@ defmodule MapoWeb.VoronoiLive.Index do
         id="voronoi-map"
         phx-hook="VoronoiMap"
         phx-update="ignore"
-        class="w-full h-[32rem] mt-6 rounded-box overflow-hidden border border-base-300"
+        class="w-full h-[70vh] mt-6 rounded-box overflow-hidden border border-base-300"
       >
       </div>
     </Layouts.app>
