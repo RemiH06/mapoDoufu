@@ -36,7 +36,7 @@ config :mapo, Mapo.Repo, types: Mapo.PostgresTypes
 
 # Configure the endpoint
 config :mapo, MapoWeb.Endpoint,
-  url: [host: "localhost"],
+  url: [host: "localhost", port: 1864],
   adapter: Bandit.PhoenixAdapter,
   render_errors: [
     formats: [html: MapoWeb.ErrorHTML, json: MapoWeb.ErrorJSON],
