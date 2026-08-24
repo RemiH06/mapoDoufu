@@ -22,7 +22,7 @@ services:
   mapo:
     build: ./mapo
     ports:
-      - "4000:4000"
+      - "1864:4000"
     environment:
       DATABASE_HOST: db
       MAPO_CORE_URL: http://mapo_core:8010
