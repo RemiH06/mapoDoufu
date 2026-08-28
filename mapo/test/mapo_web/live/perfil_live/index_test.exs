@@ -17,11 +17,10 @@ defmodule MapoWeb.PerfilLive.IndexTest do
     }
   end
 
-  defp perfil_completo do
+  defp perfil_con_demografia do
     %{
       "cve_ent" => "14",
       "cve_mun" => "039",
-      "comercio" => %{"total_negocios" => 42, "top_clases_actividad" => [["papelería", 3]]},
       "demografia" => %{
         "pobtot" => 1500000,
         "pobfem" => 800000,
@@ -33,18 +32,9 @@ defmodule MapoWeb.PerfilLive.IndexTest do
         "tothog" => 400000,
         "vivtot" => 420000
       },
-      "consumo" => %{
-        "promedio_ponderado" => 5000,
-        "mediana" => 4500,
-        "minimo" => 100,
-        "maximo" => 20000,
-        "n_hogares_muestra" => 38
-      },
-      "seguridad" => %{
-        "total_incidentes" => 120,
-        "anio_mas_reciente" => 2024,
-        "por_tipo_delito" => [["robo", 90], ["fraude", 30]]
-      },
+      "comercio_disponible" => false,
+      "consumo_disponible" => false,
+      "seguridad_disponible" => false,
       "laboral_disponible" => false
     }
   end
@@ -74,13 +64,13 @@ defmodule MapoWeb.PerfilLive.IndexTest do
     assert html =~ "Selecciona un estado y un municipio"
   end
 
-  test "ver_perfil renders the 4 sections plus the honest laboral gap", %{conn: conn} do
+  test "ver_perfil renders demografia and the honest not-yet-ported gaps", %{conn: conn} do
     Req.Test.stub(Mapo.MapoCore, fn conn ->
       case conn.request_path do
-        "/gaiarda/estados" ->
+        "/geo/estados" ->
           Req.Test.json(conn, %{"type" => "FeatureCollection", "features" => [estado_feature("14", "Jalisco")]})
 
-        "/gaiarda/municipios" ->
+        "/geo/municipios" ->
           Req.Test.json(conn, %{
             "type" => "FeatureCollection",
             "features" => [municipio_feature("14", "039", "Guadalajara")]
@@ -89,7 +79,7 @@ defmodule MapoWeb.PerfilLive.IndexTest do
         "/perfil_zona" ->
           assert conn.params["cve_ent"] == "14"
           assert conn.params["cve_mun"] == "039"
-          Req.Test.json(conn, perfil_completo())
+          Req.Test.json(conn, perfil_con_demografia())
       end
     end)
 
@@ -104,23 +94,17 @@ defmodule MapoWeb.PerfilLive.IndexTest do
       |> form("#perfil_form", perfil: %{"cve_ent" => "14", "cve_mun" => "039"})
       |> render_submit()
 
-    assert html =~ "42 negocios registrados"
-    assert html =~ "papelería: 3"
     assert html =~ "Población total: 1500000"
-    assert html =~ "5000"
-    assert html =~ "38 hogares de muestra"
-    assert html =~ "120 incidentes en 2024"
-    assert html =~ "robo: 90"
     assert html =~ "No disponible todavía"
   end
 
-  test "ver_perfil with missing demografia/consumo shows honest empty messages", %{conn: conn} do
+  test "ver_perfil with missing demografia shows an honest empty message", %{conn: conn} do
     Req.Test.stub(Mapo.MapoCore, fn conn ->
       case conn.request_path do
-        "/gaiarda/estados" ->
+        "/geo/estados" ->
           Req.Test.json(conn, %{"type" => "FeatureCollection", "features" => [estado_feature("14", "Jalisco")]})
 
-        "/gaiarda/municipios" ->
+        "/geo/municipios" ->
           Req.Test.json(conn, %{
             "type" => "FeatureCollection",
             "features" => [municipio_feature("14", "999", "Sin Datos")]
@@ -128,10 +112,10 @@ defmodule MapoWeb.PerfilLive.IndexTest do
 
         "/perfil_zona" ->
           Req.Test.json(conn, %{
-            "comercio" => %{"total_negocios" => 0, "top_clases_actividad" => []},
             "demografia" => nil,
-            "consumo" => nil,
-            "seguridad" => %{"total_incidentes" => 0, "anio_mas_reciente" => nil, "por_tipo_delito" => []},
+            "comercio_disponible" => false,
+            "consumo_disponible" => false,
+            "seguridad_disponible" => false,
             "laboral_disponible" => false
           })
       end
@@ -149,7 +133,5 @@ defmodule MapoWeb.PerfilLive.IndexTest do
       |> render_submit()
 
     assert html =~ "Sin datos de censo para este municipio."
-    assert html =~ "Sin datos de ENIGH para este municipio."
-    assert html =~ "Sin datos de SESNSP para este municipio."
   end
 end

@@ -20,10 +20,10 @@ defmodule MapoWeb.MapaLive.IndexTest do
   defp stub_estados_y_municipio(extra) do
     Req.Test.stub(Mapo.MapoCore, fn conn ->
       case conn.request_path do
-        "/gaiarda/estados" ->
+        "/geo/estados" ->
           Req.Test.json(conn, %{"type" => "FeatureCollection", "features" => [estado_feature("14", "Jalisco")]})
 
-        "/gaiarda/municipios" ->
+        "/geo/municipios" ->
           Req.Test.json(conn, %{
             "type" => "FeatureCollection",
             "features" => [municipio_feature("14", "039", "Guadalajara")]
@@ -66,7 +66,7 @@ defmodule MapoWeb.MapaLive.IndexTest do
   test "mostrar_coropleta pushes the layer event", %{conn: conn} do
     lv =
       montar_con_ubicacion(conn, fn conn ->
-        assert conn.request_path == "/gaiarda/choropleth/censo_poblacion"
+        assert conn.request_path == "/censo/choropleth"
         Req.Test.json(conn, %{"type" => "FeatureCollection", "features" => []})
       end)
 

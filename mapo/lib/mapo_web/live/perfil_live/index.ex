@@ -47,16 +47,6 @@ defmodule MapoWeb.PerfilLive.Index do
 
       <div :if={@perfil} class="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-8">
         <div class="card bg-base-200 p-4">
-          <h3 class="font-mono text-sm font-bold mb-2">Comercio (DENUE)</h3>
-          <p>{@perfil["comercio"]["total_negocios"]} negocios registrados</p>
-          <ul :if={@perfil["comercio"]["top_clases_actividad"] != []} class="text-sm mt-2 space-y-1">
-            <li :for={[clase, cantidad] <- @perfil["comercio"]["top_clases_actividad"]}>
-              {clase}: {cantidad}
-            </li>
-          </ul>
-        </div>
-
-        <div class="card bg-base-200 p-4">
           <h3 class="font-mono text-sm font-bold mb-2">Demografía (censo)</h3>
           <div :if={@perfil["demografia"]} class="text-sm space-y-1">
             <p>Población total: {@perfil["demografia"]["pobtot"]}</p>
@@ -72,42 +62,31 @@ defmodule MapoWeb.PerfilLive.Index do
         </div>
 
         <div class="card bg-base-200 p-4">
+          <h3 class="font-mono text-sm font-bold mb-2">Comercio (DENUE)</h3>
+          <p class="text-sm text-base-content/70">
+            No disponible todavía: esta fuente no está vendorizada a mapo_core.
+          </p>
+        </div>
+
+        <div class="card bg-base-200 p-4">
           <h3 class="font-mono text-sm font-bold mb-2">Consumo (ENIGH)</h3>
-          <div :if={@perfil["consumo"]} class="text-sm space-y-1">
-            <p>Gasto promedio ponderado: {@perfil["consumo"]["promedio_ponderado"]}</p>
-            <p>Mediana: {@perfil["consumo"]["mediana"]}</p>
-            <p>Mínimo / máximo: {@perfil["consumo"]["minimo"]} / {@perfil["consumo"]["maximo"]}</p>
-            <p class="text-warning">
-              Basado en {@perfil["consumo"]["n_hogares_muestra"]} hogares de muestra. ENIGH es
-              representativo a nivel estado, no a nivel municipio: entre menos hogares, menos
-              confiable este número para este municipio en particular.
-            </p>
-          </div>
-          <p :if={!@perfil["consumo"]} class="text-sm text-base-content/70">
-            Sin datos de ENIGH para este municipio.
+          <p class="text-sm text-base-content/70">
+            No disponible todavía: esta fuente no está vendorizada a mapo_core.
           </p>
         </div>
 
         <div class="card bg-base-200 p-4">
           <h3 class="font-mono text-sm font-bold mb-2">Seguridad (SESNSP)</h3>
-          <div :if={@perfil["seguridad"]["anio_mas_reciente"]} class="text-sm space-y-1">
-            <p>
-              {@perfil["seguridad"]["total_incidentes"]} incidentes en {@perfil["seguridad"]["anio_mas_reciente"]}
-            </p>
-            <ul class="space-y-1">
-              <li :for={[tipo, cantidad] <- @perfil["seguridad"]["por_tipo_delito"]}>{tipo}: {cantidad}</li>
-            </ul>
-          </div>
-          <p :if={!@perfil["seguridad"]["anio_mas_reciente"]} class="text-sm text-base-content/70">
-            Sin datos de SESNSP para este municipio.
+          <p class="text-sm text-base-content/70">
+            No disponible todavía: esta fuente no está vendorizada a mapo_core.
           </p>
         </div>
 
-        <div class="card bg-base-200 p-4 sm:col-span-2">
+        <div class="card bg-base-200 p-4">
           <h3 class="font-mono text-sm font-bold mb-2">Laboral (ENOE)</h3>
           <p class="text-sm text-base-content/70">
-            No disponible todavía: Gaiarda no expone un endpoint de consulta para esta fuente
-            (solo de descarga).
+            No disponible todavía: esta fuente ni siquiera tenía endpoint de consulta del lado
+            de Gaiarda (solo de descarga).
           </p>
         </div>
       </div>

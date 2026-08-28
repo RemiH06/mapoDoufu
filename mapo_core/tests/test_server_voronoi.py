@@ -1,6 +1,10 @@
+import json
+
+import pytest
 from fastapi.testclient import TestClient
 
-from mapo_core.server import app, get_gaiarda_client
+from mapo_core.db import get_pool
+from mapo_core.server import app
 
 CUADRADO = [
     {"lat": 0.0, "lon": 0.0, "id": "a", "nombre": "A"},
@@ -51,70 +55,35 @@ def test_voronoi_calcular_con_puntos_colineales_da_422():
     assert respuesta.status_code == 422
 
 
-MUNICIPIO_FEATURE = {
-    "type": "Feature",
-    "properties": {"cvegeo": "14039", "nomgeo": "Guadalajara"},
-    "geometry": {
-        "type": "Polygon",
-        "coordinates": [[[-2, -2], [12, -2], [12, 12], [-2, 12], [-2, -2]]],
-    },
+MUNICIPIO_GEOJSON = {
+    "type": "Polygon",
+    "coordinates": [[[-2, -2], [12, -2], [12, 12], [-2, 12], [-2, -2]]],
 }
 
 
-class _ClienteGaiardaFalso:
-    def __init__(self, negocios):
-        self._negocios = negocios
-
-    async def municipios(self, cve_ent=None):
-        return {"type": "FeatureCollection", "features": [MUNICIPIO_FEATURE]}
-
-    async def denue(self, cve_ent=None, cve_mun=None, cve_ageb=None, clase_actividad=None):
-        return {"type": "FeatureCollection", "features": self._negocios}
-
-
-def _feature_negocio(id_, lat, lon, nombre="negocio"):
-    return {
-        "type": "Feature",
-        "properties": {"id": id_, "nombre": nombre, "clase_actividad": "papeleria", "estrato": "0 a 5"},
-        "geometry": {"type": "Point", "coordinates": [lon, lat]},
-    }
-
-
-def test_voronoi_denue_usa_el_poligono_real_del_municipio():
-    negocios = [
-        _feature_negocio(1, 0.0, 0.0),
-        _feature_negocio(2, 0.0, 10.0),
-        _feature_negocio(3, 10.0, 0.0),
-        _feature_negocio(4, 10.0, 10.0),
-    ]
-    app.dependency_overrides[get_gaiarda_client] = lambda: _ClienteGaiardaFalso(negocios)
+@pytest.mark.asyncio
+async def test_voronoi_denue_da_501_si_el_municipio_existe_pero_denue_no_esta_portado(conn, pool_de_una_conexion):
+    await conn.execute(
+        """INSERT INTO municipios (cvegeo, cve_ent, cve_mun, nombre, geom)
+           VALUES ('14039', '14', '039', 'Guadalajara',
+                   ST_Multi(ST_SetSRID(ST_GeomFromGeoJSON(%(geojson)s), 4326)))""",
+        {"geojson": json.dumps(MUNICIPIO_GEOJSON)},
+    )
+    app.dependency_overrides[get_pool] = lambda: pool_de_una_conexion
     cliente = TestClient(app)
 
     respuesta = cliente.get("/voronoi/denue", params={"cve_ent": "14", "cve_mun": "039"})
 
-    assert respuesta.status_code == 200
-    cuerpo = respuesta.json()
-    assert cuerpo["metodo"] == "recortado_a_limite"
-    assert cuerpo["num_negocios"] == 4
+    assert respuesta.status_code == 501
     app.dependency_overrides.clear()
 
 
-def test_voronoi_denue_municipio_no_encontrado_da_404():
-    app.dependency_overrides[get_gaiarda_client] = lambda: _ClienteGaiardaFalso([])
+@pytest.mark.asyncio
+async def test_voronoi_denue_municipio_no_encontrado_da_404(pool_de_una_conexion):
+    app.dependency_overrides[get_pool] = lambda: pool_de_una_conexion
     cliente = TestClient(app)
 
     respuesta = cliente.get("/voronoi/denue", params={"cve_ent": "14", "cve_mun": "999"})
 
     assert respuesta.status_code == 404
-    app.dependency_overrides.clear()
-
-
-def test_voronoi_denue_con_pocos_negocios_da_422():
-    negocios = [_feature_negocio(1, 0.0, 0.0), _feature_negocio(2, 0.0, 10.0)]
-    app.dependency_overrides[get_gaiarda_client] = lambda: _ClienteGaiardaFalso(negocios)
-    cliente = TestClient(app)
-
-    respuesta = cliente.get("/voronoi/denue", params={"cve_ent": "14", "cve_mun": "039"})
-
-    assert respuesta.status_code == 422
     app.dependency_overrides.clear()

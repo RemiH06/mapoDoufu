@@ -1,15 +1,17 @@
 defmodule Mapo.MapoCore do
   @moduledoc """
-  Cliente HTTP hacia mapo_core, el motor de datos/decision en Python
-  (que a su vez consume Gaiarda). Nunca lanza: cualquier falla de red
-  o de mapo_core regresa `{:error, _}`, para que quien llama decida
-  como mostrarla, igual que mapo_core hace con Gaiarda.
+  Cliente HTTP hacia mapo_core, el motor de datos/decision en Python.
+  mapo_core tiene sus propios datos geograficos/censo (vendorizados de
+  Gaiarda, descargados por mapo_core mismo, sin depender de un
+  Gaiarda corriendo en ningun lado). Nunca lanza: cualquier falla de
+  red o de mapo_core regresa `{:error, _}`, para que quien llama
+  decida como mostrarla.
   """
 
   @doc """
   Los indicadores validos para `coropleta_censo_poblacion/3`, con
   etiqueta en espanol para mostrar en un selector. Debe mantenerse
-  igual al `INDICADORES_CHOROPLETH` de `gaiarda/src/gaiarda/server.py`.
+  igual al `INDICADORES_CHOROPLETH` de `mapo_core/src/mapo_core/server.py`.
   """
   def indicadores_censo do
     [
@@ -44,10 +46,10 @@ defmodule Mapo.MapoCore do
   end
 
   @doc "FeatureCollection de los estados (con polígono)."
-  def estados, do: get("/gaiarda/estados")
+  def estados, do: get("/geo/estados")
 
   @doc "FeatureCollection de municipios, opcionalmente filtrada por estado."
-  def municipios(cve_ent), do: get("/gaiarda/municipios", cve_ent: cve_ent)
+  def municipios(cve_ent), do: get("/geo/municipios", cve_ent: cve_ent)
 
   @doc """
   FeatureCollection de AGEBs del censo, con el valor de `indicador` ya
@@ -56,7 +58,7 @@ defmodule Mapo.MapoCore do
   """
   def coropleta_censo_poblacion(indicador, cve_ent, cve_mun \\ nil) do
     params = [indicador: indicador, cve_ent: cve_ent] |> maybe_put(:cve_mun, cve_mun)
-    get("/gaiarda/choropleth/censo_poblacion", params)
+    get("/censo/choropleth", params)
   end
 
   @doc """
@@ -92,12 +94,11 @@ defmodule Mapo.MapoCore do
   end
 
   @doc """
-  Perfil de un municipio: comercio (DENUE), demografía (censo),
-  consumo (ENIGH) y seguridad (SESNSP) juntos, para responder
-  preguntas de decisión reales sin consultar cada fuente por
-  separado. `"laboral_disponible" => false` en el resultado es a
-  propósito: Gaiarda todavía no expone un endpoint de consulta para
-  ENOE (solo de descarga).
+  Perfil de un municipio. Por ahora solo demografía (censo) trae
+  datos reales; comercio (DENUE), consumo (ENIGH) y seguridad
+  (SESNSP) todavía no están vendorizados a mapo_core, igual que
+  laboral (ENOE). El resultado marca cada uno honesto con
+  `"*_disponible" => false` en vez de fingir que no hay datos.
   """
   def perfil_zona(cve_ent, cve_mun), do: get("/perfil_zona", cve_ent: cve_ent, cve_mun: cve_mun)
 

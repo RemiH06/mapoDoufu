@@ -1,27 +1,36 @@
-import httpx
+import json
+
+import psycopg
 from fastapi import Depends, FastAPI, HTTPException, Request
 from fastapi.responses import JSONResponse
+from psycopg_pool import AsyncConnectionPool
 from pydantic import BaseModel
 
 from mapo_core.coloreado_mapa import PoligonoColoreable, colorear_mapa
-from mapo_core.gaiarda_client import GaiardaClient
+from mapo_core.db import get_pool
 from mapo_core.isocronas import calcular_isocrona
 from mapo_core.osrm_client import OSRMClient
-from mapo_core.perfil_zona import construir_perfil
 from mapo_core.voronoi import PuntoVoronoi, calcular_voronoi
 from mapo_core.vrp import Parada, Vehiculo, resolver_vrp
 
 app = FastAPI(title="mapo_core")
 
-_gaiarda_client: GaiardaClient | None = None
 _osrm_client: OSRMClient | None = None
 
+# Simplificacion aplicada al leer poligonos (no al guardar): mismo
+# valor y misma razon que ya usaba Gaiarda, sin esto Leaflet se pone
+# lento dibujando miles de vertices de mas.
+_TOLERANCIA_SIMPLIFICACION = 0.0005
 
-def get_gaiarda_client() -> GaiardaClient:
-    global _gaiarda_client
-    if _gaiarda_client is None:
-        _gaiarda_client = GaiardaClient()
-    return _gaiarda_client
+# Unicos indicadores permitidos como columna dinamica en el
+# choropleth. Whitelist explicita, no se interpola el nombre de
+# columna directo del query param (puerta a inyeccion SQL).
+INDICADORES_CHOROPLETH = {
+    "pobtot", "pobfem", "pobmas", "p_0a2", "p_3a5", "p_6a11", "p_12a14",
+    "p_15a17", "p_18a24", "p_60ymas", "graproes", "pea", "pea_f", "pea_m",
+    "pe_inac", "pocupada", "pdesocup", "pder_ss", "tothog", "vivtot",
+    "tvivhab", "prom_ocup", "vph_inter", "vph_pc", "vph_autom", "vph_cel", "vph_snbien",
+}
 
 
 def get_osrm_client() -> OSRMClient:
@@ -31,22 +40,11 @@ def get_osrm_client() -> OSRMClient:
     return _osrm_client
 
 
-@app.exception_handler(httpx.TransportError)
-async def gaiarda_no_disponible(request: Request, exc: httpx.TransportError) -> JSONResponse:
+@app.exception_handler(psycopg.OperationalError)
+async def base_de_datos_no_disponible(request: Request, exc: psycopg.OperationalError) -> JSONResponse:
     return JSONResponse(
-        status_code=502,
-        content={"error": "Gaiarda no esta disponible ahorita mismo.", "detalle": str(exc)},
-    )
-
-
-@app.exception_handler(httpx.HTTPStatusError)
-async def gaiarda_respondio_error(request: Request, exc: httpx.HTTPStatusError) -> JSONResponse:
-    return JSONResponse(
-        status_code=502,
-        content={
-            "error": "Gaiarda respondio con un error.",
-            "status_gaiarda": exc.response.status_code,
-        },
+        status_code=503,
+        content={"error": "La base de datos de mapo_core no esta disponible ahorita mismo.", "detalle": str(exc)},
     )
 
 
@@ -55,32 +53,124 @@ def salud() -> dict[str, str]:
     return {"estado": "ok"}
 
 
-@app.get("/gaiarda/status")
-async def gaiarda_status(client: GaiardaClient = Depends(get_gaiarda_client)) -> dict:
-    """Prueba viva de la conexion: le pasa directo el /status de Gaiarda."""
-    return await client.status()
+def _feature(cvegeo: str, nombre: str, geojson_geom: str | None, props_extra: dict | None = None) -> dict:
+    propiedades = {"cvegeo": cvegeo, "nomgeo": nombre, **(props_extra or {})}
+    return {
+        "type": "Feature",
+        "properties": propiedades,
+        "geometry": json.loads(geojson_geom) if geojson_geom else None,
+    }
 
 
-@app.get("/gaiarda/estados")
-async def gaiarda_estados(client: GaiardaClient = Depends(get_gaiarda_client)) -> dict:
-    return await client.estados()
+@app.get("/geo/estados")
+async def geo_estados(pool: AsyncConnectionPool = Depends(get_pool)) -> dict:
+    """Los 32 estados, con su poligono real (propio de mapo_core, ya
+    no un passthrough de Gaiarda)."""
+    async with pool.connection() as conn:
+        cursor = await conn.execute(
+            """SELECT cve_ent, nombre, ST_AsGeoJSON(ST_Simplify(geom, %(tolerancia)s))
+               FROM entidades ORDER BY cve_ent""",
+            {"tolerancia": _TOLERANCIA_SIMPLIFICACION},
+        )
+        filas = await cursor.fetchall()
+
+    features = [_feature(cve_ent, nombre, geom) for cve_ent, nombre, geom in filas]
+    return {"type": "FeatureCollection", "features": features}
 
 
-@app.get("/gaiarda/municipios")
-async def gaiarda_municipios(
-    cve_ent: str | None = None, client: GaiardaClient = Depends(get_gaiarda_client)
+@app.get("/geo/municipios")
+async def geo_municipios(
+    cve_ent: str | None = None, pool: AsyncConnectionPool = Depends(get_pool)
 ) -> dict:
-    return await client.municipios(cve_ent=cve_ent)
+    """Municipios, opcionalmente filtrados por estado, con su poligono real."""
+    async with pool.connection() as conn:
+        if cve_ent:
+            cursor = await conn.execute(
+                """SELECT cvegeo, cve_mun, nombre, ST_AsGeoJSON(ST_Simplify(geom, %(tolerancia)s))
+                   FROM municipios WHERE cve_ent = %(cve_ent)s ORDER BY cvegeo""",
+                {"cve_ent": cve_ent, "tolerancia": _TOLERANCIA_SIMPLIFICACION},
+            )
+        else:
+            cursor = await conn.execute(
+                """SELECT cvegeo, cve_mun, nombre, ST_AsGeoJSON(ST_Simplify(geom, %(tolerancia)s))
+                   FROM municipios ORDER BY cvegeo""",
+                {"tolerancia": _TOLERANCIA_SIMPLIFICACION},
+            )
+        filas = await cursor.fetchall()
+
+    features = [_feature(cvegeo, nombre, geom, {"cve_mun": cve_mun}) for cvegeo, cve_mun, nombre, geom in filas]
+    return {"type": "FeatureCollection", "features": features}
 
 
-@app.get("/gaiarda/choropleth/censo_poblacion")
-async def gaiarda_choropleth_censo_poblacion(
+@app.get("/geo/agebs")
+async def geo_agebs(
+    cve_ent: str, cve_mun: str | None = None, pool: AsyncConnectionPool = Depends(get_pool)
+) -> dict:
+    """AGEBs urbanas, con su poligono real. `cve_ent` obligatorio:
+    sin esto podrian ser decenas de miles de poligonos."""
+    async with pool.connection() as conn:
+        if cve_mun:
+            cursor = await conn.execute(
+                """SELECT cvegeo, ST_AsGeoJSON(ST_Simplify(geom, %(tolerancia)s))
+                   FROM agebs WHERE cve_ent = %(cve_ent)s AND cve_mun = %(cve_mun)s ORDER BY cvegeo""",
+                {"cve_ent": cve_ent, "cve_mun": cve_mun, "tolerancia": _TOLERANCIA_SIMPLIFICACION},
+            )
+        else:
+            cursor = await conn.execute(
+                """SELECT cvegeo, ST_AsGeoJSON(ST_Simplify(geom, %(tolerancia)s))
+                   FROM agebs WHERE cve_ent = %(cve_ent)s ORDER BY cvegeo""",
+                {"cve_ent": cve_ent, "tolerancia": _TOLERANCIA_SIMPLIFICACION},
+            )
+        filas = await cursor.fetchall()
+
+    features = [_feature(cvegeo, cvegeo, geom) for cvegeo, geom in filas]
+    return {"type": "FeatureCollection", "features": features}
+
+
+@app.get("/censo/choropleth")
+async def censo_choropleth(
     indicador: str,
     cve_ent: str,
     cve_mun: str | None = None,
-    client: GaiardaClient = Depends(get_gaiarda_client),
+    pool: AsyncConnectionPool = Depends(get_pool),
 ) -> dict:
-    return await client.choropleth_censo_poblacion(indicador, cve_ent, cve_mun=cve_mun)
+    """Cruza los poligonos de AGEB con el Censo de Poblacion por AGEB,
+    por cvegeo (propio de mapo_core, ya no un passthrough de Gaiarda).
+    Si falta el censo de un AGEB, el poligono trae `valor_choropleth:
+    null`, nunca se inventa un cero."""
+    if indicador not in INDICADORES_CHOROPLETH:
+        raise HTTPException(400, f"indicador invalido. Usa uno de: {sorted(INDICADORES_CHOROPLETH)}")
+
+    async with pool.connection() as conn:
+        if cve_mun:
+            cursor = await conn.execute(
+                f"""SELECT a.cvegeo, ST_AsGeoJSON(ST_Simplify(a.geom, %(tolerancia)s)), c.{indicador}
+                    FROM agebs a
+                    LEFT JOIN fuente_censo_poblacion c
+                      ON c.cvegeo = a.cvegeo AND c.nivel = 'ageb'
+                    WHERE a.cve_ent = %(cve_ent)s AND a.cve_mun = %(cve_mun)s
+                    ORDER BY a.cvegeo""",
+                {"cve_ent": cve_ent, "cve_mun": cve_mun, "tolerancia": _TOLERANCIA_SIMPLIFICACION},
+            )
+        else:
+            cursor = await conn.execute(
+                f"""SELECT a.cvegeo, ST_AsGeoJSON(ST_Simplify(a.geom, %(tolerancia)s)), c.{indicador}
+                    FROM agebs a
+                    LEFT JOIN fuente_censo_poblacion c
+                      ON c.cvegeo = a.cvegeo AND c.nivel = 'ageb'
+                    WHERE a.cve_ent = %(cve_ent)s
+                    ORDER BY a.cvegeo""",
+                {"cve_ent": cve_ent, "tolerancia": _TOLERANCIA_SIMPLIFICACION},
+            )
+        filas = await cursor.fetchall()
+
+    features = []
+    for cvegeo, geom, valor in filas:
+        if geom is None:
+            continue
+        features.append(_feature(cvegeo, cvegeo, geom, {"indicador": indicador, "valor_choropleth": valor}))
+
+    return {"type": "FeatureCollection", "features": features}
 
 
 class ParadaEntrada(BaseModel):
@@ -221,52 +311,39 @@ def voronoi_calcular(solicitud: SolicitudVoronoi) -> dict:
     return {"celdas": resultado.celdas, "metodo": resultado.metodo}
 
 
+async def _buscar_municipio(pool: AsyncConnectionPool, cve_ent: str, cve_mun: str) -> dict | None:
+    async with pool.connection() as conn:
+        cursor = await conn.execute(
+            "SELECT nombre, ST_AsGeoJSON(geom) FROM municipios WHERE cve_ent = %(cve_ent)s AND cve_mun = %(cve_mun)s",
+            {"cve_ent": cve_ent, "cve_mun": cve_mun},
+        )
+        fila = await cursor.fetchone()
+    if fila is None or fila[1] is None:
+        return None
+    nombre, geom = fila
+    return {"nombre": nombre, "geometry": json.loads(geom)}
+
+
 @app.get("/voronoi/denue")
 async def voronoi_denue(
     cve_ent: str,
     cve_mun: str,
     clase_actividad: str | None = None,
-    client: GaiardaClient = Depends(get_gaiarda_client),
+    pool: AsyncConnectionPool = Depends(get_pool),
 ) -> dict:
-    """Voronoi de los negocios de DENUE en un municipio (opcionalmente
-    filtrados por `clase_actividad`), recortado al poligono real del
-    municipio: "a cual de estos negocios le queda mas cerca cada
-    lugar dentro del municipio"."""
-    municipios = await client.municipios(cve_ent=cve_ent)
-    cvegeo_municipio = f"{cve_ent}{cve_mun}"
-    municipio = next(
-        (f for f in municipios["features"] if f.get("properties", {}).get("cvegeo") == cvegeo_municipio),
-        None,
-    )
+    """Voronoi de los negocios de DENUE en un municipio. DENUE
+    todavia no esta portado a mapo_core (ver MAPO_PENDIENTES.md): el
+    poligono del municipio ya viene de datos propios, pero sin
+    negocios no hay nada que recortar todavia."""
+    municipio = await _buscar_municipio(pool, cve_ent, cve_mun)
     if municipio is None:
         raise HTTPException(
             404,
-            f"No se encontro el municipio {cvegeo_municipio} (¿ya se corrio 'gaiarda municipios' para ese estado?).",
+            f"No se encontro el municipio {cve_ent}{cve_mun} (¿ya se corrio "
+            "'python -m mapo_core.cli municipios --estado' para ese estado?).",
         )
 
-    negocios = await client.denue(cve_ent=cve_ent, cve_mun=cve_mun, clase_actividad=clase_actividad)
-    puntos = [
-        PuntoVoronoi(
-            lat=f["geometry"]["coordinates"][1],
-            lon=f["geometry"]["coordinates"][0],
-            id=str(f["properties"]["id"]),
-            nombre=f["properties"].get("nombre"),
-        )
-        for f in negocios["features"]
-    ]
-
-    if len(puntos) < 3:
-        raise HTTPException(
-            422,
-            f"Solo hay {len(puntos)} negocio(s) con esos filtros; se necesitan al menos 3 para un diagrama de Voronoi.",
-        )
-
-    try:
-        resultado = calcular_voronoi(puntos, limite=municipio["geometry"])
-    except ValueError as exc:
-        raise HTTPException(422, str(exc)) from None
-
-    return {"celdas": resultado.celdas, "metodo": resultado.metodo, "num_negocios": len(puntos)}
+    raise HTTPException(501, "DENUE todavia no esta portado a mapo_core, sin esto no hay negocios que recortar.")
 
 
 class PoligonoColoreableEntrada(BaseModel):
@@ -291,25 +368,34 @@ def coloreado_calcular(solicitud: SolicitudColoreado) -> dict:
 
 
 @app.get("/coloreado/municipios")
-async def coloreado_municipios(
-    cve_ent: str, client: GaiardaClient = Depends(get_gaiarda_client)
-) -> dict:
+async def coloreado_municipios(cve_ent: str, pool: AsyncConnectionPool = Depends(get_pool)) -> dict:
     """Los municipios de un estado, cada uno con su `color_indice` ya
     calculado para que dos municipios vecinos nunca se vean del mismo
     color en un mapa categorico."""
-    municipios = await client.municipios(cve_ent=cve_ent)
+    async with pool.connection() as conn:
+        cursor = await conn.execute(
+            "SELECT cvegeo, cve_mun, nombre, ST_AsGeoJSON(ST_Simplify(geom, %(tolerancia)s)) "
+            "FROM municipios WHERE cve_ent = %(cve_ent)s ORDER BY cvegeo",
+            {"cve_ent": cve_ent, "tolerancia": _TOLERANCIA_SIMPLIFICACION},
+        )
+        filas = await cursor.fetchall()
 
     poligonos = [
-        PoligonoColoreable(id=f["properties"]["cvegeo"], geometria=f["geometry"])
-        for f in municipios["features"]
+        PoligonoColoreable(id=cvegeo, geometria=json.loads(geom))
+        for cvegeo, _cve_mun, _nombre, geom in filas
+        if geom is not None
     ]
     resultado = colorear_mapa(poligonos)
 
-    features = []
-    for f in municipios["features"]:
-        cvegeo = f["properties"]["cvegeo"]
-        f = {**f, "properties": {**f["properties"], "color_indice": resultado.color_por_id.get(cvegeo)}}
-        features.append(f)
+    features = [
+        _feature(
+            cvegeo,
+            nombre,
+            geom,
+            {"cve_mun": cve_mun, "color_indice": resultado.color_por_id.get(cvegeo)},
+        )
+        for cvegeo, cve_mun, nombre, geom in filas
+    ]
 
     return {
         "type": "FeatureCollection",
@@ -319,31 +405,34 @@ async def coloreado_municipios(
 
 
 @app.get("/perfil_zona")
-async def perfil_zona(
-    cve_ent: str, cve_mun: str, client: GaiardaClient = Depends(get_gaiarda_client)
-) -> dict:
-    """Perfil de un municipio: comercio (DENUE), demografia (censo),
-    consumo (ENIGH) y seguridad (SESNSP) juntos, para responder
-    preguntas de decision reales sin consultar cada fuente por
-    separado. Cada numero viene directo de Gaiarda, nada se pondera ni
-    se resume en un puntaje unico. `laboral_disponible: false` es a
-    proposito: Gaiarda todavia no expone un endpoint de consulta para
-    ENOE (solo de descarga)."""
-    perfil = await construir_perfil(client, cve_ent, cve_mun)
+async def perfil_zona(cve_ent: str, cve_mun: str, pool: AsyncConnectionPool = Depends(get_pool)) -> dict:
+    """Perfil de un municipio: por ahora solo demografia (censo), ya
+    con datos propios de mapo_core. Comercio (DENUE), consumo (ENIGH)
+    y seguridad (SESNSP) todavia no estan portados (igual que laboral/
+    ENOE, que tampoco lo estaba del lado de Gaiarda): se marcan
+    honestos como no disponibles, en vez de fingir que no hay datos
+    (que es un mensaje distinto: "no hay negocios" no es lo mismo que
+    "no hemos portado esa fuente todavia")."""
+    async with pool.connection() as conn:
+        cursor = await conn.execute(
+            """SELECT pobtot, pobfem, pobmas, graproes, pea, pocupada, pdesocup, tothog, vivtot
+               FROM fuente_censo_poblacion
+               WHERE cve_ent = %(cve_ent)s AND cve_mun = %(cve_mun)s AND nivel = 'municipio'""",
+            {"cve_ent": cve_ent, "cve_mun": cve_mun},
+        )
+        fila = await cursor.fetchone()
+
+    demografia = None
+    if fila is not None:
+        campos = ["pobtot", "pobfem", "pobmas", "graproes", "pea", "pocupada", "pdesocup", "tothog", "vivtot"]
+        demografia = dict(zip(campos, fila))
 
     return {
-        "cve_ent": perfil.cve_ent,
-        "cve_mun": perfil.cve_mun,
-        "comercio": {
-            "total_negocios": perfil.comercio.total_negocios,
-            "top_clases_actividad": perfil.comercio.top_clases_actividad,
-        },
-        "demografia": perfil.demografia,
-        "consumo": perfil.consumo,
-        "seguridad": {
-            "total_incidentes": perfil.seguridad.total_incidentes,
-            "anio_mas_reciente": perfil.seguridad.anio_mas_reciente,
-            "por_tipo_delito": perfil.seguridad.por_tipo_delito,
-        },
+        "cve_ent": cve_ent,
+        "cve_mun": cve_mun,
+        "demografia": demografia,
+        "comercio_disponible": False,
+        "consumo_disponible": False,
+        "seguridad_disponible": False,
         "laboral_disponible": False,
     }

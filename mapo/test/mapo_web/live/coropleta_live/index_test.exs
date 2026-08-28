@@ -30,10 +30,10 @@ defmodule MapoWeb.CoropletaLive.IndexTest do
   test "lists estados from mapo_core and lets you pick a municipio", %{conn: conn} do
     Req.Test.stub(Mapo.MapoCore, fn conn ->
       case conn.request_path do
-        "/gaiarda/estados" ->
+        "/geo/estados" ->
           Req.Test.json(conn, %{"type" => "FeatureCollection", "features" => [feature("14", "Jalisco")]})
 
-        "/gaiarda/municipios" ->
+        "/geo/municipios" ->
           assert conn.params["cve_ent"] == "14"
 
           Req.Test.json(conn, %{
@@ -58,10 +58,10 @@ defmodule MapoWeb.CoropletaLive.IndexTest do
   test "generar pushes a coropleta event with the geojson", %{conn: conn} do
     Req.Test.stub(Mapo.MapoCore, fn conn ->
       case conn.request_path do
-        "/gaiarda/estados" ->
+        "/geo/estados" ->
           Req.Test.json(conn, %{"type" => "FeatureCollection", "features" => [feature("14", "Jalisco")]})
 
-        "/gaiarda/choropleth/censo_poblacion" ->
+        "/censo/choropleth" ->
           assert conn.params["indicador"] == "pobtot"
           assert conn.params["cve_ent"] == "14"
 
@@ -92,16 +92,16 @@ defmodule MapoWeb.CoropletaLive.IndexTest do
   } do
     Req.Test.stub(Mapo.MapoCore, fn conn ->
       case conn.request_path do
-        "/gaiarda/estados" ->
+        "/geo/estados" ->
           Req.Test.json(conn, %{"type" => "FeatureCollection", "features" => [feature("14", "Jalisco")]})
 
-        "/gaiarda/municipios" ->
+        "/geo/municipios" ->
           Req.Test.json(conn, %{
             "type" => "FeatureCollection",
             "features" => [municipio_feature("14", "039", "Guadalajara")]
           })
 
-        "/gaiarda/choropleth/censo_poblacion" ->
+        "/censo/choropleth" ->
           assert conn.params["cve_mun"] == "039"
           Req.Test.json(conn, %{"type" => "FeatureCollection", "features" => []})
       end
@@ -120,7 +120,7 @@ defmodule MapoWeb.CoropletaLive.IndexTest do
 
   test "generar without an estado shows a flash instead of calling mapo_core", %{conn: conn} do
     Req.Test.stub(Mapo.MapoCore, fn conn ->
-      assert conn.request_path == "/gaiarda/estados"
+      assert conn.request_path == "/geo/estados"
       Req.Test.json(conn, %{"type" => "FeatureCollection", "features" => []})
     end)
 
@@ -137,10 +137,10 @@ defmodule MapoWeb.CoropletaLive.IndexTest do
   test "an empty featurecollection from mapo_core shows an honest message", %{conn: conn} do
     Req.Test.stub(Mapo.MapoCore, fn conn ->
       case conn.request_path do
-        "/gaiarda/estados" ->
+        "/geo/estados" ->
           Req.Test.json(conn, %{"type" => "FeatureCollection", "features" => [feature("14", "Jalisco")]})
 
-        "/gaiarda/choropleth/censo_poblacion" ->
+        "/censo/choropleth" ->
           Req.Test.json(conn, %{"type" => "FeatureCollection", "features" => []})
       end
     end)

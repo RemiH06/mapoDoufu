@@ -21,7 +21,7 @@ defmodule MapoWeb.ColoreadoLive.IndexTest do
 
   test "lists estados from mapo_core", %{conn: conn} do
     Req.Test.stub(Mapo.MapoCore, fn conn ->
-      assert conn.request_path == "/gaiarda/estados"
+      assert conn.request_path == "/geo/estados"
       Req.Test.json(conn, %{"type" => "FeatureCollection", "features" => [estado_feature("14", "Jalisco")]})
     end)
 
@@ -32,7 +32,7 @@ defmodule MapoWeb.ColoreadoLive.IndexTest do
   test "generar pushes a coloreado event with the geojson", %{conn: conn} do
     Req.Test.stub(Mapo.MapoCore, fn conn ->
       case conn.request_path do
-        "/gaiarda/estados" ->
+        "/geo/estados" ->
           Req.Test.json(conn, %{"type" => "FeatureCollection", "features" => [estado_feature("14", "Jalisco")]})
 
         "/coloreado/municipios" ->
@@ -65,7 +65,7 @@ defmodule MapoWeb.ColoreadoLive.IndexTest do
 
   test "generar without an estado shows a flash instead of calling mapo_core", %{conn: conn} do
     Req.Test.stub(Mapo.MapoCore, fn conn ->
-      assert conn.request_path == "/gaiarda/estados"
+      assert conn.request_path == "/geo/estados"
       Req.Test.json(conn, %{"type" => "FeatureCollection", "features" => []})
     end)
 
@@ -82,7 +82,7 @@ defmodule MapoWeb.ColoreadoLive.IndexTest do
   test "an empty featurecollection from mapo_core shows an honest message", %{conn: conn} do
     Req.Test.stub(Mapo.MapoCore, fn conn ->
       case conn.request_path do
-        "/gaiarda/estados" ->
+        "/geo/estados" ->
           Req.Test.json(conn, %{"type" => "FeatureCollection", "features" => [estado_feature("14", "Jalisco")]})
 
         "/coloreado/municipios" ->

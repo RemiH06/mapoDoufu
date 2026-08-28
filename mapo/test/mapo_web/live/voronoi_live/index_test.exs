@@ -43,10 +43,10 @@ defmodule MapoWeb.VoronoiLive.IndexTest do
   test "lists estados and lets you pick a municipio with its cve_mun (3 digits)", %{conn: conn} do
     Req.Test.stub(Mapo.MapoCore, fn conn ->
       case conn.request_path do
-        "/gaiarda/estados" ->
+        "/geo/estados" ->
           Req.Test.json(conn, %{"type" => "FeatureCollection", "features" => [estado_feature("14", "Jalisco")]})
 
-        "/gaiarda/municipios" ->
+        "/geo/municipios" ->
           assert conn.params["cve_ent"] == "14"
 
           Req.Test.json(conn, %{
@@ -71,10 +71,10 @@ defmodule MapoWeb.VoronoiLive.IndexTest do
   defp montar_con_municipio(conn, stub_extra) do
     Req.Test.stub(Mapo.MapoCore, fn conn ->
       case conn.request_path do
-        "/gaiarda/estados" ->
+        "/geo/estados" ->
           Req.Test.json(conn, %{"type" => "FeatureCollection", "features" => [estado_feature("14", "Jalisco")]})
 
-        "/gaiarda/municipios" ->
+        "/geo/municipios" ->
           Req.Test.json(conn, %{
             "type" => "FeatureCollection",
             "features" => [municipio_feature("14", "039", "Guadalajara")]
@@ -123,7 +123,7 @@ defmodule MapoWeb.VoronoiLive.IndexTest do
 
   test "generar without a municipio shows a flash instead of calling mapo_core", %{conn: conn} do
     Req.Test.stub(Mapo.MapoCore, fn conn ->
-      assert conn.request_path == "/gaiarda/estados"
+      assert conn.request_path == "/geo/estados"
       Req.Test.json(conn, %{"type" => "FeatureCollection", "features" => []})
     end)
 

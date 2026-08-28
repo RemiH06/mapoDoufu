@@ -15,7 +15,12 @@ services:
     ports:
       - "8010:8010"
     environment:
-      GAIARDA_API_URL: ${GAIARDA_API_URL:-http://host.docker.internal:8420}
+      DATABASE_HOST: db
+      DATABASE_NAME: mapo_dev
+      DATABASE_USER: postgres
+      DATABASE_PASSWORD: postgres
+    depends_on:
+      - db
     volumes:
       - ./mapo_core/src:/app/src
 

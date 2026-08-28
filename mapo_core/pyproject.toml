@@ -1,7 +1,7 @@
 [project]
 name = "mapo-core"
 version = "0.1.0"
-description = "Motor de datos y decision de Mapo: VRP, isocronas, cliente de la API de Gaiarda"
+description = "Motor de datos y decision de Mapo: VRP, isocronas, datos geograficos propios (vendorizados de Gaiarda)"
 requires-python = ">=3.11"
 dependencies = [
     "fastapi>=0.110",
@@ -10,6 +10,7 @@ dependencies = [
     "ortools>=9.10",
     "scipy>=1.13",
     "shapely>=2.0",
+    "psycopg[binary,pool]>=3.1",
 ]
 
 [project.optional-dependencies]

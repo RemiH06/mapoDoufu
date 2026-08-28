@@ -3,9 +3,9 @@ defmodule Mapo.MapoCoreTest do
 
   alias Mapo.MapoCore
 
-  test "estados/0 pega a /gaiarda/estados" do
+  test "estados/0 pega a /geo/estados" do
     Req.Test.stub(Mapo.MapoCore, fn conn ->
-      assert conn.request_path == "/gaiarda/estados"
+      assert conn.request_path == "/geo/estados"
       Req.Test.json(conn, %{"type" => "FeatureCollection", "features" => []})
     end)
 
@@ -14,7 +14,7 @@ defmodule Mapo.MapoCoreTest do
 
   test "municipios/1 manda cve_ent como query param" do
     Req.Test.stub(Mapo.MapoCore, fn conn ->
-      assert conn.request_path == "/gaiarda/municipios"
+      assert conn.request_path == "/geo/municipios"
       assert conn.params["cve_ent"] == "14"
       Req.Test.json(conn, %{"type" => "FeatureCollection", "features" => []})
     end)
@@ -24,7 +24,7 @@ defmodule Mapo.MapoCoreTest do
 
   test "coropleta_censo_poblacion/3 manda indicador y cve_ent, sin cve_mun por defecto" do
     Req.Test.stub(Mapo.MapoCore, fn conn ->
-      assert conn.request_path == "/gaiarda/choropleth/censo_poblacion"
+      assert conn.request_path == "/censo/choropleth"
       assert conn.params["indicador"] == "pobtot"
       assert conn.params["cve_ent"] == "14"
       refute Map.has_key?(conn.params, "cve_mun")
@@ -79,7 +79,7 @@ defmodule Mapo.MapoCoreTest do
       assert conn.request_path == "/perfil_zona"
       assert conn.params["cve_ent"] == "14"
       assert conn.params["cve_mun"] == "039"
-      Req.Test.json(conn, %{"comercio" => %{"total_negocios" => 0}, "laboral_disponible" => false})
+      Req.Test.json(conn, %{"demografia" => nil, "comercio_disponible" => false, "laboral_disponible" => false})
     end)
 
     assert {:ok, %{"laboral_disponible" => false}} = MapoCore.perfil_zona("14", "039")

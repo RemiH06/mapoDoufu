@@ -1,46 +1,54 @@
+import pytest
 from fastapi.testclient import TestClient
 
-from mapo_core.server import app, get_gaiarda_client
+from mapo_core.db import get_pool
+from mapo_core.server import app
 
 
-class _ClienteGaiardaFalso:
-    async def denue(self, cve_ent=None, cve_mun=None, cve_ageb=None, clase_actividad=None):
-        return {
-            "type": "FeatureCollection",
-            "features": [
-                {"type": "Feature", "properties": {"id": "1", "clase_actividad": "papeleria"}, "geometry": {}}
-            ],
-        }
-
-    async def censo_poblacion(self, cve_ent=None, cve_mun=None, nivel=None):
-        return [{"cvegeo": "14039", "pobtot": 1500000}]
-
-    async def enigh_resumen(self, columna="gasto_mon", cve_ent=None, por_dia=False):
-        return {"14039": {"promedio": 5000, "n_hogares_muestra": 40}}
-
-    async def sesnsp(self, cve_ent=None, cve_mun=None, anio=None, tipo_delito=None):
-        return [{"anio": 2024, "tipo_delito": "robo", "cantidad": 10}]
+async def _insertar_censo_municipio(conn, cve_ent, cve_mun, pobtot):
+    await conn.execute(
+        """INSERT INTO fuente_censo_poblacion (cvegeo, nivel, cve_ent, cve_mun, pobtot, datos_json)
+           VALUES (%(cvegeo)s, 'municipio', %(cve_ent)s, %(cve_mun)s, %(pobtot)s, '{}'::jsonb)""",
+        {"cvegeo": f"{cve_ent}{cve_mun}", "cve_ent": cve_ent, "cve_mun": cve_mun, "pobtot": pobtot},
+    )
 
 
-def test_perfil_zona_junta_las_4_fuentes():
-    app.dependency_overrides[get_gaiarda_client] = lambda: _ClienteGaiardaFalso()
+@pytest.mark.asyncio
+async def test_perfil_zona_con_censo_trae_demografia(conn, pool_de_una_conexion):
+    await _insertar_censo_municipio(conn, "14", "039", pobtot=1500000)
+    app.dependency_overrides[get_pool] = lambda: pool_de_una_conexion
     cliente = TestClient(app)
 
     respuesta = cliente.get("/perfil_zona", params={"cve_ent": "14", "cve_mun": "039"})
 
     assert respuesta.status_code == 200
     cuerpo = respuesta.json()
-    assert cuerpo["comercio"]["total_negocios"] == 1
     assert cuerpo["demografia"]["pobtot"] == 1500000
-    assert cuerpo["consumo"]["promedio"] == 5000
-    assert cuerpo["seguridad"]["total_incidentes"] == 10
-    assert cuerpo["laboral_disponible"] is False
     app.dependency_overrides.clear()
 
 
-def test_perfil_zona_requiere_cve_ent_y_cve_mun():
+@pytest.mark.asyncio
+async def test_perfil_zona_sin_censo_trae_demografia_null(pool_de_una_conexion):
+    app.dependency_overrides[get_pool] = lambda: pool_de_una_conexion
     cliente = TestClient(app)
 
-    respuesta = cliente.get("/perfil_zona")
+    respuesta = cliente.get("/perfil_zona", params={"cve_ent": "14", "cve_mun": "999"})
 
-    assert respuesta.status_code == 422
+    assert respuesta.status_code == 200
+    assert respuesta.json()["demografia"] is None
+    app.dependency_overrides.clear()
+
+
+@pytest.mark.asyncio
+async def test_perfil_zona_marca_honesto_lo_que_no_esta_portado(pool_de_una_conexion):
+    app.dependency_overrides[get_pool] = lambda: pool_de_una_conexion
+    cliente = TestClient(app)
+
+    respuesta = cliente.get("/perfil_zona", params={"cve_ent": "14", "cve_mun": "039"})
+
+    cuerpo = respuesta.json()
+    assert cuerpo["comercio_disponible"] is False
+    assert cuerpo["consumo_disponible"] is False
+    assert cuerpo["seguridad_disponible"] is False
+    assert cuerpo["laboral_disponible"] is False
+    app.dependency_overrides.clear()

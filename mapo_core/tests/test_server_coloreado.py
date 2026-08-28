@@ -1,7 +1,11 @@
+import json
+
+import pytest
 from fastapi.testclient import TestClient
 from shapely.geometry import box
 
-from mapo_core.server import app, get_gaiarda_client
+from mapo_core.db import get_pool
+from mapo_core.server import app
 
 CUADRICULA_2X2 = [
     {"id": "0-0", "geometria": box(0, 0, 1, 1).__geo_interface__},
@@ -33,30 +37,20 @@ def test_coloreado_calcular_lista_vacia():
     assert respuesta.json() == {"color_por_id": {}, "num_colores": 0}
 
 
-MUNICIPIOS_FC = {
-    "type": "FeatureCollection",
-    "features": [
-        {
-            "type": "Feature",
-            "properties": {"cvegeo": "14001", "cve_mun": "001", "nomgeo": "A"},
-            "geometry": box(0, 0, 1, 1).__geo_interface__,
-        },
-        {
-            "type": "Feature",
-            "properties": {"cvegeo": "14002", "cve_mun": "002", "nomgeo": "B"},
-            "geometry": box(1, 0, 2, 1).__geo_interface__,
-        },
-    ],
-}
+@pytest.mark.asyncio
+async def test_coloreado_municipios_agrega_color_indice_a_cada_feature(conn, pool_de_una_conexion):
+    for cvegeo, cve_mun, nombre, geom in [
+        ("14001", "001", "A", box(0, 0, 1, 1).__geo_interface__),
+        ("14002", "002", "B", box(1, 0, 2, 1).__geo_interface__),
+    ]:
+        await conn.execute(
+            """INSERT INTO municipios (cvegeo, cve_ent, cve_mun, nombre, geom)
+               VALUES (%(cvegeo)s, '14', %(cve_mun)s, %(nombre)s,
+                       ST_Multi(ST_SetSRID(ST_GeomFromGeoJSON(%(geojson)s), 4326)))""",
+            {"cvegeo": cvegeo, "cve_mun": cve_mun, "nombre": nombre, "geojson": json.dumps(geom)},
+        )
 
-
-class _ClienteGaiardaFalso:
-    async def municipios(self, cve_ent=None):
-        return MUNICIPIOS_FC
-
-
-def test_coloreado_municipios_agrega_color_indice_a_cada_feature():
-    app.dependency_overrides[get_gaiarda_client] = lambda: _ClienteGaiardaFalso()
+    app.dependency_overrides[get_pool] = lambda: pool_de_una_conexion
     cliente = TestClient(app)
 
     respuesta = cliente.get("/coloreado/municipios", params={"cve_ent": "14"})
