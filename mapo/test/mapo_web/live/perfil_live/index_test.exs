@@ -32,7 +32,10 @@ defmodule MapoWeb.PerfilLive.IndexTest do
         "tothog" => 400000,
         "vivtot" => 420000
       },
-      "comercio_disponible" => false,
+      "comercio" => %{
+        "total_negocios" => 3200,
+        "top_clases_actividad" => [["Comercio al por menor de abarrotes", 450]]
+      },
       "consumo_disponible" => false,
       "seguridad_disponible" => false,
       "laboral_disponible" => false
@@ -113,7 +116,7 @@ defmodule MapoWeb.PerfilLive.IndexTest do
         "/perfil_zona" ->
           Req.Test.json(conn, %{
             "demografia" => nil,
-            "comercio_disponible" => false,
+            "comercio" => %{"total_negocios" => 0, "top_clases_actividad" => []},
             "consumo_disponible" => false,
             "seguridad_disponible" => false,
             "laboral_disponible" => false

@@ -63,9 +63,12 @@ defmodule MapoWeb.PerfilLive.Index do
 
         <div class="card bg-base-200 p-4">
           <h3 class="font-mono text-sm font-bold mb-2">Comercio (DENUE)</h3>
-          <p class="text-sm text-base-content/70">
-            No disponible todavía: esta fuente no está vendorizada a mapo_core.
-          </p>
+          <p>{@perfil["comercio"]["total_negocios"]} negocios registrados</p>
+          <ul :if={@perfil["comercio"]["top_clases_actividad"] != []} class="text-sm mt-2 space-y-1">
+            <li :for={[clase, cantidad] <- @perfil["comercio"]["top_clases_actividad"]}>
+              {clase}: {cantidad}
+            </li>
+          </ul>
         </div>
 
         <div class="card bg-base-200 p-4">

@@ -83,6 +83,31 @@ CREATE INDEX IF NOT EXISTS idx_censo_nivel   ON fuente_censo_poblacion (nivel);
 CREATE INDEX IF NOT EXISTS idx_censo_cve_ent ON fuente_censo_poblacion (cve_ent);
 CREATE INDEX IF NOT EXISTS idx_censo_cve_mun ON fuente_censo_poblacion (cve_ent, cve_mun);
 
+CREATE TABLE IF NOT EXISTS fuente_denue_negocios (
+    id              TEXT PRIMARY KEY,
+    nombre          TEXT,
+    razon_social    TEXT,
+    clase_actividad TEXT,
+    estrato         TEXT,
+    calle           TEXT,
+    colonia         TEXT,
+    codigo_postal   TEXT,
+    ubicacion       TEXT,
+    telefono        TEXT,
+    correo          TEXT,
+    sitio_web       TEXT,
+    tipo            TEXT,
+    lat             REAL,
+    lon             REAL,
+    cve_ent         TEXT,
+    cve_mun         TEXT,
+    cve_ageb        TEXT,
+    actualizado     TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS idx_denue_cve_ent ON fuente_denue_negocios (cve_ent);
+CREATE INDEX IF NOT EXISTS idx_denue_cve_mun ON fuente_denue_negocios (cve_ent, cve_mun);
+CREATE INDEX IF NOT EXISTS idx_denue_clase   ON fuente_denue_negocios (clase_actividad);
+
 CREATE TABLE IF NOT EXISTS descargas_checkpoint (
     clave         TEXT PRIMARY KEY,
     completado_en TIMESTAMPTZ NOT NULL DEFAULT now()

@@ -19,6 +19,9 @@ services:
       DATABASE_NAME: mapo_dev
       DATABASE_USER: postgres
       DATABASE_PASSWORD: postgres
+    env_file:
+      - path: ./mapo_core/.env
+        required: false
     depends_on:
       - db
     volumes:

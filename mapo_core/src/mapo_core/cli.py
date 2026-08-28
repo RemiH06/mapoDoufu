@@ -10,7 +10,7 @@ from __future__ import annotations
 import argparse
 import asyncio
 
-from mapo_core import censo_downloader, geo_downloader
+from mapo_core import censo_downloader, denue_downloader, geo_downloader
 from mapo_core.db import cerrar_pool, get_pool, inicializar_esquema
 
 
@@ -40,10 +40,19 @@ async def _censo_poblacion(args) -> None:
     print(f"{total} filas de censo guardadas/actualizadas para el estado {args.estado}.")
 
 
+async def _denue(args) -> None:
+    await inicializar_esquema()
+    try:
+        total = await denue_downloader.descargar_estado(args.estado, token=args.token)
+    except denue_downloader.TokenFaltante as exc:
+        raise SystemExit(str(exc)) from None
+    print(f"{total} negocios guardados/actualizados para el estado {args.estado}.")
+
+
 async def _status(_args) -> None:
     await inicializar_esquema()
     pool = await get_pool()
-    tablas = ["entidades", "municipios", "agebs", "fuente_censo_poblacion"]
+    tablas = ["entidades", "municipios", "agebs", "fuente_censo_poblacion", "fuente_denue_negocios"]
     async with pool.connection() as conn:
         for tabla in tablas:
             cursor = await conn.execute(f"SELECT count(*) FROM {tabla}")
@@ -68,6 +77,13 @@ def _construir_parser() -> argparse.ArgumentParser:
     p_censo = subparsers.add_parser("censo_poblacion", help="Descarga el censo de poblacion de un estado")
     p_censo.add_argument("--estado", required=True, help="cve_ent, ej. 14 (obligatorio)")
     p_censo.set_defaults(fn=_censo_poblacion)
+
+    p_denue = subparsers.add_parser("denue", help="Descarga los negocios de DENUE de un estado")
+    p_denue.add_argument("--estado", required=True, help="cve_ent, ej. 14 (obligatorio)")
+    p_denue.add_argument(
+        "--token", default=None, help="Token de INEGI (default: variable de entorno GAIARDA_DENUE_TOKEN)"
+    )
+    p_denue.set_defaults(fn=_denue)
 
     subparsers.add_parser("status", help="Cuenta filas por tabla").set_defaults(fn=_status)
 

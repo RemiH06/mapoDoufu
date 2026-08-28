@@ -61,20 +61,72 @@ MUNICIPIO_GEOJSON = {
 }
 
 
-@pytest.mark.asyncio
-async def test_voronoi_denue_da_501_si_el_municipio_existe_pero_denue_no_esta_portado(conn, pool_de_una_conexion):
+async def _insertar_municipio_guadalajara(conn):
     await conn.execute(
         """INSERT INTO municipios (cvegeo, cve_ent, cve_mun, nombre, geom)
            VALUES ('14039', '14', '039', 'Guadalajara',
                    ST_Multi(ST_SetSRID(ST_GeomFromGeoJSON(%(geojson)s), 4326)))""",
         {"geojson": json.dumps(MUNICIPIO_GEOJSON)},
     )
+
+
+async def _insertar_negocio(conn, id_, lat, lon, clase_actividad="papeleria"):
+    await conn.execute(
+        """INSERT INTO fuente_denue_negocios (id, nombre, clase_actividad, lat, lon, cve_ent, cve_mun)
+           VALUES (%(id)s, %(nombre)s, %(clase_actividad)s, %(lat)s, %(lon)s, '14', '039')""",
+        {"id": id_, "nombre": f"negocio {id_}", "clase_actividad": clase_actividad, "lat": lat, "lon": lon},
+    )
+
+
+@pytest.mark.asyncio
+async def test_voronoi_denue_usa_negocios_reales_y_el_poligono_real_del_municipio(conn, pool_de_una_conexion):
+    await _insertar_municipio_guadalajara(conn)
+    for id_, lat, lon in [("1", 0.0, 0.0), ("2", 0.0, 10.0), ("3", 10.0, 0.0), ("4", 10.0, 10.0)]:
+        await _insertar_negocio(conn, id_, lat, lon)
+
     app.dependency_overrides[get_pool] = lambda: pool_de_una_conexion
     cliente = TestClient(app)
 
     respuesta = cliente.get("/voronoi/denue", params={"cve_ent": "14", "cve_mun": "039"})
 
-    assert respuesta.status_code == 501
+    assert respuesta.status_code == 200
+    cuerpo = respuesta.json()
+    assert cuerpo["metodo"] == "recortado_a_limite"
+    assert cuerpo["num_negocios"] == 4
+    app.dependency_overrides.clear()
+
+
+@pytest.mark.asyncio
+async def test_voronoi_denue_filtra_por_clase_actividad(conn, pool_de_una_conexion):
+    await _insertar_municipio_guadalajara(conn)
+    for id_, lat, lon in [("1", 0.0, 0.0), ("2", 0.0, 10.0), ("3", 10.0, 0.0)]:
+        await _insertar_negocio(conn, id_, lat, lon, clase_actividad="papeleria")
+    for id_, lat, lon in [("4", 5.0, 5.0), ("5", 6.0, 6.0), ("6", 7.0, 7.0)]:
+        await _insertar_negocio(conn, id_, lat, lon, clase_actividad="farmacia")
+
+    app.dependency_overrides[get_pool] = lambda: pool_de_una_conexion
+    cliente = TestClient(app)
+
+    respuesta = cliente.get(
+        "/voronoi/denue", params={"cve_ent": "14", "cve_mun": "039", "clase_actividad": "papel"}
+    )
+
+    assert respuesta.status_code == 200
+    assert respuesta.json()["num_negocios"] == 3
+    app.dependency_overrides.clear()
+
+
+@pytest.mark.asyncio
+async def test_voronoi_denue_con_pocos_negocios_da_422(conn, pool_de_una_conexion):
+    await _insertar_municipio_guadalajara(conn)
+    await _insertar_negocio(conn, "1", 0.0, 0.0)
+
+    app.dependency_overrides[get_pool] = lambda: pool_de_una_conexion
+    cliente = TestClient(app)
+
+    respuesta = cliente.get("/voronoi/denue", params={"cve_ent": "14", "cve_mun": "039"})
+
+    assert respuesta.status_code == 422
     app.dependency_overrides.clear()
 
 

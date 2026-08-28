@@ -47,8 +47,45 @@ async def test_perfil_zona_marca_honesto_lo_que_no_esta_portado(pool_de_una_cone
     respuesta = cliente.get("/perfil_zona", params={"cve_ent": "14", "cve_mun": "039"})
 
     cuerpo = respuesta.json()
-    assert cuerpo["comercio_disponible"] is False
     assert cuerpo["consumo_disponible"] is False
     assert cuerpo["seguridad_disponible"] is False
     assert cuerpo["laboral_disponible"] is False
+    app.dependency_overrides.clear()
+
+
+async def _insertar_negocio(conn, id_, clase_actividad, cve_ent="14", cve_mun="039"):
+    await conn.execute(
+        """INSERT INTO fuente_denue_negocios (id, nombre, clase_actividad, cve_ent, cve_mun)
+           VALUES (%(id)s, %(nombre)s, %(clase_actividad)s, %(cve_ent)s, %(cve_mun)s)""",
+        {"id": id_, "nombre": f"negocio {id_}", "clase_actividad": clase_actividad, "cve_ent": cve_ent, "cve_mun": cve_mun},
+    )
+
+
+@pytest.mark.asyncio
+async def test_perfil_zona_trae_comercio_real(conn, pool_de_una_conexion):
+    await _insertar_negocio(conn, "1", "papeleria")
+    await _insertar_negocio(conn, "2", "papeleria")
+    await _insertar_negocio(conn, "3", "farmacia")
+
+    app.dependency_overrides[get_pool] = lambda: pool_de_una_conexion
+    cliente = TestClient(app)
+
+    respuesta = cliente.get("/perfil_zona", params={"cve_ent": "14", "cve_mun": "039"})
+
+    cuerpo = respuesta.json()
+    assert cuerpo["comercio"]["total_negocios"] == 3
+    assert cuerpo["comercio"]["top_clases_actividad"][0] == ["papeleria", 2]
+    app.dependency_overrides.clear()
+
+
+@pytest.mark.asyncio
+async def test_perfil_zona_sin_negocios_trae_comercio_en_cero_no_null(pool_de_una_conexion):
+    app.dependency_overrides[get_pool] = lambda: pool_de_una_conexion
+    cliente = TestClient(app)
+
+    respuesta = cliente.get("/perfil_zona", params={"cve_ent": "14", "cve_mun": "039"})
+
+    cuerpo = respuesta.json()
+    assert cuerpo["comercio"]["total_negocios"] == 0
+    assert cuerpo["comercio"]["top_clases_actividad"] == []
     app.dependency_overrides.clear()

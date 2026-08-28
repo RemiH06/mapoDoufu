@@ -324,6 +324,30 @@ async def _buscar_municipio(pool: AsyncConnectionPool, cve_ent: str, cve_mun: st
     return {"nombre": nombre, "geometry": json.loads(geom)}
 
 
+async def _negocios_de(
+    pool: AsyncConnectionPool, cve_ent: str, cve_mun: str, clase_actividad: str | None
+) -> list[PuntoVoronoi]:
+    async with pool.connection() as conn:
+        if clase_actividad:
+            cursor = await conn.execute(
+                """SELECT id, nombre, lat, lon FROM fuente_denue_negocios
+                   WHERE cve_ent = %(cve_ent)s AND cve_mun = %(cve_mun)s
+                     AND lat IS NOT NULL AND lon IS NOT NULL
+                     AND clase_actividad ILIKE %(patron)s""",
+                {"cve_ent": cve_ent, "cve_mun": cve_mun, "patron": f"%{clase_actividad}%"},
+            )
+        else:
+            cursor = await conn.execute(
+                """SELECT id, nombre, lat, lon FROM fuente_denue_negocios
+                   WHERE cve_ent = %(cve_ent)s AND cve_mun = %(cve_mun)s
+                     AND lat IS NOT NULL AND lon IS NOT NULL""",
+                {"cve_ent": cve_ent, "cve_mun": cve_mun},
+            )
+        filas = await cursor.fetchall()
+
+    return [PuntoVoronoi(id=id_, nombre=nombre, lat=lat, lon=lon) for id_, nombre, lat, lon in filas]
+
+
 @app.get("/voronoi/denue")
 async def voronoi_denue(
     cve_ent: str,
@@ -331,10 +355,10 @@ async def voronoi_denue(
     clase_actividad: str | None = None,
     pool: AsyncConnectionPool = Depends(get_pool),
 ) -> dict:
-    """Voronoi de los negocios de DENUE en un municipio. DENUE
-    todavia no esta portado a mapo_core (ver MAPO_PENDIENTES.md): el
-    poligono del municipio ya viene de datos propios, pero sin
-    negocios no hay nada que recortar todavia."""
+    """Voronoi de los negocios de DENUE en un municipio (opcionalmente
+    filtrados por texto en `clase_actividad`), recortado al poligono
+    real del municipio: "a cual de estos negocios le queda mas cerca
+    cada lugar dentro del municipio"."""
     municipio = await _buscar_municipio(pool, cve_ent, cve_mun)
     if municipio is None:
         raise HTTPException(
@@ -343,7 +367,20 @@ async def voronoi_denue(
             "'python -m mapo_core.cli municipios --estado' para ese estado?).",
         )
 
-    raise HTTPException(501, "DENUE todavia no esta portado a mapo_core, sin esto no hay negocios que recortar.")
+    puntos = await _negocios_de(pool, cve_ent, cve_mun, clase_actividad)
+
+    if len(puntos) < 3:
+        raise HTTPException(
+            422,
+            f"Solo hay {len(puntos)} negocio(s) con esos filtros; se necesitan al menos 3 para un diagrama de Voronoi.",
+        )
+
+    try:
+        resultado = calcular_voronoi(puntos, limite=municipio["geometry"])
+    except ValueError as exc:
+        raise HTTPException(422, str(exc)) from None
+
+    return {"celdas": resultado.celdas, "metodo": resultado.metodo, "num_negocios": len(puntos)}
 
 
 class PoligonoColoreableEntrada(BaseModel):
@@ -406,13 +443,13 @@ async def coloreado_municipios(cve_ent: str, pool: AsyncConnectionPool = Depends
 
 @app.get("/perfil_zona")
 async def perfil_zona(cve_ent: str, cve_mun: str, pool: AsyncConnectionPool = Depends(get_pool)) -> dict:
-    """Perfil de un municipio: por ahora solo demografia (censo), ya
-    con datos propios de mapo_core. Comercio (DENUE), consumo (ENIGH)
-    y seguridad (SESNSP) todavia no estan portados (igual que laboral/
-    ENOE, que tampoco lo estaba del lado de Gaiarda): se marcan
-    honestos como no disponibles, en vez de fingir que no hay datos
-    (que es un mensaje distinto: "no hay negocios" no es lo mismo que
-    "no hemos portado esa fuente todavia")."""
+    """Perfil de un municipio: demografia (censo) y comercio (DENUE)
+    ya con datos propios de mapo_core. Consumo (ENIGH) y seguridad
+    (SESNSP) todavia no estan portados (igual que laboral/ENOE, que
+    tampoco lo estaba del lado de Gaiarda): se marcan honestos como no
+    disponibles, en vez de fingir que no hay datos (que es un mensaje
+    distinto: "no hay negocios" no es lo mismo que "no hemos portado
+    esa fuente todavia")."""
     async with pool.connection() as conn:
         cursor = await conn.execute(
             """SELECT pobtot, pobfem, pobmas, graproes, pea, pocupada, pdesocup, tothog, vivtot
@@ -421,6 +458,20 @@ async def perfil_zona(cve_ent: str, cve_mun: str, pool: AsyncConnectionPool = De
             {"cve_ent": cve_ent, "cve_mun": cve_mun},
         )
         fila = await cursor.fetchone()
+
+        cursor_total = await conn.execute(
+            "SELECT count(*) FROM fuente_denue_negocios WHERE cve_ent = %(cve_ent)s AND cve_mun = %(cve_mun)s",
+            {"cve_ent": cve_ent, "cve_mun": cve_mun},
+        )
+        (total_negocios,) = await cursor_total.fetchone()
+
+        cursor_clases = await conn.execute(
+            """SELECT clase_actividad, count(*) FROM fuente_denue_negocios
+               WHERE cve_ent = %(cve_ent)s AND cve_mun = %(cve_mun)s AND clase_actividad IS NOT NULL
+               GROUP BY clase_actividad ORDER BY count(*) DESC LIMIT 10""",
+            {"cve_ent": cve_ent, "cve_mun": cve_mun},
+        )
+        top_clases = await cursor_clases.fetchall()
 
     demografia = None
     if fila is not None:
@@ -431,7 +482,10 @@ async def perfil_zona(cve_ent: str, cve_mun: str, pool: AsyncConnectionPool = De
         "cve_ent": cve_ent,
         "cve_mun": cve_mun,
         "demografia": demografia,
-        "comercio_disponible": False,
+        "comercio": {
+            "total_negocios": total_negocios,
+            "top_clases_actividad": [[clase, cantidad] for clase, cantidad in top_clases],
+        },
         "consumo_disponible": False,
         "seguridad_disponible": False,
         "laboral_disponible": False,
