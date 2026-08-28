@@ -38,46 +38,55 @@
       })();
     </script>
   </head>
-  <body>
+  <body class="min-h-screen flex flex-col">
     <canvas id="metro-bg" class="fixed inset-0 w-screen h-screen -z-10"></canvas>
-    <ul class="menu menu-horizontal w-full relative z-10 flex items-center gap-4 px-4 sm:px-6 lg:px-8 justify-end">
-      <%= if @current_scope do %>
+    <header class="navbar shrink-0 relative z-10 gap-4 px-4 sm:px-6 lg:px-8">
+      <a href="/" class="flex-none flex items-center gap-2 w-fit">
+        <img src={~p"/images/mapo-logo.svg"} width="32" />
+        <span class="text-sm font-semibold">Mapo</span>
+      </a>
+      <ul class="menu menu-horizontal flex-1 flex items-center gap-4 justify-end">
+        <%= if @current_scope do %>
+          <li>
+            {@current_scope.user.email}
+          </li>
+          <li>
+            <.link navigate={~p"/teams"}>Mis equipos</.link>
+          </li>
+          <li>
+            <.link navigate={~p"/coropletas"}>Coropletas</.link>
+          </li>
+          <li>
+            <.link navigate={~p"/voronoi"}>Voronoi</.link>
+          </li>
+          <li>
+            <.link navigate={~p"/coloreado"}>Coloreado</.link>
+          </li>
+          <li>
+            <.link navigate={~p"/mapa"}>Mapa técnico</.link>
+          </li>
+          <li>
+            <.link navigate={~p"/perfil"}>Perfil de zona</.link>
+          </li>
+          <li>
+            <.link navigate={~p"/users/settings"}>Configuración</.link>
+          </li>
+          <li>
+            <.link href={~p"/users/log-out"} method="delete">Cerrar sesión</.link>
+          </li>
+        <% else %>
+          <li>
+            <.link navigate={~p"/users/register"}>Registrarme</.link>
+          </li>
+          <li>
+            <.link navigate={~p"/users/log-in"}>Iniciar sesión</.link>
+          </li>
+        <% end %>
         <li>
-          {@current_scope.user.email}
+          <.theme_toggle />
         </li>
-        <li>
-          <.link navigate={~p"/teams"}>Mis equipos</.link>
-        </li>
-        <li>
-          <.link navigate={~p"/coropletas"}>Coropletas</.link>
-        </li>
-        <li>
-          <.link navigate={~p"/voronoi"}>Voronoi</.link>
-        </li>
-        <li>
-          <.link navigate={~p"/coloreado"}>Coloreado</.link>
-        </li>
-        <li>
-          <.link navigate={~p"/mapa"}>Mapa técnico</.link>
-        </li>
-        <li>
-          <.link navigate={~p"/perfil"}>Perfil de zona</.link>
-        </li>
-        <li>
-          <.link navigate={~p"/users/settings"}>Configuración</.link>
-        </li>
-        <li>
-          <.link href={~p"/users/log-out"} method="delete">Cerrar sesión</.link>
-        </li>
-      <% else %>
-        <li>
-          <.link navigate={~p"/users/register"}>Registrarme</.link>
-        </li>
-        <li>
-          <.link navigate={~p"/users/log-in"}>Iniciar sesión</.link>
-        </li>
-      <% end %>
-    </ul>
+      </ul>
+    </header>
     {@inner_content}
   </body>
 </html>

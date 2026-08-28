@@ -7,38 +7,38 @@ defmodule MapoWeb.MapaLive.Index do
   def render(assigns) do
     ~H"""
     <Layouts.app flash={@flash} current_scope={@current_scope} full_width?={true}>
-      <.header>
-        Mapa técnico
-        <:subtitle>Coropletas, Voronoi, coloreado e isócronas, como capas independientes.</:subtitle>
-      </.header>
+      <div class="shrink-0 flex flex-wrap items-end gap-3">
+        <h1 class="font-mono text-sm font-bold pb-2 whitespace-nowrap">Mapa técnico</h1>
 
-      <p :if={@estados == []} class="text-sm text-warning mt-2">
-        No se pudo cargar la lista de estados: mapo_core (o Gaiarda detrás de él) no está
-        disponible ahorita mismo, o todavía no se han descargado estados.
+        <.form for={@form} id="ubicacion_form" phx-change="cambiar_ubicacion" class="contents">
+          <div class="w-44">
+            <.input
+              field={@form[:cve_ent]}
+              type="select"
+              label="Estado"
+              options={@estados}
+              prompt="Selecciona un estado"
+            />
+          </div>
+          <div class="w-48">
+            <.input
+              field={@form[:cve_mun]}
+              type="select"
+              label="Municipio"
+              options={@municipios}
+              prompt="Todos los municipios del estado"
+            />
+          </div>
+        </.form>
+      </div>
+
+      <p :if={@estados == []} class="shrink-0 text-sm text-warning">
+        No se pudo cargar la lista de estados: mapo_core no está disponible ahorita mismo, o
+        todavía no se han descargado estados.
       </p>
 
-      <div class="lg:flex lg:gap-4 lg:items-start mt-4">
-        <aside class="lg:w-80 lg:shrink-0 space-y-3">
-          <div class="card bg-base-200 p-3">
-            <h3 class="font-mono text-sm font-bold mb-2">Ubicación</h3>
-            <.form for={@form} id="ubicacion_form" phx-change="cambiar_ubicacion" class="space-y-2">
-              <.input
-                field={@form[:cve_ent]}
-                type="select"
-                label="Estado"
-                options={@estados}
-                prompt="Selecciona un estado"
-              />
-              <.input
-                field={@form[:cve_mun]}
-                type="select"
-                label="Municipio"
-                options={@municipios}
-                prompt="Todos los municipios del estado"
-              />
-            </.form>
-          </div>
-
+      <div class="flex-1 min-h-0 lg:flex lg:gap-4 lg:items-stretch overflow-y-auto lg:overflow-visible">
+        <aside class="lg:w-72 lg:shrink-0 lg:overflow-y-auto space-y-3">
           <div class="card bg-base-200 p-3">
             <h3 class="font-mono text-sm font-bold mb-2">Coropleta del censo</h3>
             <.form for={@coropleta_form} id="coropleta_capa_form" phx-submit="mostrar_coropleta">
@@ -128,7 +128,7 @@ defmodule MapoWeb.MapaLive.Index do
           id="mapa-tecnico"
           phx-hook="MapaTecnico"
           phx-update="ignore"
-          class="w-full h-[75vh] mt-6 lg:mt-0 rounded-box overflow-hidden border border-base-300"
+          class="h-[60vh] lg:h-auto lg:flex-1 min-h-0 w-full mt-4 lg:mt-0 rounded-box overflow-hidden"
         >
         </div>
       </div>

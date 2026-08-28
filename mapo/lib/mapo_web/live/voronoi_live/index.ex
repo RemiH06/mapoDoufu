@@ -7,21 +7,11 @@ defmodule MapoWeb.VoronoiLive.Index do
   def render(assigns) do
     ~H"""
     <Layouts.app flash={@flash} current_scope={@current_scope} full_width?={true}>
-      <.header>
-        Áreas de influencia (Voronoi)
-        <:subtitle>
-          De los negocios de DENUE en un municipio, a cuál le queda más cerca cada lugar.
-        </:subtitle>
-      </.header>
+      <div class="shrink-0 flex flex-wrap items-end gap-3">
+        <h1 class="font-mono text-sm font-bold pb-2 whitespace-nowrap">Voronoi (DENUE)</h1>
 
-      <p :if={@estados == []} class="text-sm text-warning mt-2">
-        No se pudo cargar la lista de estados: mapo_core (o Gaiarda detrás de él) no está
-        disponible ahorita mismo, o todavía no se han descargado estados.
-      </p>
-
-      <.form for={@form} id="voronoi_form" phx-change="cambiar" phx-submit="generar" class="mt-4">
-        <div class="flex gap-2 items-start flex-wrap">
-          <div class="w-52">
+        <.form for={@form} id="voronoi_form" phx-change="cambiar" phx-submit="generar" class="contents">
+          <div class="w-44">
             <.input
               field={@form[:cve_ent]}
               type="select"
@@ -30,7 +20,7 @@ defmodule MapoWeb.VoronoiLive.Index do
               prompt="Selecciona un estado"
             />
           </div>
-          <div class="w-56">
+          <div class="w-48">
             <.input
               field={@form[:cve_mun]}
               type="select"
@@ -39,29 +29,34 @@ defmodule MapoWeb.VoronoiLive.Index do
               prompt="Selecciona un municipio"
             />
           </div>
-          <div class="w-56">
+          <div class="w-48">
             <.input
               field={@form[:clase_actividad]}
               type="text"
               label="Giro (opcional)"
-              placeholder="ej. papelería, farmacia"
+              placeholder="ej. papelería"
             />
           </div>
-        </div>
-        <.button
-          phx-disable-with="Generando..."
-          class="btn btn-primary mt-4"
-          disabled={@form[:cve_mun].value in [nil, ""]}
-        >
-          Generar mapa
-        </.button>
-      </.form>
+          <.button
+            phx-disable-with="Generando..."
+            class="btn btn-primary btn-sm"
+            disabled={@form[:cve_mun].value in [nil, ""]}
+          >
+            Generar mapa
+          </.button>
+        </.form>
+      </div>
+
+      <p :if={@estados == []} class="shrink-0 text-sm text-warning">
+        No se pudo cargar la lista de estados: mapo_core no está disponible ahorita mismo, o
+        todavía no se han descargado estados.
+      </p>
 
       <div
         id="voronoi-map"
         phx-hook="VoronoiMap"
         phx-update="ignore"
-        class="w-full h-[70vh] mt-6 rounded-box overflow-hidden border border-base-300"
+        class="flex-1 min-h-0 w-full rounded-box overflow-hidden"
       >
       </div>
     </Layouts.app>

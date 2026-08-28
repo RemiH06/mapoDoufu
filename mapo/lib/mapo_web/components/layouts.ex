@@ -33,30 +33,27 @@ defmodule MapoWeb.Layouts do
 
   attr :full_width?, :boolean,
     default: false,
-    doc: "quita el límite de max-w-2xl, para pantallas que necesitan usar todo el ancho (ej. mapas)"
+    doc: """
+    Quita el límite de max-w-2xl y hace que el contenido llene el resto
+    de la pantalla verticalmente (flex-1), para pantallas que lo
+    necesitan (ej. mapas). El propio contenido (el `inner_block`) tiene
+    que traer su parte "fija" (encabezado, filtros) sin crecer y su
+    parte "de relleno" (el mapa) con `flex-1 min-h-0` para que esto
+    funcione de verdad.
+    """
 
   slot :inner_block, required: true
 
   def app(assigns) do
     ~H"""
-    <header class="navbar px-4 sm:px-6 lg:px-8">
-      <div class="flex-1">
-        <a href="/" class="flex-1 flex w-fit items-center gap-2">
-          <img src={~p"/images/mapo-logo.svg"} width="36" />
-          <span class="text-sm font-semibold">Mapo</span>
-        </a>
-      </div>
-      <div class="flex-none">
-        <ul class="flex flex-column px-1 space-x-4 items-center">
-          <li>
-            <.theme_toggle />
-          </li>
-        </ul>
-      </div>
-    </header>
-
-    <main class={["px-4 py-8 sm:px-6 lg:px-8", !@full_width? && "py-20"]}>
-      <div class={[!@full_width? && "mx-auto max-w-2xl", "space-y-4"]}>
+    <main class={[
+      "px-4 sm:px-6 lg:px-8",
+      if(@full_width?, do: "flex-1 flex flex-col min-h-0 py-3", else: "py-20")
+    ]}>
+      <div class={[
+        if(@full_width?, do: "flex-1 flex flex-col min-h-0", else: "mx-auto max-w-2xl"),
+        "space-y-4"
+      ]}>
         {render_slot(@inner_block)}
       </div>
     </main>
