@@ -108,6 +108,49 @@ CREATE INDEX IF NOT EXISTS idx_denue_cve_ent ON fuente_denue_negocios (cve_ent);
 CREATE INDEX IF NOT EXISTS idx_denue_cve_mun ON fuente_denue_negocios (cve_ent, cve_mun);
 CREATE INDEX IF NOT EXISTS idx_denue_clase   ON fuente_denue_negocios (clase_actividad);
 
+CREATE TABLE IF NOT EXISTS fuente_enigh_concentradohogar (
+    folioviv     TEXT NOT NULL,
+    foliohog     TEXT NOT NULL,
+    ubica_geo    TEXT,
+    cve_ent      TEXT,
+    cve_mun      TEXT,
+    factor       REAL,
+    ing_cor      REAL,
+    ingtrab      REAL,
+    gasto_mon    REAL,
+    alimentos    REAL,
+    vivienda     REAL,
+    transporte   REAL,
+    educa_espa   REAL,
+    salud        REAL,
+    vesti_calz   REAL,
+    transf_gas   REAL,
+    percep_tot   REAL,
+    erogac_tot   REAL,
+    actualizado  TIMESTAMPTZ NOT NULL DEFAULT now(),
+    PRIMARY KEY (folioviv, foliohog)
+);
+CREATE INDEX IF NOT EXISTS idx_enigh_cve_mun ON fuente_enigh_concentradohogar (cve_ent, cve_mun);
+
+CREATE TABLE IF NOT EXISTS fuente_sesnsp_delitos_municipal (
+    id             BIGSERIAL PRIMARY KEY,
+    anio           INTEGER NOT NULL,
+    mes            INTEGER NOT NULL,
+    cve_ent        TEXT NOT NULL,
+    entidad        TEXT,
+    cve_mun        TEXT NOT NULL,
+    municipio      TEXT,
+    bien_juridico  TEXT,
+    tipo_delito    TEXT,
+    subtipo_delito TEXT,
+    modalidad      TEXT,
+    cantidad       INTEGER NOT NULL,
+    actualizado    TIMESTAMPTZ NOT NULL DEFAULT now(),
+    UNIQUE (anio, mes, cve_ent, cve_mun, bien_juridico, tipo_delito, subtipo_delito, modalidad)
+);
+CREATE INDEX IF NOT EXISTS idx_sesnsp_mun_anio ON fuente_sesnsp_delitos_municipal (cve_ent, cve_mun, anio);
+CREATE INDEX IF NOT EXISTS idx_sesnsp_tipo     ON fuente_sesnsp_delitos_municipal (tipo_delito);
+
 CREATE TABLE IF NOT EXISTS descargas_checkpoint (
     clave         TEXT PRIMARY KEY,
     completado_en TIMESTAMPTZ NOT NULL DEFAULT now()

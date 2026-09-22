@@ -73,15 +73,35 @@ defmodule MapoWeb.PerfilLive.Index do
 
         <div class="card bg-base-200 p-4">
           <h3 class="font-mono text-sm font-bold mb-2">Consumo (ENIGH)</h3>
-          <p class="text-sm text-base-content/70">
-            No disponible todavía: esta fuente no está vendorizada a mapo_core.
+          <div :if={@perfil["consumo"]} class="text-sm space-y-1">
+            <p>Gasto diario promedio por hogar: ${@perfil["consumo"]["promedio_ponderado"]}</p>
+            <p>Mediana: ${@perfil["consumo"]["mediana"]}</p>
+            <p class="text-xs text-base-content/60 mt-2">
+              Muestra: {@perfil["consumo"]["n_hogares_muestra"]} hogares encuestados ({@perfil[
+                "consumo"
+              ]["periodo"]})
+            </p>
+          </div>
+          <p :if={!@perfil["consumo"]} class="text-sm text-base-content/70">
+            Sin datos de ENIGH para este municipio (la muestra no llegó aquí).
           </p>
         </div>
 
         <div class="card bg-base-200 p-4">
           <h3 class="font-mono text-sm font-bold mb-2">Seguridad (SESNSP)</h3>
-          <p class="text-sm text-base-content/70">
-            No disponible todavía: esta fuente no está vendorizada a mapo_core.
+          <div :if={@perfil["seguridad"]} class="text-sm space-y-1">
+            <p>{@perfil["seguridad"]["total_delitos"]} delitos registrados en {@perfil["seguridad"][
+              "anio"
+            ]}</p>
+            <ul :if={@perfil["seguridad"]["por_tipo"] != []} class="text-sm mt-2 space-y-1">
+              <li :for={[tipo, cantidad] <- @perfil["seguridad"]["por_tipo"]}>
+                {tipo}: {cantidad}
+              </li>
+            </ul>
+          </div>
+          <p :if={!@perfil["seguridad"]} class="text-sm text-base-content/70">
+            Sin datos de SESNSP cargados para este municipio todavía (fuente sin endpoint público
+            automatizable, se carga a mano).
           </p>
         </div>
 

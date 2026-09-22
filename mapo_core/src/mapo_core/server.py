@@ -8,6 +8,7 @@ from pydantic import BaseModel
 
 from mapo_core.coloreado_mapa import PoligonoColoreable, colorear_mapa
 from mapo_core.db import get_pool
+from mapo_core.enigh_resumen import resumen_por_municipio
 from mapo_core.isocronas import calcular_isocrona
 from mapo_core.osrm_client import OSRMClient
 from mapo_core.voronoi import PuntoVoronoi, calcular_voronoi
@@ -441,15 +442,45 @@ async def coloreado_municipios(cve_ent: str, pool: AsyncConnectionPool = Depends
     }
 
 
+async def _seguridad_de(pool: AsyncConnectionPool, cve_ent: str, cve_mun: str) -> dict | None:
+    """Delitos del año mas reciente disponible para este municipio,
+    agrupados por tipo. A proposito NO se combina en un solo "puntaje
+    de seguridad" (mismo criterio que ya usa Gaiarda en su feature de
+    Rutas): eso implicaria decisiones de metodologia que no se deben
+    esconder detras de un numero. None si no hay ningun dato cargado
+    todavia para este municipio (SESNSP se carga a mano, ver
+    `sesnsp_ingesta.py`)."""
+    async with pool.connection() as conn:
+        cursor_anio = await conn.execute(
+            "SELECT max(anio) FROM fuente_sesnsp_delitos_municipal WHERE cve_ent = %(cve_ent)s AND cve_mun = %(cve_mun)s",
+            {"cve_ent": cve_ent, "cve_mun": cve_mun},
+        )
+        (anio,) = await cursor_anio.fetchone()
+        if anio is None:
+            return None
+
+        cursor_tipos = await conn.execute(
+            """SELECT tipo_delito, sum(cantidad) FROM fuente_sesnsp_delitos_municipal
+               WHERE cve_ent = %(cve_ent)s AND cve_mun = %(cve_mun)s AND anio = %(anio)s
+               GROUP BY tipo_delito ORDER BY sum(cantidad) DESC""",
+            {"cve_ent": cve_ent, "cve_mun": cve_mun, "anio": anio},
+        )
+        por_tipo = await cursor_tipos.fetchall()
+
+    return {
+        "anio": anio,
+        "total_delitos": sum(cantidad for _tipo, cantidad in por_tipo),
+        "por_tipo": [[tipo, cantidad] for tipo, cantidad in por_tipo],
+    }
+
+
 @app.get("/perfil_zona")
 async def perfil_zona(cve_ent: str, cve_mun: str, pool: AsyncConnectionPool = Depends(get_pool)) -> dict:
-    """Perfil de un municipio: demografia (censo) y comercio (DENUE)
-    ya con datos propios de mapo_core. Consumo (ENIGH) y seguridad
-    (SESNSP) todavia no estan portados (igual que laboral/ENOE, que
-    tampoco lo estaba del lado de Gaiarda): se marcan honestos como no
-    disponibles, en vez de fingir que no hay datos (que es un mensaje
-    distinto: "no hay negocios" no es lo mismo que "no hemos portado
-    esa fuente todavia")."""
+    """Perfil de un municipio: demografia (censo), comercio (DENUE),
+    consumo (ENIGH) y seguridad (SESNSP), ya con datos propios de
+    mapo_core. Laboral (ENOE) sigue sin portar (Gaiarda tampoco
+    exponia un endpoint de consulta para eso), se marca honesto como
+    no disponible en vez de fingir que no hay datos."""
     async with pool.connection() as conn:
         cursor = await conn.execute(
             """SELECT pobtot, pobfem, pobmas, graproes, pea, pocupada, pdesocup, tothog, vivtot
@@ -473,6 +504,8 @@ async def perfil_zona(cve_ent: str, cve_mun: str, pool: AsyncConnectionPool = De
         )
         top_clases = await cursor_clases.fetchall()
 
+        consumo = await resumen_por_municipio(conn, cve_ent, cve_mun, columna="gasto_mon", por_dia=True)
+
     demografia = None
     if fila is not None:
         campos = ["pobtot", "pobfem", "pobmas", "graproes", "pea", "pocupada", "pdesocup", "tothog", "vivtot"]
@@ -486,7 +519,7 @@ async def perfil_zona(cve_ent: str, cve_mun: str, pool: AsyncConnectionPool = De
             "total_negocios": total_negocios,
             "top_clases_actividad": [[clase, cantidad] for clase, cantidad in top_clases],
         },
-        "consumo_disponible": False,
-        "seguridad_disponible": False,
+        "consumo": consumo,
+        "seguridad": await _seguridad_de(pool, cve_ent, cve_mun),
         "laboral_disponible": False,
     }

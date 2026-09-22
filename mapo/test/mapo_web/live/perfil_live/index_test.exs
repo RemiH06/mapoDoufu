@@ -36,8 +36,17 @@ defmodule MapoWeb.PerfilLive.IndexTest do
         "total_negocios" => 3200,
         "top_clases_actividad" => [["Comercio al por menor de abarrotes", 450]]
       },
-      "consumo_disponible" => false,
-      "seguridad_disponible" => false,
+      "consumo" => %{
+        "n_hogares_muestra" => 12,
+        "periodo" => "diario",
+        "promedio_ponderado" => 476.23,
+        "mediana" => 410.0
+      },
+      "seguridad" => %{
+        "anio" => 2024,
+        "total_delitos" => 320,
+        "por_tipo" => [["Robo", 200], ["Homicidio", 20]]
+      },
       "laboral_disponible" => false
     }
   end
@@ -117,8 +126,8 @@ defmodule MapoWeb.PerfilLive.IndexTest do
           Req.Test.json(conn, %{
             "demografia" => nil,
             "comercio" => %{"total_negocios" => 0, "top_clases_actividad" => []},
-            "consumo_disponible" => false,
-            "seguridad_disponible" => false,
+            "consumo" => nil,
+            "seguridad" => nil,
             "laboral_disponible" => false
           })
       end

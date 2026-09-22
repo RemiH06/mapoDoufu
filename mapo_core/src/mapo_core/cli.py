@@ -10,7 +10,7 @@ from __future__ import annotations
 import argparse
 import asyncio
 
-from mapo_core import censo_downloader, denue_downloader, geo_downloader
+from mapo_core import censo_downloader, denue_downloader, enigh_downloader, geo_downloader, sesnsp_ingesta
 from mapo_core.db import cerrar_pool, get_pool, inicializar_esquema
 
 
@@ -49,10 +49,25 @@ async def _denue(args) -> None:
     print(f"{total} negocios guardados/actualizados para el estado {args.estado}.")
 
 
+async def _enigh(_args) -> None:
+    await inicializar_esquema()
+    total = await enigh_downloader.descargar()
+    print(f"{total} hogares de ENIGH (concentradohogar) guardados/actualizados.")
+
+
+async def _sesnsp(args) -> None:
+    await inicializar_esquema()
+    total = await sesnsp_ingesta.cargar_archivo(args.archivo)
+    print(f"{total} filas de incidencia delictiva guardadas/actualizadas desde {args.archivo}.")
+
+
 async def _status(_args) -> None:
     await inicializar_esquema()
     pool = await get_pool()
-    tablas = ["entidades", "municipios", "agebs", "fuente_censo_poblacion", "fuente_denue_negocios"]
+    tablas = [
+        "entidades", "municipios", "agebs", "fuente_censo_poblacion",
+        "fuente_denue_negocios", "fuente_enigh_concentradohogar", "fuente_sesnsp_delitos_municipal",
+    ]
     async with pool.connection() as conn:
         for tabla in tablas:
             cursor = await conn.execute(f"SELECT count(*) FROM {tabla}")
@@ -84,6 +99,17 @@ def _construir_parser() -> argparse.ArgumentParser:
         "--token", default=None, help="Token de INEGI (default: variable de entorno GAIARDA_DENUE_TOKEN)"
     )
     p_denue.set_defaults(fn=_denue)
+
+    subparsers.add_parser(
+        "enigh", help="Descarga concentradohogar de ENIGH (consumo, tabla nacional unica)"
+    ).set_defaults(fn=_enigh)
+
+    p_sesnsp = subparsers.add_parser(
+        "sesnsp",
+        help="Carga incidencia delictiva municipal desde un CSV descargado a mano (sin endpoint publico automatizable)",
+    )
+    p_sesnsp.add_argument("--archivo", required=True, help="Ruta al CSV de SESNSP ya descargado")
+    p_sesnsp.set_defaults(fn=_sesnsp)
 
     subparsers.add_parser("status", help="Cuenta filas por tabla").set_defaults(fn=_status)
 
