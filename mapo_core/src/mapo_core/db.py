@@ -151,6 +151,18 @@ CREATE TABLE IF NOT EXISTS fuente_sesnsp_delitos_municipal (
 CREATE INDEX IF NOT EXISTS idx_sesnsp_mun_anio ON fuente_sesnsp_delitos_municipal (cve_ent, cve_mun, anio);
 CREATE INDEX IF NOT EXISTS idx_sesnsp_tipo     ON fuente_sesnsp_delitos_municipal (tipo_delito);
 
+CREATE TABLE IF NOT EXISTS fuente_enoe_tasa_desocupacion (
+    cve_ent              TEXT NOT NULL,
+    anio                 INTEGER NOT NULL,
+    trimestre            TEXT NOT NULL,
+    pea_ponderada        REAL NOT NULL,
+    ocupada_ponderada    REAL NOT NULL,
+    desocupada_ponderada REAL NOT NULL,
+    tasa_desocupacion    REAL NOT NULL,
+    actualizado          TIMESTAMPTZ NOT NULL DEFAULT now(),
+    PRIMARY KEY (cve_ent, anio, trimestre)
+);
+
 CREATE TABLE IF NOT EXISTS descargas_checkpoint (
     clave         TEXT PRIMARY KEY,
     completado_en TIMESTAMPTZ NOT NULL DEFAULT now()

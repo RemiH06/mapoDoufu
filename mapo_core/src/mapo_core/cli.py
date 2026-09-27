@@ -10,7 +10,14 @@ from __future__ import annotations
 import argparse
 import asyncio
 
-from mapo_core import censo_downloader, denue_downloader, enigh_downloader, geo_downloader, sesnsp_ingesta
+from mapo_core import (
+    censo_downloader,
+    denue_downloader,
+    enigh_downloader,
+    enoe_downloader,
+    geo_downloader,
+    sesnsp_ingesta,
+)
 from mapo_core.db import cerrar_pool, get_pool, inicializar_esquema
 
 
@@ -61,12 +68,22 @@ async def _sesnsp(args) -> None:
     print(f"{total} filas de incidencia delictiva guardadas/actualizadas desde {args.archivo}.")
 
 
+async def _enoe(args) -> None:
+    await inicializar_esquema()
+    try:
+        total = await enoe_downloader.descargar_trimestre(args.anio, args.trimestre)
+    except ValueError as exc:
+        raise SystemExit(str(exc)) from None
+    print(f"{total} entidades con tasa de desocupacion guardada/actualizada para {args.anio} {args.trimestre}.")
+
+
 async def _status(_args) -> None:
     await inicializar_esquema()
     pool = await get_pool()
     tablas = [
         "entidades", "municipios", "agebs", "fuente_censo_poblacion",
         "fuente_denue_negocios", "fuente_enigh_concentradohogar", "fuente_sesnsp_delitos_municipal",
+        "fuente_enoe_tasa_desocupacion",
     ]
     async with pool.connection() as conn:
         for tabla in tablas:
@@ -110,6 +127,13 @@ def _construir_parser() -> argparse.ArgumentParser:
     )
     p_sesnsp.add_argument("--archivo", required=True, help="Ruta al CSV de SESNSP ya descargado")
     p_sesnsp.set_defaults(fn=_sesnsp)
+
+    p_enoe = subparsers.add_parser(
+        "enoe", help="Descarga la tasa de desocupacion por entidad de un trimestre de ENOE"
+    )
+    p_enoe.add_argument("--anio", required=True, type=int, help="Ej. 2025 (obligatorio, solo 2023 en adelante)")
+    p_enoe.add_argument("--trimestre", required=True, help="trim1, trim2, trim3 o trim4 (obligatorio)")
+    p_enoe.set_defaults(fn=_enoe)
 
     subparsers.add_parser("status", help="Cuenta filas por tabla").set_defaults(fn=_status)
 

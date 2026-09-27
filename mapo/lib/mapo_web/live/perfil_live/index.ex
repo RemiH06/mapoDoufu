@@ -10,7 +10,7 @@ defmodule MapoWeb.PerfilLive.Index do
       <.header>
         Perfil de zona
         <:subtitle>
-          Comercio, demografía, consumo y seguridad de un municipio, juntos.
+          Comercio, demografía, consumo, seguridad y laboral de un municipio, juntos.
         </:subtitle>
       </.header>
 
@@ -107,9 +107,15 @@ defmodule MapoWeb.PerfilLive.Index do
 
         <div class="card bg-base-200 p-4">
           <h3 class="font-mono text-sm font-bold mb-2">Laboral (ENOE)</h3>
-          <p class="text-sm text-base-content/70">
-            No disponible todavía: esta fuente ni siquiera tenía endpoint de consulta del lado
-            de Gaiarda (solo de descarga).
+          <div :if={@perfil["laboral"]} class="text-sm space-y-1">
+            <p>Tasa de desocupación: {@perfil["laboral"]["tasa_desocupacion"]}%</p>
+            <p class="text-xs text-base-content/60 mt-2">
+              {@perfil["laboral"]["trimestre"]} de {@perfil["laboral"]["anio"]}, cifra de todo el
+              estado (la ENOE no tiene representatividad a nivel municipio).
+            </p>
+          </div>
+          <p :if={!@perfil["laboral"]} class="text-sm text-base-content/70">
+            Sin datos de ENOE cargados para este estado todavía.
           </p>
         </div>
       </div>

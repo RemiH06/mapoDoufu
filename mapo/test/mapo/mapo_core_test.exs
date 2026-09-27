@@ -79,10 +79,10 @@ defmodule Mapo.MapoCoreTest do
       assert conn.request_path == "/perfil_zona"
       assert conn.params["cve_ent"] == "14"
       assert conn.params["cve_mun"] == "039"
-      Req.Test.json(conn, %{"demografia" => nil, "comercio_disponible" => false, "laboral_disponible" => false})
+      Req.Test.json(conn, %{"demografia" => nil, "comercio" => %{"total_negocios" => 0}, "laboral" => nil})
     end)
 
-    assert {:ok, %{"laboral_disponible" => false}} = MapoCore.perfil_zona("14", "039")
+    assert {:ok, %{"laboral" => nil}} = MapoCore.perfil_zona("14", "039")
   end
 
   test "isocrona_calcular/4 manda un POST con el cuerpo correcto" do

@@ -47,7 +47,11 @@ defmodule MapoWeb.PerfilLive.IndexTest do
         "total_delitos" => 320,
         "por_tipo" => [["Robo", 200], ["Homicidio", 20]]
       },
-      "laboral_disponible" => false
+      "laboral" => %{
+        "anio" => 2025,
+        "trimestre" => "trim3",
+        "tasa_desocupacion" => 2.49
+      }
     }
   end
 
@@ -107,7 +111,7 @@ defmodule MapoWeb.PerfilLive.IndexTest do
       |> render_submit()
 
     assert html =~ "Población total: 1500000"
-    assert html =~ "No disponible todavía"
+    assert html =~ "Tasa de desocupación: 2.49%"
   end
 
   test "ver_perfil with missing demografia shows an honest empty message", %{conn: conn} do
@@ -128,7 +132,7 @@ defmodule MapoWeb.PerfilLive.IndexTest do
             "comercio" => %{"total_negocios" => 0, "top_clases_actividad" => []},
             "consumo" => nil,
             "seguridad" => nil,
-            "laboral_disponible" => false
+            "laboral" => nil
           })
       end
     end)

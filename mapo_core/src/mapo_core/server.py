@@ -442,6 +442,32 @@ async def coloreado_municipios(cve_ent: str, pool: AsyncConnectionPool = Depends
     }
 
 
+async def _laboral_de(pool: AsyncConnectionPool, cve_ent: str) -> dict | None:
+    """Tasa de desocupacion del trimestre mas reciente disponible para
+    esta entidad. La ENOE no tiene representatividad a nivel municipio
+    (diseno muestral por entidad), asi que esto es del estado completo,
+    nunca del municipio especifico, aunque `/perfil_zona` se consulte
+    por municipio. None si no hay ningun trimestre cargado todavia."""
+    async with pool.connection() as conn:
+        cursor = await conn.execute(
+            """SELECT anio, trimestre, tasa_desocupacion, pea_ponderada
+               FROM fuente_enoe_tasa_desocupacion WHERE cve_ent = %(cve_ent)s
+               ORDER BY anio DESC, trimestre DESC LIMIT 1""",
+            {"cve_ent": cve_ent},
+        )
+        fila = await cursor.fetchone()
+
+    if fila is None:
+        return None
+    anio, trimestre, tasa_desocupacion, pea_ponderada = fila
+    return {
+        "anio": anio,
+        "trimestre": trimestre,
+        "tasa_desocupacion": round(tasa_desocupacion, 2),
+        "pea_ponderada": round(pea_ponderada),
+    }
+
+
 async def _seguridad_de(pool: AsyncConnectionPool, cve_ent: str, cve_mun: str) -> dict | None:
     """Delitos del año mas reciente disponible para este municipio,
     agrupados por tipo. A proposito NO se combina en un solo "puntaje
@@ -477,10 +503,9 @@ async def _seguridad_de(pool: AsyncConnectionPool, cve_ent: str, cve_mun: str) -
 @app.get("/perfil_zona")
 async def perfil_zona(cve_ent: str, cve_mun: str, pool: AsyncConnectionPool = Depends(get_pool)) -> dict:
     """Perfil de un municipio: demografia (censo), comercio (DENUE),
-    consumo (ENIGH) y seguridad (SESNSP), ya con datos propios de
-    mapo_core. Laboral (ENOE) sigue sin portar (Gaiarda tampoco
-    exponia un endpoint de consulta para eso), se marca honesto como
-    no disponible en vez de fingir que no hay datos."""
+    consumo (ENIGH), seguridad (SESNSP) y laboral (ENOE), ya con datos
+    propios de mapo_core. Laboral es la unica seccion a nivel entidad,
+    no municipio (la ENOE no tiene representatividad municipal)."""
     async with pool.connection() as conn:
         cursor = await conn.execute(
             """SELECT pobtot, pobfem, pobmas, graproes, pea, pocupada, pdesocup, tothog, vivtot
@@ -521,5 +546,5 @@ async def perfil_zona(cve_ent: str, cve_mun: str, pool: AsyncConnectionPool = De
         },
         "consumo": consumo,
         "seguridad": await _seguridad_de(pool, cve_ent, cve_mun),
-        "laboral_disponible": False,
+        "laboral": await _laboral_de(pool, cve_ent),
     }

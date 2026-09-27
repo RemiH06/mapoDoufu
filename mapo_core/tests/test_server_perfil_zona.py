@@ -40,19 +40,7 @@ async def test_perfil_zona_sin_censo_trae_demografia_null(pool_de_una_conexion):
 
 
 @pytest.mark.asyncio
-async def test_perfil_zona_marca_honesto_lo_que_no_esta_portado(pool_de_una_conexion):
-    app.dependency_overrides[get_pool] = lambda: pool_de_una_conexion
-    cliente = TestClient(app)
-
-    respuesta = cliente.get("/perfil_zona", params={"cve_ent": "14", "cve_mun": "039"})
-
-    cuerpo = respuesta.json()
-    assert cuerpo["laboral_disponible"] is False
-    app.dependency_overrides.clear()
-
-
-@pytest.mark.asyncio
-async def test_perfil_zona_sin_datos_de_enigh_ni_sesnsp_trae_null_no_falso(pool_de_una_conexion):
+async def test_perfil_zona_sin_datos_de_enigh_sesnsp_ni_enoe_trae_null_no_falso(pool_de_una_conexion):
     app.dependency_overrides[get_pool] = lambda: pool_de_una_conexion
     cliente = TestClient(app)
 
@@ -61,6 +49,7 @@ async def test_perfil_zona_sin_datos_de_enigh_ni_sesnsp_trae_null_no_falso(pool_
     cuerpo = respuesta.json()
     assert cuerpo["consumo"] is None
     assert cuerpo["seguridad"] is None
+    assert cuerpo["laboral"] is None
     app.dependency_overrides.clear()
 
 
@@ -150,4 +139,30 @@ async def test_perfil_zona_trae_seguridad_real_del_anio_mas_reciente(conn, pool_
     assert cuerpo["seguridad"]["anio"] == 2024
     assert cuerpo["seguridad"]["total_delitos"] == 7  # solo 2024: Homicidio(2) + Robo(5), no el 2023
     assert cuerpo["seguridad"]["por_tipo"][0] == ["Robo", 5]
+    app.dependency_overrides.clear()
+
+
+async def _insertar_tasa_enoe(conn, cve_ent, anio, trimestre, tasa_desocupacion, pea_ponderada=1000.0):
+    await conn.execute(
+        """INSERT INTO fuente_enoe_tasa_desocupacion
+             (cve_ent, anio, trimestre, pea_ponderada, ocupada_ponderada, desocupada_ponderada, tasa_desocupacion)
+           VALUES (%(cve_ent)s, %(anio)s, %(trimestre)s, %(pea)s, %(pea)s, 0, %(tasa)s)""",
+        {"cve_ent": cve_ent, "anio": anio, "trimestre": trimestre, "pea": pea_ponderada, "tasa": tasa_desocupacion},
+    )
+
+
+@pytest.mark.asyncio
+async def test_perfil_zona_trae_laboral_del_trimestre_mas_reciente(conn, pool_de_una_conexion):
+    await _insertar_tasa_enoe(conn, "14", 2024, "trim4", tasa_desocupacion=3.5)
+    await _insertar_tasa_enoe(conn, "14", 2025, "trim3", tasa_desocupacion=2.49)
+
+    app.dependency_overrides[get_pool] = lambda: pool_de_una_conexion
+    cliente = TestClient(app)
+
+    respuesta = cliente.get("/perfil_zona", params={"cve_ent": "14", "cve_mun": "039"})
+
+    cuerpo = respuesta.json()
+    assert cuerpo["laboral"]["anio"] == 2025
+    assert cuerpo["laboral"]["trimestre"] == "trim3"
+    assert cuerpo["laboral"]["tasa_desocupacion"] == 2.49
     app.dependency_overrides.clear()

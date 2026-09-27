@@ -64,11 +64,21 @@ def _escribir_csv_real(ruta) -> None:
         escritor.writerow(FILA_REAL_TRANSITO)
 
 
+def test_parsear_archivo_es_un_generador_no_una_lista(tmp_path):
+    # No debe materializar todo en memoria: el archivo real pesa ~380 MB.
+    import types
+
+    ruta = tmp_path / "sesnsp.csv"
+    _escribir_csv_real(ruta)
+
+    assert isinstance(parsear_archivo(ruta), types.GeneratorType)
+
+
 def test_parsear_archivo_da_24_filas_para_2_delitos(tmp_path):
     ruta = tmp_path / "sesnsp.csv"
     _escribir_csv_real(ruta)
 
-    filas = parsear_archivo(ruta)
+    filas = list(parsear_archivo(ruta))
 
     assert len(filas) == 24  # 2 filas del csv * 12 meses cada una
 

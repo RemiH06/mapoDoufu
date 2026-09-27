@@ -16,6 +16,12 @@ build/
 dist/
 .env
 
+# Archivos descargados a mano para fuentes sin endpoint publico
+# automatizable (SESNSP, ver mapo_core/sesnsp_ingesta.py). Son datos de
+# gobierno pesados, no codigo: se cargan a la base con el CLI, no se
+# versionan.
+mapo_core/data/
+
 # -- Elixir / Phoenix (mapo/) --
 # mapo/ trae su propio .gitignore generado por Phoenix (_build, deps,
 # assets compilados, etc.), no se duplica aqui.

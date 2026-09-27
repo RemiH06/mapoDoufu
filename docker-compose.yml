@@ -26,6 +26,7 @@ services:
       - db
     volumes:
       - ./mapo_core/src:/app/src
+      - ./mapo_core/data:/app/data
 
   mapo:
     build: ./mapo
