@@ -36,7 +36,8 @@ defmodule Mapo.SesionesTest do
       scope = user_scope_fixture()
       team = team_fixture(scope)
 
-      assert {:error, %Ecto.Changeset{}} = Sesiones.create_sesion(scope, team.id, %{"nombre" => ""})
+      assert {:error, %Ecto.Changeset{}} =
+               Sesiones.create_sesion(scope, team.id, %{"nombre" => ""})
     end
 
     test "get_sesion!/2 raises for a scope that is not a team member" do
@@ -98,12 +99,17 @@ defmodule Mapo.SesionesTest do
       {:ok, anotacion} = Sesiones.create_anotacion(owner_scope, sesion, 19.0, -99.0, "original")
 
       otro_miembro = user_fixture()
-      {:ok, _} = Mapo.Teams.create_membership(%{team_id: team.id, user_id: otro_miembro.id, role: :member})
+
+      {:ok, _} =
+        Mapo.Teams.create_membership(%{team_id: team.id, user_id: otro_miembro.id, role: :member})
+
       otro_scope = Mapo.Accounts.Scope.for_user(otro_miembro)
 
       Sesiones.subscribe_sesion(sesion.id)
 
-      assert {:ok, actualizada} = Sesiones.update_anotacion(otro_scope, sesion, anotacion, "editado")
+      assert {:ok, actualizada} =
+               Sesiones.update_anotacion(otro_scope, sesion, anotacion, "editado")
+
       assert actualizada.texto == "editado"
       assert_received {:anotacion_actualizada, ^actualizada}
     end
@@ -125,7 +131,9 @@ defmodule Mapo.SesionesTest do
       team = team_fixture(owner_scope)
       sesion_a = sesion_fixture(owner_scope, team)
       sesion_b = sesion_fixture(owner_scope, team)
-      {:ok, anotacion_de_a} = Sesiones.create_anotacion(owner_scope, sesion_a, 19.0, -99.0, "de a")
+
+      {:ok, anotacion_de_a} =
+        Sesiones.create_anotacion(owner_scope, sesion_a, 19.0, -99.0, "de a")
 
       assert_raise MatchError, fn ->
         Sesiones.update_anotacion(owner_scope, sesion_b, anotacion_de_a, "hackeo")

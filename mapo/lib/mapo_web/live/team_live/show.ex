@@ -17,7 +17,10 @@ defmodule MapoWeb.TeamLive.Show do
 
       <h3 class="font-mono text-sm font-bold mt-8 mb-2">Miembros</h3>
       <ul class="space-y-2">
-        <li :for={m <- @memberships} class="card bg-base-200 p-3 flex flex-row items-center justify-between">
+        <li
+          :for={m <- @memberships}
+          class="card bg-base-200 p-3 flex flex-row items-center justify-between"
+        >
           <div>
             <span>{m.user.email}</span>
             <span class="badge ml-2">{@role_labels[m.role]}</span>
@@ -91,7 +94,12 @@ defmodule MapoWeb.TeamLive.Show do
         </li>
       </ul>
 
-      <.form for={@sesion_form} id="sesion_form" phx-submit="crear_sesion" class="mt-4 flex gap-2 items-start">
+      <.form
+        for={@sesion_form}
+        id="sesion_form"
+        phx-submit="crear_sesion"
+        class="mt-4 flex gap-2 items-start"
+      >
         <div class="flex-1">
           <.input field={@sesion_form[:nombre]} type="text" label="Nueva sesión" required />
         </div>
@@ -146,7 +154,13 @@ defmodule MapoWeb.TeamLive.Show do
       {:error, :not_found} ->
         role_atom = String.to_existing_atom(role)
 
-        case Teams.invitar_por_correo(scope, team, email, role_atom, &url(~p"/invitaciones/#{&1}")) do
+        case Teams.invitar_por_correo(
+               scope,
+               team,
+               email,
+               role_atom,
+               &url(~p"/invitaciones/#{&1}")
+             ) do
           {:ok, _invitacion} ->
             {:noreply,
              socket
@@ -161,8 +175,7 @@ defmodule MapoWeb.TeamLive.Show do
         end
 
       {:error, %Ecto.Changeset{}} ->
-        {:noreply,
-         put_flash(socket, :error, "Esa persona ya es miembro de este equipo.")}
+        {:noreply, put_flash(socket, :error, "Esa persona ya es miembro de este equipo.")}
     end
   end
 
@@ -197,8 +210,7 @@ defmodule MapoWeb.TeamLive.Show do
          )}
 
       {:error, :last_owner} ->
-        {:noreply,
-         put_flash(socket, :error, "No puedes quitar al único dueño del equipo.")}
+        {:noreply, put_flash(socket, :error, "No puedes quitar al único dueño del equipo.")}
     end
   end
 

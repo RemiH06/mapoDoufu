@@ -6,7 +6,11 @@ defmodule MapoWeb.ColoreadoLive.IndexTest do
   setup :register_and_log_in_user
 
   defp estado_feature(cvegeo, nomgeo) do
-    %{"type" => "Feature", "properties" => %{"cvegeo" => cvegeo, "nomgeo" => nomgeo}, "geometry" => %{}}
+    %{
+      "type" => "Feature",
+      "properties" => %{"cvegeo" => cvegeo, "nomgeo" => nomgeo},
+      "geometry" => %{}
+    }
   end
 
   test "shows a warning when mapo_core/Gaiarda is not reachable", %{conn: conn} do
@@ -22,7 +26,11 @@ defmodule MapoWeb.ColoreadoLive.IndexTest do
   test "lists estados from mapo_core", %{conn: conn} do
     Req.Test.stub(Mapo.MapoCore, fn conn ->
       assert conn.request_path == "/geo/estados"
-      Req.Test.json(conn, %{"type" => "FeatureCollection", "features" => [estado_feature("14", "Jalisco")]})
+
+      Req.Test.json(conn, %{
+        "type" => "FeatureCollection",
+        "features" => [estado_feature("14", "Jalisco")]
+      })
     end)
 
     {:ok, _lv, html} = live(conn, ~p"/coloreado")
@@ -33,7 +41,10 @@ defmodule MapoWeb.ColoreadoLive.IndexTest do
     Req.Test.stub(Mapo.MapoCore, fn conn ->
       case conn.request_path do
         "/geo/estados" ->
-          Req.Test.json(conn, %{"type" => "FeatureCollection", "features" => [estado_feature("14", "Jalisco")]})
+          Req.Test.json(conn, %{
+            "type" => "FeatureCollection",
+            "features" => [estado_feature("14", "Jalisco")]
+          })
 
         "/coloreado/municipios" ->
           assert conn.params["cve_ent"] == "14"
@@ -43,7 +54,11 @@ defmodule MapoWeb.ColoreadoLive.IndexTest do
             "features" => [
               %{
                 "type" => "Feature",
-                "properties" => %{"cvegeo" => "14039", "nomgeo" => "Guadalajara", "color_indice" => 0},
+                "properties" => %{
+                  "cvegeo" => "14039",
+                  "nomgeo" => "Guadalajara",
+                  "color_indice" => 0
+                },
                 "geometry" => %{}
               }
             ],
@@ -83,10 +98,17 @@ defmodule MapoWeb.ColoreadoLive.IndexTest do
     Req.Test.stub(Mapo.MapoCore, fn conn ->
       case conn.request_path do
         "/geo/estados" ->
-          Req.Test.json(conn, %{"type" => "FeatureCollection", "features" => [estado_feature("14", "Jalisco")]})
+          Req.Test.json(conn, %{
+            "type" => "FeatureCollection",
+            "features" => [estado_feature("14", "Jalisco")]
+          })
 
         "/coloreado/municipios" ->
-          Req.Test.json(conn, %{"type" => "FeatureCollection", "features" => [], "num_colores" => 0})
+          Req.Test.json(conn, %{
+            "type" => "FeatureCollection",
+            "features" => [],
+            "num_colores" => 0
+          })
       end
     end)
 

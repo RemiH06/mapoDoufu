@@ -23,7 +23,10 @@ defmodule MapoWeb.InvitacionLive.Show do
           </.link>
         </div>
 
-        <div :if={@invitacion && @invitacion.estado == :pendiente && @current_scope == nil} class="mt-6">
+        <div
+          :if={@invitacion && @invitacion.estado == :pendiente && @current_scope == nil}
+          class="mt-6"
+        >
           <p>
             Te invitaron a unirte al equipo <strong>{@invitacion.team.name}</strong>
             como {@role_labels[@invitacion.role]}.
@@ -45,8 +48,7 @@ defmodule MapoWeb.InvitacionLive.Show do
           class="mt-6"
         >
           <p>
-            Esta invitación es para {@invitacion.email}, pero iniciaste sesión como
-            {@current_scope.user.email}.
+            Esta invitación es para {@invitacion.email}, pero iniciaste sesión como {@current_scope.user.email}.
           </p>
         </div>
 
@@ -72,7 +74,8 @@ defmodule MapoWeb.InvitacionLive.Show do
 
   @impl true
   def mount(%{"token" => token}, _session, socket) do
-    {:ok, assign(socket, invitacion: Teams.get_invitacion_por_token(token), role_labels: @role_labels)}
+    {:ok,
+     assign(socket, invitacion: Teams.get_invitacion_por_token(token), role_labels: @role_labels)}
   end
 
   @impl true

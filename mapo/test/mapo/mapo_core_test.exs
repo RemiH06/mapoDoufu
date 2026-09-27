@@ -49,7 +49,11 @@ defmodule Mapo.MapoCoreTest do
       assert conn.params["cve_ent"] == "14"
       assert conn.params["cve_mun"] == "039"
       refute Map.has_key?(conn.params, "clase_actividad")
-      Req.Test.json(conn, %{"celdas" => %{"type" => "FeatureCollection", "features" => []}, "metodo" => "recortado_a_limite"})
+
+      Req.Test.json(conn, %{
+        "celdas" => %{"type" => "FeatureCollection", "features" => []},
+        "metodo" => "recortado_a_limite"
+      })
     end)
 
     assert {:ok, %{"metodo" => "recortado_a_limite"}} = MapoCore.voronoi_denue("14", "039")
@@ -58,7 +62,11 @@ defmodule Mapo.MapoCoreTest do
   test "voronoi_denue/3 incluye clase_actividad cuando se da" do
     Req.Test.stub(Mapo.MapoCore, fn conn ->
       assert conn.params["clase_actividad"] == "papeleria"
-      Req.Test.json(conn, %{"celdas" => %{"type" => "FeatureCollection", "features" => []}, "metodo" => "recortado_a_limite"})
+
+      Req.Test.json(conn, %{
+        "celdas" => %{"type" => "FeatureCollection", "features" => []},
+        "metodo" => "recortado_a_limite"
+      })
     end)
 
     assert {:ok, _} = MapoCore.voronoi_denue("14", "039", "papeleria")
@@ -79,7 +87,12 @@ defmodule Mapo.MapoCoreTest do
       assert conn.request_path == "/perfil_zona"
       assert conn.params["cve_ent"] == "14"
       assert conn.params["cve_mun"] == "039"
-      Req.Test.json(conn, %{"demografia" => nil, "comercio" => %{"total_negocios" => 0}, "laboral" => nil})
+
+      Req.Test.json(conn, %{
+        "demografia" => nil,
+        "comercio" => %{"total_negocios" => 0},
+        "laboral" => nil
+      })
     end)
 
     assert {:ok, %{"laboral" => nil}} = MapoCore.perfil_zona("14", "039")
@@ -91,12 +104,45 @@ defmodule Mapo.MapoCoreTest do
       assert conn.request_path == "/isocronas/calcular"
 
       {:ok, body, conn} = Plug.Conn.read_body(conn)
-      assert Jason.decode!(body) == %{"lat" => 19.4, "lon" => -99.1, "minutos" => 10, "num_direcciones" => 16}
+
+      assert Jason.decode!(body) == %{
+               "lat" => 19.4,
+               "lon" => -99.1,
+               "minutos" => 10,
+               "num_direcciones" => 16
+             }
 
       Req.Test.json(conn, %{"poligono" => [], "metodo" => "circulo_aproximado"})
     end)
 
-    assert {:ok, %{"metodo" => "circulo_aproximado"}} = MapoCore.isocrona_calcular(19.4, -99.1, 10)
+    assert {:ok, %{"metodo" => "circulo_aproximado"}} =
+             MapoCore.isocrona_calcular(19.4, -99.1, 10)
+  end
+
+  test "vrp_calcular/4 manda un POST con paradas y capacidades" do
+    Req.Test.stub(Mapo.MapoCore, fn conn ->
+      assert conn.method == "POST"
+      assert conn.request_path == "/vrp/calcular"
+
+      {:ok, body, conn} = Plug.Conn.read_body(conn)
+
+      assert Jason.decode!(body) == %{
+               "paradas" => [%{"lat" => 19.4, "lon" => -99.1, "demanda" => 0}],
+               "capacidades_vehiculos" => [100],
+               "deposito" => 0,
+               "velocidad_kmh" => 40.0
+             }
+
+      Req.Test.json(conn, %{
+        "rutas" => [],
+        "distancia_total_km" => 0.0,
+        "metodo" => "carretera_real"
+      })
+    end)
+
+    paradas = [%{lat: 19.4, lon: -99.1, demanda: 0}]
+
+    assert {:ok, %{"metodo" => "carretera_real"}} = MapoCore.vrp_calcular(paradas, [100])
   end
 
   test "regresa {:error, _} si mapo_core responde un status distinto de 200" do

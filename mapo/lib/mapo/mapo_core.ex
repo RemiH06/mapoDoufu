@@ -102,6 +102,25 @@ defmodule Mapo.MapoCore do
   """
   def perfil_zona(cve_ent, cve_mun), do: get("/perfil_zona", cve_ent: cve_ent, cve_mun: cve_mun)
 
+  @doc """
+  Resuelve el ruteo de vehículos (VRP) con capacidad y ventanas de
+  tiempo opcionales, vía OR-Tools. `paradas` es una lista de mapas con
+  `lat`/`lon`/`demanda` (y opcionalmente `ventana_inicio_min`/
+  `ventana_fin_min`); `capacidades_vehiculos` es una lista con la
+  capacidad de cada vehículo disponible. Intenta distancia real por
+  carretera (OSRM) primero; el resultado siempre dice en `metodo` si
+  se usó eso o una aproximación en línea recta, y cada ruta trae
+  `geometria` (GeoJSON real) cuando sí hubo carretera real.
+  """
+  def vrp_calcular(paradas, capacidades_vehiculos, deposito \\ 0, velocidad_kmh \\ 40.0) do
+    post("/vrp/calcular", %{
+      paradas: paradas,
+      capacidades_vehiculos: capacidades_vehiculos,
+      deposito: deposito,
+      velocidad_kmh: velocidad_kmh
+    })
+  end
+
   defp maybe_put(params, _key, nil), do: params
   defp maybe_put(params, key, value), do: params ++ [{key, value}]
 
@@ -122,6 +141,9 @@ defmodule Mapo.MapoCore do
   end
 
   defp request({:ok, %Req.Response{status: 200, body: body}}), do: {:ok, body}
-  defp request({:ok, %Req.Response{status: status, body: body}}), do: {:error, {:status, status, body}}
+
+  defp request({:ok, %Req.Response{status: status, body: body}}),
+    do: {:error, {:status, status, body}}
+
   defp request({:error, exception}), do: {:error, exception}
 end

@@ -95,7 +95,9 @@ defmodule MapoWeb.TeamLive.ShowTest do
   test "owner removes a member", %{conn: conn, scope: scope} do
     team = team_fixture(scope)
     member = user_fixture()
-    {:ok, membership} = Teams.create_membership(%{team_id: team.id, user_id: member.id, role: :member})
+
+    {:ok, membership} =
+      Teams.create_membership(%{team_id: team.id, user_id: member.id, role: :member})
 
     {:ok, lv, _html} = live(conn, ~p"/teams/#{team}")
 

@@ -6,7 +6,11 @@ defmodule MapoWeb.PerfilLive.IndexTest do
   setup :register_and_log_in_user
 
   defp estado_feature(cvegeo, nomgeo) do
-    %{"type" => "Feature", "properties" => %{"cvegeo" => cvegeo, "nomgeo" => nomgeo}, "geometry" => %{}}
+    %{
+      "type" => "Feature",
+      "properties" => %{"cvegeo" => cvegeo, "nomgeo" => nomgeo},
+      "geometry" => %{}
+    }
   end
 
   defp municipio_feature(cve_ent, cve_mun, nomgeo) do
@@ -22,15 +26,15 @@ defmodule MapoWeb.PerfilLive.IndexTest do
       "cve_ent" => "14",
       "cve_mun" => "039",
       "demografia" => %{
-        "pobtot" => 1500000,
-        "pobfem" => 800000,
-        "pobmas" => 700000,
+        "pobtot" => 1_500_000,
+        "pobfem" => 800_000,
+        "pobmas" => 700_000,
         "graproes" => 10.5,
-        "pea" => 700000,
-        "pocupada" => 650000,
+        "pea" => 700_000,
+        "pocupada" => 650_000,
         "pdesocup" => 50000,
-        "tothog" => 400000,
-        "vivtot" => 420000
+        "tothog" => 400_000,
+        "vivtot" => 420_000
       },
       "comercio" => %{
         "total_negocios" => 3200,
@@ -84,7 +88,10 @@ defmodule MapoWeb.PerfilLive.IndexTest do
     Req.Test.stub(Mapo.MapoCore, fn conn ->
       case conn.request_path do
         "/geo/estados" ->
-          Req.Test.json(conn, %{"type" => "FeatureCollection", "features" => [estado_feature("14", "Jalisco")]})
+          Req.Test.json(conn, %{
+            "type" => "FeatureCollection",
+            "features" => [estado_feature("14", "Jalisco")]
+          })
 
         "/geo/municipios" ->
           Req.Test.json(conn, %{
@@ -118,7 +125,10 @@ defmodule MapoWeb.PerfilLive.IndexTest do
     Req.Test.stub(Mapo.MapoCore, fn conn ->
       case conn.request_path do
         "/geo/estados" ->
-          Req.Test.json(conn, %{"type" => "FeatureCollection", "features" => [estado_feature("14", "Jalisco")]})
+          Req.Test.json(conn, %{
+            "type" => "FeatureCollection",
+            "features" => [estado_feature("14", "Jalisco")]
+          })
 
         "/geo/municipios" ->
           Req.Test.json(conn, %{

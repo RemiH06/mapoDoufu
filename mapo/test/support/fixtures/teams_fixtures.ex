@@ -47,7 +47,9 @@ defmodule Mapo.TeamsFixtures do
     role = attrs[:role] || :member
 
     {:ok, invitacion} =
-      Mapo.Teams.invitar_por_correo(scope, team, email, role, fn token -> "http://localhost/invitaciones/#{token}" end)
+      Mapo.Teams.invitar_por_correo(scope, team, email, role, fn token ->
+        "http://localhost/invitaciones/#{token}"
+      end)
 
     invitacion
   end

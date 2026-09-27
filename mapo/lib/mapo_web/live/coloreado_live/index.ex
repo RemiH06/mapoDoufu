@@ -70,14 +70,22 @@ defmodule MapoWeb.ColoreadoLive.Index do
       case MapoCore.coloreado_municipios(cve_ent) do
         {:ok, %{"features" => []}} ->
           {:noreply,
-           put_flash(socket, :error, "Gaiarda no tiene municipios descargados para ese estado todavía.")}
+           put_flash(
+             socket,
+             :error,
+             "Gaiarda no tiene municipios descargados para ese estado todavía."
+           )}
 
         {:ok, geojson} ->
           {:noreply, push_event(socket, "coloreado", %{geojson: geojson})}
 
         {:error, _} ->
           {:noreply,
-           put_flash(socket, :error, "mapo_core no está disponible ahorita mismo, intenta de nuevo.")}
+           put_flash(
+             socket,
+             :error,
+             "mapo_core no está disponible ahorita mismo, intenta de nuevo."
+           )}
       end
     end
   end

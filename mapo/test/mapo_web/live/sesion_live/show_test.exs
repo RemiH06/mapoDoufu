@@ -56,7 +56,10 @@ defmodule MapoWeb.SesionLive.ShowTest do
     owner_scope = user_scope_fixture()
     team = team_fixture(owner_scope)
     member = user_fixture()
-    {:ok, _} = Mapo.Teams.create_membership(%{team_id: team.id, user_id: member.id, role: :member})
+
+    {:ok, _} =
+      Mapo.Teams.create_membership(%{team_id: team.id, user_id: member.id, role: :member})
+
     sesion = sesion_fixture(owner_scope, team)
 
     conn_owner = log_in_user(build_conn(), owner_scope.user)
@@ -81,7 +84,10 @@ defmodule MapoWeb.SesionLive.ShowTest do
     {:ok, anotacion} = Sesiones.create_anotacion(scope, sesion, 19.0, -99.0, "original")
 
     member = user_fixture()
-    {:ok, _} = Mapo.Teams.create_membership(%{team_id: team.id, user_id: member.id, role: :member})
+
+    {:ok, _} =
+      Mapo.Teams.create_membership(%{team_id: team.id, user_id: member.id, role: :member})
+
     member_conn = log_in_user(build_conn(), member)
 
     {:ok, lv, _html} = live(conn, ~p"/sesiones/#{sesion}")
@@ -118,7 +124,10 @@ defmodule MapoWeb.SesionLive.ShowTest do
   } do
     team = team_fixture(scope)
     member = user_fixture()
-    {:ok, _} = Mapo.Teams.create_membership(%{team_id: team.id, user_id: member.id, role: :member})
+
+    {:ok, _} =
+      Mapo.Teams.create_membership(%{team_id: team.id, user_id: member.id, role: :member})
+
     sesion = sesion_fixture(scope, team)
 
     {:ok, lv, html} = live(conn, ~p"/sesiones/#{sesion}")

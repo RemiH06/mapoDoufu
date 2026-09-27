@@ -88,7 +88,9 @@ defmodule MapoWeb.MapaLive.Index do
 
           <div class="card bg-base-200 p-3">
             <h3 class="font-mono text-sm font-bold mb-2">Coloreado de municipios</h3>
-            <p class="text-xs text-base-content/70">Colorea todos los municipios del estado elegido.</p>
+            <p class="text-xs text-base-content/70">
+              Colorea todos los municipios del estado elegido.
+            </p>
             <div class="flex gap-2 mt-2">
               <.button phx-click="mostrar_coloreado" class="btn btn-primary btn-sm">Mostrar</.button>
               <.button
@@ -174,7 +176,11 @@ defmodule MapoWeb.MapaLive.Index do
     {:noreply, assign(socket, form: to_form(params, as: "mapa"))}
   end
 
-  def handle_event("mostrar_coropleta", %{"coropleta_capa" => %{"indicador" => indicador}}, socket) do
+  def handle_event(
+        "mostrar_coropleta",
+        %{"coropleta_capa" => %{"indicador" => indicador}},
+        socket
+      ) do
     cve_ent = socket.assigns.form[:cve_ent].value
     cve_mun = vacio_para_nil(socket.assigns.form[:cve_mun].value)
 
@@ -187,7 +193,10 @@ defmodule MapoWeb.MapaLive.Index do
 
           {:noreply,
            socket
-           |> assign(coropleta_activa?: true, coropleta_form: to_form(%{"indicador" => indicador}, as: "coropleta_capa"))
+           |> assign(
+             coropleta_activa?: true,
+             coropleta_form: to_form(%{"indicador" => indicador}, as: "coropleta_capa")
+           )
            |> push_event("capa_coropleta", %{activa: true, geojson: geojson, etiqueta: etiqueta})}
 
         {:error, _} ->
@@ -203,7 +212,11 @@ defmodule MapoWeb.MapaLive.Index do
      |> push_event("capa_coropleta", %{activa: false})}
   end
 
-  def handle_event("mostrar_voronoi", %{"voronoi_capa" => %{"clase_actividad" => clase_actividad}}, socket) do
+  def handle_event(
+        "mostrar_voronoi",
+        %{"voronoi_capa" => %{"clase_actividad" => clase_actividad}},
+        socket
+      ) do
     cve_ent = socket.assigns.form[:cve_ent].value
     cve_mun = vacio_para_nil(socket.assigns.form[:cve_mun].value)
     clase_actividad = vacio_para_nil(clase_actividad)
@@ -222,10 +235,13 @@ defmodule MapoWeb.MapaLive.Index do
 
           {:error, {:status, 422, body}} ->
             mensaje = if is_map(body), do: body["detail"], else: nil
-            {:noreply, put_flash(socket, :error, mensaje || "No hay suficientes negocios con ese filtro.")}
+
+            {:noreply,
+             put_flash(socket, :error, mensaje || "No hay suficientes negocios con ese filtro.")}
 
           {:error, {:status, 404, _}} ->
-            {:noreply, put_flash(socket, :error, "Ese municipio no está descargado en Gaiarda todavía.")}
+            {:noreply,
+             put_flash(socket, :error, "Ese municipio no está descargado en Gaiarda todavía.")}
 
           {:error, _} ->
             {:noreply, put_flash(socket, :error, "mapo_core no está disponible ahorita mismo.")}
@@ -269,7 +285,10 @@ defmodule MapoWeb.MapaLive.Index do
   def handle_event("activar_isocrona", %{"isocrona_capa" => %{"minutos" => minutos}}, socket) do
     {:noreply,
      socket
-     |> assign(isocrona_activa?: true, isocrona_form: to_form(%{"minutos" => minutos}, as: "isocrona_capa"))
+     |> assign(
+       isocrona_activa?: true,
+       isocrona_form: to_form(%{"minutos" => minutos}, as: "isocrona_capa")
+     )
      |> push_event("modo_isocrona", %{activo: true})}
   end
 
@@ -291,7 +310,8 @@ defmodule MapoWeb.MapaLive.Index do
 
       case MapoCore.isocrona_calcular(lat, lon, minutos) do
         {:ok, %{"poligono" => poligono, "metodo" => metodo}} ->
-          {:noreply, push_event(socket, "capa_isocrona", %{activa: true, poligono: poligono, metodo: metodo})}
+          {:noreply,
+           push_event(socket, "capa_isocrona", %{activa: true, poligono: poligono, metodo: metodo})}
 
         {:error, _} ->
           {:noreply, put_flash(socket, :error, "mapo_core no está disponible ahorita mismo.")}

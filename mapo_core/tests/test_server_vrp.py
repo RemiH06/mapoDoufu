@@ -10,11 +10,15 @@ TOLUCA = {"lat": 19.2926, "lon": -99.6568, "demanda": 5}
 class _OSRMFalso:
     """Sustituye a OSRMClient en los tests: nunca pega a la red."""
 
-    def __init__(self, resultado=None):
+    def __init__(self, resultado=None, geometria=None):
         self._resultado = resultado
+        self._geometria = geometria
 
     async def matriz_carretera(self, coords):
         return self._resultado
+
+    async def geometria_ruta(self, coords_en_orden):
+        return self._geometria
 
 
 def _cliente_con_osrm(osrm_falso) -> TestClient:
@@ -39,6 +43,8 @@ def test_vrp_calcular_cae_a_linea_recta_si_osrm_no_responde():
     assert len(cuerpo["rutas"]) == 1
     assert set(cuerpo["rutas"][0]["orden_paradas"]) == {0, 1, 2}
     assert cuerpo["distancia_total_km"] > 0
+    # Sin carretera real no hay geometria real que pedir: null, no inventada.
+    assert cuerpo["rutas"][0]["geometria"] is None
     app.dependency_overrides.clear()
 
 
@@ -64,6 +70,41 @@ def test_vrp_calcular_usa_carretera_real_si_osrm_responde():
     # distinta a la de linea recta; solo importa que se haya usado la
     # matriz real, no que coincida con un numero exacto.
     assert cuerpo["distancia_total_km"] > 0
+    app.dependency_overrides.clear()
+
+
+def test_vrp_calcular_con_carretera_real_trae_geometria():
+    matriz_osrm = {
+        "distancias_km": [[0, 130, 65], [130, 0, 195], [65, 195, 0]],
+        "duraciones_min": [[0, 90, 50], [90, 0, 140], [50, 140, 0]],
+    }
+    geometria_esperada = {"type": "LineString", "coordinates": [[-99.1332, 19.4326], [-98.2063, 19.0414]]}
+    cliente = _cliente_con_osrm(_OSRMFalso(resultado=matriz_osrm, geometria=geometria_esperada))
+
+    respuesta = cliente.post(
+        "/vrp/calcular",
+        json={"paradas": [DEPOSITO, PUEBLA, TOLUCA], "capacidades_vehiculos": [100]},
+    )
+
+    cuerpo = respuesta.json()
+    assert cuerpo["rutas"][0]["geometria"] == geometria_esperada
+    app.dependency_overrides.clear()
+
+
+def test_vrp_calcular_si_geometria_ruta_falla_da_null_no_truena():
+    matriz_osrm = {
+        "distancias_km": [[0, 130, 65], [130, 0, 195], [65, 195, 0]],
+        "duraciones_min": [[0, 90, 50], [90, 0, 140], [50, 140, 0]],
+    }
+    cliente = _cliente_con_osrm(_OSRMFalso(resultado=matriz_osrm, geometria=None))
+
+    respuesta = cliente.post(
+        "/vrp/calcular",
+        json={"paradas": [DEPOSITO, PUEBLA, TOLUCA], "capacidades_vehiculos": [100]},
+    )
+
+    assert respuesta.status_code == 200
+    assert respuesta.json()["rutas"][0]["geometria"] is None
     app.dependency_overrides.clear()
 
 

@@ -184,8 +184,11 @@ defmodule Mapo.TeamsTest do
       scope = user_scope_fixture()
       team = team_fixture(scope)
 
-      {:ok, first} = Teams.invitar_por_correo(scope, team, "nadie@example.com", :member, &"/#{&1}")
-      {:ok, second} = Teams.invitar_por_correo(scope, team, "nadie@example.com", :admin, &"/#{&1}")
+      {:ok, first} =
+        Teams.invitar_por_correo(scope, team, "nadie@example.com", :member, &"/#{&1}")
+
+      {:ok, second} =
+        Teams.invitar_por_correo(scope, team, "nadie@example.com", :admin, &"/#{&1}")
 
       assert first.token == second.token
       assert second.role == :admin

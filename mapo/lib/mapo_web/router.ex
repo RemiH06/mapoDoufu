@@ -66,6 +66,7 @@ defmodule MapoWeb.Router do
       live "/coloreado", ColoreadoLive.Index, :index
       live "/mapa", MapaLive.Index, :index
       live "/perfil", PerfilLive.Index, :index
+      live "/logistica", LogisticaLive.Index, :index
     end
 
     post "/users/update-password", UserSessionController, :update_password

@@ -6,7 +6,11 @@ defmodule MapoWeb.VoronoiLive.IndexTest do
   setup :register_and_log_in_user
 
   defp estado_feature(cvegeo, nomgeo) do
-    %{"type" => "Feature", "properties" => %{"cvegeo" => cvegeo, "nomgeo" => nomgeo}, "geometry" => %{}}
+    %{
+      "type" => "Feature",
+      "properties" => %{"cvegeo" => cvegeo, "nomgeo" => nomgeo},
+      "geometry" => %{}
+    }
   end
 
   defp municipio_feature(cve_ent, cve_mun, nomgeo) do
@@ -23,8 +27,16 @@ defmodule MapoWeb.VoronoiLive.IndexTest do
       "features" => [
         %{
           "type" => "Feature",
-          "properties" => %{"id" => "1", "nombre" => "Papelería A", "lat" => 20.0, "lon" => -100.0},
-          "geometry" => %{"type" => "Polygon", "coordinates" => [[[0, 0], [1, 0], [1, 1], [0, 0]]]}
+          "properties" => %{
+            "id" => "1",
+            "nombre" => "Papelería A",
+            "lat" => 20.0,
+            "lon" => -100.0
+          },
+          "geometry" => %{
+            "type" => "Polygon",
+            "coordinates" => [[[0, 0], [1, 0], [1, 1], [0, 0]]]
+          }
         }
       ]
     }
@@ -44,7 +56,10 @@ defmodule MapoWeb.VoronoiLive.IndexTest do
     Req.Test.stub(Mapo.MapoCore, fn conn ->
       case conn.request_path do
         "/geo/estados" ->
-          Req.Test.json(conn, %{"type" => "FeatureCollection", "features" => [estado_feature("14", "Jalisco")]})
+          Req.Test.json(conn, %{
+            "type" => "FeatureCollection",
+            "features" => [estado_feature("14", "Jalisco")]
+          })
 
         "/geo/municipios" ->
           assert conn.params["cve_ent"] == "14"
@@ -61,7 +76,9 @@ defmodule MapoWeb.VoronoiLive.IndexTest do
 
     html =
       lv
-      |> form("#voronoi_form", voronoi: %{"cve_ent" => "14", "cve_mun" => "", "clase_actividad" => ""})
+      |> form("#voronoi_form",
+        voronoi: %{"cve_ent" => "14", "cve_mun" => "", "clase_actividad" => ""}
+      )
       |> render_change()
 
     assert html =~ "Guadalajara"
@@ -72,7 +89,10 @@ defmodule MapoWeb.VoronoiLive.IndexTest do
     Req.Test.stub(Mapo.MapoCore, fn conn ->
       case conn.request_path do
         "/geo/estados" ->
-          Req.Test.json(conn, %{"type" => "FeatureCollection", "features" => [estado_feature("14", "Jalisco")]})
+          Req.Test.json(conn, %{
+            "type" => "FeatureCollection",
+            "features" => [estado_feature("14", "Jalisco")]
+          })
 
         "/geo/municipios" ->
           Req.Test.json(conn, %{
@@ -88,7 +108,9 @@ defmodule MapoWeb.VoronoiLive.IndexTest do
     {:ok, lv, _html} = live(conn, ~p"/voronoi")
 
     lv
-    |> form("#voronoi_form", voronoi: %{"cve_ent" => "14", "cve_mun" => "", "clase_actividad" => ""})
+    |> form("#voronoi_form",
+      voronoi: %{"cve_ent" => "14", "cve_mun" => "", "clase_actividad" => ""}
+    )
     |> render_change()
 
     lv
@@ -99,25 +121,41 @@ defmodule MapoWeb.VoronoiLive.IndexTest do
       montar_con_municipio(conn, fn conn ->
         assert conn.params["cve_ent"] == "14"
         assert conn.params["cve_mun"] == "039"
-        Req.Test.json(conn, %{"celdas" => celdas_geojson(), "metodo" => "recortado_a_limite", "num_negocios" => 1})
+
+        Req.Test.json(conn, %{
+          "celdas" => celdas_geojson(),
+          "metodo" => "recortado_a_limite",
+          "num_negocios" => 1
+        })
       end)
 
     lv
-    |> form("#voronoi_form", voronoi: %{"cve_ent" => "14", "cve_mun" => "039", "clase_actividad" => ""})
+    |> form("#voronoi_form",
+      voronoi: %{"cve_ent" => "14", "cve_mun" => "039", "clase_actividad" => ""}
+    )
     |> render_submit()
 
-    assert_push_event(lv, "voronoi", %{geojson: %{"features" => [%{"properties" => %{"nombre" => "Papelería A"}}]}})
+    assert_push_event(lv, "voronoi", %{
+      geojson: %{"features" => [%{"properties" => %{"nombre" => "Papelería A"}}]}
+    })
   end
 
   test "generar includes clase_actividad when given", %{conn: conn} do
     lv =
       montar_con_municipio(conn, fn conn ->
         assert conn.params["clase_actividad"] == "papelería"
-        Req.Test.json(conn, %{"celdas" => celdas_geojson(), "metodo" => "recortado_a_limite", "num_negocios" => 1})
+
+        Req.Test.json(conn, %{
+          "celdas" => celdas_geojson(),
+          "metodo" => "recortado_a_limite",
+          "num_negocios" => 1
+        })
       end)
 
     lv
-    |> form("#voronoi_form", voronoi: %{"cve_ent" => "14", "cve_mun" => "039", "clase_actividad" => "papelería"})
+    |> form("#voronoi_form",
+      voronoi: %{"cve_ent" => "14", "cve_mun" => "039", "clase_actividad" => "papelería"}
+    )
     |> render_submit()
   end
 
@@ -131,7 +169,9 @@ defmodule MapoWeb.VoronoiLive.IndexTest do
 
     html =
       lv
-      |> form("#voronoi_form", voronoi: %{"cve_ent" => "", "cve_mun" => "", "clase_actividad" => ""})
+      |> form("#voronoi_form",
+        voronoi: %{"cve_ent" => "", "cve_mun" => "", "clase_actividad" => ""}
+      )
       |> render_submit()
 
     assert html =~ "Selecciona un estado y un municipio"
@@ -142,12 +182,16 @@ defmodule MapoWeb.VoronoiLive.IndexTest do
       montar_con_municipio(conn, fn conn ->
         conn
         |> Plug.Conn.put_status(422)
-        |> Req.Test.json(%{"detail" => "Solo hay 1 negocio(s) con esos filtros; se necesitan al menos 3."})
+        |> Req.Test.json(%{
+          "detail" => "Solo hay 1 negocio(s) con esos filtros; se necesitan al menos 3."
+        })
       end)
 
     html =
       lv
-      |> form("#voronoi_form", voronoi: %{"cve_ent" => "14", "cve_mun" => "039", "clase_actividad" => ""})
+      |> form("#voronoi_form",
+        voronoi: %{"cve_ent" => "14", "cve_mun" => "039", "clase_actividad" => ""}
+      )
       |> render_submit()
 
     assert html =~ "se necesitan al menos 3"
@@ -161,7 +205,9 @@ defmodule MapoWeb.VoronoiLive.IndexTest do
 
     html =
       lv
-      |> form("#voronoi_form", voronoi: %{"cve_ent" => "14", "cve_mun" => "039", "clase_actividad" => ""})
+      |> form("#voronoi_form",
+        voronoi: %{"cve_ent" => "14", "cve_mun" => "039", "clase_actividad" => ""}
+      )
       |> render_submit()
 
     assert html =~ "no está descargado"

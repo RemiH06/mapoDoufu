@@ -58,7 +58,10 @@ defmodule MapoWeb.UserLive.Confirmation do
             >
               Mantenerme conectado en este dispositivo
             </.button>
-            <.button phx-disable-with="Iniciando sesión..." class="btn btn-primary btn-soft w-full mt-2">
+            <.button
+              phx-disable-with="Iniciando sesión..."
+              class="btn btn-primary btn-soft w-full mt-2"
+            >
               Iniciar sesión solo esta vez
             </.button>
           <% end %>

@@ -199,7 +199,10 @@ async def vrp_calcular(
     a linea recta (haversine), igual que el fallback honesto que ya
     usa Gaiarda. El campo `metodo` de la respuesta siempre dice cual
     de los dos se uso, nunca se le hace pasar una aproximacion por un
-    dato confirmado."""
+    dato confirmado. Cada ruta trae ademas `geometria` (GeoJSON
+    LineString siguiendo la carretera real, via OSRM), o `null` si el
+    metodo ya cayo a linea recta (ahi no hay carretera real que pedir)
+    o si esa llamada en particular no respondio."""
     if solicitud.deposito < 0 or solicitud.deposito >= len(solicitud.paradas):
         raise HTTPException(400, "deposito debe ser un indice valido de paradas")
 
@@ -240,15 +243,23 @@ async def vrp_calcular(
             422, "No se encontro una solucion factible con esas restricciones."
         )
 
-    return {
-        "rutas": [
+    rutas = []
+    for r in solucion.rutas:
+        geometria = None
+        if metodo == "carretera_real":
+            coords_orden = [(paradas[i].lat, paradas[i].lon) for i in r.orden_paradas]
+            geometria = await osrm.geometria_ruta(coords_orden)
+        rutas.append(
             {
                 "vehiculo_id": r.vehiculo_id,
                 "orden_paradas": r.orden_paradas,
                 "distancia_km": r.distancia_km,
+                "geometria": geometria,
             }
-            for r in solucion.rutas
-        ],
+        )
+
+    return {
+        "rutas": rutas,
         "distancia_total_km": solucion.distancia_total_km,
         "metodo": metodo,
     }

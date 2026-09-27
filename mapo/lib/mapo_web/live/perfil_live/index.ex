@@ -19,7 +19,13 @@ defmodule MapoWeb.PerfilLive.Index do
         disponible ahorita mismo, o todavía no se han descargado estados.
       </p>
 
-      <.form for={@form} id="perfil_form" phx-change="cambiar_ubicacion" phx-submit="ver_perfil" class="mt-4">
+      <.form
+        for={@form}
+        id="perfil_form"
+        phx-change="cambiar_ubicacion"
+        phx-submit="ver_perfil"
+        class="mt-4"
+      >
         <div class="flex gap-2 items-start flex-wrap">
           <div class="w-52">
             <.input
@@ -50,11 +56,21 @@ defmodule MapoWeb.PerfilLive.Index do
           <h3 class="font-mono text-sm font-bold mb-2">Demografía (censo)</h3>
           <div :if={@perfil["demografia"]} class="text-sm space-y-1">
             <p>Población total: {@perfil["demografia"]["pobtot"]}</p>
-            <p>Mujeres / hombres: {@perfil["demografia"]["pobfem"]} / {@perfil["demografia"]["pobmas"]}</p>
+            <p>
+              Mujeres / hombres: {@perfil["demografia"]["pobfem"]} / {@perfil["demografia"]["pobmas"]}
+            </p>
             <p>Grado promedio de escolaridad: {@perfil["demografia"]["graproes"]}</p>
             <p>Población económicamente activa: {@perfil["demografia"]["pea"]}</p>
-            <p>Ocupada / desocupada: {@perfil["demografia"]["pocupada"]} / {@perfil["demografia"]["pdesocup"]}</p>
-            <p>Hogares / viviendas: {@perfil["demografia"]["tothog"]} / {@perfil["demografia"]["vivtot"]}</p>
+            <p>
+              Ocupada / desocupada: {@perfil["demografia"]["pocupada"]} / {@perfil["demografia"][
+                "pdesocup"
+              ]}
+            </p>
+            <p>
+              Hogares / viviendas: {@perfil["demografia"]["tothog"]} / {@perfil["demografia"][
+                "vivtot"
+              ]}
+            </p>
           </div>
           <p :if={!@perfil["demografia"]} class="text-sm text-base-content/70">
             Sin datos de censo para este municipio.
@@ -90,9 +106,11 @@ defmodule MapoWeb.PerfilLive.Index do
         <div class="card bg-base-200 p-4">
           <h3 class="font-mono text-sm font-bold mb-2">Seguridad (SESNSP)</h3>
           <div :if={@perfil["seguridad"]} class="text-sm space-y-1">
-            <p>{@perfil["seguridad"]["total_delitos"]} delitos registrados en {@perfil["seguridad"][
-              "anio"
-            ]}</p>
+            <p>
+              {@perfil["seguridad"]["total_delitos"]} delitos registrados en {@perfil["seguridad"][
+                "anio"
+              ]}
+            </p>
             <ul :if={@perfil["seguridad"]["por_tipo"] != []} class="text-sm mt-2 space-y-1">
               <li :for={[tipo, cantidad] <- @perfil["seguridad"]["por_tipo"]}>
                 {tipo}: {cantidad}
@@ -154,7 +172,11 @@ defmodule MapoWeb.PerfilLive.Index do
     {:noreply, assign(socket, form: to_form(params, as: "perfil"))}
   end
 
-  def handle_event("ver_perfil", %{"perfil" => %{"cve_ent" => cve_ent, "cve_mun" => cve_mun}}, socket) do
+  def handle_event(
+        "ver_perfil",
+        %{"perfil" => %{"cve_ent" => cve_ent, "cve_mun" => cve_mun}},
+        socket
+      ) do
     if cve_ent in [nil, ""] or cve_mun in [nil, ""] do
       {:noreply, put_flash(socket, :error, "Selecciona un estado y un municipio primero.")}
     else
@@ -163,7 +185,12 @@ defmodule MapoWeb.PerfilLive.Index do
           {:noreply, assign(socket, perfil: perfil)}
 
         {:error, _} ->
-          {:noreply, put_flash(socket, :error, "mapo_core no está disponible ahorita mismo, intenta de nuevo.")}
+          {:noreply,
+           put_flash(
+             socket,
+             :error,
+             "mapo_core no está disponible ahorita mismo, intenta de nuevo."
+           )}
       end
     end
   end

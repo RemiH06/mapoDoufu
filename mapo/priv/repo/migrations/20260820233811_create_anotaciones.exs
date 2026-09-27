@@ -12,6 +12,7 @@ defmodule Mapo.Repo.Migrations.CreateAnotaciones do
     end
 
     create index(:anotaciones, [:sesion_id])
+
     execute "CREATE INDEX anotaciones_geom_index ON anotaciones USING GIST (geom)",
             "DROP INDEX anotaciones_geom_index"
   end

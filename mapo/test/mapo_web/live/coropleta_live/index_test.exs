@@ -6,7 +6,11 @@ defmodule MapoWeb.CoropletaLive.IndexTest do
   setup :register_and_log_in_user
 
   defp feature(cvegeo, nomgeo) do
-    %{"type" => "Feature", "properties" => %{"cvegeo" => cvegeo, "nomgeo" => nomgeo}, "geometry" => %{}}
+    %{
+      "type" => "Feature",
+      "properties" => %{"cvegeo" => cvegeo, "nomgeo" => nomgeo},
+      "geometry" => %{}
+    }
   end
 
   defp municipio_feature(cve_ent, cve_mun, nomgeo) do
@@ -31,7 +35,10 @@ defmodule MapoWeb.CoropletaLive.IndexTest do
     Req.Test.stub(Mapo.MapoCore, fn conn ->
       case conn.request_path do
         "/geo/estados" ->
-          Req.Test.json(conn, %{"type" => "FeatureCollection", "features" => [feature("14", "Jalisco")]})
+          Req.Test.json(conn, %{
+            "type" => "FeatureCollection",
+            "features" => [feature("14", "Jalisco")]
+          })
 
         "/geo/municipios" ->
           assert conn.params["cve_ent"] == "14"
@@ -48,7 +55,9 @@ defmodule MapoWeb.CoropletaLive.IndexTest do
 
     html =
       lv
-      |> form("#coropleta_form", coropleta: %{"cve_ent" => "14", "cve_mun" => "", "indicador" => "pobtot"})
+      |> form("#coropleta_form",
+        coropleta: %{"cve_ent" => "14", "cve_mun" => "", "indicador" => "pobtot"}
+      )
       |> render_change()
 
     assert html =~ "Guadalajara"
@@ -59,7 +68,10 @@ defmodule MapoWeb.CoropletaLive.IndexTest do
     Req.Test.stub(Mapo.MapoCore, fn conn ->
       case conn.request_path do
         "/geo/estados" ->
-          Req.Test.json(conn, %{"type" => "FeatureCollection", "features" => [feature("14", "Jalisco")]})
+          Req.Test.json(conn, %{
+            "type" => "FeatureCollection",
+            "features" => [feature("14", "Jalisco")]
+          })
 
         "/censo/choropleth" ->
           assert conn.params["indicador"] == "pobtot"
@@ -81,7 +93,9 @@ defmodule MapoWeb.CoropletaLive.IndexTest do
     {:ok, lv, _html} = live(conn, ~p"/coropletas")
 
     lv
-    |> form("#coropleta_form", coropleta: %{"cve_ent" => "14", "cve_mun" => "", "indicador" => "pobtot"})
+    |> form("#coropleta_form",
+      coropleta: %{"cve_ent" => "14", "cve_mun" => "", "indicador" => "pobtot"}
+    )
     |> render_submit()
 
     assert_push_event(lv, "coropleta", %{etiqueta: "Población total"})
@@ -93,7 +107,10 @@ defmodule MapoWeb.CoropletaLive.IndexTest do
     Req.Test.stub(Mapo.MapoCore, fn conn ->
       case conn.request_path do
         "/geo/estados" ->
-          Req.Test.json(conn, %{"type" => "FeatureCollection", "features" => [feature("14", "Jalisco")]})
+          Req.Test.json(conn, %{
+            "type" => "FeatureCollection",
+            "features" => [feature("14", "Jalisco")]
+          })
 
         "/geo/municipios" ->
           Req.Test.json(conn, %{
@@ -110,11 +127,15 @@ defmodule MapoWeb.CoropletaLive.IndexTest do
     {:ok, lv, _html} = live(conn, ~p"/coropletas")
 
     lv
-    |> form("#coropleta_form", coropleta: %{"cve_ent" => "14", "cve_mun" => "", "indicador" => "pobtot"})
+    |> form("#coropleta_form",
+      coropleta: %{"cve_ent" => "14", "cve_mun" => "", "indicador" => "pobtot"}
+    )
     |> render_change()
 
     lv
-    |> form("#coropleta_form", coropleta: %{"cve_ent" => "14", "cve_mun" => "039", "indicador" => "pobtot"})
+    |> form("#coropleta_form",
+      coropleta: %{"cve_ent" => "14", "cve_mun" => "039", "indicador" => "pobtot"}
+    )
     |> render_submit()
   end
 
@@ -128,7 +149,9 @@ defmodule MapoWeb.CoropletaLive.IndexTest do
 
     html =
       lv
-      |> form("#coropleta_form", coropleta: %{"cve_ent" => "", "cve_mun" => "", "indicador" => "pobtot"})
+      |> form("#coropleta_form",
+        coropleta: %{"cve_ent" => "", "cve_mun" => "", "indicador" => "pobtot"}
+      )
       |> render_submit()
 
     assert html =~ "Selecciona un estado"
@@ -138,7 +161,10 @@ defmodule MapoWeb.CoropletaLive.IndexTest do
     Req.Test.stub(Mapo.MapoCore, fn conn ->
       case conn.request_path do
         "/geo/estados" ->
-          Req.Test.json(conn, %{"type" => "FeatureCollection", "features" => [feature("14", "Jalisco")]})
+          Req.Test.json(conn, %{
+            "type" => "FeatureCollection",
+            "features" => [feature("14", "Jalisco")]
+          })
 
         "/censo/choropleth" ->
           Req.Test.json(conn, %{"type" => "FeatureCollection", "features" => []})
@@ -149,7 +175,9 @@ defmodule MapoWeb.CoropletaLive.IndexTest do
 
     html =
       lv
-      |> form("#coropleta_form", coropleta: %{"cve_ent" => "14", "cve_mun" => "", "indicador" => "pobtot"})
+      |> form("#coropleta_form",
+        coropleta: %{"cve_ent" => "14", "cve_mun" => "", "indicador" => "pobtot"}
+      )
       |> render_submit()
 
     assert html =~ "no tiene AGEBs o censo descargados"

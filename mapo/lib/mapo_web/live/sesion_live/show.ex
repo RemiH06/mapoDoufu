@@ -10,7 +10,9 @@ defmodule MapoWeb.SesionLive.Show do
     <Layouts.app flash={@flash} current_scope={@current_scope}>
       <.header>
         {@sesion.nombre}
-        <:subtitle>Sesión de {@team.name}. Los demás miembros del equipo ven tus anotaciones al instante.</:subtitle>
+        <:subtitle>
+          Sesión de {@team.name}. Los demás miembros del equipo ven tus anotaciones al instante.
+        </:subtitle>
       </.header>
 
       <p :if={@presentes != []} class="text-sm text-base-content/70 mb-2">
@@ -65,7 +67,13 @@ defmodule MapoWeb.SesionLive.Show do
 
   @impl true
   def handle_event("crear_anotacion", %{"lat" => lat, "lon" => lon, "texto" => texto}, socket) do
-    case Sesiones.create_anotacion(socket.assigns.current_scope, socket.assigns.sesion, lat, lon, texto) do
+    case Sesiones.create_anotacion(
+           socket.assigns.current_scope,
+           socket.assigns.sesion,
+           lat,
+           lon,
+           texto
+         ) do
       {:ok, _anotacion} ->
         {:noreply, socket}
 

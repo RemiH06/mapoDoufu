@@ -10,7 +10,13 @@ defmodule MapoWeb.VoronoiLive.Index do
       <div class="shrink-0 flex flex-wrap items-end gap-3">
         <h1 class="font-mono text-sm font-bold pb-2 whitespace-nowrap">Voronoi (DENUE)</h1>
 
-        <.form for={@form} id="voronoi_form" phx-change="cambiar" phx-submit="generar" class="contents">
+        <.form
+          for={@form}
+          id="voronoi_form"
+          phx-change="cambiar"
+          phx-submit="generar"
+          class="contents"
+        >
           <div class="w-44">
             <.input
               field={@form[:cve_ent]}
@@ -96,7 +102,9 @@ defmodule MapoWeb.VoronoiLive.Index do
   def handle_event("generar", %{"voronoi" => params}, socket) do
     cve_ent = params["cve_ent"]
     cve_mun = params["cve_mun"]
-    clase_actividad = if params["clase_actividad"] in [nil, ""], do: nil, else: params["clase_actividad"]
+
+    clase_actividad =
+      if params["clase_actividad"] in [nil, ""], do: nil, else: params["clase_actividad"]
 
     if cve_ent in [nil, ""] or cve_mun in [nil, ""] do
       {:noreply, put_flash(socket, :error, "Selecciona un estado y un municipio primero.")}
@@ -111,11 +119,17 @@ defmodule MapoWeb.VoronoiLive.Index do
 
         {:error, {:status, 422, body}} ->
           mensaje = if is_map(body), do: body["detail"], else: nil
-          {:noreply, put_flash(socket, :error, mensaje || "No hay suficientes negocios con ese filtro.")}
+
+          {:noreply,
+           put_flash(socket, :error, mensaje || "No hay suficientes negocios con ese filtro.")}
 
         {:error, _} ->
           {:noreply,
-           put_flash(socket, :error, "mapo_core no está disponible ahorita mismo, intenta de nuevo.")}
+           put_flash(
+             socket,
+             :error,
+             "mapo_core no está disponible ahorita mismo, intenta de nuevo."
+           )}
       end
     end
   end

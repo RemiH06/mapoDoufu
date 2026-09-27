@@ -6,7 +6,11 @@ defmodule MapoWeb.MapaLive.IndexTest do
   setup :register_and_log_in_user
 
   defp estado_feature(cvegeo, nomgeo) do
-    %{"type" => "Feature", "properties" => %{"cvegeo" => cvegeo, "nomgeo" => nomgeo}, "geometry" => %{}}
+    %{
+      "type" => "Feature",
+      "properties" => %{"cvegeo" => cvegeo, "nomgeo" => nomgeo},
+      "geometry" => %{}
+    }
   end
 
   defp municipio_feature(cve_ent, cve_mun, nomgeo) do
@@ -21,7 +25,10 @@ defmodule MapoWeb.MapaLive.IndexTest do
     Req.Test.stub(Mapo.MapoCore, fn conn ->
       case conn.request_path do
         "/geo/estados" ->
-          Req.Test.json(conn, %{"type" => "FeatureCollection", "features" => [estado_feature("14", "Jalisco")]})
+          Req.Test.json(conn, %{
+            "type" => "FeatureCollection",
+            "features" => [estado_feature("14", "Jalisco")]
+          })
 
         "/geo/municipios" ->
           Req.Test.json(conn, %{
@@ -145,6 +152,7 @@ defmodule MapoWeb.MapaLive.IndexTest do
     lv =
       montar_con_ubicacion(conn, fn conn ->
         assert conn.request_path == "/coloreado/municipios"
+
         Req.Test.json(conn, %{"type" => "FeatureCollection", "features" => [], "num_colores" => 0})
       end)
 
@@ -174,7 +182,11 @@ defmodule MapoWeb.MapaLive.IndexTest do
     lv =
       montar_con_ubicacion(conn, fn conn ->
         assert conn.request_path == "/isocronas/calcular"
-        Req.Test.json(conn, %{"poligono" => %{"type" => "Polygon", "coordinates" => []}, "metodo" => "osrm_real"})
+
+        Req.Test.json(conn, %{
+          "poligono" => %{"type" => "Polygon", "coordinates" => []},
+          "metodo" => "osrm_real"
+        })
       end)
 
     lv
@@ -186,7 +198,9 @@ defmodule MapoWeb.MapaLive.IndexTest do
     assert_push_event(lv, "capa_isocrona", %{activa: true, metodo: "osrm_real"})
   end
 
-  test "click_mapa while isocrona is not active does nothing (and does not call mapo_core)", %{conn: conn} do
+  test "click_mapa while isocrona is not active does nothing (and does not call mapo_core)", %{
+    conn: conn
+  } do
     lv = montar_con_ubicacion(conn, fn _conn -> raise "no debería llamarse" end)
 
     render_hook(lv, "click_mapa", %{"lat" => 19.4, "lon" => -99.1})

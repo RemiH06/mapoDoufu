@@ -10,7 +10,13 @@ defmodule MapoWeb.CoropletaLive.Index do
       <div class="shrink-0 flex flex-wrap items-end gap-3">
         <h1 class="font-mono text-sm font-bold pb-2 whitespace-nowrap">Coropletas del censo</h1>
 
-        <.form for={@form} id="coropleta_form" phx-change="cambiar" phx-submit="generar" class="contents">
+        <.form
+          for={@form}
+          id="coropleta_form"
+          phx-change="cambiar"
+          phx-submit="generar"
+          class="contents"
+        >
           <div class="w-44">
             <.input
               field={@form[:cve_ent]}
@@ -66,14 +72,16 @@ defmodule MapoWeb.CoropletaLive.Index do
         {:error, _} -> []
       end
 
-    indicadores = Enum.map(MapoCore.indicadores_censo(), fn {codigo, etiqueta} -> {etiqueta, codigo} end)
+    indicadores =
+      Enum.map(MapoCore.indicadores_censo(), fn {codigo, etiqueta} -> {etiqueta, codigo} end)
 
     {:ok,
      assign(socket,
        estados: estados,
        municipios: [],
        indicadores: indicadores,
-       form: to_form(%{"cve_ent" => "", "cve_mun" => "", "indicador" => "pobtot"}, as: "coropleta")
+       form:
+         to_form(%{"cve_ent" => "", "cve_mun" => "", "indicador" => "pobtot"}, as: "coropleta")
      )}
   end
 
@@ -115,7 +123,11 @@ defmodule MapoWeb.CoropletaLive.Index do
 
         {:error, _} ->
           {:noreply,
-           put_flash(socket, :error, "mapo_core no está disponible ahorita mismo, intenta de nuevo.")}
+           put_flash(
+             socket,
+             :error,
+             "mapo_core no está disponible ahorita mismo, intenta de nuevo."
+           )}
       end
     end
   end

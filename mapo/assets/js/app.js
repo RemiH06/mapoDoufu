@@ -31,6 +31,7 @@ import {CoropletaMap} from "./coropleta_map"
 import {VoronoiMap} from "./voronoi_map"
 import {ColoreadoMap} from "./coloreado_map"
 import {MapaTecnico} from "./mapa_tecnico"
+import {LogisticaMap} from "./logistica_map"
 
 const csrfToken = document.querySelector("meta[name='csrf-token']").getAttribute("content")
 const liveSocket = new LiveSocket("/live", Socket, {
@@ -44,6 +45,7 @@ const liveSocket = new LiveSocket("/live", Socket, {
     VoronoiMap,
     ColoreadoMap,
     MapaTecnico,
+    LogisticaMap,
   },
 })
 
