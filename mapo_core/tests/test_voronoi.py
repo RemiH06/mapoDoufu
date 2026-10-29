@@ -71,3 +71,14 @@ def test_un_punto_totalmente_fuera_del_limite_no_aparece():
 
     ids = {f["properties"]["id"] for f in resultado.celdas["features"]}
     assert "lejos" not in ids
+
+
+def test_puntos_en_la_misma_coordenada_comparten_una_celda():
+    puntos = _cuadrado_de_puntos() + [PuntoVoronoi(lat=0.0, lon=0.0, id="a2", nombre="A2")]
+
+    resultado = calcular_voronoi(puntos)
+
+    por_id = {f["properties"]["id"]: f["properties"] for f in resultado.celdas["features"]}
+    assert set(por_id) == {"a", "b", "c", "d"}
+    assert por_id["a"]["num_puntos"] == 2
+    assert por_id["b"]["num_puntos"] == 1

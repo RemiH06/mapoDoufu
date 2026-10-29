@@ -17,6 +17,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 import numpy as np
+import shapely
 from scipy.spatial import QhullError, Voronoi
 from shapely.geometry import Polygon, box, mapping, shape
 
@@ -101,11 +102,21 @@ def calcular_voronoi(
     o a la caja envolvente de los puntos con un margen si no. Un punto
     cuya celda queda vacia despues del recorte (puede pasar si cae
     justo en el borde de `limite`) simplemente no aparece en el
-    resultado, no se inventa una celda de area cero."""
+    resultado, no se inventa una celda de area cero.
+
+    Varios puntos en la misma coordenada (negocios de una misma plaza)
+    comparten una sola celda: scipy no les da region propia, y la celda
+    lleva los datos del primero mas `num_puntos` para decir cuantos
+    son, en vez de esconder a los demas."""
     if len(puntos) < 3:
         raise ValueError("Se necesitan al menos 3 puntos para un diagrama de Voronoi.")
 
-    coords = np.array([(p.lon, p.lat) for p in puntos])
+    por_coordenada: dict[tuple[float, float], list[PuntoVoronoi]] = {}
+    for p in puntos:
+        por_coordenada.setdefault((p.lon, p.lat), []).append(p)
+    grupos = list(por_coordenada.values())
+
+    coords = np.array(list(por_coordenada.keys()))
 
     try:
         vor = Voronoi(coords)
@@ -140,7 +151,11 @@ def calcular_voronoi(
         if recortado.is_empty:
             continue
 
-        punto = puntos[indice_punto]
+        # 5 decimales (1 m), igual que ST_AsGeoJSON en server.py: el
+        # resto de los digitos solo engorda lo que viaja al navegador.
+        recortado = shapely.transform(recortado, lambda c: c.round(5))
+        grupo = grupos[indice_punto]
+        punto = grupo[0]
         features.append(
             {
                 "type": "Feature",
@@ -149,6 +164,7 @@ def calcular_voronoi(
                     "nombre": punto.nombre,
                     "lat": punto.lat,
                     "lon": punto.lon,
+                    "num_puntos": len(grupo),
                 },
                 "geometry": mapping(recortado),
             }

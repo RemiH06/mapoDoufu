@@ -6,6 +6,10 @@ import L from "../vendor/leaflet/leaflet"
 // tiene phx-update="ignore", asi que todo el estado de que capa esta
 // prendida vive aqui del lado del cliente, nunca en atributos
 // re-renderizados por LiveView.
+//
+// preferCanvas: una coropleta de estado son ~5 mil poligonos; en SVG
+// cada uno es un nodo del DOM y arrastrar el mapa baja a 30 o 40 fps.
+// En canvas se pintan todos en una sola superficie.
 
 const CENTRO_MEXICO = [23.6345, -102.5528]
 const ZOOM_MEXICO = 5
@@ -32,7 +36,7 @@ function colorColoreado(indice) {
 
 export const MapaTecnico = {
   mounted() {
-    this.map = L.map(this.el).setView(CENTRO_MEXICO, ZOOM_MEXICO)
+    this.map = L.map(this.el, {preferCanvas: true}).setView(CENTRO_MEXICO, ZOOM_MEXICO)
     L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
       attribution: "&copy; colaboradores de OpenStreetMap",
       maxZoom: 19,
@@ -98,7 +102,11 @@ export const MapaTecnico = {
 
     this.capas.voronoi = L.geoJSON(geojson, {
       style: f => ({color: "#3a3a3a", weight: 1, fillColor: colorDe.get(f.properties.id), fillOpacity: 0.4}),
-      onEachFeature: (f, capa) => capa.bindPopup(f.properties.nombre || `Negocio ${f.properties.id}`),
+      onEachFeature: (f, capa) => {
+        const nombre = f.properties.nombre || `Negocio ${f.properties.id}`
+        const otros = f.properties.num_puntos - 1
+        capa.bindPopup(otros > 0 ? `${nombre}<br>y ${otros} más en el mismo punto` : nombre)
+      },
     }).addTo(this.map)
 
     if (this.capas.voronoi.getBounds().isValid()) this.map.fitBounds(this.capas.voronoi.getBounds())

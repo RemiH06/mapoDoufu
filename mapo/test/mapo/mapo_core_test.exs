@@ -3,9 +3,10 @@ defmodule Mapo.MapoCoreTest do
 
   alias Mapo.MapoCore
 
-  test "estados/0 pega a /geo/estados" do
+  test "estados/0 pega a /geo/estados sin pedir geometria" do
     Req.Test.stub(Mapo.MapoCore, fn conn ->
       assert conn.request_path == "/geo/estados"
+      assert conn.params["geometria"] == "false"
       Req.Test.json(conn, %{"type" => "FeatureCollection", "features" => []})
     end)
 
@@ -16,6 +17,7 @@ defmodule Mapo.MapoCoreTest do
     Req.Test.stub(Mapo.MapoCore, fn conn ->
       assert conn.request_path == "/geo/municipios"
       assert conn.params["cve_ent"] == "14"
+      assert conn.params["geometria"] == "false"
       Req.Test.json(conn, %{"type" => "FeatureCollection", "features" => []})
     end)
 

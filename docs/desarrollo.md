@@ -95,6 +95,16 @@ y montado en el contenedor.
   mix tailwind mapo` sigue sirviendo para forzarlo.
   El code reloader de Phoenix (`.ex`/`.heex`) y el watcher de esbuild
   (JS) no dependen de inotify y funcionan normal.
+- **En dev cada página tarda 1 a 2.5 s en responder.** El code reloader
+  corre `mix compile` en cada petición HTTP, y revisar el código por
+  9p cuesta unos 4 ms por archivo (`compile.elixir` sin cambios: 0.6 s
+  aislado, más con el sondeo de Tailwind compitiendo). Prod responde en
+  30 ms. El socket `/live` no corre el reloader (`code_reloader: false`
+  en `endpoint.ex`): si lo corre, el join pasa de los 2.5 s de
+  `longPollFallbackMs`, LiveView cae a longpoll y sale el aviso de "No
+  encontramos conexión a internet". La cura de fondo sería tener el
+  código en el sistema de archivos de WSL en vez de montarlo desde
+  Windows.
 - **`mix phx.gen.context` en Phoenix 1.8 agrega "scope" automático si
   el nombre de un campo `:references` coincide con el patrón de
   dueño único** (ej. un `user_id` en un recurso nuevo): mete una

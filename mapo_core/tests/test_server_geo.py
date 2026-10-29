@@ -76,6 +76,21 @@ async def test_geo_municipios_filtra_por_estado(conn, pool_de_una_conexion):
 
 
 @pytest.mark.asyncio
+async def test_geo_municipios_sin_geometria_solo_trae_nombres(conn, pool_de_una_conexion):
+    await _insertar_municipio(conn, "14039", "14", "039", "Guadalajara", box(0, 0, 1, 1).__geo_interface__)
+    app.dependency_overrides[get_pool] = lambda: pool_de_una_conexion
+    cliente = TestClient(app)
+
+    respuesta = cliente.get("/geo/municipios", params={"cve_ent": "14", "geometria": "false"})
+
+    assert respuesta.status_code == 200
+    [feature] = respuesta.json()["features"]
+    assert feature["properties"] == {"cvegeo": "14039", "nomgeo": "Guadalajara", "cve_mun": "039"}
+    assert feature["geometry"] is None
+    app.dependency_overrides.clear()
+
+
+@pytest.mark.asyncio
 async def test_geo_agebs_requiere_cve_ent(pool_de_una_conexion):
     app.dependency_overrides[get_pool] = lambda: pool_de_una_conexion
     cliente = TestClient(app)

@@ -45,11 +45,14 @@ defmodule Mapo.MapoCore do
     ]
   end
 
-  @doc "FeatureCollection de los estados (con polígono)."
-  def estados, do: get("/geo/estados")
+  @doc """
+  FeatureCollection de los estados, sin polígono (`geometry` en `nil`):
+  solo se usa para llenar selects, y con polígono pesa 3 MB.
+  """
+  def estados, do: get("/geo/estados", geometria: false)
 
-  @doc "FeatureCollection de municipios, opcionalmente filtrada por estado."
-  def municipios(cve_ent), do: get("/geo/municipios", cve_ent: cve_ent)
+  @doc "FeatureCollection de los municipios de un estado, sin polígono (igual que `estados/0`)."
+  def municipios(cve_ent), do: get("/geo/municipios", cve_ent: cve_ent, geometria: false)
 
   @doc """
   FeatureCollection de AGEBs del censo, con el valor de `indicador` ya
@@ -124,7 +127,7 @@ defmodule Mapo.MapoCore do
   defp maybe_put(params, _key, nil), do: params
   defp maybe_put(params, key, value), do: params ++ [{key, value}]
 
-  defp get(path, params \\ []) do
+  defp get(path, params) do
     opts =
       [base_url: Application.fetch_env!(:mapo, :mapo_core_url), url: path, params: params] ++
         Application.get_env(:mapo, :mapo_core_req_options, [])

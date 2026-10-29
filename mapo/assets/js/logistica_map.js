@@ -19,14 +19,15 @@ function colorPorVehiculo(id) {
 
 export const LogisticaMap = {
   mounted() {
-    this.map = L.map(this.el).setView(CENTRO_MEXICO, ZOOM_MEXICO)
+    this.map = L.map(this.el, {preferCanvas: true}).setView(CENTRO_MEXICO, ZOOM_MEXICO)
     L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
       attribution: "&copy; colaboradores de OpenStreetMap",
       maxZoom: 19,
     }).addTo(this.map)
 
     this.marcadoresParadas = L.layerGroup().addTo(this.map)
-    this.capasRutas = L.layerGroup().addTo(this.map)
+    // featureGroup, no layerGroup: pintarRutas necesita getBounds().
+    this.capasRutas = L.featureGroup().addTo(this.map)
 
     this.map.on("click", e => {
       this.pushEvent("click_mapa", {lat: e.latlng.lat, lon: e.latlng.lng})
@@ -52,11 +53,9 @@ export const LogisticaMap = {
 
       marcador.bindPopup(esDeposito ? "Depósito" : `Parada ${indice} (demanda: ${parada.demanda})`)
     })
-
-    if (paradas.length > 0) {
-      const grupo = L.featureGroup(this.marcadoresParadas.getLayers())
-      this.map.fitBounds(grupo.getBounds(), {maxZoom: 12})
-    }
+    // Sin fitBounds aqui: las paradas llegan de clics de quien usa el
+    // mapa, que ya esta viendo donde las puso; reencuadrar en cada clic
+    // movia el mapa bajo el cursor.
   },
 
   pintarRutas(rutas, paradas) {

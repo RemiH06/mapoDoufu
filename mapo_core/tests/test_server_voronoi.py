@@ -131,6 +131,23 @@ async def test_voronoi_denue_con_pocos_negocios_da_422(conn, pool_de_una_conexio
 
 
 @pytest.mark.asyncio
+async def test_voronoi_denue_con_demasiados_negocios_da_422(conn, pool_de_una_conexion, monkeypatch):
+    monkeypatch.setattr("mapo_core.server._MAX_NEGOCIOS_VORONOI", 3)
+    await _insertar_municipio_guadalajara(conn)
+    for i, (lat, lon) in enumerate([(0.0, 0.0), (0.0, 10.0), (10.0, 0.0), (10.0, 10.0)]):
+        await _insertar_negocio(conn, str(i), lat, lon)
+
+    app.dependency_overrides[get_pool] = lambda: pool_de_una_conexion
+    cliente = TestClient(app)
+
+    respuesta = cliente.get("/voronoi/denue", params={"cve_ent": "14", "cve_mun": "039"})
+
+    assert respuesta.status_code == 422
+    assert "Filtra por giro" in respuesta.json()["detail"]
+    app.dependency_overrides.clear()
+
+
+@pytest.mark.asyncio
 async def test_voronoi_denue_municipio_no_encontrado_da_404(pool_de_una_conexion):
     app.dependency_overrides[get_pool] = lambda: pool_de_una_conexion
     cliente = TestClient(app)

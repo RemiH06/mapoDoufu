@@ -20,6 +20,9 @@ de arquitectura de arriba:
 - `/voronoi/denue` ya no regresa 501: usa negocios reales de la tabla
   `fuente_denue_negocios`, filtrables por `clase_actividad`. 404 si el
   municipio no existe, 422 si hay menos de 3 negocios con esos filtros
+  o más de 5,000 (Guadalajara sin filtro son 97,128). Los negocios en
+  la misma coordenada comparten celda y la celda trae `num_puntos`
+  (`docs/historial/2026-10-rendimiento.md`)
 - `/perfil_zona` ahora trae `comercio: {total_negocios,
   top_clases_actividad}` real (antes `comercio_disponible: false`)
 - **Probado con datos reales de INEGI, estado 14 (Jalisco)**:

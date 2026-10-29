@@ -36,6 +36,11 @@ municipios, AGEBs) + censo de población**, vendorizados de verdad:
   `/geo/estados`, `/geo/municipios`, `/geo/agebs` (nueva),
   `/censo/choropleth`. Actualizado el único punto del lado Elixir que
   las conocía (`mapo/lib/mapo/mapo_core.ex`)
+- `/geo/estados` y `/geo/municipios` aceptan `geometria=false` para
+  traer solo nombres y claves (2.8 KB contra 2.9 MB de los estados con
+  polígono); es lo que usan los selects de `/mapa` y `/perfil`. Todas
+  las geometrías salen con 5 decimales (1 m), ver
+  `docs/historial/2026-10-rendimiento.md`
 - `gaiarda_client.py` y `perfil_zona.py` (el viejo, basado en
   `GaiardaClient`) eliminados por completo, junto con sus tests
 - **Las 6 fuentes (geoestadístico, censo, DENUE, ENIGH, ENOE, SESNSP)

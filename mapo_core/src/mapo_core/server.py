@@ -20,8 +20,14 @@ _osrm_client: OSRMClient | None = None
 
 # Simplificacion aplicada al leer poligonos (no al guardar): mismo
 # valor y misma razon que ya usaba Gaiarda, sin esto Leaflet se pone
-# lento dibujando miles de vertices de mas.
+# lento dibujando miles de vertices de mas. Con esa tolerancia (unos
+# 50 m) sobran decimales: ST_AsGeoJSON(..., 5) deja 1 m de precision y
+# casi parte a la mitad lo que viaja hasta el navegador.
 _TOLERANCIA_SIMPLIFICACION = 0.0005
+
+# Arriba de esto el Voronoi tarda segundos en calcularse y el navegador
+# no lo mueve con fluidez (Guadalajara sin filtro son 97 mil negocios).
+_MAX_NEGOCIOS_VORONOI = 5000
 
 # Unicos indicadores permitidos como columna dinamica en el
 # choropleth. Whitelist explicita, no se interpola el nombre de
@@ -63,13 +69,20 @@ def _feature(cvegeo: str, nombre: str, geojson_geom: str | None, props_extra: di
     }
 
 
+def _geometria_sql(geometria: bool) -> str:
+    """Las listas de nombres (selects de estado y municipio) no
+    necesitan el poligono: con `geometria=false` la consulta no lo
+    serializa y la respuesta baja de MB a KB."""
+    return "ST_AsGeoJSON(ST_Simplify(geom, %(tolerancia)s), 5)" if geometria else "NULL"
+
+
 @app.get("/geo/estados")
-async def geo_estados(pool: AsyncConnectionPool = Depends(get_pool)) -> dict:
+async def geo_estados(geometria: bool = True, pool: AsyncConnectionPool = Depends(get_pool)) -> dict:
     """Los 32 estados, con su poligono real (propio de mapo_core, ya
     no un passthrough de Gaiarda)."""
     async with pool.connection() as conn:
         cursor = await conn.execute(
-            """SELECT cve_ent, nombre, ST_AsGeoJSON(ST_Simplify(geom, %(tolerancia)s))
+            f"""SELECT cve_ent, nombre, {_geometria_sql(geometria)}
                FROM entidades ORDER BY cve_ent""",
             {"tolerancia": _TOLERANCIA_SIMPLIFICACION},
         )
@@ -81,19 +94,19 @@ async def geo_estados(pool: AsyncConnectionPool = Depends(get_pool)) -> dict:
 
 @app.get("/geo/municipios")
 async def geo_municipios(
-    cve_ent: str | None = None, pool: AsyncConnectionPool = Depends(get_pool)
+    cve_ent: str | None = None, geometria: bool = True, pool: AsyncConnectionPool = Depends(get_pool)
 ) -> dict:
     """Municipios, opcionalmente filtrados por estado, con su poligono real."""
     async with pool.connection() as conn:
         if cve_ent:
             cursor = await conn.execute(
-                """SELECT cvegeo, cve_mun, nombre, ST_AsGeoJSON(ST_Simplify(geom, %(tolerancia)s))
+                f"""SELECT cvegeo, cve_mun, nombre, {_geometria_sql(geometria)}
                    FROM municipios WHERE cve_ent = %(cve_ent)s ORDER BY cvegeo""",
                 {"cve_ent": cve_ent, "tolerancia": _TOLERANCIA_SIMPLIFICACION},
             )
         else:
             cursor = await conn.execute(
-                """SELECT cvegeo, cve_mun, nombre, ST_AsGeoJSON(ST_Simplify(geom, %(tolerancia)s))
+                f"""SELECT cvegeo, cve_mun, nombre, {_geometria_sql(geometria)}
                    FROM municipios ORDER BY cvegeo""",
                 {"tolerancia": _TOLERANCIA_SIMPLIFICACION},
             )
@@ -112,13 +125,13 @@ async def geo_agebs(
     async with pool.connection() as conn:
         if cve_mun:
             cursor = await conn.execute(
-                """SELECT cvegeo, ST_AsGeoJSON(ST_Simplify(geom, %(tolerancia)s))
+                """SELECT cvegeo, ST_AsGeoJSON(ST_Simplify(geom, %(tolerancia)s), 5)
                    FROM agebs WHERE cve_ent = %(cve_ent)s AND cve_mun = %(cve_mun)s ORDER BY cvegeo""",
                 {"cve_ent": cve_ent, "cve_mun": cve_mun, "tolerancia": _TOLERANCIA_SIMPLIFICACION},
             )
         else:
             cursor = await conn.execute(
-                """SELECT cvegeo, ST_AsGeoJSON(ST_Simplify(geom, %(tolerancia)s))
+                """SELECT cvegeo, ST_AsGeoJSON(ST_Simplify(geom, %(tolerancia)s), 5)
                    FROM agebs WHERE cve_ent = %(cve_ent)s ORDER BY cvegeo""",
                 {"cve_ent": cve_ent, "tolerancia": _TOLERANCIA_SIMPLIFICACION},
             )
@@ -145,7 +158,7 @@ async def censo_choropleth(
     async with pool.connection() as conn:
         if cve_mun:
             cursor = await conn.execute(
-                f"""SELECT a.cvegeo, ST_AsGeoJSON(ST_Simplify(a.geom, %(tolerancia)s)), c.{indicador}
+                f"""SELECT a.cvegeo, ST_AsGeoJSON(ST_Simplify(a.geom, %(tolerancia)s), 5), c.{indicador}
                     FROM agebs a
                     LEFT JOIN fuente_censo_poblacion c
                       ON c.cvegeo = a.cvegeo AND c.nivel = 'ageb'
@@ -155,7 +168,7 @@ async def censo_choropleth(
             )
         else:
             cursor = await conn.execute(
-                f"""SELECT a.cvegeo, ST_AsGeoJSON(ST_Simplify(a.geom, %(tolerancia)s)), c.{indicador}
+                f"""SELECT a.cvegeo, ST_AsGeoJSON(ST_Simplify(a.geom, %(tolerancia)s), 5), c.{indicador}
                     FROM agebs a
                     LEFT JOIN fuente_censo_poblacion c
                       ON c.cvegeo = a.cvegeo AND c.nivel = 'ageb'
@@ -326,8 +339,9 @@ def voronoi_calcular(solicitud: SolicitudVoronoi) -> dict:
 async def _buscar_municipio(pool: AsyncConnectionPool, cve_ent: str, cve_mun: str) -> dict | None:
     async with pool.connection() as conn:
         cursor = await conn.execute(
-            "SELECT nombre, ST_AsGeoJSON(geom) FROM municipios WHERE cve_ent = %(cve_ent)s AND cve_mun = %(cve_mun)s",
-            {"cve_ent": cve_ent, "cve_mun": cve_mun},
+            "SELECT nombre, ST_AsGeoJSON(ST_Simplify(geom, %(tolerancia)s), 5) FROM municipios "
+            "WHERE cve_ent = %(cve_ent)s AND cve_mun = %(cve_mun)s",
+            {"cve_ent": cve_ent, "cve_mun": cve_mun, "tolerancia": _TOLERANCIA_SIMPLIFICACION},
         )
         fila = await cursor.fetchone()
     if fila is None or fila[1] is None:
@@ -386,6 +400,12 @@ async def voronoi_denue(
             422,
             f"Solo hay {len(puntos)} negocio(s) con esos filtros; se necesitan al menos 3 para un diagrama de Voronoi.",
         )
+    if len(puntos) > _MAX_NEGOCIOS_VORONOI:
+        raise HTTPException(
+            422,
+            f"Hay {len(puntos)} negocios con esos filtros; el máximo para dibujar el Voronoi es "
+            f"{_MAX_NEGOCIOS_VORONOI}. Filtra por giro.",
+        )
 
     try:
         resultado = calcular_voronoi(puntos, limite=municipio["geometry"])
@@ -423,7 +443,7 @@ async def coloreado_municipios(cve_ent: str, pool: AsyncConnectionPool = Depends
     color en un mapa categorico."""
     async with pool.connection() as conn:
         cursor = await conn.execute(
-            "SELECT cvegeo, cve_mun, nombre, ST_AsGeoJSON(ST_Simplify(geom, %(tolerancia)s)) "
+            "SELECT cvegeo, cve_mun, nombre, ST_AsGeoJSON(ST_Simplify(geom, %(tolerancia)s), 5) "
             "FROM municipios WHERE cve_ent = %(cve_ent)s ORDER BY cvegeo",
             {"cve_ent": cve_ent, "tolerancia": _TOLERANCIA_SIMPLIFICACION},
         )

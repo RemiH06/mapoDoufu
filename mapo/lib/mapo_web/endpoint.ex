@@ -11,9 +11,18 @@ defmodule MapoWeb.Endpoint do
     same_site: "Lax"
   ]
 
+  # compress: el GeoJSON de las capas de /mapa viaja por aqui y se
+  # comprime de 3 a 6 veces (permessage-deflate).
+  #
+  # code_reloader: false: en dev el reloader revisa el codigo montado
+  # por 9p y tarda 1 a 2 s. Corriendo tambien al conectar el socket, el
+  # join pasaba de los 2.5 s de longPollFallbackMs, LiveView caia a
+  # longpoll (que lo vuelve a correr en cada sondeo) y salia el aviso de
+  # "No encontramos conexion a internet". La carga HTTP de cada pagina
+  # sigue recompilando, asi que no se pierde nada al editar.
   socket "/live", Phoenix.LiveView.Socket,
-    websocket: [connect_info: [session: @session_options]],
-    longpoll: [connect_info: [session: @session_options]]
+    websocket: [connect_info: [session: @session_options], compress: true, code_reloader: false],
+    longpoll: [connect_info: [session: @session_options], code_reloader: false]
 
   # Serve at "/" the static files from "priv/static" directory.
   #
