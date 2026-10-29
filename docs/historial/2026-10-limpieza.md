@@ -22,3 +22,7 @@ tocar nada: 134 tests en `mapo_core` y 237 en `mapo`, todos verdes.
   es ahora `MapoWeb.TailwindSondeo`. Detalle en `../desarrollo.md`.
 - **Tests de `mapo_core` montados** en el compose; ya no hace falta
   reconstruir la imagen al cambiar un test.
+- **Revisión en navegador:** `/mapa` y `/logistica` funcionan, pero se
+  sienten pesadas y el mapa de `/logistica` se traba al moverlo. Se
+  abrió una sesión de rendimiento antes del rediseño. La prueba de la
+  sesión colaborativa entre dos máquinas quedó pendiente.
