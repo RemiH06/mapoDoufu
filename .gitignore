@@ -1,8 +1,10 @@
-GAIARDA_ESTADO.md
-MAPO_FUNDAMENTOS.md
-MAPO_HISTORIAL.md
-MAPO_PENDIENTES.md
-MAPO_REQUISITOS.md
+# Archivos de contexto de trabajo con Claude Code (la documentacion
+# publica vive en docs/)
+CLAUDE.md
+steps.md
+plan.md
+
+# Codigo fuente de Gaiarda, solo para vendorizar (no se versiona aqui)
 Gaiarda-main.zip
 
 # -- Python (mapo_core/) --

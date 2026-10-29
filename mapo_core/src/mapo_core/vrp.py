@@ -10,12 +10,10 @@ va con que vehiculo Y en que orden, con verificacion de factibilidad
 en cada movimiento), no una extension menor del TSP. OR-Tools es la
 libreria que se usa en produccion para exactamente este problema.
 
-No calcula la matriz de distancias via OSRM todavia (esa pieza sigue
-pendiente, ver MAPO_PENDIENTES.md); por ahora usa distancia en linea
-recta (formula de haversine), igual que el fallback honesto que ya usa
-Gaiarda cuando OSRM no responde. Cuando se vendorice el cliente OSRM,
-solo hay que reemplazar `matriz_haversine_km` por una matriz real, la
-funcion de resolver no cambia.
+No calcula la matriz de distancias por su cuenta: `server.py` la pide a
+OSRM y la pasa ya hecha. Si no llega (OSRM no respondio), cae a
+distancia en linea recta (formula de haversine), igual que el fallback
+honesto que ya usa Gaiarda. Ver docs/fuentes/osrm.md.
 """
 
 from __future__ import annotations

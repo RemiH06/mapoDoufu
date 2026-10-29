@@ -2,7 +2,7 @@ defmodule Mapo.Sesiones do
   @moduledoc """
   El contexto de Sesiones: mapas colaborativos de un equipo, con
   anotaciones geometricas en tiempo real (via PostGIS + PubSub). Ver
-  MAPO_FUNDAMENTOS.md, seccion de base de datos, para el porque de
+  docs/arquitectura/stack.md, seccion de base de datos, para el porque de
   PostGIS especificamente para esto.
 
   Autorizacion: cualquier miembro del equipo (cualquier rol) puede ver,

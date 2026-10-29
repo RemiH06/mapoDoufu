@@ -40,8 +40,8 @@ Ofrece dos formas de consultarlo:
   sistema experto sobre los mismos datos del modo técnico, sin generar
   texto libre.
 
-El detalle completo del producto vive en `MAPO_FUNDAMENTOS.md`, fuera
-de este repositorio público, como documento de trabajo interno.
+La documentación completa (producto, arquitectura, fuentes de datos e
+historial) vive en [`docs/`](docs/README.md).
 
 ## Estructura del repositorio
 
@@ -50,18 +50,18 @@ de este repositorio público, como documento de trabajo interno.
 ├── mapo/          → app Elixir + Phoenix (LiveView). Sesiones,
 │                     autenticación, colaboración en tiempo real sobre
 │                     el mismo mapa. La cara al usuario.
-├── mapo_core/     → servicio Python. Motor de decisión: VRP
-│                     (logística de múltiples vehículos), isócronas,
-│                     y cliente de la API de Gaiarda para los datos ya
-│                     existentes.
-├── design/        → sistema de diseño (temas metro/elixir, paletas
-│                     claro/oscuro, logo). Ver design/README.md.
+├── mapo_core/     → servicio Python. Datos y motor de decisión:
+│                     fuentes de INEGI y SESNSP, VRP (logística de
+│                     múltiples vehículos), isócronas, Voronoi.
+├── design/        → logo y demos de los temas metro/elixir.
+├── docs/          → documentación.
 └── docker-compose.yml
 ```
 
-`mapo` y `mapo_core` se comunican por HTTP. `mapo_core` no vuelve a
-descargar ni normalizar nada que Gaiarda ya resuelve; solo agrega lo
-que Gaiarda no necesita, como el motor de logística comercial.
+`mapo` y `mapo_core` se comunican por HTTP y comparten la misma
+Postgres con PostGIS. El código de descarga de datos viene de Gaiarda,
+copiado y adaptado dentro de `mapo_core`: Mapo no depende de que
+Gaiarda esté corriendo.
 
 ## Arranque rápido
 
@@ -69,8 +69,10 @@ que Gaiarda no necesita, como el motor de logística comercial.
 docker compose up
 ```
 
-Levanta la base de datos (Postgres, para las sesiones de Mapo), el
-servicio de datos y decisión en Python, y la aplicación Elixir/Phoenix.
+Levanta la base de datos (Postgres con PostGIS), el servicio de datos
+y decisión en Python, y la aplicación Elixir/Phoenix en
+`http://localhost:1864`. Cómo cargar datos y correr los tests:
+[`docs/desarrollo.md`](docs/desarrollo.md).
 
 ## Identidad visual
 
