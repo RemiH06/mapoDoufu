@@ -28,16 +28,13 @@ adapter de correo real todavía, ver `producto/requisitos.md`).
 ```bash
 docker compose exec mapo mix precommit          # formato + compilación + tests de mapo
 docker compose exec mapo_core pytest            # tests de mapo_core, contra mapo_test
-docker compose exec mapo mix tailwind mapo      # después de cambiar CSS o clases (ver abajo)
 ```
 
 Los tests de `mapo_core` usan una base real (`mapo_test`), cada uno en
 su propia transacción que se revierte al final. `conftest.py` fuerza
-`DATABASE_NAME=mapo_test` aunque el compose traiga `mapo_dev`.
-
-Ojo: el compose monta `mapo_core/src` pero no `mapo_core/tests`; los
-tests se copian al construir la imagen. Si cambiaste tests, corre
-`docker compose build mapo_core` antes, o la suite corre la copia vieja.
+`DATABASE_NAME=mapo_test` aunque el compose traiga `mapo_dev`. El
+compose monta `mapo_core/tests`, así que no hace falta reconstruir la
+imagen después de cambiar un test.
 
 ## Cargar datos
 
@@ -88,23 +85,16 @@ y montado en el contenedor.
   a `System.get_env("DATABASE_HOST", "localhost")`, con `DATABASE_HOST:
   db` puesto en `docker-compose.yml`. Aplica a cualquier config nueva
   que agregue conexión a la base.
-- **El watcher de tailwind (`mix tailwind --watch`) no detecta cambios
-  de archivo en este entorno (Docker Desktop), confirmado con pruebas
-  reales**: ni editando `app.css` desde el host, ni desde dentro del
-  propio contenedor (`docker compose exec mapo sh -c 'echo ... >>
-  app.css'`), dispara una recompilación. `--watch=always` no lo
-  arregla (ese flag solo evita que el watcher se detenga si stdin se
-  cierra, no activa sondeo; se dejó puesto de cualquier forma, no
-  estorba). Es un problema del binario standalone de tailwind en este
-  entorno, no del bind mount (el bind mount sí sincroniza bien: se
-  confirmó leyendo el archivo directo dentro del contenedor).
-  **Mientras no se investigue más a fondo, el flujo es: editar CSS y
-  correr `docker compose exec mapo mix tailwind mapo` a mano** para
-  regenerar `priv/static/assets/app.css`.
-  Importante: esto **no afecta** cambios en `.ex`/`.heex` (el code
-  reloader de Phoenix recompila esos en cada request, sin depender de
-  ningún watcher de archivos) ni en JS (el watcher de esbuild sí
-  funciona bien aquí, confirmado).
+- **Tailwind se recompila por sondeo, no con `--watch`.** Docker
+  Desktop monta el código con 9p, que no entrega eventos de inotify, y
+  el binario de Tailwind 4 no tiene opción de sondeo. En dev, el watcher
+  es `MapoWeb.TailwindSondeo` (`config/dev.exs`): revisa cada segundo
+  el mtime de lo que Tailwind lee (`assets/` y `lib/mapo_web`) y
+  recompila completo si algo cambió. Tarda de 3 a 5 segundos en
+  reflejarse; recargar el navegador después. `docker compose exec mapo
+  mix tailwind mapo` sigue sirviendo para forzarlo.
+  El code reloader de Phoenix (`.ex`/`.heex`) y el watcher de esbuild
+  (JS) no dependen de inotify y funcionan normal.
 - **`mix phx.gen.context` en Phoenix 1.8 agrega "scope" automático si
   el nombre de un campo `:references` coincide con el patrón de
   dueño único** (ej. un `user_id` en un recurso nuevo): mete una
