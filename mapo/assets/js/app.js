@@ -27,9 +27,6 @@ import topbar from "../vendor/topbar"
 import {iniciarFondoAnimado} from "./metro_bg"
 import {BgAnimationToggle} from "./bg_animation_toggle"
 import {CollabMap} from "./collab_map"
-import {CoropletaMap} from "./coropleta_map"
-import {VoronoiMap} from "./voronoi_map"
-import {ColoreadoMap} from "./coloreado_map"
 import {MapaTecnico} from "./mapa_tecnico"
 import {LogisticaMap} from "./logistica_map"
 
@@ -41,9 +38,6 @@ const liveSocket = new LiveSocket("/live", Socket, {
     ...colocatedHooks,
     BgAnimationToggle,
     CollabMap,
-    CoropletaMap,
-    VoronoiMap,
-    ColoreadoMap,
     MapaTecnico,
     LogisticaMap,
   },

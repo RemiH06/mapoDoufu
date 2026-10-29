@@ -39,6 +39,7 @@ Qué se construyó en cada etapa, por qué así y qué bugs reales aparecieron.
 - [Fase 5: modo técnico](historial/fase-5-modo-tecnico.md)
 - [Pulido de interfaz, agosto 2026](historial/2026-08-pulido.md)
 - [Pantalla de logística, septiembre 2026](historial/2026-09-logistica.md)
+- [Limpieza de código, octubre 2026](historial/2026-10-limpieza.md)
 
 ## Gaiarda
 

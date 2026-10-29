@@ -188,6 +188,14 @@ defmodule MapoWeb.MapaLive.Index do
       {:noreply, put_flash(socket, :error, "Selecciona un estado primero.")}
     else
       case MapoCore.coropleta_censo_poblacion(indicador, cve_ent, cve_mun) do
+        {:ok, %{"features" => []}} ->
+          {:noreply,
+           put_flash(
+             socket,
+             :error,
+             "Gaiarda no tiene AGEBs o censo descargados para ese estado/municipio todavía."
+           )}
+
         {:ok, geojson} ->
           etiqueta = etiqueta_indicador(indicador)
 
@@ -263,6 +271,14 @@ defmodule MapoWeb.MapaLive.Index do
       {:noreply, put_flash(socket, :error, "Selecciona un estado primero.")}
     else
       case MapoCore.coloreado_municipios(cve_ent) do
+        {:ok, %{"features" => []}} ->
+          {:noreply,
+           put_flash(
+             socket,
+             :error,
+             "Gaiarda no tiene municipios descargados para ese estado todavía."
+           )}
+
         {:ok, geojson} ->
           {:noreply,
            socket

@@ -25,7 +25,8 @@ inclina la balanza directo hacia Elixir/Phoenix desde el arranque.
   usando la variable `MAPO_CORE_URL` que ya estaba en
   `docker-compose.yml` desde el arranque pero sin nada del lado de
   Elixir que la leyera): primer consumidor real es la pantalla de
-  coropletas (`/coropletas`, ver `../historial/fase-5-modo-tecnico.md`).
+  coropletas (`/coropletas`, ver `../historial/fase-5-modo-tecnico.md`;
+  desde octubre de 2026 esa capa vive solo en `/mapa`).
 - **Rust**: diferido. Entra vía `PyO3` como acelerador (ruteo a gran
   escala, cruces espaciales masivos) el día que el cómputo del VRP sea
   comprobadamente el cuello de botella, no antes.

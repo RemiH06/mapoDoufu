@@ -20,4 +20,10 @@ defmodule MapoWeb.PageControllerTest do
     assert html =~ "Ir a mis equipos"
     refute html =~ "Crear cuenta"
   end
+
+  test "the old single-layer screens redirect to /mapa", %{conn: conn} do
+    for ruta <- ["/coropletas", "/voronoi", "/coloreado"] do
+      assert redirected_to(get(conn, ruta)) == ~p"/mapa"
+    end
+  end
 end

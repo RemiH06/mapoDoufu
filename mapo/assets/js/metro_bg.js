@@ -35,7 +35,7 @@ const BG = {light: "#F5F0E8", dark: "#0a0c10"}
 const GRID = {light: "rgba(200,191,176,0.30)", dark: "rgba(30,37,53,0.55)"}
 
 // Pantallas con mapa grande: el fondo animado no debe aparecer detras.
-const RUTAS_SIN_FONDO = ["/mapa", "/coropletas", "/voronoi", "/coloreado"]
+const RUTAS_SIN_FONDO = ["/mapa", "/logistica"]
 
 function currentTheme() {
   const explicit = document.documentElement.getAttribute("data-theme")

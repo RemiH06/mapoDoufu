@@ -21,6 +21,11 @@ defmodule MapoWeb.Router do
     pipe_through :browser
 
     get "/", PageController, :home
+
+    # Pantallas de una sola capa que ya vive en /mapa.
+    get "/coropletas", PageController, :a_mapa
+    get "/voronoi", PageController, :a_mapa
+    get "/coloreado", PageController, :a_mapa
   end
 
   # Other scopes may use custom stacks.
@@ -61,9 +66,6 @@ defmodule MapoWeb.Router do
 
       live "/sesiones/:id", SesionLive.Show, :show
 
-      live "/coropletas", CoropletaLive.Index, :index
-      live "/voronoi", VoronoiLive.Index, :index
-      live "/coloreado", ColoreadoLive.Index, :index
       live "/mapa", MapaLive.Index, :index
       live "/perfil", PerfilLive.Index, :index
       live "/logistica", LogisticaLive.Index, :index
