@@ -391,6 +391,51 @@
     font-family: var(--mono);
   }
 
+  /* Mientras llega el perfil: el papel en su lugar con renglones en blanco,
+     de alto parecido al documento lleno para que la mesa no salte. */
+  .esqueleto {
+    min-height: 320px;
+  }
+  .esqueleto.d-comercio {
+    min-height: 620px;
+  }
+  .esqueleto.d-demografia {
+    min-height: 500px;
+  }
+  .esqueleto.d-seguridad {
+    min-height: 460px;
+  }
+  .esqueleto.d-consumo {
+    min-height: 380px;
+  }
+  .esqueleto.d-consumo header {
+    display: flex;
+    flex-direction: column-reverse;
+    align-items: center;
+  }
+  .renglon-vacio {
+    display: block;
+    height: 14px;
+    margin: 18px 0;
+    background: color-mix(in srgb, var(--text) 9%, transparent);
+  }
+  .renglon-vacio:nth-of-type(2n) {
+    width: 70%;
+  }
+  .renglon-vacio:nth-of-type(3n) {
+    width: 45%;
+  }
+  @media (prefers-reduced-motion: no-preference) {
+    .renglon-vacio {
+      animation: renglon-espera 1.4s ease-in-out infinite alternate;
+    }
+  }
+  @keyframes renglon-espera {
+    to {
+      opacity: 0.4;
+    }
+  }
+
   @media (max-width: 1100px) {
     .d-demografia,
     .d-comercio,

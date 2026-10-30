@@ -22,6 +22,10 @@ end
 
 config :mapo, MapoWeb.Endpoint, http: [port: String.to_integer(System.get_env("PORT", "4000"))]
 
+# Contacto de quien responde por los datos de esta instalación; sale en
+# /privacidad. Sin él, el aviso dice que falta.
+config :mapo, :contacto_privacidad, System.get_env("MAPO_CONTACTO")
+
 if config_env() == :dev do
   # Reload browser tabs when matching files change.
   config :mapo, MapoWeb.Endpoint,

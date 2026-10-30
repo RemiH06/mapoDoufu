@@ -7,7 +7,8 @@ defmodule MapoWeb.PageControllerTest do
     conn = get(conn, ~p"/")
     html = html_response(conn, 200)
 
-    assert html =~ "qué deberías hacer con eso"
+    assert html =~ "tu equipo decida"
+    assert html =~ ~p"/privacidad"
     assert html =~ "plano-portada"
     assert html =~ "Crear cuenta"
     assert html =~ ~p"/users/log-in"
@@ -21,6 +22,29 @@ defmodule MapoWeb.PageControllerTest do
     assert html =~ "Mis equipos"
     assert html =~ "Abrir el mapa"
     refute html =~ "Crear cuenta"
+  end
+
+  describe "GET /privacidad" do
+    setup do
+      anterior = Application.get_env(:mapo, :contacto_privacidad)
+      on_exit(fn -> Application.put_env(:mapo, :contacto_privacidad, anterior) end)
+    end
+
+    test "says the contact is missing when none is configured", %{conn: conn} do
+      Application.put_env(:mapo, :contacto_privacidad, nil)
+      html = conn |> get(~p"/privacidad") |> html_response(200)
+
+      assert html =~ "Aviso de privacidad"
+      assert html =~ "todavía no publica un contacto"
+    end
+
+    test "shows the configured contact", %{conn: conn} do
+      Application.put_env(:mapo, :contacto_privacidad, "datos@mapo.test")
+      html = conn |> get(~p"/privacidad") |> html_response(200)
+
+      assert html =~ "datos@mapo.test"
+      refute html =~ "todavía no publica un contacto"
+    end
   end
 
   test "the old single-layer screens redirect to /mapa", %{conn: conn} do

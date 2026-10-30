@@ -36,6 +36,7 @@
     color: var(--text);
     border-color: var(--line);
     border-radius: 0;
+    font-family: var(--mono);
   }
   .plano-leaflet .leaflet-control-attribution {
     background: color-mix(in srgb, var(--bg) 85%, transparent);

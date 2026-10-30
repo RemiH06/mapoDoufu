@@ -29,7 +29,7 @@ detalle de lo ya construido vive en `../historial/`.
 |---|---|---|
 | RNF1 | Interfaz completa en español mexicano | Listo |
 | RNF2 | Modo claro/oscuro disponible en toda la aplicación | Listo |
-| RNF3 | Animaciones de fondo en pantallas como login y configuración, con un toggle para desactivarlas | Listo (fondo persistente en toda la app salvo las pantallas de mapa) |
+| RNF3 | Animaciones de fondo en pantallas como login y configuración, con un toggle para desactivarlas | Descartado en la sesión 5: Mapo no lleva fondo animado y `prefers-reduced-motion` apaga el poco movimiento que queda (ver `decisiones.md`) |
 | RNF4 | Todo el stack corre en Docker; no depende de tener Elixir/Python instalados directo en la máquina de desarrollo | Listo |
 | RNF5 | Transparencia metodológica: no reducir decisiones a un puntaje único que esconda su metodología (heredado de Gaiarda, ej. seguridad sin puntaje) | Vigente (VRP, isócronas, Voronoi, coloreado, perfil de zona) |
 | RNF6 | Honestidad ante datos faltantes: no inventar clasificaciones ni fuentes que no existen; declarar explícitamente cuando un enfoque no tiene fuente o dato | Vigente (`valor_choropleth: null`, secciones `null` en `/perfil_zona` cuando no hay datos de ese municipio, campo `metodo` en todo lo que depende de OSRM, 503 honesto si la base no responde) |

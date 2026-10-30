@@ -1,0 +1,72 @@
+<%!-- Aviso de privacidad y de uso. Lo que dice aquí tiene que seguir siendo
+     cierto: si cambia lo que se guarda o a quién se le manda algo (por
+     ejemplo, al tener OSRM propio), se corrige en el mismo cambio. --%>
+<Layouts.app flash={@flash} current_scope={@current_scope}>
+  <article class="doc pegado mx-auto max-w-2xl" aria-labelledby="t-aviso">
+    <header class="doc-cab">
+      <h1 id="t-aviso">Aviso de privacidad</h1>
+      <span class="doc-tipo">Revisado el 30 de octubre de 2026</span>
+    </header>
+
+    <section class="doc-seccion">
+      <h2>Quién responde</h2>
+      <p>
+        Mapo es software libre (licencia MIT). Cada instalación la administra alguien, y esa persona responde por los datos que guarda.
+      </p>
+      <p :if={@contacto}>Contacto de esta instalación: <b>{@contacto}</b>.</p>
+      <p :if={!@contacto} class="nota">
+        Esta instalación todavía no publica un contacto. Mientras no lo haga, no debería guardar datos de nadie más que de quien la administra.
+      </p>
+    </section>
+
+    <section class="doc-seccion">
+      <h2>Qué se guarda</h2>
+      <ul>
+        <li>Tu correo, para entrar y mandarte los enlaces de acceso.</li>
+        <li>Tu contraseña, si pones una, solo como hash: nadie puede leerla.</li>
+        <li>Los equipos de los que eres parte y tu rol en cada uno.</li>
+        <li>Los correos de las personas que invitas a un equipo.</li>
+        <li>Las marcas y notas que pones: el texto, el lugar y quién las puso.</li>
+      </ul>
+      <p>
+        Todo eso sirve para que trabajes con tu equipo y para nada más. Mapo no tiene analítica, publicidad ni rastreo, y no vende ni comparte datos.
+      </p>
+    </section>
+
+    <section class="doc-seccion">
+      <h2>Quién más lo ve</h2>
+      <ul>
+        <li>
+          Tu equipo ve tu correo, tus marcas y tus notas. Lo que escribas ahí, escríbelo para el equipo.
+        </li>
+        <li>
+          Las calles del mapa vienen de los servidores de OpenStreetMap, y las letras, de Bunny Fonts. Los dos reciben tu dirección IP y, en el caso de OpenStreetMap, la zona que estás viendo.
+        </li>
+        <li>
+          Las isócronas y las rutas se calculan con el servidor público de demostración de OSRM: recibe los puntos de origen y de las paradas, no quién los pidió.
+        </li>
+      </ul>
+    </section>
+
+    <section class="doc-seccion">
+      <h2>Cookies</h2>
+      <p>
+        Una cookie mantiene tu sesión abierta y otra te recuerda por 14 días si eliges "Entrar y recordarme". El modo claro u oscuro se guarda en tu navegador. No hay más.
+      </p>
+    </section>
+
+    <section class="doc-seccion">
+      <h2>Tus derechos</h2>
+      <p>
+        Puedes ver y cambiar tu correo y tu contraseña en la cuenta. Para pedir una copia de tus datos, oponerte a algún uso o borrar tu cuenta, escribe al contacto de arriba. Al borrarla se van también tus marcas, tus notas y tu lugar en cada equipo; los equipos siguen para sus demás miembros.
+      </p>
+    </section>
+
+    <section class="doc-seccion">
+      <h2>Los datos del mapa</h2>
+      <p>
+        Las cifras vienen de fuentes públicas (INEGI, SESNSP y OpenStreetMap), cada una con su licencia y su fecha. Mapo no garantiza que estén completas o al día: cada documento dice de dónde sale y qué le falta, y ninguna pantalla resume una decisión en un puntaje. La decisión es de tu equipo.
+      </p>
+    </section>
+  </article>
+</Layouts.app>

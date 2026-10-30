@@ -79,6 +79,11 @@
     font-size: 17px;
     border-top: 1px solid var(--line);
   }
+  .lamina dd a {
+    text-decoration: underline;
+    text-decoration-color: var(--accent);
+    text-underline-offset: 3px;
+  }
   .lamina dt:first-of-type,
   .lamina dd:first-of-type {
     border-top: 0;

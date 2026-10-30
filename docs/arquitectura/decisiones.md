@@ -251,6 +251,23 @@ la pantalla era un dashboard genérico.
   (`notas_perfil`), no de una sesión ni de un punto. Cualquier miembro las
   escribe y borra, como las marcas.
 
+**Revisión contra anti-vibecode** (sesión 7, cerrada el 2026-10-30;
+historial en [2026-10-anti-vibecode.md](../historial/2026-10-anti-vibecode.md)):
+
+- **Aviso de privacidad en `/privacidad`,** como documento de la mesa,
+  enlazado desde la portada, el registro y la cuenta. Dice qué se guarda,
+  quién más lo ve (equipo, OpenStreetMap, Bunny Fonts, el demo de OSRM),
+  las cookies y cómo pedir una copia o borrar la cuenta. El contacto sale
+  de `MAPO_CONTACTO`; sin él, el aviso dice que falta. Si cambia lo que
+  se guarda o a quién se manda algo, el aviso se corrige en el mismo
+  cambio.
+- **El lema de la portada no promete decir qué hacer:** "Los datos
+  abiertos de México sobre la mesa, para que tu equipo decida dónde". La
+  decisión es del equipo; Mapo pone la evidencia.
+- **Esqueleto en `/perfil`:** mientras consulta, los cinco papeles ya
+  están en su lugar con renglones en blanco. Nunca los documentos reales
+  vacíos, que dirían "no hay datos".
+
 Conceptos considerados y guardados para otras piezas (fondo de la home,
 animaciones, un tema futuro):
 

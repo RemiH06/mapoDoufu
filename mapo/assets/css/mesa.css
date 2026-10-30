@@ -347,6 +347,13 @@
   .doc p {
     line-height: 1.45;
   }
+  .doc ul {
+    display: grid;
+    gap: 6px;
+    padding-left: 1.2em;
+    list-style: square;
+    line-height: 1.45;
+  }
   .doc .secundario {
     color: var(--text2);
     font-size: 15px;

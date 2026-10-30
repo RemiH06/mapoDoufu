@@ -84,6 +84,20 @@ defmodule MapoWeb.PerfilLive.Index do
         Consultando las cinco fuentes, tarda unos segundos.
       </p>
 
+      <div :if={@consultando} class="documentos" aria-hidden="true">
+        <article
+          :for={{piel, titulo, tipo} <- esqueleto()}
+          class={"documento pegado esqueleto d-#{piel}"}
+          data-piel={piel}
+        >
+          <header>
+            <h2>{titulo}</h2>
+            <span class="tipo">{tipo}</span>
+          </header>
+          <span :for={_ <- 1..4} class="renglon-vacio"></span>
+        </article>
+      </div>
+
       <div :if={@perfil} class="documentos">
         <.cedula datos={@perfil["demografia"]}>
           <.notas
@@ -128,6 +142,18 @@ defmodule MapoWeb.PerfilLive.Index do
       </div>
     </Layouts.app>
     """
+  end
+
+  # Los cinco papeles ya pegados en su lugar mientras llega el perfil, para
+  # que la mesa no salte. Sin datos: decir "no hay" sería mentir.
+  defp esqueleto do
+    [
+      {"demografia", "Población", "Cédula censal"},
+      {"comercio", "Negocios por giro", "Libro mayor"},
+      {"consumo", "Gasto de los hogares", "Ticket de caja"},
+      {"seguridad", "Incidencia delictiva", "Expediente"},
+      {"laboral", "Desocupación", "Tarjeta de checador"}
+    ]
   end
 
   attr :datos, :map

@@ -12,12 +12,12 @@ defmodule MapoWeb.UserLive.Settings do
       <section class="doc pegado" aria-labelledby="t-cuenta">
         <header class="doc-cab">
           <h1 id="t-cuenta">Cuenta</h1>
-          <span class="doc-tipo">Datos de acceso</span>
+           <span class="doc-tipo">Datos de acceso</span>
         </header>
-
+        
         <div class="doc-seccion">
           <h2>Correo</h2>
-
+          
           <.form
             for={@email_form}
             id="email_form"
@@ -36,16 +36,16 @@ defmodule MapoWeb.UserLive.Settings do
             <p class="secundario">
               El cambio vale hasta que abras el enlace que llega al correo nuevo.
             </p>
-
+            
             <div class="doc-botones">
               <.button phx-disable-with="Mandando...">Cambiar correo</.button>
             </div>
           </.form>
         </div>
-
+        
         <div class="doc-seccion">
           <h2>Contraseña</h2>
-
+          
           <.form
             for={@password_form}
             id="password_form"
@@ -81,12 +81,18 @@ defmodule MapoWeb.UserLive.Settings do
             <p class="secundario">
               Al guardarla se cierran las demás sesiones abiertas de esta cuenta.
             </p>
-
+            
             <div class="doc-botones">
               <.button phx-disable-with="Guardando...">Guardar contraseña</.button>
             </div>
           </.form>
         </div>
+        
+        <p class="doc-seccion secundario">
+          <span>
+            Para pedir una copia de tus datos o borrar la cuenta, ve el <.link href={~p"/privacidad"}>aviso de privacidad</.link>.
+          </span>
+        </p>
       </section>
     </Layouts.app>
     """

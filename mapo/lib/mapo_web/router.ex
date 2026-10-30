@@ -21,6 +21,7 @@ defmodule MapoWeb.Router do
     pipe_through :browser
 
     get "/", PageController, :home
+    get "/privacidad", PageController, :privacidad
 
     # Pantallas de una sola capa que ya vive en /mapa.
     get "/coropletas", PageController, :a_mapa
