@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Mapo · mesa de planeación</title>
+<link rel="icon" type="image/svg+xml" href="../favicon.svg">
+<link rel="preconnect" href="https://fonts.bunny.net">
+<link href="https://fonts.bunny.net/css?family=overpass:400,600,700|overpass-mono:400,600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="leaflet.css">
+<style>
+/* Concepto: mesa de planeación. De día, plano en papel albanene con
+   acetatos encima (cada capa es una hoja que tiñe por multiplicación).
+   De noche, la misma mesa sobre una mesa de luz (las hojas se iluminan). */
+:root{
+  --bg:#EEEFF2;--bg2:#E3E4EA;--bg3:#D5D6DF;
+  --text:#1B1724;--text2:#4E4A5C;
+  --line:#726E81;--hair:#C9CAD3;
+  --accent:#4A1A6B;--on-accent:#EEEFF2;
+  --mark:#E9E24F;
+  --guinda:#6B1A2A;--naranja:#C4691A;--verde:#2A6B3A;--azul:#1A3A6B;--morado:#4A1A6B;
+  --blend:multiply;
+  --tiles:grayscale(1) contrast(.85) brightness(1.06);
+  --radius:2px;
+  --sans:"Overpass",system-ui,sans-serif;
+  --mono:"Overpass Mono",ui-monospace,monospace;
+  color-scheme:light;
+}
+:root[data-theme="dark"]{
+  --bg:#141519;--bg2:#1C1E23;--bg3:#272A31;
+  --text:#E8E9EC;--text2:#A6A9B2;
+  --line:#73767F;--hair:#33363E;
+  --accent:#E6E05A;--on-accent:#141519;
+  --mark:#E6E05A;
+  --guinda:#DC7489;--naranja:#DCA574;--verde:#74DC8E;--azul:#749EDC;--morado:#B374DC;
+  --blend:screen;
+  --tiles:invert(1) grayscale(1) brightness(.62) contrast(1.15);
+  color-scheme:dark;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{background:var(--bg);color:var(--text);font-family:var(--sans);font-size:14px;line-height:1.5;
+  display:grid;grid-template-rows:auto 1fr;overflow:hidden}
+button,select,input{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.num{font-family:var(--mono);font-variant-numeric:tabular-nums}
+
+/* Cinta superior */
+.cinta{display:flex;align-items:center;gap:20px;padding:8px 16px;border-bottom:1px solid var(--line);background:var(--bg);min-width:0}
+.marca{display:flex;align-items:center;gap:8px;font-weight:700;font-size:17px;text-decoration:none;color:var(--text)}
+.marca img{width:28px;height:28px}
+/* El logo usa los tonos de papel; de noche va impreso en una ficha clara. */
+:root[data-theme="dark"] .marca img{background:#EEEFF2;border-radius:var(--radius);padding:2px}
+.secciones{display:flex;gap:4px}
+.secciones a{padding:6px 10px;color:var(--text2);text-decoration:none;border-radius:var(--radius)}
+.secciones a[aria-current]{color:var(--text);box-shadow:inset 0 -2px 0 var(--accent)}
+.ubicacion{display:flex;align-items:center;gap:6px;margin-left:auto;color:var(--text2)}
+.ubicacion select{background:var(--bg2);border:1px solid var(--line);border-radius:var(--radius);padding:4px 8px;min-height:32px}
+.modo{border:1px solid var(--line);background:var(--bg);border-radius:var(--radius);padding:4px 10px;min-height:32px;cursor:pointer}
+
+/* Mesa: acetatos + plano */
+.mesa{display:grid;grid-template-columns:340px 1fr;min-height:0}
+.pila{border-right:1px solid var(--line);overflow-y:auto;padding:20px 16px 32px;background:var(--bg)}
+.pila h1{font-size:18px;font-weight:700}
+.pila .ayuda{color:var(--text2);font-size:13px;margin:2px 0 20px}
+.pila-asa{display:none}
+
+/* Cada acetato: una hoja con pestaña del color de su capa */
+.hojas{list-style:none;display:flex;flex-direction:column;gap:14px}
+.hoja{position:relative;border:1px solid var(--line);border-radius:var(--radius);background:var(--bg);padding:14px 14px 12px;
+  margin-top:10px;transition:transform .18s ease-out,background-color .18s}
+.hoja::before{content:"";position:absolute;left:12px;top:-11px;width:56px;height:10px;background:var(--capa);
+  border-radius:var(--radius) var(--radius) 0 0}
+.hoja[data-visible="false"]{background:var(--bg2)}
+.hoja[data-visible="false"]::before{opacity:.35}
+.hoja[data-visible="true"]{transform:translateX(4px)}
+.hoja-cab{display:flex;align-items:flex-start;gap:10px}
+.hoja-cab h2{font-size:15px;font-weight:700;line-height:1.3}
+.fuente{font-family:var(--mono);font-size:12px;color:var(--text2)}
+.interruptor{margin-left:auto;display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer;min-height:28px;white-space:nowrap}
+.interruptor input{appearance:none;width:34px;height:20px;border:1px solid var(--line);border-radius:10px;background:var(--bg2);position:relative;cursor:pointer;flex:none}
+.interruptor input::after{content:"";position:absolute;top:2px;left:2px;width:14px;height:14px;border-radius:50%;background:var(--line);transition:transform .15s}
+.interruptor input:checked{background:var(--capa);border-color:var(--capa)}
+.interruptor input:checked::after{transform:translateX(14px);background:var(--bg)}
+.hoja-cuerpo{margin-top:12px;display:grid;gap:10px}
+.campo{display:grid;gap:4px;font-size:13px;color:var(--text2)}
+.campo select,.campo input{background:var(--bg);border:1px solid var(--line);border-radius:var(--radius);padding:5px 8px;min-height:32px;color:var(--text)}
+.leyenda{display:grid;gap:3px;font-size:12px}
+.leyenda li{display:flex;align-items:center;gap:8px;list-style:none}
+.muestra{width:22px;height:12px;border:1px solid var(--line);flex:none;background:var(--capa)}
+.muestra.nula{background:repeating-linear-gradient(45deg,transparent 0 3px,var(--line) 3px 4px)}
+.leyenda .rango{margin-left:auto;color:var(--text2)}
+.orden{display:flex;gap:6px}
+.orden button{background:none;border:1px solid var(--hair);border-radius:var(--radius);padding:2px 8px;font-size:12px;color:var(--text2);cursor:pointer;min-height:26px}
+.orden button:hover{border-color:var(--line);color:var(--text)}
+.aviso{font-size:12px;color:var(--text2)}
+mark{background:var(--mark);color:#1B1724;padding:0 2px}
+
+/* Plano */
+.plano{position:relative;min-width:0;min-height:0}
+#mapa{position:absolute;inset:0;background:var(--bg2)}
+.leaflet-tile-pane{filter:var(--tiles)}
+.acetato{mix-blend-mode:var(--blend)}
+.leaflet-container{font-family:var(--sans)}
+.leaflet-bar a,.leaflet-control-attribution{background:var(--bg)!important;color:var(--text)!important;border-color:var(--line)!important}
+.leaflet-control-attribution a{color:var(--text2)!important}
+.leaflet-control-scale-line{background:var(--bg);color:var(--text);border-color:var(--text);font-family:var(--mono)}
+
+/* Rótulo de lámina, como en un plano */
+.rotulo{position:absolute;right:12px;bottom:28px;z-index:500;background:var(--bg);border:1.5px solid var(--text);
+  display:grid;grid-template-columns:auto auto;font-size:12px;max-width:min(360px,calc(100% - 24px))}
+.rotulo div{padding:5px 10px;border-top:1px solid var(--line)}
+.rotulo div:nth-child(odd){border-right:1px solid var(--line);color:var(--text2)}
+.rotulo div:nth-child(-n+2){border-top:0}
+.rotulo .titulo{grid-column:1/-1;font-weight:700;font-size:14px;border-right:0!important;color:var(--text)!important;border-bottom:1.5px solid var(--text)}
+.norte{position:absolute;right:12px;top:12px;z-index:500;width:44px;height:44px;color:var(--text)}
+
+@media (max-width:760px){
+  .cinta{flex-wrap:wrap;gap:8px 12px;padding:8px 12px}
+  .secciones{order:3;width:100%;overflow-x:auto}
+  .ubicacion{margin-left:0;order:4;width:100%}
+  .ubicacion select{flex:1;min-width:0}
+  .modo{margin-left:auto}
+}
+@media (max-width:760px),(max-height:500px){
+  .mesa{grid-template-columns:1fr;position:relative}
+  .pila{position:absolute;left:0;right:0;bottom:0;z-index:1100;max-height:70%;border-right:0;border-top:1.5px solid var(--text);
+    padding:0 12px 20px;transform:translateY(calc(100% - 64px));transition:transform .22s ease-out}
+  .pila[data-abierta="true"]{transform:none}
+  .pila-asa{display:flex;align-items:center;gap:10px;width:100%;min-height:56px;background:none;border:0;cursor:pointer;text-align:left;position:sticky;top:0;background:var(--bg);z-index:1}
+  .pila-asa .pestanas{display:flex;gap:4px}
+  .pila-asa .pestanas span{width:22px;height:8px;background:var(--c);border-radius:var(--radius) var(--radius) 0 0}
+  .pila-asa .pestanas span[data-off]{opacity:.3}
+  .pila-asa strong{font-size:15px}
+  .pila-asa em{margin-left:auto;font-style:normal;color:var(--text2);font-size:13px}
+  .pila h1{display:none}
+  .rotulo{top:10px;left:54px;right:auto;bottom:auto;max-width:calc(100% - 112px)}
+  .rotulo div:nth-child(n+6){display:none}
+  .norte{width:36px;height:36px}
+  .leaflet-bottom{bottom:64px}
+}
+@media (max-height:500px){
+  .pila{max-height:85%;left:auto;width:min(420px,100%);border-left:1.5px solid var(--text)}
+  .rotulo{display:none}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<header class="cinta">
+  <a class="marca" href="#"><img src="../favicon.svg" alt="">Mapo</a>
+  <nav class="secciones" aria-label="Secciones">
+    <a href="#" aria-current="page">Mapa</a>
+    <a href="#">Perfil</a>
+    <a href="#">Logística</a>
+  </nav>
+  <div class="ubicacion">
+    <label for="estado" class="sr">Estado</label>
+    <select id="estado"><option>Jalisco</option></select>
+    <span aria-hidden="true">/</span>
+    <label for="municipio" class="sr">Municipio</label>
+    <select id="municipio"><option>Guadalajara</option></select>
+  </div>
+  <button class="modo" id="modo" type="button">Mesa de luz</button>
+</header>
+
+<main class="mesa">
+  <aside class="pila" id="pila" aria-labelledby="pila-titulo" data-abierta="false">
+    <button class="pila-asa" id="asa" type="button" aria-expanded="false" aria-controls="hojas">
+      <span class="pestanas" id="pestanas" aria-hidden="true"></span>
+      <strong>Acetatos</strong>
+      <em id="asa-estado"></em>
+    </button>
+    <h1 id="pila-titulo">Acetatos</h1>
+    <p class="ayuda">Cada capa es una hoja sobre el plano. La de arriba en la lista queda encima en el mapa.</p>
+    <ol class="hojas" id="hojas"></ol>
+  </aside>
+  <section class="plano" aria-label="Plano de Guadalajara">
+    <div id="mapa"></div>
+    <svg class="norte" viewBox="0 0 44 44" role="img" aria-label="Norte">
+      <circle cx="22" cy="24" r="15" fill="none" stroke="currentColor" stroke-width="1"/>
+      <path d="M22 8 L27 26 L22 22 L17 26 Z" fill="currentColor"/>
+      <text x="22" y="7" text-anchor="middle" font-size="8" font-family="Overpass Mono" fill="currentColor">N</text>
+    </svg>
+    <div class="rotulo" aria-label="Datos de la lámina">
+      <div class="titulo">Guadalajara, Jalisco</div>
+      <div>Lámina</div><div id="lamina" class="num">1 capa</div>
+      <div>Fuentes</div><div id="fuentes">INEGI, Censo 2020</div>
+      <div>Fecha</div><div class="num">29 oct 2026</div>
+    </div>
+  </section>
+</main>
+
+<style>.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}</style>
+<script src="leaflet.js"></script>
+<script src="datos.js"></script>
+<script>
+const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+const fmt = n => n.toLocaleString("es-MX");
+
+// Quintiles reales de la población por AGEB; cada clase es más tinta en el acetato.
+const valores = DATOS.coropleta.features.map(f => f.properties.valor_choropleth).filter(v => v != null).sort((a, b) => a - b);
+const cortes = [0.2, 0.4, 0.6, 0.8].map(q => valores[Math.floor(q * (valores.length - 1))]);
+const clase = v => v == null ? -1 : cortes.filter(c => v > c).length;
+const densidades = [0.10, 0.24, 0.40, 0.58, 0.78];
+const nulos = DATOS.coropleta.features.length - valores.length;
+
+const capas = [
+  {id: "coropleta", nombre: "Población por AGEB", fuente: "INEGI · Censo 2020 · 442 AGEB", color: "--guinda", visible: true},
+  {id: "voronoi", nombre: "Área de cada papelería", fuente: `DENUE · ${fmt(DATOS.voronoi.features.length)} negocios`, color: "--azul", visible: true},
+  {id: "isocrona", nombre: "Alcance en auto", fuente: `OSRM · ${DATOS.isocrona.metodo === "osrm_real" ? "carretera real" : "círculo aproximado"}`, color: "--verde", visible: false},
+];
+
+const mapa = L.map("mapa", {zoomControl: true, attributionControl: true}).setView([20.6767, -103.3475], 12);
+L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+  maxZoom: 18, attribution: "© colaboradores de OpenStreetMap"
+}).addTo(mapa);
+L.control.scale({imperial: false, position: "bottomleft"}).addTo(mapa);
+
+const capasLeaflet = {};
+function construir() {
+  Object.values(capasLeaflet).forEach(l => mapa.removeLayer(l));
+  capas.forEach((c, i) => {
+    const pane = "p-" + c.id;
+    if (!mapa.getPane(pane)) { mapa.createPane(pane).classList.add("acetato"); }
+    mapa.getPane(pane).style.zIndex = 450 - i;
+    const color = css(c.color);
+    const renderer = L.svg({pane});
+    let capa;
+    if (c.id === "coropleta") {
+      capa = L.geoJSON(DATOS.coropleta, {pane, renderer, style: f => {
+        const k = clase(f.properties.valor_choropleth);
+        // En la mesa de luz la tinta suma luz (screen), así que pesa más a la vista.
+        const factor = document.documentElement.dataset.theme === "dark" ? 0.7 : 1;
+        return {stroke: true, color, weight: 0.4, opacity: 0.5, fillColor: color, fillOpacity: k < 0 ? 0 : densidades[k] * factor};
+      }}).bindTooltip(l => `AGEB ${l.feature.properties.cvegeo}<br><span class="num">${l.feature.properties.valor_choropleth == null ? "sin dato" : fmt(l.feature.properties.valor_choropleth) + " personas"}</span>`, {sticky: true});
+      if (!c.encuadrado) { mapa.fitBounds(capa.getBounds(), {padding: [10, 10]}); c.encuadrado = true; }
+    } else if (c.id === "voronoi") {
+      // De lejos solo las celdas: 1,858 puntos a zoom 11 son una mancha.
+      const celdas = L.geoJSON(DATOS.voronoi, {pane, renderer, style: {color, weight: 0.5, opacity: 0.7, fill: false}});
+      const puntos = L.layerGroup(DATOS.voronoi.features.map(f =>
+        L.circleMarker([f.properties.lat, f.properties.lon], {pane, renderer, radius: 2, stroke: false, fillColor: color, fillOpacity: 1})
+          .bindTooltip(f.properties.nombre)));
+      const conPuntos = () => mapa.getZoom() >= 14 && mapa.hasLayer(capa) ? puntos.addTo(mapa) : puntos.remove();
+      mapa.off("zoomend", c.alZoom); c.alZoom = conPuntos; mapa.on("zoomend", conPuntos);
+      capa = L.layerGroup([celdas]);
+      capa.on("add remove", () => setTimeout(conPuntos));
+    } else {
+      const [lon, lat] = [-103.3475, 20.6767];
+      const anillos = [1, 2, 3].map(r => L.circleMarker([lat, lon], {pane, renderer, radius: r * 5, color, weight: 1.5, fill: false}));
+      capa = L.layerGroup([L.geoJSON(DATOS.isocrona.poligono, {pane, renderer, style: {color, weight: 2, fillColor: color, fillOpacity: 0.22}}), ...anillos]);
+    }
+    capasLeaflet[c.id] = capa;
+    if (c.visible) capa.addTo(mapa);
+  });
+}
+
+function leyenda(c) {
+  if (c.id === "coropleta") {
+    const limites = [valores[0], ...cortes, valores[valores.length - 1]];
+    const filas = densidades.map((d, i) =>
+      `<li><span class="muestra" style="opacity:${d}"></span>Clase ${i + 1}<span class="rango num">${fmt(limites[i])} a ${fmt(limites[i + 1])}</span></li>`).join("");
+    return `<ul class="leyenda" aria-label="Clases por quintil">${filas}
+      <li><span class="muestra nula" style="background-color:transparent"></span>Sin dato<span class="rango num">${nulos} AGEB</span></li></ul>`;
+  }
+  if (c.id === "voronoi") return `<p class="aviso">Cada celda es la zona más cerca de esa papelería que de cualquier otra. Las celdas grandes son colonias con <mark>poca oferta</mark>.</p>`;
+  return `<p class="aviso">En el prototipo la isócrona sale del centro; en Mapo se coloca con un click en el plano.</p>`;
+}
+
+function control(c) {
+  if (c.id === "coropleta") return `<label class="campo">Indicador<select><option>Población total</option><option>Población de 15 a 64</option><option>Viviendas habitadas</option></select></label>`;
+  if (c.id === "voronoi") return `<label class="campo">Giro contiene<input value="papel"></label>`;
+  return `<label class="campo">Minutos<input type="number" value="10" min="1" max="60" class="num"></label>`;
+}
+
+function pintarPila() {
+  const ol = document.getElementById("hojas");
+  ol.innerHTML = capas.map((c, i) => `
+    <li class="hoja" data-visible="${c.visible}" style="--capa:var(${c.color})">
+      <div class="hoja-cab">
+        <div><h2>${c.nombre}</h2><p class="fuente">${c.fuente}</p></div>
+        <label class="interruptor"><input type="checkbox" data-id="${c.id}" ${c.visible ? "checked" : ""}>Visible</label>
+      </div>
+      <div class="hoja-cuerpo">
+        ${control(c)}
+        ${leyenda(c)}
+        <div class="orden">
+          <button type="button" data-subir="${i}" ${i === 0 ? "disabled" : ""}>Subir</button>
+          <button type="button" data-bajar="${i}" ${i === capas.length - 1 ? "disabled" : ""}>Bajar</button>
+        </div>
+      </div>
+    </li>`).join("");
+  const activas = capas.filter(c => c.visible);
+  document.getElementById("pestanas").innerHTML = capas.map(c => `<span style="--c:var(${c.color})" ${c.visible ? "" : "data-off"}></span>`).join("");
+  document.getElementById("asa-estado").textContent = `${activas.length} de ${capas.length} visibles`;
+  document.getElementById("lamina").textContent = `${activas.length} ${activas.length === 1 ? "capa" : "capas"}`;
+  const fuentes = [...new Set(activas.map(c => c.fuente.split(" · ")[0]))];
+  document.getElementById("fuentes").textContent = fuentes.length ? fuentes.join(", ") : "ninguna";
+}
+
+document.getElementById("hojas").addEventListener("change", e => {
+  const id = e.target.dataset.id; if (!id) return;
+  const c = capas.find(x => x.id === id); c.visible = e.target.checked;
+  c.visible ? capasLeaflet[id].addTo(mapa) : mapa.removeLayer(capasLeaflet[id]);
+  pintarPila();
+});
+document.getElementById("hojas").addEventListener("click", e => {
+  const s = e.target.dataset.subir, b = e.target.dataset.bajar;
+  if (s == null && b == null) return;
+  const i = Number(s ?? b), j = s != null ? i - 1 : i + 1;
+  [capas[i], capas[j]] = [capas[j], capas[i]];
+  capas.forEach((c, k) => mapa.getPane("p-" + c.id).style.zIndex = 450 - k);
+  pintarPila();
+});
+
+const asa = document.getElementById("asa"), pila = document.getElementById("pila");
+asa.addEventListener("click", () => {
+  const abierta = pila.dataset.abierta !== "true";
+  pila.dataset.abierta = abierta; asa.setAttribute("aria-expanded", abierta);
+});
+
+const modo = document.getElementById("modo");
+function aplicarModo(oscuro) {
+  document.documentElement.dataset.theme = oscuro ? "dark" : "light";
+  modo.textContent = oscuro ? "Papel" : "Mesa de luz";
+  construir();
+}
+modo.addEventListener("click", () => aplicarModo(document.documentElement.dataset.theme !== "dark"));
+
+pintarPila();
+aplicarModo(matchMedia("(prefers-color-scheme: dark)").matches);
+</script>
+</body>
+</html>
