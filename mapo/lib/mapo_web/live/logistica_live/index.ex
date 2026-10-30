@@ -6,7 +6,7 @@ defmodule MapoWeb.LogisticaLive.Index do
   @impl true
   def render(assigns) do
     ~H"""
-    <Layouts.app flash={@flash} current_scope={@current_scope} full_width?={true}>
+    <Layouts.app flash={@flash} current_scope={@current_scope} seccion="logistica" full_width?={true}>
       <div class="shrink-0 flex flex-wrap items-end gap-3">
         <h1 class="font-mono text-sm font-bold pb-2 whitespace-nowrap">Logística (VRP)</h1>
         <p class="text-xs text-base-content/70 pb-2">

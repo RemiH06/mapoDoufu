@@ -37,13 +37,19 @@ html,body{min-height:100%}
 .mano-docs{position:relative;height:440px;list-style:none}
 /* Como una mano de cartas: cada una encima de la anterior, así se lee la
    esquina de arriba (documento y enfoque) de todas. */
-.carta{position:absolute;left:calc(50% + var(--dx));bottom:30px;width:190px;height:290px;margin-left:-95px;padding:14px 16px;display:flex;flex-direction:column;gap:6px;
-  transform-origin:50% 160%;rotate:var(--giro);cursor:pointer;text-align:left;
-  transition:translate .22s cubic-bezier(.2,.7,.2,1),rotate .22s cubic-bezier(.2,.7,.2,1),background-color .3s}
-.carta::before,.carta::after{display:none}
-.carta:hover,.carta:focus-visible{translate:0 -40px;z-index:20!important}
-.carta[aria-pressed="true"]{translate:0 -24px}
-.carta[aria-pressed="true"]{outline:2.5px solid var(--accent);outline-offset:3px}
+/* El botón es la zona de detección y no se mueve; solo sube la cara de
+   adentro. Si subiera el botón, el cursor quedaría fuera de su caja y la
+   carta bajaría y subiría sin parar. */
+.carta{position:absolute;left:calc(50% + var(--dx));bottom:30px;width:190px;height:290px;margin-left:-95px;padding:0;border:0;background:none;
+  transform-origin:50% 160%;rotate:var(--giro);cursor:pointer;text-align:left}
+.carta:hover,.carta:focus-visible{z-index:20!important}
+.carta:focus-visible{outline:none}
+.cara{height:100%;padding:14px 16px;display:flex;flex-direction:column;gap:6px;
+  transition:translate .22s cubic-bezier(.2,.7,.2,1),background-color .3s}
+.cara::before,.cara::after{display:none}
+.carta:hover .cara,.carta:focus-visible .cara{translate:0 -40px}
+.carta[aria-pressed="true"] .cara{translate:0 -24px;outline:2.5px solid var(--accent);outline-offset:3px}
+.carta:focus-visible .cara{outline:2px solid var(--accent);outline-offset:2px}
 .carta .tipo{font-family:var(--cond);font-weight:500;font-size:14px;color:var(--text2);border-bottom:1.5px solid var(--text);padding-bottom:4px}
 .carta b{font-family:var(--cond);font-weight:700;font-size:26px;line-height:1.05}
 .carta .pregunta{font-family:var(--mano);color:var(--accent);font-size:19px;line-height:1.2;margin-top:4px}
@@ -58,6 +64,7 @@ html,body{min-height:100%}
   /* En pantallas chicas la mano se vuelve una fila que se recorre de lado */
   .mano-docs{height:auto;display:flex;gap:14px;overflow-x:auto;padding:40px 4px 12px;scroll-snap-type:x mandatory}
   .carta{position:relative;left:auto;bottom:auto;margin:0;flex:none;rotate:0deg;scroll-snap-align:center;height:260px}
+  .carta:hover .cara{translate:none}
   .ayuda{position:static;margin-top:4px}
 }
 @media (max-width:560px){
@@ -78,7 +85,7 @@ html,body{min-height:100%}
 <main class="portada">
   <section class="lamina pegado" aria-labelledby="t">
     <div class="titulo"><img src="../favicon.svg" alt=""><h1 id="t">MAPO</h1></div>
-    <p class="lema">Gaiarda contesta <b>qué hay</b>. Mapo contesta <b>qué deberías hacer con eso</b>, con datos abiertos de México.</p>
+    <p class="lema">Gaiarda contesta <b>qué hay</b>. Mapo contesta <b>qué deberías hacer con eso</b>.</p>
     <div class="acciones">
       <a class="boton primario" href="#">Crear cuenta</a>
       <a class="boton" href="#">Iniciar sesión</a>
@@ -91,7 +98,7 @@ html,body{min-height:100%}
   </section>
 
   <section aria-labelledby="t-mano">
-    <h2 id="t-mano" class="sr">Lo que puedes preguntarle a Mapo, por enfoque</h2>
+    <h2 id="t-mano" class="sr">Preguntas por enfoque</h2>
     <ul class="mano-docs" id="mano"></ul>
     <p class="ayuda" id="ayuda"></p>
   </section>
@@ -105,7 +112,7 @@ const PREGUNTAS = {
   demografia: ["¿En qué colonias vive la gente que quiero contratar?", "INEGI · Censo 2020"],
   comercio: ["¿En qué parte de la colonia falta una papelería?", "INEGI · DENUE"],
   consumo: ["¿Cuánto gasta al día un hogar de la región?", "INEGI · ENIGH"],
-  seguridad: ["¿Qué delitos pesan más en este municipio?", "SESNSP"],
+  seguridad: ["¿Qué delitos son más frecuentes en este municipio?", "SESNSP"],
   laboral: ["¿Hay gente buscando trabajo en el estado?", "INEGI · ENOE"],
   movilidad: ["¿Hasta dónde llego en diez minutos desde aquí?", "OSRM"],
 };
@@ -114,13 +121,15 @@ const ids = Object.keys(PIELES), mitad = (ids.length - 1) / 2;
 let fijada = "urbanismo";
 
 document.getElementById("mano").innerHTML = ids.map((id, i) => `
-  <li><button type="button" class="carta pegado" data-piel="${id}" aria-pressed="${id === fijada}"
+  <li><button type="button" class="carta" data-piel="${id}" aria-pressed="${id === fijada}"
       style="--giro:${((i - mitad) * 6).toFixed(1)}deg;--dx:${((i - mitad) * 44).toFixed(0)}px;z-index:${i + 1}">
-    <span class="tipo">${PIELES[id].documento}</span>
-    <b>${PIELES[id].nombre}</b>
-    <span class="pregunta">${PREGUNTAS[id][0]}</span>
-    <span class="tinta" aria-hidden="true"></span>
-    <span class="fuente">${PREGUNTAS[id][1]}</span>
+    <span class="cara pegado" data-piel="${id}">
+      <span class="tipo">${PIELES[id].documento}</span>
+      <b>${PIELES[id].nombre}</b>
+      <span class="pregunta">${PREGUNTAS[id][0]}</span>
+      <span class="tinta" aria-hidden="true"></span>
+      <span class="fuente">${PREGUNTAS[id][1]}</span>
+    </span>
   </button></li>`).join("");
 
 // Pasar encima previsualiza la piel; tocar la deja puesta (patrón de la galería de iroFactory).
@@ -139,14 +148,14 @@ mano.addEventListener("click", e => {
   const c = e.target.closest(".carta"); if (!c) return;
   fijada = c.dataset.piel;
   mano.querySelectorAll(".carta").forEach(x => x.setAttribute("aria-pressed", x === c));
-  document.getElementById("ayuda").textContent = `la mesa queda en ${PIELES[fijada].nombre.toLowerCase()}`;
+  document.getElementById("ayuda").textContent = `piel fijada: ${PIELES[fijada].nombre.toLowerCase()}`;
   vestir(fijada);
 });
 
 dibujarPlano(document.getElementById("plano"), DATOS.coropleta);
 
 document.getElementById("ayuda").textContent = matchMedia("(hover: none)").matches
-  ? "toca un documento para vestir la mesa" : "pasa sobre un documento para vestir la mesa; tócalo para dejarlo";
+  ? "toca un documento para ver su piel" : "pasa el cursor sobre un documento para ver su piel; haz clic para fijarla";
 vestir(fijada);
 rotular = Mesa.iniciarModo(document.getElementById("modo"));
 </script>

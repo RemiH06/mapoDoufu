@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="es" data-piel="urbanismo">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -10,77 +10,42 @@
     <script defer phx-track-static type="text/javascript" src={~p"/assets/js/app.js"}>
     </script>
     <script>
+      // Modo claro u oscuro antes de pintar, para que no parpadee. Arranca con
+      // el del sistema hasta que la persona elige uno. El botón de la esquina
+      // dice a qué modo lleva, con el nombre que le da la piel activa.
       (() => {
-        const systemTheme = () => matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
-
-        const setTheme = (theme) => {
-          if (theme === "system") {
-            localStorage.removeItem("phx:theme");
-            document.documentElement.setAttribute("data-theme", systemTheme());
-            document.documentElement.setAttribute("data-theme-source", "system");
-          } else {
-            localStorage.setItem("phx:theme", theme);
-            document.documentElement.setAttribute("data-theme", theme);
-            document.documentElement.setAttribute("data-theme-source", "user");
-          }
+        const MODOS = {
+          urbanismo: ["Papel", "Cianotipia"], demografia: ["Cédula", "Archivo"],
+          comercio: ["Libro", "Corte de caja"], consumo: ["Mostrador", "Cierre"],
+          seguridad: ["Expediente", "Guardia"], laboral: ["Matutino", "Nocturno"],
+          movilidad: ["Día", "Nocturna"],
         };
-        if (!document.documentElement.hasAttribute("data-theme")) {
-          setTheme(localStorage.getItem("phx:theme") || "system");
-        }
-        window.addEventListener("storage", (e) => e.key === "phx:theme" && setTheme(e.newValue || "system"));
-        window.addEventListener("phx:set-theme", (e) => setTheme(e.target.dataset.phxTheme));
-
-        matchMedia("(prefers-color-scheme: dark)").addEventListener("change", (e) => {
-          if (document.documentElement.getAttribute("data-theme-source") === "system") {
-            document.documentElement.setAttribute("data-theme", systemTheme());
-          }
+        const raiz = document.documentElement;
+        const sistema = () => matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+        const rotular = () => document.querySelectorAll("[data-modo]").forEach(b => {
+          b.textContent = (MODOS[raiz.dataset.piel] || MODOS.urbanismo)[raiz.dataset.theme === "dark" ? 0 : 1];
         });
+        raiz.dataset.theme = localStorage.getItem("phx:theme") || sistema();
+
+        window.addEventListener("mapo:modo", () => {
+          const nuevo = raiz.dataset.theme === "dark" ? "light" : "dark";
+          localStorage.setItem("phx:theme", nuevo);
+          raiz.dataset.theme = nuevo;
+          window.dispatchEvent(new CustomEvent("mapo:tema", {detail: {tema: nuevo}}));
+        });
+        window.addEventListener("storage", e => {
+          if (e.key === "phx:theme") raiz.dataset.theme = e.newValue || sistema();
+        });
+        matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () => {
+          if (!localStorage.getItem("phx:theme")) raiz.dataset.theme = sistema();
+        });
+        new MutationObserver(rotular).observe(raiz, {attributes: true, attributeFilter: ["data-theme", "data-piel"]});
+        window.addEventListener("phx:page-loading-stop", rotular);
+        document.addEventListener("DOMContentLoaded", rotular);
       })();
     </script>
   </head>
   <body class="min-h-screen flex flex-col">
-    <canvas id="metro-bg" class="fixed inset-0 w-screen h-screen -z-10"></canvas>
-    <header class="navbar shrink-0 relative z-10 gap-4 px-4 sm:px-6 lg:px-8">
-      <a href="/" class="flex-none flex items-center gap-2 w-fit">
-        <img src={~p"/images/mapo-logo.svg"} width="32" />
-        <span class="text-sm font-semibold">Mapo</span>
-      </a>
-      <ul class="menu menu-horizontal flex-1 flex items-center gap-4 justify-end">
-        <%= if @current_scope do %>
-          <li>
-            {@current_scope.user.email}
-          </li>
-          <li>
-            <.link navigate={~p"/teams"}>Mis equipos</.link>
-          </li>
-          <li>
-            <.link navigate={~p"/mapa"}>Mapa técnico</.link>
-          </li>
-          <li>
-            <.link navigate={~p"/perfil"}>Perfil de zona</.link>
-          </li>
-          <li>
-            <.link navigate={~p"/logistica"}>Logística</.link>
-          </li>
-          <li>
-            <.link navigate={~p"/users/settings"}>Configuración</.link>
-          </li>
-          <li>
-            <.link href={~p"/users/log-out"} method="delete">Cerrar sesión</.link>
-          </li>
-        <% else %>
-          <li>
-            <.link navigate={~p"/users/register"}>Registrarme</.link>
-          </li>
-          <li>
-            <.link navigate={~p"/users/log-in"}>Iniciar sesión</.link>
-          </li>
-        <% end %>
-        <li>
-          <.theme_toggle />
-        </li>
-      </ul>
-    </header>
     {@inner_content}
   </body>
 </html>

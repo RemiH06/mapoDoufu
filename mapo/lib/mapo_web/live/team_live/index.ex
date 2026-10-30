@@ -6,7 +6,7 @@ defmodule MapoWeb.TeamLive.Index do
   @impl true
   def render(assigns) do
     ~H"""
-    <Layouts.app flash={@flash} current_scope={@current_scope}>
+    <Layouts.app flash={@flash} current_scope={@current_scope} seccion="equipos">
       <div class="flex items-center justify-between mb-6">
         <.header>Mis equipos</.header>
         <.link navigate={~p"/teams/new"} class="btn btn-primary">Crear equipo</.link>

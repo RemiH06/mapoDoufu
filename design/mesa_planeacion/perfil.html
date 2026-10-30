@@ -133,7 +133,7 @@ details .barras{margin-top:8px}
       <label class="sr" for="municipio">Municipio</label><select id="municipio"><option>Guadalajara</option></select>
     </div>
     <button class="boton primario" type="submit">Ver perfil</button>
-    <p>Cinco documentos, uno por enfoque, cada uno con su fuente. Ninguno se resume en un puntaje: si una fuente no alcanza a este municipio, el documento lo dice.</p>
+    <p>Cinco documentos, uno por enfoque. Ninguno se resume en un puntaje. Si una fuente no cubre este municipio, el documento lo dice.</p>
   </form>
 
   <div class="documentos" id="documentos"></div>
@@ -150,7 +150,7 @@ const P = {"demografia":{"pobtot":1385629,"pobfem":718632,"pobmas":666997,"grapr
 
 const fmt = (n, d = 0) => n.toLocaleString("es-MX", {minimumFractionDigits: d, maximumFractionDigits: d});
 const pesos = n => "$" + fmt(n, 2);
-const notas = `<div class="notas"><button type="button">+ anotar algo para el equipo</button></div>`;
+const notas = `<div class="notas"><button type="button">+ nota del equipo</button></div>`;
 
 function cedula(d) {
   const fem = d.pobfem / d.pobtot * 100;
@@ -190,7 +190,7 @@ function ticket(c) {
     <div class="renglon"><span>Mediana</span><span></span><b class="cifra">${pesos(c.mediana)}</b></div>
     <div class="renglon"><span>Hogares en la muestra</span><span></span><b class="cifra">${fmt(c.n_hogares_muestra)}</b></div>
     <hr>
-    <p class="falta">La ENIGH es representativa por estado o dominio, no por municipio: tómalo como referencia de la región.</p>
+    <p class="falta">La ENIGH no es representativa por municipio, solo por estado o dominio. Úsalo como referencia regional.</p>
     <p class="fuente">INEGI · ENIGH</p>${notas}<div class="dientes" aria-hidden="true"></div></article>`;
 }
 
@@ -202,7 +202,7 @@ function expediente(s) {
     <header><h2 id="t-seg">Incidencia delictiva</h2><span class="tipo">Expediente</span></header>
     <p><span class="cifra" style="font-size:28px">${fmt(s.total_delitos)}</span> delitos registrados en ${s.anio}</p>
     <ul class="barras" style="margin-top:10px">${s.por_tipo.slice(0, 8).map(fila).join("")}</ul>
-    <details><summary>Ver los ${s.por_tipo.length} tipos, también los que tienen cero</summary><ul class="barras">${s.por_tipo.slice(8).map(fila).join("")}</ul></details>
+    <details><summary>Ver los ${s.por_tipo.length} tipos, incluidos los de cero</summary><ul class="barras">${s.por_tipo.slice(8).map(fila).join("")}</ul></details>
     <p class="fuente">SESNSP · incidencia del fuero común, carga manual</p>${notas}</article>`;
 }
 
@@ -212,7 +212,7 @@ function tarjeta(l) {
     <header><h2 id="t-lab">Desocupación</h2><span class="tipo">Tarjeta de checador</span></header>
     <p class="sello cifra">${fmt(l.tasa_desocupacion, 2)}%</p>
     <dl><dt>Periodo</dt><dd>${trim} trimestre de ${l.anio}</dd><dt>Población activa del estado</dt><dd>${fmt(l.pea_ponderada)}</dd></dl>
-    <p class="falta">Cifra de todo Jalisco: la ENOE no es representativa por municipio.</p>
+    <p class="falta">Cifra estatal (todo Jalisco). La ENOE no es representativa por municipio.</p>
     <p class="fuente">INEGI · ENOE</p>${notas}</article>`;
 }
 

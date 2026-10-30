@@ -1,147 +1,241 @@
 import L from "../vendor/leaflet/leaflet"
 
-// Mapa tecnico: varias capas independientes (coropleta, Voronoi,
-// coloreado, isocrona) sobre el mismo mapa base, cada una se prende y
-// apaga por separado desde el servidor via push_event. El contenedor
-// tiene phx-update="ignore", asi que todo el estado de que capa esta
-// prendida vive aqui del lado del cliente, nunca en atributos
-// re-renderizados por LiveView.
+// Mapa tecnico: cada capa (coropleta, Voronoi, coloreado, isocrona) es un
+// acetato sobre el plano. El servidor las prende y apaga por push_event y
+// dice el orden de la pila y la piel de la mesa; aqui se pintan con la
+// pelicula de su enfoque y el mapa base se reentinta con la piel activa
+// (docs/arquitectura/decisiones.md, "Concepto visual"). El contenedor tiene
+// phx-update="ignore": lo dibujado vive aqui, nunca en el DOM de LiveView.
 //
-// preferCanvas: una coropleta de estado son ~5 mil poligonos; en SVG
-// cada uno es un nodo del DOM y arrastrar el mapa baja a 30 o 40 fps.
-// En canvas se pintan todos en una sola superficie.
+// Canvas en vez de SVG: una coropleta de estado son ~5 mil poligonos y en
+// SVG arrastrar el mapa baja a 30 o 40 fps. Cada acetato tiene su propio
+// canvas, para que se mezcle con el plano (mix-blend-mode) por separado.
 
 const CENTRO_MEXICO = [23.6345, -102.5528]
 const ZOOM_MEXICO = 5
-const ESCALA_COROPLETA = ["#f0e6f7", "#c9a8dd", "#a06bc0", "#7239a0", "#4A1A6B"]
-const COLOR_SIN_DATO = "#9ca3af"
-const ANGULO_DORADO = 137.508
-const PALETA_COLOREADO = ["#f2b632", "#4A1A6B", "#2f9e44", "#c0392b", "#2980b9", "#e67e22", "#16a085", "#8e44ad"]
+const ENFOQUE = {coropleta: "demografia", voronoi: "comercio", coloreado: "urbanismo", isocrona: "movilidad"}
+// Opacidad de la pelicula por clase: mas valor, mas tinta.
+const TINTA_QUINTIL = [0.12, 0.26, 0.42, 0.6, 0.8]
+const TINTA_COLOREADO = [0.14, 0.32, 0.5, 0.68]
+const ZOOM_PUNTOS = 14
 
-function colorCoropleta(valor, min, max) {
-  if (valor === null || valor === undefined) return COLOR_SIN_DATO
-  if (max === min) return ESCALA_COROPLETA[ESCALA_COROPLETA.length - 1]
-  const t = (valor - min) / (max - min)
-  return ESCALA_COROPLETA[Math.min(ESCALA_COROPLETA.length - 1, Math.floor(t * ESCALA_COROPLETA.length))]
+const raiz = document.documentElement
+const tinta = nombre => getComputedStyle(raiz).getPropertyValue(nombre).trim()
+const oscuro = () => raiz.dataset.theme === "dark"
+
+const rgb = h => [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16) / 255)
+const mezcla = (a, b, f) => "#" + rgb(a).map((x, i) =>
+  Math.round(Math.min(1, Math.max(0, x + (rgb(b)[i] - x) * f)) * 255).toString(16).padStart(2, "0")).join("")
+
+// El mapa base se reimprime en las tintas de la piel con un filtro SVG de
+// duotono (la idea del retinte por filtro viene de tanGo): luminancia del
+// mosaico de OSM a color, por tramos. Sin servidor de mosaicos propio.
+function filtroPlano() {
+  let filtro = document.getElementById("plano-tinta")
+  if (filtro) return filtro
+  const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg")
+  svg.setAttribute("width", "0")
+  svg.setAttribute("height", "0")
+  svg.setAttribute("aria-hidden", "true")
+  svg.style.position = "absolute"
+  svg.innerHTML = `<filter id="plano-tinta" color-interpolation-filters="sRGB">
+    <feColorMatrix type="saturate" values="0"/>
+    <feComponentTransfer><feFuncR type="table"/><feFuncG type="table"/><feFuncB type="table"/></feComponentTransfer>
+  </filter>`
+  document.body.appendChild(svg)
+  return svg.querySelector("filter")
 }
 
-function colorVoronoi(indice) {
-  return `hsl(${(indice * ANGULO_DORADO) % 360}, 65%, 55%)`
+function entintar() {
+  const [text, line, bg, bg2] = ["--text", "--line", "--bg", "--bg2"].map(tinta)
+  if (!text.startsWith("#")) return
+  const calles = oscuro() ? mezcla(bg2, line, 0.3) : mezcla(bg, "#F8F9FB", 0.7)
+  const medio = oscuro() ? mezcla(bg2, bg, -0.4) : mezcla(bg2, line, 0.12)
+  const tramos = [[0, text], [0.45, line], [0.72, medio], [0.9, bg], [1, calles]].map(([t, h]) => [t, rgb(h)])
+  const valor = (t, c) => {
+    let k = 1
+    while (tramos[k][0] < t) k++
+    const [t0, a] = tramos[k - 1], [t1, b] = tramos[k], f = (t - t0) / (t1 - t0)
+    return (a[c] + (b[c] - a[c]) * f).toFixed(3)
+  }
+  const muestras = Array.from({length: 41}, (_, i) => i / 40)
+  filtroPlano().querySelectorAll("feFuncR, feFuncG, feFuncB").forEach((fn, c) =>
+    fn.setAttribute("tableValues", muestras.map(t => valor(t, c)).join(" ")))
 }
 
-function colorColoreado(indice) {
-  if (indice === null || indice === undefined) return COLOR_SIN_DATO
-  return PALETA_COLOREADO[indice % PALETA_COLOREADO.length]
+function clase(valor, cortes) {
+  if (valor === null || valor === undefined) return -1
+  return cortes.filter(c => valor > c).length
 }
 
 export const MapaTecnico = {
   mounted() {
-    this.map = L.map(this.el, {preferCanvas: true}).setView(CENTRO_MEXICO, ZOOM_MEXICO)
+    entintar()
+    this.map = L.map(this.el, {zoomControl: false}).setView(CENTRO_MEXICO, ZOOM_MEXICO)
+    L.control.zoom({position: "topright"}).addTo(this.map)
+    L.control.scale({imperial: false, position: "bottomleft"}).addTo(this.map)
     L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
       attribution: "&copy; colaboradores de OpenStreetMap",
       maxZoom: 19,
     }).addTo(this.map)
 
+    this.renderers = {}
+    Object.keys(ENFOQUE).forEach((id, i) => {
+      const pane = this.map.createPane(`p-${id}`)
+      pane.classList.add("acetato")
+      pane.style.zIndex = 460 - i
+      this.renderers[id] = L.canvas({pane: `p-${id}`})
+    })
     this.capas = {coropleta: null, voronoi: null, coloreado: null, isocrona: null}
-    this.leyendaCoropleta = null
+    this.datos = {coropleta: null, voronoi: null, coloreado: null, isocrona: null}
     this.modoIsocrona = false
-    this.marcadorIsocrona = null
+    this.origen = null
 
     this.map.on("click", e => {
       if (this.modoIsocrona) {
+        this.origen = e.latlng
         this.pushEvent("click_mapa", {lat: e.latlng.lat, lon: e.latlng.lng})
       }
     })
+    this.map.on("zoomend", () => this._puntosVoronoi())
 
-    this.handleEvent("capa_coropleta", ({activa, geojson, etiqueta}) => this._coropleta(activa, geojson, etiqueta))
-    this.handleEvent("capa_voronoi", ({activa, geojson}) => this._voronoi(activa, geojson))
-    this.handleEvent("capa_coloreado", ({activa, geojson}) => this._coloreado(activa, geojson))
-    this.handleEvent("capa_isocrona", ({activa, poligono, metodo}) => this._isocrona(activa, poligono, metodo))
+    this.handleEvent("capa_coropleta", datos => this._recibir("coropleta", datos))
+    this.handleEvent("capa_voronoi", datos => this._recibir("voronoi", datos))
+    this.handleEvent("capa_coloreado", datos => this._recibir("coloreado", datos))
+    this.handleEvent("capa_isocrona", datos => this._recibir("isocrona", datos))
     this.handleEvent("modo_isocrona", ({activo}) => {
       this.modoIsocrona = activo
       this.el.style.cursor = activo ? "crosshair" : ""
     })
+    this.handleEvent("orden_capas", ({orden}) => {
+      orden.forEach((id, i) => { this.map.getPane(`p-${id}`).style.zIndex = 460 - i })
+    })
+    this.handleEvent("piel", ({piel}) => {
+      raiz.dataset.piel = piel
+      this._repintar()
+    })
+    this.alCambiarTema = () => this._repintar()
+    window.addEventListener("mapo:tema", this.alCambiarTema)
   },
 
-  _quitar(nombre) {
-    if (this.capas[nombre]) {
-      this.map.removeLayer(this.capas[nombre])
-      this.capas[nombre] = null
+  _recibir(id, datos) {
+    const nueva = !this.datos[id] && datos.activa
+    this.datos[id] = datos.activa ? datos : null
+    this._dibujar(id)
+    if (nueva) this._deslizar(id)
+    const capa = this.capas[id]
+    const bordes = capa && capa.getBounds && capa.getBounds()
+    if (bordes && bordes.isValid()) this.map.fitBounds(bordes)
+  },
+
+  // El acetato entra deslizandose sobre el plano.
+  _deslizar(id) {
+    const pane = this.map.getPane(`p-${id}`)
+    pane.classList.remove("entra")
+    void pane.offsetWidth
+    pane.classList.add("entra")
+  },
+
+  _repintar() {
+    entintar()
+    Object.keys(this.datos).forEach(id => this._dibujar(id))
+  },
+
+  _quitar(id) {
+    if (this.capas[id]) {
+      this.map.removeLayer(this.capas[id])
+      this.capas[id] = null
+    }
+    if (id === "voronoi" && this.puntos) {
+      this.map.removeLayer(this.puntos)
+      this.puntos = null
     }
   },
 
-  _coropleta(activa, geojson, etiqueta) {
-    this._quitar("coropleta")
-    if (this.leyendaCoropleta) {
-      this.map.removeControl(this.leyendaCoropleta)
-      this.leyendaCoropleta = null
-    }
-    if (!activa || !geojson) return
+  _dibujar(id) {
+    this._quitar(id)
+    const datos = this.datos[id]
+    if (!datos) return
+    const color = tinta(`--f-${ENFOQUE[id]}`)
+    const opciones = {pane: `p-${id}`, renderer: this.renderers[id]}
+    this.capas[id] = this[`_${id}`](datos, color, opciones)
+    this.capas[id].addTo(this.map)
+    if (id === "voronoi") this._puntosVoronoi()
+  },
 
-    const valores = geojson.features.map(f => f.properties.valor_choropleth).filter(v => v !== null && v !== undefined)
-    const min = valores.length ? Math.min(...valores) : 0
-    const max = valores.length ? Math.max(...valores) : 0
-
-    this.capas.coropleta = L.geoJSON(geojson, {
-      style: f => ({color: "#3a3a3a", weight: 1, fillColor: colorCoropleta(f.properties.valor_choropleth, min, max), fillOpacity: 0.6}),
+  _coropleta({geojson, etiqueta, cortes}, color, opciones) {
+    const factor = oscuro() ? 0.85 : 1
+    return L.geoJSON(geojson, {
+      ...opciones,
+      style: f => {
+        const k = clase(f.properties.valor_choropleth, cortes || [])
+        return k < 0
+          ? {color: tinta("--line"), weight: 0.6, dashArray: "3 3", fillOpacity: 0}
+          : {color, weight: 0.5, opacity: 0.6, fillColor: color, fillOpacity: TINTA_QUINTIL[k] * factor}
+      },
       onEachFeature: (f, capa) => {
         const valor = f.properties.valor_choropleth
-        capa.bindPopup(`<strong>${etiqueta}</strong><br>${valor === null || valor === undefined ? "sin dato" : valor}`)
+        capa.bindPopup(`<strong>${etiqueta}</strong><br>${valor === null || valor === undefined ? "sin dato" : valor.toLocaleString("es-MX")}`)
       },
-    }).addTo(this.map)
-
-    if (this.capas.coropleta.getBounds().isValid()) this.map.fitBounds(this.capas.coropleta.getBounds())
+    })
   },
 
-  _voronoi(activa, geojson) {
-    this._quitar("voronoi")
-    if (!activa || !geojson) return
-
-    const colorDe = new Map()
-    geojson.features.forEach((f, i) => colorDe.set(f.properties.id, colorVoronoi(i)))
-
-    this.capas.voronoi = L.geoJSON(geojson, {
-      style: f => ({color: "#3a3a3a", weight: 1, fillColor: colorDe.get(f.properties.id), fillOpacity: 0.4}),
+  _voronoi({geojson}, color, opciones) {
+    this.datosPuntos = geojson.features
+    return L.geoJSON(geojson, {
+      ...opciones,
+      style: {color, weight: 0.8, opacity: 0.9, fill: true, fillOpacity: 0},
       onEachFeature: (f, capa) => {
         const nombre = f.properties.nombre || `Negocio ${f.properties.id}`
         const otros = f.properties.num_puntos - 1
         capa.bindPopup(otros > 0 ? `${nombre}<br>y ${otros} más en el mismo punto` : nombre)
       },
-    }).addTo(this.map)
-
-    if (this.capas.voronoi.getBounds().isValid()) this.map.fitBounds(this.capas.voronoi.getBounds())
+    })
   },
 
-  _coloreado(activa, geojson) {
-    this._quitar("coloreado")
-    if (!activa || !geojson) return
-
-    this.capas.coloreado = L.geoJSON(geojson, {
-      style: f => ({color: "#3a3a3a", weight: 1, fillColor: colorColoreado(f.properties.color_indice), fillOpacity: 0.55}),
-      onEachFeature: (f, capa) => capa.bindPopup(f.properties.nomgeo || f.properties.cvegeo),
-    }).addTo(this.map)
-
-    if (this.capas.coloreado.getBounds().isValid()) this.map.fitBounds(this.capas.coloreado.getBounds())
-  },
-
-  _isocrona(activa, poligono, metodo) {
-    this._quitar("isocrona")
-    if (this.marcadorIsocrona) {
-      this.map.removeLayer(this.marcadorIsocrona)
-      this.marcadorIsocrona = null
+  // De lejos solo las celdas: miles de puntos a escala de ciudad son una mancha.
+  _puntosVoronoi() {
+    const ver = this.capas.voronoi && this.map.getZoom() >= ZOOM_PUNTOS
+    if (!ver) {
+      if (this.puntos) { this.map.removeLayer(this.puntos); this.puntos = null }
+      return
     }
-    if (!activa || !poligono) return
+    if (this.puntos) return
+    const color = tinta("--f-comercio")
+    this.puntos = L.layerGroup(this.datosPuntos
+      .filter(f => f.properties.lat !== undefined)
+      .map(f => L.circleMarker([f.properties.lat, f.properties.lon], {
+        pane: "p-voronoi", renderer: this.renderers.voronoi, radius: 2.2, stroke: false, fillColor: color, fillOpacity: 1,
+      }))).addTo(this.map)
+  },
 
-    this.capas.isocrona = L.geoJSON(
-      {type: "Feature", properties: {}, geometry: poligono},
-      {style: {color: "#4A1A6B", weight: 2, fillColor: "#4A1A6B", fillOpacity: 0.25}}
-    ).addTo(this.map)
-    this.capas.isocrona.bindPopup(metodo === "osrm_real" ? "Carretera real" : "Círculo aproximado")
+  _coloreado({geojson}, color, opciones) {
+    return L.geoJSON(geojson, {
+      ...opciones,
+      style: f => ({
+        color, weight: 0.8, opacity: 0.7, fillColor: color,
+        fillOpacity: TINTA_COLOREADO[(f.properties.color_indice ?? 0) % TINTA_COLOREADO.length],
+      }),
+      onEachFeature: (f, capa) => capa.bindPopup(f.properties.nomgeo || f.properties.cvegeo),
+    })
+  },
 
-    if (this.capas.isocrona.getBounds().isValid()) this.map.fitBounds(this.capas.isocrona.getBounds())
+  _isocrona({poligono, metodo}, color, opciones) {
+    const area = L.geoJSON({type: "Feature", properties: {}, geometry: poligono}, {
+      ...opciones,
+      style: {color, weight: 2, dashArray: "6 4", fillColor: color, fillOpacity: 0.2},
+    }).bindPopup(metodo === "osrm_real" ? "Por carretera real" : "Círculo aproximado: OSRM no respondió")
+    const partes = [area]
+    if (this.origen) {
+      [4, 9, 14].forEach(r => partes.push(L.circleMarker(this.origen, {...opciones, radius: r, color, weight: 1.3, fill: false})))
+    }
+    const grupo = L.featureGroup(partes)
+    return grupo
   },
 
   destroyed() {
+    window.removeEventListener("mapo:tema", this.alCambiarTema)
+    raiz.dataset.piel = "urbanismo"
     this.map.remove()
   },
 }

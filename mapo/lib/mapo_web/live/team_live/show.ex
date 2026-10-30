@@ -9,7 +9,7 @@ defmodule MapoWeb.TeamLive.Show do
   @impl true
   def render(assigns) do
     ~H"""
-    <Layouts.app flash={@flash} current_scope={@current_scope}>
+    <Layouts.app flash={@flash} current_scope={@current_scope} seccion="equipos">
       <.header>
         {@team.name}
         <:subtitle>Tu rol: {@role_labels[@current_role]}</:subtitle>

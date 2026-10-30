@@ -1,10 +1,14 @@
 /* See the Tailwind configuration guide for advanced usage
    https://tailwindcss.com/docs/configuration */
 
-@import url("https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=Space+Mono:wght@400;700&display=swap");
+@import url("https://fonts.bunny.net/css?family=barlow:400,500,600|barlow-condensed:500,600,700|architects-daughter:400|caveat:500|special-elite:400|ibm-plex-mono:400,500&display=swap");
 @import "../vendor/leaflet/leaflet.css";
 @import "tailwindcss" source(none);
 @import "phoenix-colocated/mapo/colocated.css";
+/* Después de Tailwind, para que su orden de capas ya esté declarado */
+@import "./pieles.css";
+@import "./mesa.css";
+@import "./mapa.css";
 @source "../css";
 @source "../js";
 @source "../../lib/mapo_web";
@@ -20,85 +24,82 @@
   themes: false;
 }
 
-/* daisyUI theme plugin.
-  We ship with two themes, a light one inspired on Phoenix colors and a dark one inspired
-  on Elixir colors. Build your own at: https://daisyui.com/theme-generator/ */
-/* Tema metro (oscuro): ver design/metro_theme_demo.html para la
-   referencia visual completa (callouts, badges, fondo animado). */
-@plugin "daisyui/packages/bundle/daisyui-theme" {
-  name: "dark";
-  default: false;
-  prefersdark: true;
-  color-scheme: "dark";
-  --color-base-100: #0a0c10;
-  --color-base-200: #0f1219;
-  --color-base-300: #161b26;
-  --color-base-content: #e8eaf0;
-  --color-primary: #00e5a0;
-  --color-primary-content: #04120c;
-  --color-secondary: #457bff;
-  --color-secondary-content: #f5f7ff;
-  --color-accent: #9b6dff;
-  --color-accent-content: #0a0612;
-  --color-neutral: #7a8099;
-  --color-neutral-content: #0a0c10;
-  --color-info: #457bff;
-  --color-info-content: #f5f7ff;
-  --color-success: #00e5a0;
-  --color-success-content: #04120c;
-  --color-warning: #f5a623;
-  --color-warning-content: #1a1410;
-  --color-error: #ff4560;
-  --color-error-content: #fff5f6;
-  --radius-selector: 0.25rem;
-  --radius-field: 0.25rem;
-  --radius-box: 0.5rem;
-  --size-selector: 0.21875rem;
-  --size-field: 0.21875rem;
-  --border: 1.5px;
-  --depth: 1;
-  --noise: 0;
-}
-
-/* Tema metro (claro), el default. */
+/* daisyUI sigue debajo de las vistas que todavía no se rehacen (sesión 5),
+   pero sus colores salen de la piel activa (pieles.css): así toda la app
+   ya usa la mesa de planeación. Esquinas rectas, sin sombras (papel). */
 @plugin "daisyui/packages/bundle/daisyui-theme" {
   name: "light";
   default: true;
   prefersdark: false;
   color-scheme: "light";
-  --color-base-100: #f5f0e8;
-  --color-base-200: #ede8dc;
-  --color-base-300: #e4ddd0;
-  --color-base-content: #1a1410;
-  --color-primary: #6b1a2a;
-  --color-primary-content: #faf7f2;
-  --color-secondary: #1a3a6b;
-  --color-secondary-content: #faf7f2;
-  --color-accent: #c4691a;
-  --color-accent-content: #1a1410;
-  --color-neutral: #6b5e50;
-  --color-neutral-content: #faf7f2;
-  --color-info: #1a3a6b;
-  --color-info-content: #faf7f2;
-  --color-success: #2a6b3a;
-  --color-success-content: #faf7f2;
-  --color-warning: #c4691a;
-  --color-warning-content: #1a1410;
-  --color-error: #8b1a1a;
-  --color-error-content: #faf7f2;
-  --radius-selector: 0.25rem;
-  --radius-field: 0.25rem;
-  --radius-box: 0.5rem;
+  --color-base-100: var(--bg);
+  --color-base-200: var(--bg2);
+  --color-base-300: color-mix(in srgb, var(--bg2) 70%, var(--line));
+  --color-base-content: var(--text);
+  --color-primary: var(--text);
+  --color-primary-content: var(--bg);
+  --color-secondary: var(--film);
+  --color-secondary-content: var(--bg);
+  --color-accent: var(--accent);
+  --color-accent-content: var(--bg);
+  --color-neutral: var(--text2);
+  --color-neutral-content: var(--bg);
+  --color-info: var(--film);
+  --color-info-content: var(--bg);
+  --color-success: #255F34;
+  --color-success-content: var(--bg);
+  --color-warning: #864A0E;
+  --color-warning-content: var(--bg);
+  --color-error: #8E1B2E;
+  --color-error-content: var(--bg);
+  --radius-selector: 0;
+  --radius-field: 0;
+  --radius-box: 0;
   --size-selector: 0.21875rem;
   --size-field: 0.21875rem;
   --border: 1.5px;
-  --depth: 1;
+  --depth: 0;
+  --noise: 0;
+}
+
+@plugin "daisyui/packages/bundle/daisyui-theme" {
+  name: "dark";
+  default: false;
+  prefersdark: true;
+  color-scheme: "dark";
+  --color-base-100: var(--bg);
+  --color-base-200: var(--bg2);
+  --color-base-300: color-mix(in srgb, var(--bg2) 70%, var(--line));
+  --color-base-content: var(--text);
+  --color-primary: var(--text);
+  --color-primary-content: var(--bg);
+  --color-secondary: var(--film);
+  --color-secondary-content: var(--bg);
+  --color-accent: var(--accent);
+  --color-accent-content: var(--bg);
+  --color-neutral: var(--text2);
+  --color-neutral-content: var(--bg);
+  --color-info: var(--film);
+  --color-info-content: var(--bg);
+  --color-success: #5FC27A;
+  --color-success-content: var(--bg);
+  --color-warning: #E8A048;
+  --color-warning-content: var(--bg);
+  --color-error: #F07A8A;
+  --color-error-content: var(--bg);
+  --radius-selector: 0;
+  --radius-field: 0;
+  --radius-box: 0;
+  --size-selector: 0.21875rem;
+  --size-field: 0.21875rem;
+  --border: 1.5px;
+  --depth: 0;
   --noise: 0;
 }
 
 @theme {
-  --font-sans: "DM Sans", system-ui, sans-serif;
-  --font-mono: "Space Mono", "Courier New", monospace;
+  --font-sans: "Barlow", system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, monospace;
 }
 
 body {

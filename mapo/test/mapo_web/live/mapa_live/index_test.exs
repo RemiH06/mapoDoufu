@@ -314,4 +314,84 @@ defmodule MapoWeb.MapaLive.IndexTest do
     # el proceso; si sigue vivo y renderiza, no se llamo.
     assert render(lv) =~ "Mapa técnico"
   end
+
+  describe "mesa de planeación" do
+    defp coropleta_con_valores(valores) do
+      %{
+        "type" => "FeatureCollection",
+        "features" =>
+          Enum.map(valores, fn v ->
+            %{"properties" => %{"valor_choropleth" => v}, "geometry" => %{}}
+          end)
+      }
+    end
+
+    test "tocar una pestaña abre su cinta y tocarla otra vez la cierra", %{conn: conn} do
+      stub_estados_y_municipio(fn _conn -> raise "no debería llamarse" end)
+      {:ok, lv, html} = live(conn, ~p"/mapa")
+
+      assert html =~ ~s(id="cinta-coropleta" class="cinta pegado" hidden)
+
+      html = lv |> element(".pestana[phx-value-capa=coropleta]") |> render_click()
+      refute html =~ ~s(id="cinta-coropleta" class="cinta pegado" hidden)
+
+      html = lv |> element(".pestana[phx-value-capa=coropleta]") |> render_click()
+      assert html =~ ~s(id="cinta-coropleta" class="cinta pegado" hidden)
+    end
+
+    test "la piel sigue a la capa de arriba de la pila", %{conn: conn} do
+      lv =
+        montar_con_ubicacion(conn, fn conn ->
+          case conn.request_path do
+            "/censo/choropleth" -> Req.Test.json(conn, coropleta_con_valores([10, 20]))
+            "/coloreado/municipios" -> Req.Test.json(conn, coleccion_con_una_feature())
+          end
+        end)
+
+      lv |> element("[phx-click='mostrar_coloreado']") |> render_click()
+      refute_push_event(lv, "piel", %{piel: "urbanismo"})
+
+      lv
+      |> form("#coropleta_capa_form", coropleta_capa: %{"indicador" => "pobtot"})
+      |> render_submit()
+
+      # La coropleta va arriba del coloreado en la pila: manda demografía.
+      assert_push_event(lv, "piel", %{piel: "demografia"})
+
+      lv
+      |> element("button[phx-click=mover][phx-value-capa=coropleta][phx-value-hacia=abajo]")
+      |> render_click()
+
+      assert_push_event(lv, "orden_capas", %{
+        orden: ["isocrona", "voronoi", "coloreado", "coropleta"]
+      })
+
+      assert_push_event(lv, "piel", %{piel: "urbanismo"})
+    end
+
+    test "una piel fijada gana sobre la automática hasta que se suelta", %{conn: conn} do
+      stub_estados_y_municipio(fn _conn -> raise "no debería llamarse" end)
+      {:ok, lv, _html} = live(conn, ~p"/mapa")
+
+      lv |> form("#piel_form", %{"piel" => "seguridad"}) |> render_change()
+      assert_push_event(lv, "piel", %{piel: "seguridad"})
+
+      lv |> form("#piel_form", %{"piel" => ""}) |> render_change()
+      assert_push_event(lv, "piel", %{piel: "urbanismo"})
+    end
+
+    test "los quintiles cuentan aparte los AGEB sin dato, nunca como cero" do
+      escala =
+        MapoWeb.MapaLive.Index.escala_quintiles(coropleta_con_valores([nil, 1, 2, 3, 4, 5, nil]))
+
+      assert escala.nulos == 2
+      assert hd(escala.limites) == 1
+      assert List.last(escala.limites) == 5
+      assert length(escala.cortes) == 4
+    end
+
+    test "sin valores con dato no hay escala" do
+      assert MapoWeb.MapaLive.Index.escala_quintiles(coropleta_con_valores([nil, nil])) == nil
+    end
+  end
 end

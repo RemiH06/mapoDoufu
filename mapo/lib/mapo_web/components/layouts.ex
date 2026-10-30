@@ -34,21 +34,70 @@ defmodule MapoWeb.Layouts do
   attr :full_width?, :boolean,
     default: false,
     doc: """
-    Quita el límite de max-w-2xl y hace que el contenido llene el resto
-    de la pantalla verticalmente (flex-1), para pantallas que lo
-    necesitan (ej. mapas). El propio contenido (el `inner_block`) tiene
-    que traer su parte "fija" (encabezado, filtros) sin crecer y su
-    parte "de relleno" (el mapa) con `flex-1 min-h-0` para que esto
-    funcione de verdad.
+    Para las vistas de mapo con plano a pantalla completa (ej. /mapa): el
+    contenido ocupa toda la ventana y el membrete flota encima, pegado al
+    plano. El propio contenido trae su parte "de relleno" (el mapa) con
+    `flex-1 min-h-0`.
     """
+
+  attr :seccion, :string,
+    default: nil,
+    doc:
+      "la sección del membrete que va marcada: \"mapa\", \"perfil\", \"logistica\" o \"equipos\""
 
   slot :inner_block, required: true
 
+  slot :membrete,
+    doc: """
+    Segunda fila del membrete, propia de cada vista (ej. la ubicación en
+    /mapa). Si no viene, va el correo de la cuenta, anotado a mano.
+    """
+
   def app(assigns) do
     ~H"""
+    <header class={["cabecera", @full_width? && "cabecera-flotante"]}>
+      <div class="membrete pegado">
+        <.link navigate={~p"/"} class="marca">
+          <img src={~p"/images/mapo-logo.svg"} alt="" /> <span>MAPO</span>
+        </.link>
+        
+        <div class="membrete-datos">
+          <nav :if={@current_scope} class="secciones" aria-label="Secciones">
+            <.link
+              :for={{clave, texto, ruta} <- secciones()}
+              navigate={ruta}
+              aria-current={@seccion == clave && "page"}
+            >
+              {texto}
+            </.link>
+          </nav>
+          
+          <div class="membrete-fila">
+            <%= if @membrete != [] do %>
+              {render_slot(@membrete)}
+            <% else %>
+              <span :if={@current_scope} class="mano">{@current_scope.user.email}</span>
+            <% end %>
+          </div>
+        </div>
+      </div>
+      
+      <div class="esquina">
+        <button type="button" class="modo" data-modo phx-click={JS.dispatch("mapo:modo")}>
+          Modo
+        </button>
+        
+        <%= if @current_scope do %>
+          <.link navigate={~p"/users/settings"} class="esquina-enlace">Cuenta</.link>
+          <.link href={~p"/users/log-out"} method="delete" class="esquina-enlace">Salir</.link>
+        <% else %>
+          <.link navigate={~p"/users/log-in"} class="esquina-enlace">Entrar</.link>
+        <% end %>
+      </div>
+    </header>
+
     <main class={[
-      "px-4 sm:px-6 lg:px-8",
-      if(@full_width?, do: "flex-1 flex flex-col min-h-0 py-3", else: "py-20")
+      if(@full_width?, do: "fixed inset-0 flex flex-col", else: "px-4 sm:px-6 lg:px-8 pt-4 pb-16")
     ]}>
       <div class={[
         if(@full_width?, do: "flex-1 flex flex-col min-h-0", else: "mx-auto max-w-2xl"),
@@ -57,9 +106,17 @@ defmodule MapoWeb.Layouts do
         {render_slot(@inner_block)}
       </div>
     </main>
-
-    <.flash_group flash={@flash} />
+     <.flash_group flash={@flash} />
     """
+  end
+
+  defp secciones do
+    [
+      {"mapa", "Mapa", ~p"/mapa"},
+      {"perfil", "Perfil", ~p"/perfil"},
+      {"logistica", "Logística", ~p"/logistica"},
+      {"equipos", "Equipos", ~p"/teams"}
+    ]
   end
 
   @doc """
@@ -75,9 +132,7 @@ defmodule MapoWeb.Layouts do
   def flash_group(assigns) do
     ~H"""
     <div id={@id} aria-live="polite">
-      <.flash kind={:info} flash={@flash} />
-      <.flash kind={:error} flash={@flash} />
-
+      <.flash kind={:info} flash={@flash} /> <.flash kind={:error} flash={@flash} />
       <.flash
         id="client-error"
         kind={:error}
@@ -92,7 +147,7 @@ defmodule MapoWeb.Layouts do
         {gettext("Attempting to reconnect")}
         <.icon name="hero-arrow-path" class="ml-1 size-3 motion-safe:animate-spin" />
       </.flash>
-
+      
       <.flash
         id="server-error"
         kind={:error}
@@ -107,43 +162,6 @@ defmodule MapoWeb.Layouts do
         {gettext("Attempting to reconnect")}
         <.icon name="hero-arrow-path" class="ml-1 size-3 motion-safe:animate-spin" />
       </.flash>
-    </div>
-    """
-  end
-
-  @doc """
-  Provides dark vs light theme toggle based on themes defined in app.css.
-
-  See <head> in root.html.heex which applies the theme before page load.
-  """
-  def theme_toggle(assigns) do
-    ~H"""
-    <div class="card relative flex flex-row items-center border-2 border-base-300 bg-base-300 rounded-full">
-      <div class="absolute w-1/3 h-full rounded-full border-1 border-base-200 bg-base-100 brightness-200 left-0 [[data-theme=light]_&]:left-1/3 [[data-theme=dark]_&]:left-2/3 [[data-theme-source=system]_&]:!left-0 transition-[left]" />
-
-      <button
-        class="flex p-2 cursor-pointer w-1/3"
-        phx-click={JS.dispatch("phx:set-theme")}
-        data-phx-theme="system"
-      >
-        <.icon name="hero-computer-desktop-micro" class="size-4 opacity-75 hover:opacity-100" />
-      </button>
-
-      <button
-        class="flex p-2 cursor-pointer w-1/3"
-        phx-click={JS.dispatch("phx:set-theme")}
-        data-phx-theme="light"
-      >
-        <.icon name="hero-sun-micro" class="size-4 opacity-75 hover:opacity-100" />
-      </button>
-
-      <button
-        class="flex p-2 cursor-pointer w-1/3"
-        phx-click={JS.dispatch("phx:set-theme")}
-        data-phx-theme="dark"
-      >
-        <.icon name="hero-moon-micro" class="size-4 opacity-75 hover:opacity-100" />
-      </button>
     </div>
     """
   end

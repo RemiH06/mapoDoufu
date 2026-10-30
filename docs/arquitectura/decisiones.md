@@ -51,7 +51,7 @@ vuelta anterior de este documento). Ya está en uso real: copiado a
 (`Layouts.app`) y como favicon (`<link rel="icon"
 type="image/svg+xml">` en `root.html.heex`).
 
-## Concepto visual: mesa de planeación (propuesta, sesión 3)
+## Concepto visual: mesa de planeación
 
 Mapo heredó el tema metro de Gaiarda, pensado para tableros de
 sistemas en operación. Mapo es otra cosa: una mesa donde se decide.
@@ -125,6 +125,26 @@ la pantalla era un dashboard genérico.
   fondo). Datos reales de Guadalajara: 442 AGEB del censo 2020, Voronoi
   de 1,858 negocios de DENUE con "papel" en el giro, una isócrona de 10
   minutos por OSRM y el perfil de zona de `mapo_core`.
+
+**En Phoenix** (sesión 4, en curso):
+
+- Los colores de las pieles van en `mapo/assets/css/pieles.css`, un CSS
+  estático generado desde `design/mesa_planeacion/pieles.js` (la fuente
+  de verdad): así no parpadean al cargar. Si cambia una piel, se cambia
+  en `pieles.js` y se regenera el CSS.
+- `mesa.css` (papel, cinta, motivos, membrete, botones) y `mapa.css` van
+  en `@layer components` e importados después de Tailwind, para que las
+  utilidades sigan ganando y la capa no quede debajo de los estilos base.
+- Los temas de daisyUI apuntan a los tokens de la piel: las vistas que
+  todavía no se rehacen ya usan la paleta nueva.
+- La raíz lleva `data-piel="urbanismo"`. En `/mapa` el servidor calcula
+  la piel (la capa visible de más arriba, o la fijada en el rótulo) y se
+  la manda al hook, que la pone en la raíz y la regresa a urbanismo al
+  salir de la vista. Los cortes por quintil de la coropleta también los
+  calcula el servidor, para que el mapa y la escala de la cinta usen los
+  mismos números.
+- El fondo animado de metro se quitó de la raíz: pintaba su propio fondo
+  encima de la paleta. Qué fondo lleva Mapo se decide en la sesión 5.
 
 Conceptos considerados y guardados para otras piezas (fondo de la home,
 animaciones, un tema futuro):

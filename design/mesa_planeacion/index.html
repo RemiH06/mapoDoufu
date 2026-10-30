@@ -195,7 +195,7 @@ const candidata = DATOS.voronoi.features
   .filter(x => x.d < 0.05).sort((x, y) => y.a - x.a)[0].f;
 
 const capas = [
-  {id: "marcas", nombre: "Tus marcas", fuente: "a mano, solo tu equipo", color: "--accent", visible: true, lapiz: true},
+  {id: "marcas", nombre: "Tus marcas", fuente: "a mano, del equipo", color: "--accent", visible: true, lapiz: true},
   {id: "isocrona", nombre: "Alcance en auto", fuente: DATOS.isocrona.metodo === "osrm_real" ? "OSRM · carretera real" : "OSRM · círculo aproximado", enfoque: "movilidad", color: "--f-movilidad", visible: false},
   {id: "voronoi", nombre: "Área por papelería", fuente: `DENUE · ${fmt(DATOS.voronoi.features.length)} negocios`, enfoque: "comercio", color: "--f-comercio", visible: true},
   {id: "coropleta", nombre: "Población", fuente: `INEGI · Censo 2020 · ${DATOS.coropleta.features.length} AGEB`, enfoque: "demografia", color: "--f-demografia", visible: true},
@@ -269,9 +269,9 @@ function escala() {
 }
 const control = {
   coropleta: () => `<label class="campo">Indicador<select><option>Población total</option><option>Población de 15 a 64</option><option>Viviendas habitadas</option></select></label>${escala()}`,
-  voronoi: () => `<label class="campo">Giro contiene<input value="papel"></label><p class="texto">Cada celda es la zona más cerca de esa papelería que de cualquier otra. Celda grande, poca oferta.</p>`,
-  isocrona: () => `<label class="campo">Minutos<input type="number" value="10" min="1" max="60" class="num"></label><p class="texto">Hasta dónde llegas en auto desde el punto. En Mapo se coloca con un clic en el plano.</p>`,
-  marcas: () => `<p class="texto">Lo que tu equipo decide se anota a mano encima de los datos: <span class="mano">círculos, notas, flechas</span>. Nunca se mezcla con lo impreso.</p>`,
+  voronoi: () => `<label class="campo">Giro contiene<input value="papel"></label><p class="texto">Cada celda agrupa lo que queda más cerca de esa papelería que de otra. Celda grande, poca oferta.</p>`,
+  isocrona: () => `<label class="campo">Minutos<input type="number" value="10" min="1" max="60" class="num"></label><p class="texto">Hasta dónde llegas en auto desde un punto. El punto se pone con un clic.</p>`,
+  marcas: () => `<p class="texto">Lo que decide tu equipo va a mano sobre los datos: <span class="mano">círculos, notas, flechas</span>. Lo impreso no se toca.</p>`,
 };
 
 function pintar() {

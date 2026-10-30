@@ -7,7 +7,7 @@ defmodule MapoWeb.TeamLive.New do
   @impl true
   def render(assigns) do
     ~H"""
-    <Layouts.app flash={@flash} current_scope={@current_scope}>
+    <Layouts.app flash={@flash} current_scope={@current_scope} seccion="equipos">
       <div class="mx-auto max-w-sm">
         <div class="text-center">
           <.header>Crear equipo</.header>

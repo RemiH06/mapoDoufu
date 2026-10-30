@@ -1,0 +1,368 @@
+/* /mapa: el plano ocupa la mesa entera; las capas son acetatos que se
+   deslizan encima desde la charola del borde inferior. La cinta de la capa
+   elegida y el rótulo de la lámina son papeles pegados encima. */
+
+@layer components {
+  /* Plano y acetatos */
+  #mapa-tecnico,
+  #mapa-tecnico.leaflet-container {
+    background: var(--bg);
+    font-family: var(--sans);
+  }
+  #mapa-tecnico .leaflet-tile-pane {
+    filter: url(#plano-tinta);
+  }
+  .acetato {
+    mix-blend-mode: var(--blend);
+  }
+  .acetato.entra {
+    animation: deslizar 0.42s cubic-bezier(0.2, 0.7, 0.2, 1);
+  }
+  @keyframes deslizar {
+    from {
+      clip-path: inset(100% 0 0 0);
+    }
+    to {
+      clip-path: inset(0 0 0 0);
+    }
+  }
+  #mapa-tecnico .leaflet-bar {
+    border: 1.5px solid var(--text);
+    border-radius: 0;
+    box-shadow: none;
+  }
+  #mapa-tecnico .leaflet-bar a {
+    background: var(--bg);
+    color: var(--text);
+    border-color: var(--line);
+    border-radius: 0;
+  }
+  #mapa-tecnico .leaflet-control-attribution {
+    background: color-mix(in srgb, var(--bg) 85%, transparent);
+    color: var(--text2);
+    font-size: 11px;
+  }
+  #mapa-tecnico .leaflet-control-attribution a {
+    color: var(--text2);
+  }
+  #mapa-tecnico .leaflet-control-scale-line {
+    background: var(--bg);
+    color: var(--text);
+    border: 1.5px solid var(--text);
+    border-top: 0;
+    font-family: var(--mono);
+    font-size: 11px;
+  }
+  #mapa-tecnico .leaflet-popup-content-wrapper,
+  #mapa-tecnico .leaflet-popup-tip {
+    background: var(--bg);
+    color: var(--text);
+    border-radius: 0;
+    box-shadow: none;
+    border: 1.5px solid var(--text);
+  }
+  #mapa-tecnico .leaflet-top.leaflet-right {
+    top: 64px;
+    right: 10px;
+  }
+  #mapa-tecnico .leaflet-bottom.leaflet-left {
+    bottom: 56px;
+  }
+
+  /* Ubicación en el membrete, anotada a mano */
+  .ubicacion {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0 4px;
+    min-width: 0;
+    color: var(--text2);
+  }
+  .ubicacion .fieldset,
+  .cinta .fieldset {
+    margin: 0;
+    padding: 0;
+  }
+  .membrete-select {
+    background: transparent;
+    border: 0;
+    font-family: var(--mano);
+    font-size: 17px;
+    color: var(--text);
+    padding: 2px 4px;
+    min-height: 30px;
+    max-width: 13rem;
+    cursor: pointer;
+  }
+
+  .aviso-plano {
+    position: fixed;
+    z-index: 1000;
+    top: 110px;
+    left: 50%;
+    translate: -50% 0;
+    max-width: min(520px, calc(100% - 40px));
+    padding: 8px 14px;
+    font-size: 14px;
+  }
+
+  /* Rótulo de la lámina: lo impreso a la izquierda, lo anotado a la derecha */
+  .rotulo {
+    position: fixed;
+    z-index: 1000;
+    right: 20px;
+    bottom: 84px;
+    display: grid;
+    grid-template-columns: auto 1fr;
+    min-width: 260px;
+  }
+  .rotulo-titulo {
+    grid-column: 1 / -1;
+    padding: 6px 12px 4px;
+    border-bottom: 1.5px solid var(--text);
+    font-family: var(--cond);
+    font-weight: 700;
+    font-size: 20px;
+    line-height: 1.1;
+  }
+  .rotulo dt {
+    padding: 4px 12px;
+    font-family: var(--cond);
+    font-size: 14px;
+    color: var(--text2);
+    border-right: 1px solid var(--line);
+    border-top: 1px solid var(--line);
+  }
+  .rotulo dd {
+    padding: 2px 12px;
+    font-family: var(--mano);
+    font-size: 16px;
+    border-top: 1px solid var(--line);
+  }
+  .rotulo dt:first-of-type,
+  .rotulo dd:first-of-type {
+    border-top: 0;
+  }
+  .rotulo select {
+    background: transparent;
+    border: 0;
+    font: inherit;
+    color: var(--text);
+    min-height: 28px;
+    max-width: 100%;
+    cursor: pointer;
+  }
+
+  /* Charola: los acetatos asoman por el borde de la mesa */
+  .charola {
+    position: fixed;
+    z-index: 1000;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    display: flex;
+    gap: 6px;
+    padding: 0 20px;
+    overflow-x: auto;
+    pointer-events: none;
+  }
+  .pestana {
+    pointer-events: auto;
+    flex: none;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 48px;
+    padding: 8px 14px 10px;
+    margin-top: 14px;
+    background: var(--bg2);
+    color: var(--text2);
+    border: 1.5px solid var(--text);
+    border-bottom: 0;
+    cursor: pointer;
+    transform: translateY(8px);
+    transition: transform 0.18s ease-out, background-color 0.3s;
+  }
+  .pestana:hover,
+  .pestana[aria-expanded="true"] {
+    transform: translateY(2px);
+  }
+  .pestana[aria-pressed="true"] {
+    background: var(--bg);
+    color: var(--text);
+    transform: none;
+    margin-top: 6px;
+  }
+  .pelicula {
+    width: 26px;
+    height: 18px;
+    border: 1.5px solid var(--text);
+    background: var(--capa);
+    opacity: 0.3;
+  }
+  .pestana[aria-pressed="true"] .pelicula {
+    opacity: 1;
+  }
+  .pestana b {
+    font-family: var(--cond);
+    font-weight: 600;
+    font-size: 16px;
+    white-space: nowrap;
+  }
+  .pestana em {
+    font-style: normal;
+    font-size: 12px;
+    color: var(--text2);
+  }
+
+  /* Cinta de la capa elegida: controles cortos en una tira */
+  .cinta {
+    position: fixed;
+    z-index: 1000;
+    left: 20px;
+    bottom: 84px;
+    display: flex;
+    align-items: stretch;
+    max-width: min(900px, calc(100% - 320px));
+  }
+  .cinta[hidden] {
+    display: none;
+  }
+  .cinta > * {
+    padding: 8px 14px;
+    border-left: 1px solid var(--line);
+  }
+  .cinta > :first-child {
+    border-left: 0;
+  }
+  .cinta-titulo h2 {
+    font-family: var(--cond);
+    font-weight: 700;
+    font-size: 19px;
+    line-height: 1.15;
+    white-space: nowrap;
+  }
+  .cinta-titulo .fuente {
+    white-space: nowrap;
+  }
+  .cinta-campos {
+    display: flex;
+    align-items: flex-end;
+    gap: 10px;
+  }
+  .cinta .label {
+    font-family: var(--cond);
+    font-size: 14px;
+    color: var(--text2);
+    margin-bottom: 2px;
+  }
+  .cinta-control {
+    background: var(--bg);
+    border: 1.5px solid var(--line);
+    padding: 3px 6px;
+    min-height: 34px;
+    color: var(--text);
+    font-size: 14px;
+    max-width: 15rem;
+  }
+  .cinta-corto {
+    width: 7ch;
+  }
+  .cinta-botones {
+    display: flex;
+    gap: 6px;
+  }
+  .cinta-botones .boton {
+    min-height: 34px;
+    padding: 4px 12px;
+    font-size: 15px;
+  }
+  .cinta-texto {
+    max-width: 34ch;
+    font-size: 13px;
+    color: var(--text2);
+    align-self: center;
+  }
+  .cinta-orden {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+  }
+  .cinta-orden button {
+    white-space: nowrap;
+    background: var(--bg);
+    border: 1.5px solid var(--line);
+    padding: 3px 10px;
+    min-height: 32px;
+    cursor: pointer;
+    font-family: var(--cond);
+    font-size: 15px;
+  }
+  .cinta-orden button:disabled {
+    opacity: 0.45;
+    cursor: default;
+  }
+  .escala {
+    display: grid;
+    gap: 3px;
+    align-content: center;
+  }
+  .escala ol {
+    display: flex;
+    list-style: none;
+  }
+  .escala li {
+    width: 46px;
+    height: 14px;
+    border: 1px solid var(--line);
+    margin-left: -1px;
+    background: var(--f-demografia);
+  }
+  .escala li.nula {
+    opacity: 1 !important;
+    background: repeating-linear-gradient(45deg, transparent 0 3px, var(--line) 3px 4px);
+  }
+  .escala .marcas {
+    display: flex;
+    font-size: 11px;
+    color: var(--text2);
+  }
+  .escala .marcas span {
+    width: 45px;
+    white-space: nowrap;
+  }
+  .escala .marcas span:last-child {
+    width: auto;
+    padding-left: 4px;
+  }
+
+  @media (max-width: 900px) {
+    /* La cinta sigue siendo una tira: se desliza de lado */
+    .cinta {
+      max-width: none;
+      right: 20px;
+      bottom: 66px;
+      overflow-x: auto;
+    }
+    .cinta > * {
+      flex: none;
+    }
+    .cinta-texto {
+      min-width: 26ch;
+    }
+    .rotulo {
+      display: none;
+    }
+    .pestana em {
+      display: none;
+    }
+  }
+  @media (max-width: 760px) {
+    #mapa-tecnico .leaflet-top.leaflet-right {
+      top: 196px;
+    }
+    .membrete-select {
+      max-width: 42vw;
+    }
+  }
+}

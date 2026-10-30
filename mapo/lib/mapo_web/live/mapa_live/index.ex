@@ -3,138 +3,288 @@ defmodule MapoWeb.MapaLive.Index do
 
   alias Mapo.MapoCore
 
+  # Cada capa es un acetato sobre el plano (docs/arquitectura/decisiones.md,
+  # "Concepto visual"). El orden de la lista es el orden de la pila: la
+  # primera queda encima. La piel de la mesa la pone la capa visible de más
+  # arriba, salvo que la persona fije una.
+  @capas %{
+    "coropleta" => %{
+      nombre: "Censo por AGEB",
+      fuente: "INEGI · Censo 2020",
+      enfoque: "demografia"
+    },
+    "voronoi" => %{nombre: "Área por negocio", fuente: "INEGI · DENUE", enfoque: "comercio"},
+    "isocrona" => %{nombre: "Alcance en auto", fuente: "OSRM", enfoque: "movilidad"},
+    "coloreado" => %{
+      nombre: "Municipios",
+      fuente: "INEGI · Marco Geoestadístico",
+      enfoque: "urbanismo"
+    }
+  }
+
+  @pieles [
+    {"Urbanismo", "urbanismo"},
+    {"Demografía", "demografia"},
+    {"Comercio", "comercio"},
+    {"Consumo", "consumo"},
+    {"Seguridad", "seguridad"},
+    {"Laboral", "laboral"},
+    {"Movilidad", "movilidad"}
+  ]
+
   @impl true
   def render(assigns) do
+    assigns = assign(assigns, capas: @capas, pieles: @pieles)
+
     ~H"""
-    <Layouts.app flash={@flash} current_scope={@current_scope} full_width?={true}>
-      <div class="shrink-0 flex flex-wrap items-end gap-3">
-        <h1 class="font-mono text-sm font-bold pb-2 whitespace-nowrap">Mapa técnico</h1>
-
-        <.form for={@form} id="ubicacion_form" phx-change="cambiar_ubicacion" class="contents">
-          <div class="w-44">
-            <.input
-              field={@form[:cve_ent]}
-              type="select"
-              label="Estado"
-              options={@estados}
-              prompt="Selecciona un estado"
-            />
-          </div>
-          <div class="w-48">
-            <.input
-              field={@form[:cve_mun]}
-              type="select"
-              label="Municipio"
-              options={@municipios}
-              prompt="Todos los municipios del estado"
-            />
-          </div>
+    <Layouts.app flash={@flash} current_scope={@current_scope} seccion="mapa" full_width?={true}>
+      <:membrete>
+        <.form for={@form} id="ubicacion_form" phx-change="cambiar_ubicacion" class="ubicacion">
+          <.input
+            field={@form[:cve_ent]}
+            type="select"
+            options={@estados}
+            prompt="Elige un estado"
+            class="membrete-select"
+            aria-label="Estado"
+          /> <span aria-hidden="true">/</span>
+          <.input
+            field={@form[:cve_mun]}
+            type="select"
+            options={@municipios}
+            prompt="Todo el estado"
+            class="membrete-select"
+            aria-label="Municipio"
+          />
         </.form>
-      </div>
-
-      <p :if={@estados == []} class="shrink-0 text-sm text-warning">
-        No se pudo cargar la lista de estados: mapo_core no está disponible ahorita mismo, o
-        todavía no se han descargado estados.
+      </:membrete>
+      
+      <h1 class="sr-only">Mapa técnico</h1>
+      
+      <p :if={@estados == []} class="aviso-plano pegado sin-cinta">
+        No se pudo cargar la lista de estados: mapo_core no responde o todavía no hay estados
+        descargados.
       </p>
-
-      <div class="flex-1 min-h-0 lg:flex lg:gap-4 lg:items-stretch overflow-y-auto lg:overflow-visible">
-        <aside class="lg:w-72 lg:shrink-0 lg:overflow-y-auto space-y-3">
-          <div class="card bg-base-200 p-3">
-            <h3 class="font-mono text-sm font-bold mb-2">Coropleta del censo</h3>
-            <.form for={@coropleta_form} id="coropleta_capa_form" phx-submit="mostrar_coropleta">
-              <.input
-                field={@coropleta_form[:indicador]}
-                type="select"
-                label="Indicador"
-                options={@indicadores}
-              />
-              <div class="flex gap-2 mt-2">
-                <.button phx-disable-with="Mostrando..." class="btn btn-primary btn-sm">Mostrar</.button>
-                <.button
-                  :if={@coropleta_activa?}
-                  type="button"
-                  phx-click="quitar_coropleta"
-                  class="btn btn-soft btn-sm"
-                >
-                  Quitar
-                </.button>
-              </div>
-            </.form>
-          </div>
-
-          <div class="card bg-base-200 p-3">
-            <h3 class="font-mono text-sm font-bold mb-2">Voronoi de negocios (DENUE)</h3>
-            <.form for={@voronoi_form} id="voronoi_capa_form" phx-submit="mostrar_voronoi">
-              <.input
-                field={@voronoi_form[:clase_actividad]}
-                type="text"
-                label="Giro (opcional)"
-                placeholder="ej. papelería"
-              />
-              <p class="text-xs text-base-content/70 mt-1">Necesita un municipio elegido arriba.</p>
-              <div class="flex gap-2 mt-2">
-                <.button phx-disable-with="Mostrando..." class="btn btn-primary btn-sm">Mostrar</.button>
-                <.button
-                  :if={@voronoi_activa?}
-                  type="button"
-                  phx-click="quitar_voronoi"
-                  class="btn btn-soft btn-sm"
-                >
-                  Quitar
-                </.button>
-              </div>
-            </.form>
-          </div>
-
-          <div class="card bg-base-200 p-3">
-            <h3 class="font-mono text-sm font-bold mb-2">Coloreado de municipios</h3>
-            <p class="text-xs text-base-content/70">
-              Colorea todos los municipios del estado elegido.
-            </p>
-            <div class="flex gap-2 mt-2">
-              <.button phx-click="mostrar_coloreado" class="btn btn-primary btn-sm">Mostrar</.button>
-              <.button
-                :if={@coloreado_activa?}
-                type="button"
-                phx-click="quitar_coloreado"
-                class="btn btn-soft btn-sm"
-              >
-                Quitar
-              </.button>
-            </div>
-          </div>
-
-          <div class="card bg-base-200 p-3">
-            <h3 class="font-mono text-sm font-bold mb-2">Isócrona</h3>
-            <.form for={@isocrona_form} id="isocrona_capa_form" phx-submit="activar_isocrona">
-              <.input field={@isocrona_form[:minutos]} type="number" label="Minutos" min="1" />
-              <p :if={@isocrona_activa?} class="text-xs text-base-content/70 mt-1">
-                Haz clic en el mapa para elegir el punto de origen.
-              </p>
-              <div class="flex gap-2 mt-2">
-                <.button phx-disable-with="Activando..." class="btn btn-primary btn-sm">Activar</.button>
-                <.button
-                  :if={@isocrona_activa?}
-                  type="button"
-                  phx-click="quitar_isocrona"
-                  class="btn btn-soft btn-sm"
-                >
-                  Quitar
-                </.button>
-              </div>
-            </.form>
-          </div>
-        </aside>
-
-        <div
-          id="mapa-tecnico"
-          phx-hook="MapaTecnico"
-          phx-update="ignore"
-          class="h-[60vh] lg:h-auto lg:flex-1 min-h-0 w-full mt-4 lg:mt-0 rounded-box overflow-hidden"
-        >
-        </div>
+      
+      <div id="mapa-tecnico" phx-hook="MapaTecnico" phx-update="ignore" class="flex-1 min-h-0 w-full">
       </div>
+      
+      <section
+        :for={id <- @orden}
+        id={"cinta-#{id}"}
+        class="cinta pegado"
+        hidden={@elegida != id}
+        aria-label={@capas[id].nombre}
+      >
+        <div class="cinta-titulo">
+          <h2>{@capas[id].nombre}</h2>
+          
+          <p class="fuente">{@capas[id].fuente}</p>
+        </div>
+        
+        <.cinta_coropleta
+          :if={id == "coropleta"}
+          form={@coropleta_form}
+          indicadores={@indicadores}
+          activa?={@coropleta_activa?}
+          escala={@coropleta_escala}
+        /> <.cinta_voronoi :if={id == "voronoi"} form={@voronoi_form} activa?={@voronoi_activa?} />
+        <.cinta_coloreado :if={id == "coloreado"} activa?={@coloreado_activa?} />
+        <.cinta_isocrona :if={id == "isocrona"} form={@isocrona_form} activa?={@isocrona_activa?} />
+        <div :if={activa?(assigns, id)} class="cinta-orden">
+          <button
+            type="button"
+            phx-click="mover"
+            phx-value-capa={id}
+            phx-value-hacia="arriba"
+            disabled={hd(@orden) == id}
+          >
+            Más arriba
+          </button>
+          
+          <button
+            type="button"
+            phx-click="mover"
+            phx-value-capa={id}
+            phx-value-hacia="abajo"
+            disabled={List.last(@orden) == id}
+          >
+            Más abajo
+          </button>
+        </div>
+      </section>
+      
+      <dl class="rotulo pegado">
+        <div class="rotulo-titulo">{lugar(assigns)}</div>
+        
+        <dt>Lámina</dt>
+        
+        <dd>{acetatos(assigns)}</dd>
+        
+        <dt>Fuentes</dt>
+        
+        <dd>{fuentes(assigns)}</dd>
+        
+        <dt>Piel</dt>
+        
+        <dd>
+          <.form for={%{}} as={:piel} id="piel_form" phx-change="fijar_piel">
+            <select name="piel" aria-label="Piel de la mesa">
+              <option value="" selected={is_nil(@piel_fijada)}>
+                Automática · {nombre_piel(piel_automatica(assigns))}
+              </option>
+              
+              <option :for={{nombre, clave} <- @pieles} value={clave} selected={@piel_fijada == clave}>
+                {nombre}
+              </option>
+            </select>
+          </.form>
+        </dd>
+      </dl>
+      
+      <nav class="charola" aria-label="Acetatos">
+        <button
+          :for={id <- @orden}
+          type="button"
+          class="pestana"
+          phx-click="elegir"
+          phx-value-capa={id}
+          aria-pressed={to_string(activa?(assigns, id))}
+          aria-expanded={to_string(@elegida == id)}
+          aria-controls={"cinta-#{id}"}
+          style={"--capa: var(--f-#{@capas[id].enfoque})"}
+        >
+          <span class="pelicula" aria-hidden="true"></span> <b>{@capas[id].nombre}</b>
+          <em>{if activa?(assigns, id), do: "encima", else: "en la charola"}</em>
+        </button>
+      </nav>
     </Layouts.app>
+    """
+  end
+
+  attr :form, :any, required: true
+  attr :indicadores, :list, required: true
+  attr :activa?, :boolean, required: true
+  attr :escala, :map, default: nil
+
+  defp cinta_coropleta(assigns) do
+    ~H"""
+    <.form for={@form} id="coropleta_capa_form" phx-submit="mostrar_coropleta" class="cinta-campos">
+      <.input
+        field={@form[:indicador]}
+        type="select"
+        label="Indicador"
+        options={@indicadores}
+        class="cinta-control"
+      />
+      <div class="cinta-botones">
+        <.button phx-disable-with="Poniendo..." class="boton primario">
+          {if @activa?, do: "Actualizar", else: "Poner"}
+        </.button>
+        
+        <.button :if={@activa?} type="button" phx-click="quitar_coropleta" class="boton">
+          Quitar
+        </.button>
+      </div>
+    </.form>
+
+    <div :if={@escala} class="escala" aria-label="Clases por quintil">
+      <ol>
+        <li :for={o <- [0.12, 0.26, 0.42, 0.6, 0.8]} style={"opacity: #{o}"}></li>
+        
+        <li class="nula" title="Sin dato"></li>
+      </ol>
+      
+      <div class="marcas num">
+        <span :for={v <- Enum.take(@escala.limites, 5)}>{cifra(v)}</span>
+        <span>sin dato: {@escala.nulos}</span>
+      </div>
+    </div>
+    """
+  end
+
+  attr :form, :any, required: true
+  attr :activa?, :boolean, required: true
+
+  defp cinta_voronoi(assigns) do
+    ~H"""
+    <.form for={@form} id="voronoi_capa_form" phx-submit="mostrar_voronoi" class="cinta-campos">
+      <.input
+        field={@form[:clase_actividad]}
+        type="text"
+        label="Giro contiene"
+        placeholder="papelería"
+        class="cinta-control"
+      />
+      <div class="cinta-botones">
+        <.button phx-disable-with="Poniendo..." class="boton primario">
+          {if @activa?, do: "Actualizar", else: "Poner"}
+        </.button>
+        
+        <.button :if={@activa?} type="button" phx-click="quitar_voronoi" class="boton">
+          Quitar
+        </.button>
+      </div>
+    </.form>
+
+    <p class="cinta-texto">
+      Cada celda es la zona más cerca de ese negocio que de otro. Celda grande, poca oferta.
+      Necesita un municipio.
+    </p>
+    """
+  end
+
+  attr :activa?, :boolean, required: true
+
+  defp cinta_coloreado(assigns) do
+    ~H"""
+    <div class="cinta-campos">
+      <div class="cinta-botones">
+        <.button phx-click="mostrar_coloreado" class="boton primario">
+          {if @activa?, do: "Actualizar", else: "Poner"}
+        </.button>
+        
+        <.button :if={@activa?} type="button" phx-click="quitar_coloreado" class="boton">
+          Quitar
+        </.button>
+      </div>
+    </div>
+
+    <p class="cinta-texto">
+      Los municipios del estado, sin dos vecinos del mismo tono.
+    </p>
+    """
+  end
+
+  attr :form, :any, required: true
+  attr :activa?, :boolean, required: true
+
+  defp cinta_isocrona(assigns) do
+    ~H"""
+    <.form for={@form} id="isocrona_capa_form" phx-submit="activar_isocrona" class="cinta-campos">
+      <.input
+        field={@form[:minutos]}
+        type="number"
+        label="Minutos"
+        min="1"
+        class="cinta-control cinta-corto"
+      />
+      <div class="cinta-botones">
+        <.button phx-disable-with="Activando..." class="boton primario">
+          {if @activa?, do: "Actualizar", else: "Activar"}
+        </.button>
+        
+        <.button :if={@activa?} type="button" phx-click="quitar_isocrona" class="boton">
+          Quitar
+        </.button>
+      </div>
+    </.form>
+
+    <p class="cinta-texto">
+      {if @activa?,
+        do: "Haz clic en el plano para elegir el punto de salida.",
+        else: "Hasta dónde llegas en auto desde un punto."}
+    </p>
     """
   end
 
@@ -158,7 +308,12 @@ defmodule MapoWeb.MapaLive.Index do
        coropleta_activa?: false,
        voronoi_activa?: false,
        coloreado_activa?: false,
-       isocrona_activa?: false
+       isocrona_activa?: false,
+       coropleta_escala: nil,
+       orden: ["isocrona", "voronoi", "coropleta", "coloreado"],
+       elegida: nil,
+       piel_fijada: nil,
+       piel_pintada: "urbanismo"
      )}
   end
 
@@ -174,6 +329,32 @@ defmodule MapoWeb.MapaLive.Index do
       end
 
     {:noreply, assign(socket, form: to_form(params, as: "mapa"))}
+  end
+
+  def handle_event("elegir", %{"capa" => capa}, socket) when is_map_key(@capas, capa) do
+    elegida = if socket.assigns.elegida == capa, do: nil, else: capa
+    {:noreply, assign(socket, elegida: elegida)}
+  end
+
+  def handle_event("mover", %{"capa" => capa, "hacia" => hacia}, socket)
+      when is_map_key(@capas, capa) and hacia in ["arriba", "abajo"] do
+    orden = socket.assigns.orden
+    i = Enum.find_index(orden, &(&1 == capa))
+    j = if hacia == "arriba", do: i - 1, else: i + 1
+
+    orden =
+      if j < 0 or j >= length(orden) do
+        orden
+      else
+        orden |> List.replace_at(i, Enum.at(orden, j)) |> List.replace_at(j, capa)
+      end
+
+    {:noreply, socket |> assign(orden: orden) |> actualizar_mesa()}
+  end
+
+  def handle_event("fijar_piel", %{"piel" => piel}, socket) do
+    fijada = if Enum.any?(@pieles, fn {_, clave} -> clave == piel end), do: piel, else: nil
+    {:noreply, socket |> assign(piel_fijada: fijada) |> actualizar_mesa()}
   end
 
   def handle_event(
@@ -198,14 +379,22 @@ defmodule MapoWeb.MapaLive.Index do
 
         {:ok, geojson} ->
           etiqueta = etiqueta_indicador(indicador)
+          escala = escala_quintiles(geojson)
 
           {:noreply,
            socket
            |> assign(
              coropleta_activa?: true,
+             coropleta_escala: escala,
              coropleta_form: to_form(%{"indicador" => indicador}, as: "coropleta_capa")
            )
-           |> push_event("capa_coropleta", %{activa: true, geojson: geojson, etiqueta: etiqueta})}
+           |> push_event("capa_coropleta", %{
+             activa: true,
+             geojson: geojson,
+             etiqueta: etiqueta,
+             cortes: escala && escala.cortes
+           })
+           |> actualizar_mesa()}
 
         {:error, _} ->
           {:noreply, put_flash(socket, :error, "mapo_core no está disponible ahorita mismo.")}
@@ -216,8 +405,9 @@ defmodule MapoWeb.MapaLive.Index do
   def handle_event("quitar_coropleta", _params, socket) do
     {:noreply,
      socket
-     |> assign(coropleta_activa?: false)
-     |> push_event("capa_coropleta", %{activa: false})}
+     |> assign(coropleta_activa?: false, coropleta_escala: nil)
+     |> push_event("capa_coropleta", %{activa: false})
+     |> actualizar_mesa()}
   end
 
   def handle_event(
@@ -239,7 +429,8 @@ defmodule MapoWeb.MapaLive.Index do
             {:noreply,
              socket
              |> assign(voronoi_activa?: true)
-             |> push_event("capa_voronoi", %{activa: true, geojson: geojson})}
+             |> push_event("capa_voronoi", %{activa: true, geojson: geojson})
+             |> actualizar_mesa()}
 
           {:error, {:status, 422, body}} ->
             mensaje = if is_map(body), do: body["detail"], else: nil
@@ -261,7 +452,8 @@ defmodule MapoWeb.MapaLive.Index do
     {:noreply,
      socket
      |> assign(voronoi_activa?: false)
-     |> push_event("capa_voronoi", %{activa: false})}
+     |> push_event("capa_voronoi", %{activa: false})
+     |> actualizar_mesa()}
   end
 
   def handle_event("mostrar_coloreado", _params, socket) do
@@ -283,7 +475,8 @@ defmodule MapoWeb.MapaLive.Index do
           {:noreply,
            socket
            |> assign(coloreado_activa?: true)
-           |> push_event("capa_coloreado", %{activa: true, geojson: geojson})}
+           |> push_event("capa_coloreado", %{activa: true, geojson: geojson})
+           |> actualizar_mesa()}
 
         {:error, _} ->
           {:noreply, put_flash(socket, :error, "mapo_core no está disponible ahorita mismo.")}
@@ -295,7 +488,8 @@ defmodule MapoWeb.MapaLive.Index do
     {:noreply,
      socket
      |> assign(coloreado_activa?: false)
-     |> push_event("capa_coloreado", %{activa: false})}
+     |> push_event("capa_coloreado", %{activa: false})
+     |> actualizar_mesa()}
   end
 
   def handle_event("activar_isocrona", %{"isocrona_capa" => %{"minutos" => minutos}}, socket) do
@@ -305,7 +499,8 @@ defmodule MapoWeb.MapaLive.Index do
        isocrona_activa?: true,
        isocrona_form: to_form(%{"minutos" => minutos}, as: "isocrona_capa")
      )
-     |> push_event("modo_isocrona", %{activo: true})}
+     |> push_event("modo_isocrona", %{activo: true})
+     |> actualizar_mesa()}
   end
 
   def handle_event("quitar_isocrona", _params, socket) do
@@ -313,7 +508,8 @@ defmodule MapoWeb.MapaLive.Index do
      socket
      |> assign(isocrona_activa?: false)
      |> push_event("modo_isocrona", %{activo: false})
-     |> push_event("capa_isocrona", %{activa: false})}
+     |> push_event("capa_isocrona", %{activa: false})
+     |> actualizar_mesa()}
   end
 
   def handle_event("click_mapa", %{"lat" => lat, "lon" => lon}, socket) do
@@ -335,6 +531,118 @@ defmodule MapoWeb.MapaLive.Index do
     else
       {:noreply, socket}
     end
+  end
+
+  # Le dice al hook el orden de la pila y, si cambió, la piel de la mesa.
+  defp actualizar_mesa(socket) do
+    piel = socket.assigns.piel_fijada || piel_automatica(socket.assigns)
+    socket = push_event(socket, "orden_capas", %{orden: socket.assigns.orden})
+
+    if piel != socket.assigns.piel_pintada do
+      socket |> assign(piel_pintada: piel) |> push_event("piel", %{piel: piel})
+    else
+      socket
+    end
+  end
+
+  defp activa?(assigns, "coropleta"), do: assigns.coropleta_activa?
+  defp activa?(assigns, "voronoi"), do: assigns.voronoi_activa?
+  defp activa?(assigns, "coloreado"), do: assigns.coloreado_activa?
+  defp activa?(assigns, "isocrona"), do: assigns.isocrona_activa?
+
+  defp activas(assigns), do: Enum.filter(assigns.orden, &activa?(assigns, &1))
+
+  defp piel_automatica(assigns) do
+    case activas(assigns) do
+      [arriba | _] -> @capas[arriba].enfoque
+      [] -> "urbanismo"
+    end
+  end
+
+  defp nombre_piel(clave) do
+    Enum.find_value(@pieles, clave, fn {nombre, c} -> if c == clave, do: nombre end)
+  end
+
+  defp acetatos(assigns) do
+    case length(activas(assigns)) do
+      0 -> "sin acetatos"
+      1 -> "1 acetato"
+      n -> "#{n} acetatos"
+    end
+  end
+
+  defp fuentes(assigns) do
+    assigns
+    |> activas()
+    |> Enum.map(fn id -> @capas[id].fuente |> String.split(" · ") |> hd() end)
+    |> Enum.uniq()
+    |> case do
+      [] -> "ninguna todavía"
+      lista -> Enum.join(lista, ", ")
+    end
+  end
+
+  defp lugar(assigns) do
+    estado = nombre_de(assigns.estados, assigns.form[:cve_ent].value)
+    municipio = nombre_de(assigns.municipios, assigns.form[:cve_mun].value)
+
+    case {municipio, estado} do
+      {nil, nil} -> "México"
+      {nil, e} -> e
+      {m, e} -> "#{m}, #{e}"
+    end
+  end
+
+  defp nombre_de(_opciones, valor) when valor in [nil, ""], do: nil
+
+  defp nombre_de(opciones, valor),
+    do: Enum.find_value(opciones, fn {n, v} -> if v == valor, do: n end)
+
+  @doc false
+  # Quintiles de los valores con dato: los mismos cortes pintan el mapa (en el
+  # hook) y la escala de la cinta. Los AGEB sin dato se cuentan aparte, nunca
+  # como cero.
+  def escala_quintiles(%{"features" => features}) do
+    valores =
+      features
+      |> Enum.map(&get_in(&1, ["properties", "valor_choropleth"]))
+      |> Enum.reject(&is_nil/1)
+      |> Enum.sort()
+
+    case valores do
+      [] ->
+        nil
+
+      _ ->
+        n = length(valores)
+        cortes = Enum.map([0.2, 0.4, 0.6, 0.8], fn q -> Enum.at(valores, floor(q * (n - 1))) end)
+
+        %{
+          cortes: cortes,
+          limites: [hd(valores) | cortes] ++ [List.last(valores)],
+          nulos: length(features) - n
+        }
+    end
+  end
+
+  defp cifra(v) when is_float(v),
+    do: v |> Float.round(1) |> :erlang.float_to_binary(decimals: 1) |> miles()
+
+  defp cifra(v) when is_integer(v), do: v |> Integer.to_string() |> miles()
+  defp cifra(v), do: to_string(v)
+
+  defp miles(texto) do
+    [entero | decimales] = String.split(texto, ".")
+
+    entero =
+      entero
+      |> String.reverse()
+      |> String.graphemes()
+      |> Enum.chunk_every(3)
+      |> Enum.join(",")
+      |> String.reverse()
+
+    Enum.join([entero | decimales], ".")
   end
 
   defp vacio_para_nil(nil), do: nil
