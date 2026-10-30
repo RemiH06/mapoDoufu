@@ -126,7 +126,8 @@ la pantalla era un dashboard genérico.
   de 1,858 negocios de DENUE con "papel" en el giro, una isócrona de 10
   minutos por OSRM y el perfil de zona de `mapo_core`.
 
-**En Phoenix** (sesión 4, en curso):
+**En Phoenix** (sesión 4, cerrada el 2026-10-30; historial en
+[2026-10-rediseno-nucleo.md](../historial/2026-10-rediseno-nucleo.md)):
 
 - Los colores de las pieles van en `mapo/assets/css/pieles.css`, un CSS
   estático generado desde `design/mesa_planeacion/pieles.js` (la fuente
@@ -183,6 +184,9 @@ la pantalla era un dashboard genérico.
   popups se quedaban sin margen). Los estilos de Leaflet de la mesa van
   en la clase `.plano-leaflet` y el entintado del plano en
   `assets/js/plano_tinta.js`, compartidos por `/mapa` y `/logistica`.
+- El display grid de `.fieldset` (daisyUI) vive en `utilities` y le
+  gana a `components`; la regla que deja los selects de ubicación en
+  línea va fuera de capa al final de `mapa.css`.
 - El botón de modo lleva `phx-update="ignore"`: su texto lo pone el
   script de la raíz y cualquier parche de LiveView lo regresaba a "Modo".
 - El fondo animado de metro se quitó de la raíz: pintaba su propio fondo

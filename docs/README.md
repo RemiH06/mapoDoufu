@@ -42,6 +42,7 @@ Qué se construyó en cada etapa, por qué así y qué bugs reales aparecieron.
 - [Limpieza de código, octubre 2026](historial/2026-10-limpieza.md)
 - [Rendimiento, octubre 2026](historial/2026-10-rendimiento.md)
 - [Concepto visual, octubre 2026](historial/2026-10-concepto-visual.md)
+- [Rediseño del núcleo, octubre 2026](historial/2026-10-rediseno-nucleo.md)
 
 ## Gaiarda
 

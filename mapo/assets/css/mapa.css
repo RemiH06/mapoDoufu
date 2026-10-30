@@ -78,7 +78,6 @@
     min-width: 0;
     color: var(--text2);
   }
-  .ubicacion .fieldset,
   .cinta .fieldset {
     margin: 0;
     padding: 0;
@@ -357,6 +356,23 @@
       display: none;
     }
   }
+  /* Celular acostado: la cinta y la charola se adelgazan para dejar mapa */
+  @media (max-height: 500px) {
+    .cinta {
+      bottom: 52px;
+    }
+    .cinta > * {
+      padding: 4px 10px;
+    }
+    .cinta-titulo .fuente {
+      display: none;
+    }
+    .pestana {
+      min-height: 40px;
+      padding-top: 4px;
+      padding-bottom: 6px;
+    }
+  }
   @media (max-width: 760px) {
     #mapa-tecnico .leaflet-top.leaflet-right {
       top: 196px;
@@ -365,4 +381,13 @@
       max-width: 42vw;
     }
   }
+}
+
+/* Fuera de capa a propósito: el display grid de .fieldset viene de daisyUI,
+   que va en utilities y le gana a cualquier regla de components. Sin esto
+   cada select de <.input> ocupa su renglón y el membrete se triplica en
+   celular. */
+.ubicacion .fieldset,
+.ubicacion .fieldset > label {
+  display: contents;
 }
