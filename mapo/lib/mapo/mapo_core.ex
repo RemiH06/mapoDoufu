@@ -54,6 +54,9 @@ defmodule Mapo.MapoCore do
   @doc "FeatureCollection de los municipios de un estado, sin polígono (igual que `estados/0`)."
   def municipios(cve_ent), do: get("/geo/municipios", cve_ent: cve_ent, geometria: false)
 
+  @doc "FeatureCollection de los AGEB urbanos de un municipio, con polígono simplificado."
+  def agebs(cve_ent, cve_mun), do: get("/geo/agebs", cve_ent: cve_ent, cve_mun: cve_mun)
+
   @doc """
   FeatureCollection de AGEBs del censo, con el valor de `indicador` ya
   cruzado en `properties.valor_choropleth` (puede venir `null`, si el
@@ -97,11 +100,10 @@ defmodule Mapo.MapoCore do
   end
 
   @doc """
-  Perfil de un municipio. Por ahora solo demografía (censo) trae
-  datos reales; comercio (DENUE), consumo (ENIGH) y seguridad
-  (SESNSP) todavía no están vendorizados a mapo_core, igual que
-  laboral (ENOE). El resultado marca cada uno honesto con
-  `"*_disponible" => false` en vez de fingir que no hay datos.
+  Perfil de un municipio, una sección por enfoque: demografía (censo),
+  comercio (DENUE), consumo (ENIGH), seguridad (SESNSP) y laboral (ENOE).
+  Una sección viene `nil` si su fuente no cubre el municipio. Laboral es
+  del estado entero: la ENOE no es representativa por municipio.
   """
   def perfil_zona(cve_ent, cve_mun), do: get("/perfil_zona", cve_ent: cve_ent, cve_mun: cve_mun)
 

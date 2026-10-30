@@ -1,0 +1,363 @@
+/* /perfil: sobre el plano del municipio quedan cinco documentos, uno por
+   enfoque, cada uno con su piel y su forma de papel (cédula, libro mayor,
+   ticket, expediente, tarjeta de checador). */
+
+@layer components {
+  .plano {
+    position: fixed;
+    inset: 0;
+    color: var(--line);
+    opacity: 0.35;
+    overflow: hidden;
+    pointer-events: none;
+  }
+  .plano svg {
+    width: 100%;
+    height: 100%;
+  }
+
+  /* Consulta: el lugar como título y los selects anotados a mano */
+  .consulta {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: end;
+    gap: 12px 24px;
+    padding: 14px 18px;
+    margin: 8px 0 32px;
+  }
+  .consulta h1 {
+    font-family: var(--cond);
+    font-weight: 700;
+    font-size: 34px;
+    line-height: 1;
+    margin-right: auto;
+  }
+  .consulta .membrete-select {
+    font-size: 20px;
+    border-bottom: 1.5px dashed var(--line);
+    max-width: 16rem;
+  }
+  .consulta p {
+    flex-basis: 100%;
+    color: var(--text2);
+    max-width: 70ch;
+  }
+  .consulta .aviso {
+    color: var(--accent);
+  }
+  .consultando {
+    max-width: max-content;
+    padding: 8px 14px;
+    font-family: var(--mano);
+    color: var(--accent);
+  }
+
+  .documentos {
+    display: grid;
+    grid-template-columns: repeat(12, minmax(0, 1fr));
+    gap: 32px 28px;
+    align-items: start;
+  }
+  .documento {
+    padding: 18px 20px 20px;
+    rotate: var(--giro, 0deg);
+  }
+  .documento header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 12px;
+    border-bottom: 1.5px solid var(--text);
+    padding-bottom: 6px;
+    margin-bottom: 12px;
+  }
+  .documento .tipo {
+    font-family: var(--cond);
+    font-weight: 500;
+    font-size: 14px;
+    color: var(--text2);
+  }
+  .documento h2 {
+    font-family: var(--cond);
+    font-weight: 700;
+    font-size: 24px;
+    line-height: 1.1;
+  }
+  .documento .fuente {
+    margin-top: 12px;
+  }
+  .documento .falta {
+    font-size: 13px;
+    color: var(--text2);
+    margin-top: 8px;
+  }
+
+  /* Cédula censal: casillas de formulario */
+  .d-demografia {
+    grid-column: span 4;
+    --giro: -0.5deg;
+  }
+  .casillas {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    border: 1px solid var(--line);
+  }
+  .casilla {
+    padding: 6px 10px;
+    border: 1px solid var(--line);
+    margin: -1px 0 0 -1px;
+  }
+  .casilla.ancha {
+    grid-column: 1 / -1;
+  }
+  .casilla dt {
+    font-family: var(--cond);
+    font-size: 13px;
+    color: var(--text2);
+  }
+  .casilla dd {
+    font-family: var(--mono);
+    font-size: 18px;
+  }
+  .casilla.ancha dd {
+    font-size: 30px;
+  }
+  .reparto {
+    display: flex;
+    height: 12px;
+    margin-top: 6px;
+    border: 1px solid var(--text);
+  }
+  .reparto span {
+    background: var(--film);
+  }
+  .reparto span + span {
+    background: color-mix(in srgb, var(--film) 35%, var(--bg));
+  }
+
+  /* Libro mayor: renglones, columna de cantidades, total doblemente subrayado */
+  .d-comercio {
+    grid-column: span 5;
+    --giro: 0.4deg;
+  }
+  .libro {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+  }
+  .libro th {
+    font-family: var(--cond);
+    font-weight: 500;
+    font-size: 13px;
+    color: var(--text2);
+    text-align: left;
+    padding: 0 0 4px 18px;
+  }
+  .libro td {
+    padding: 2px 0 2px 18px;
+    height: 22px;
+    vertical-align: bottom;
+  }
+  .libro td.n,
+  .libro th.n {
+    text-align: right;
+    font-family: var(--mono);
+    font-variant-numeric: tabular-nums;
+    padding-left: 12px;
+    white-space: nowrap;
+  }
+  .libro tfoot td {
+    padding-top: 8px;
+    font-weight: 600;
+  }
+  .libro tfoot .total td.n {
+    border-bottom: 3px double var(--text);
+  }
+  .libro tfoot .resto td {
+    font-weight: 400;
+    color: var(--text2);
+    padding-top: 2px;
+  }
+
+  /* Ticket de caja: angosto, monoespaciado, con dientes abajo */
+  .d-consumo {
+    grid-column: span 3;
+    --giro: -0.8deg;
+    font-family: var(--mono);
+    font-size: 13px;
+    border-bottom: 0;
+    text-align: center;
+  }
+  .d-consumo header {
+    display: block;
+    border-bottom: 1px dashed var(--text);
+  }
+  .d-consumo h2 {
+    font-family: var(--mono);
+    font-size: 16px;
+    font-weight: 500;
+  }
+  .renglon {
+    display: flex;
+    gap: 6px;
+    text-align: left;
+    margin: 6px 0;
+  }
+  .renglon span:nth-child(2) {
+    flex: 1;
+    border-bottom: 1px dotted var(--line);
+    transform: translateY(-4px);
+  }
+  .renglon b {
+    font-weight: 500;
+  }
+  .d-consumo .grande {
+    font-size: 30px;
+    margin: 10px 0 2px;
+  }
+  .d-consumo hr {
+    border: 0;
+    border-top: 1px dashed var(--text);
+    margin: 10px 0;
+  }
+  .d-consumo .falta {
+    text-align: left;
+  }
+  .dientes {
+    position: absolute;
+    left: -1.5px;
+    right: -1.5px;
+    bottom: -9px;
+    height: 10px;
+    background: linear-gradient(135deg, var(--bg) 50%, transparent 50%) 0 0 / 12px 10px,
+      linear-gradient(-135deg, var(--bg) 50%, transparent 50%) 0 0 / 12px 10px;
+  }
+
+  /* Expediente: pestaña de carpeta y máquina de escribir */
+  .d-seguridad {
+    grid-column: span 7;
+    --giro: 0.3deg;
+    margin-top: 22px;
+    padding-left: 34px;
+  }
+  .pestana-carpeta {
+    position: absolute;
+    left: 28px;
+    top: -25px;
+    padding: 3px 16px;
+    background: var(--bg);
+    border: 1.5px solid var(--text);
+    border-bottom: 0;
+    font-family: var(--mano);
+    font-size: 15px;
+  }
+  .d-seguridad h2 {
+    font-family: var(--mano);
+    font-weight: 400;
+  }
+  .d-seguridad .total {
+    font-size: 28px;
+  }
+  .barras {
+    list-style: none;
+    display: grid;
+    gap: 5px;
+    margin-top: 10px;
+  }
+  .barras li {
+    display: grid;
+    grid-template-columns: minmax(0, 15em) 1fr auto;
+    gap: 10px;
+    align-items: center;
+    font-size: 13px;
+  }
+  .barra {
+    height: 10px;
+    background: var(--film);
+    min-width: 1px;
+  }
+  .d-seguridad details {
+    margin-top: 12px;
+  }
+  .d-seguridad summary {
+    cursor: pointer;
+    font-family: var(--cond);
+    font-size: 15px;
+    min-height: 28px;
+    color: var(--text2);
+  }
+
+  /* Tarjeta de checador: columnas y el sello del reloj */
+  .d-laboral {
+    grid-column: span 5;
+    --giro: -0.4deg;
+  }
+  .sello {
+    display: inline-block;
+    margin: 6px 0 4px;
+    padding: 4px 14px;
+    border: 2.5px solid var(--film);
+    color: var(--film);
+    rotate: -4deg;
+    font-size: 44px;
+    font-weight: 500;
+    line-height: 1.1;
+    background: var(--bg);
+  }
+  .d-laboral dl {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 4px 14px;
+    margin-top: 10px;
+    font-size: 13px;
+  }
+  .d-laboral dt {
+    font-family: var(--cond);
+    color: var(--text2);
+  }
+  .d-laboral dd {
+    font-family: var(--mono);
+  }
+
+  @media (max-width: 1100px) {
+    .d-demografia,
+    .d-comercio,
+    .d-laboral {
+      grid-column: span 6;
+    }
+    .d-consumo {
+      grid-column: span 4;
+    }
+    .d-seguridad {
+      grid-column: span 8;
+    }
+  }
+  @media (max-width: 760px) {
+    .documentos {
+      grid-template-columns: minmax(0, 1fr);
+      gap: 34px;
+    }
+    .documento {
+      grid-column: 1 / -1;
+      rotate: 0deg;
+    }
+    .d-consumo {
+      max-width: 340px;
+      justify-self: center;
+      width: 100%;
+    }
+    .barras li {
+      grid-template-columns: minmax(0, 1fr) 30% auto;
+    }
+    .consulta h1 {
+      font-size: 28px;
+    }
+    .consulta .ubicacion > span[aria-hidden] {
+      display: none;
+    }
+    .libro th:nth-child(3),
+    .libro td:nth-child(3) {
+      display: none;
+    }
+  }
+}

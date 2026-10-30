@@ -1,6 +1,8 @@
 defmodule MapoWeb.MapaLive.Index do
   use MapoWeb, :live_view
 
+  import MapoWeb.Cifras
+
   alias Mapo.MapoCore
 
   # Cada capa es un acetato sobre el plano (docs/arquitectura/decisiones.md,
@@ -58,17 +60,17 @@ defmodule MapoWeb.MapaLive.Index do
           />
         </.form>
       </:membrete>
-      
+
       <h1 class="sr-only">Mapa técnico</h1>
-      
+
       <p :if={@estados == []} class="aviso-plano pegado sin-cinta">
         No se pudo cargar la lista de estados: mapo_core no responde o todavía no hay estados
         descargados.
       </p>
-      
+
       <div id="mapa-tecnico" phx-hook="MapaTecnico" phx-update="ignore" class="flex-1 min-h-0 w-full">
       </div>
-      
+
       <section
         :for={id <- @orden}
         id={"cinta-#{id}"}
@@ -78,10 +80,10 @@ defmodule MapoWeb.MapaLive.Index do
       >
         <div class="cinta-titulo">
           <h2>{@capas[id].nombre}</h2>
-          
+
           <p class="fuente">{@capas[id].fuente}</p>
         </div>
-        
+
         <.cinta_coropleta
           :if={id == "coropleta"}
           form={@coropleta_form}
@@ -101,7 +103,7 @@ defmodule MapoWeb.MapaLive.Index do
           >
             Más arriba
           </button>
-          
+
           <button
             type="button"
             phx-click="mover"
@@ -113,27 +115,27 @@ defmodule MapoWeb.MapaLive.Index do
           </button>
         </div>
       </section>
-      
+
       <dl class="rotulo pegado">
         <div class="rotulo-titulo">{lugar(assigns)}</div>
-        
+
         <dt>Lámina</dt>
-        
+
         <dd>{acetatos(assigns)}</dd>
-        
+
         <dt>Fuentes</dt>
-        
+
         <dd>{fuentes(assigns)}</dd>
-        
+
         <dt>Piel</dt>
-        
+
         <dd>
           <.form for={%{}} as={:piel} id="piel_form" phx-change="fijar_piel">
             <select name="piel" aria-label="Piel de la mesa">
               <option value="" selected={is_nil(@piel_fijada)}>
                 Automática · {nombre_piel(piel_automatica(assigns))}
               </option>
-              
+
               <option :for={{nombre, clave} <- @pieles} value={clave} selected={@piel_fijada == clave}>
                 {nombre}
               </option>
@@ -141,7 +143,7 @@ defmodule MapoWeb.MapaLive.Index do
           </.form>
         </dd>
       </dl>
-      
+
       <nav class="charola" aria-label="Acetatos">
         <button
           :for={id <- @orden}
@@ -181,7 +183,7 @@ defmodule MapoWeb.MapaLive.Index do
         <.button phx-disable-with="Poniendo..." class="boton primario">
           {if @activa?, do: "Actualizar", else: "Poner"}
         </.button>
-        
+
         <.button :if={@activa?} type="button" phx-click="quitar_coropleta" class="boton">
           Quitar
         </.button>
@@ -191,10 +193,10 @@ defmodule MapoWeb.MapaLive.Index do
     <div :if={@escala} class="escala" aria-label="Clases por quintil">
       <ol>
         <li :for={o <- [0.12, 0.26, 0.42, 0.6, 0.8]} style={"opacity: #{o}"}></li>
-        
+
         <li class="nula" title="Sin dato"></li>
       </ol>
-      
+
       <div class="marcas num">
         <span :for={v <- Enum.take(@escala.limites, 5)}>{cifra(v)}</span>
         <span>sin dato: {@escala.nulos}</span>
@@ -220,7 +222,7 @@ defmodule MapoWeb.MapaLive.Index do
         <.button phx-disable-with="Poniendo..." class="boton primario">
           {if @activa?, do: "Actualizar", else: "Poner"}
         </.button>
-        
+
         <.button :if={@activa?} type="button" phx-click="quitar_voronoi" class="boton">
           Quitar
         </.button>
@@ -243,7 +245,7 @@ defmodule MapoWeb.MapaLive.Index do
         <.button phx-click="mostrar_coloreado" class="boton primario">
           {if @activa?, do: "Actualizar", else: "Poner"}
         </.button>
-        
+
         <.button :if={@activa?} type="button" phx-click="quitar_coloreado" class="boton">
           Quitar
         </.button>
@@ -273,7 +275,7 @@ defmodule MapoWeb.MapaLive.Index do
         <.button phx-disable-with="Activando..." class="boton primario">
           {if @activa?, do: "Actualizar", else: "Activar"}
         </.button>
-        
+
         <.button :if={@activa?} type="button" phx-click="quitar_isocrona" class="boton">
           Quitar
         </.button>
@@ -623,26 +625,6 @@ defmodule MapoWeb.MapaLive.Index do
           nulos: length(features) - n
         }
     end
-  end
-
-  defp cifra(v) when is_float(v),
-    do: v |> Float.round(1) |> :erlang.float_to_binary(decimals: 1) |> miles()
-
-  defp cifra(v) when is_integer(v), do: v |> Integer.to_string() |> miles()
-  defp cifra(v), do: to_string(v)
-
-  defp miles(texto) do
-    [entero | decimales] = String.split(texto, ".")
-
-    entero =
-      entero
-      |> String.reverse()
-      |> String.graphemes()
-      |> Enum.chunk_every(3)
-      |> Enum.join(",")
-      |> String.reverse()
-
-    Enum.join([entero | decimales], ".")
   end
 
   defp vacio_para_nil(nil), do: nil

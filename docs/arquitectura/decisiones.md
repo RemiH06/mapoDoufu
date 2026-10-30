@@ -143,6 +143,17 @@ la pantalla era un dashboard genérico.
   salir de la vista. Los cortes por quintil de la coropleta también los
   calcula el servidor, para que el mapa y la escala de la cinta usen los
   mismos números.
+- `/perfil` sigue el prototipo: los cinco documentos con su piel sobre el
+  plano de los AGEB del municipio, que el servidor arma como un solo
+  trazo SVG (442 AGEB de Guadalajara son unos 30 KB). Si una fuente no
+  cubre el municipio, su documento sigue en la mesa y lo dice. La
+  consulta va en la URL (`/perfil?cve_ent=14&cve_mun=039`) para
+  compartirla, y el perfil (unos 3 s) y el plano se piden con
+  `start_async` para no congelar la vista. El botón "+ nota del equipo"
+  del prototipo no entró: espera a que las anotaciones se guarden (capa
+  "Tus marcas").
+- El botón de modo lleva `phx-update="ignore"`: su texto lo pone el
+  script de la raíz y cualquier parche de LiveView lo regresaba a "Modo".
 - El fondo animado de metro se quitó de la raíz: pintaba su propio fondo
   encima de la paleta. Qué fondo lleva Mapo se decide en la sesión 5.
 

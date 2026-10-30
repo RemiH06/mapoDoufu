@@ -84,7 +84,20 @@ defmodule MapoWeb.PerfilLive.IndexTest do
     assert html =~ "Selecciona un estado y un municipio"
   end
 
-  test "ver_perfil renders demografia and the honest not-yet-ported gaps", %{conn: conn} do
+  defp ageb_feature do
+    %{
+      "type" => "Feature",
+      "properties" => %{"cvegeo" => "1403900010010"},
+      "geometry" => %{
+        "type" => "Polygon",
+        "coordinates" => [
+          [[-103.35, 20.67], [-103.34, 20.67], [-103.34, 20.68], [-103.35, 20.67]]
+        ]
+      }
+    }
+  end
+
+  defp stub_catalogo(perfil) do
     Req.Test.stub(Mapo.MapoCore, fn conn ->
       case conn.request_path do
         "/geo/estados" ->
@@ -99,53 +112,19 @@ defmodule MapoWeb.PerfilLive.IndexTest do
             "features" => [municipio_feature("14", "039", "Guadalajara")]
           })
 
+        "/geo/agebs" ->
+          Req.Test.json(conn, %{"type" => "FeatureCollection", "features" => [ageb_feature()]})
+
         "/perfil_zona" ->
           assert conn.params["cve_ent"] == "14"
           assert conn.params["cve_mun"] == "039"
-          Req.Test.json(conn, perfil_con_demografia())
+          Req.Test.json(conn, perfil)
       end
     end)
-
-    {:ok, lv, _html} = live(conn, ~p"/perfil")
-
-    lv
-    |> form("#perfil_form", perfil: %{"cve_ent" => "14", "cve_mun" => ""})
-    |> render_change()
-
-    html =
-      lv
-      |> form("#perfil_form", perfil: %{"cve_ent" => "14", "cve_mun" => "039"})
-      |> render_submit()
-
-    assert html =~ "Población total: 1500000"
-    assert html =~ "Tasa de desocupación: 2.49%"
   end
 
-  test "ver_perfil with missing demografia shows an honest empty message", %{conn: conn} do
-    Req.Test.stub(Mapo.MapoCore, fn conn ->
-      case conn.request_path do
-        "/geo/estados" ->
-          Req.Test.json(conn, %{
-            "type" => "FeatureCollection",
-            "features" => [estado_feature("14", "Jalisco")]
-          })
-
-        "/geo/municipios" ->
-          Req.Test.json(conn, %{
-            "type" => "FeatureCollection",
-            "features" => [municipio_feature("14", "999", "Sin Datos")]
-          })
-
-        "/perfil_zona" ->
-          Req.Test.json(conn, %{
-            "demografia" => nil,
-            "comercio" => %{"total_negocios" => 0, "top_clases_actividad" => []},
-            "consumo" => nil,
-            "seguridad" => nil,
-            "laboral" => nil
-          })
-      end
-    end)
+  test "ver_perfil puts the query in the URL and renders the five documents", %{conn: conn} do
+    stub_catalogo(perfil_con_demografia())
 
     {:ok, lv, _html} = live(conn, ~p"/perfil")
 
@@ -153,11 +132,56 @@ defmodule MapoWeb.PerfilLive.IndexTest do
     |> form("#perfil_form", perfil: %{"cve_ent" => "14", "cve_mun" => ""})
     |> render_change()
 
-    html =
-      lv
-      |> form("#perfil_form", perfil: %{"cve_ent" => "14", "cve_mun" => "999"})
-      |> render_submit()
+    lv
+    |> form("#perfil_form", perfil: %{"cve_ent" => "14", "cve_mun" => "039"})
+    |> render_submit()
 
-    assert html =~ "Sin datos de censo para este municipio."
+    assert_patch(lv, ~p"/perfil?cve_ent=14&cve_mun=039")
+    html = render_async(lv)
+
+    assert html =~ "Guadalajara, Jalisco"
+    assert html =~ "1,500,000"
+    assert html =~ "2.49%"
+    assert html =~ "Las demás clases"
+    assert has_element?(lv, "[data-piel=demografia]")
+    assert has_element?(lv, "[data-piel=laboral]")
+    assert has_element?(lv, ".plano path")
+  end
+
+  test "opening /perfil with a query in the URL loads it directly", %{conn: conn} do
+    stub_catalogo(perfil_con_demografia())
+
+    {:ok, lv, _html} = live(conn, ~p"/perfil?cve_ent=14&cve_mun=039")
+
+    assert render_async(lv) =~ "Gasto de los hogares"
+    assert has_element?(lv, "#perfil_form option[value='039'][selected]")
+  end
+
+  test "an unknown municipio in the URL shows a flash and no query", %{conn: conn} do
+    stub_catalogo(perfil_con_demografia())
+
+    {:ok, lv, html} = live(conn, ~p"/perfil?cve_ent=14&cve_mun=777")
+
+    assert html =~ "Ese municipio no está en el catálogo."
+    refute has_element?(lv, ".documentos")
+  end
+
+  test "each document says so when its source does not cover the municipio", %{conn: conn} do
+    stub_catalogo(%{
+      "demografia" => nil,
+      "comercio" => %{"total_negocios" => 0, "top_clases_actividad" => []},
+      "consumo" => nil,
+      "seguridad" => nil,
+      "laboral" => nil
+    })
+
+    {:ok, lv, _html} = live(conn, ~p"/perfil?cve_ent=14&cve_mun=039")
+    html = render_async(lv)
+
+    assert html =~ "El censo no tiene datos de este municipio."
+    assert html =~ "El DENUE no registra negocios en este municipio."
+    assert html =~ "La muestra de la ENIGH no llegó a este municipio."
+    assert html =~ "No hay incidencia del SESNSP cargada para este municipio."
+    assert html =~ "No hay datos de la ENOE cargados para este estado."
   end
 end

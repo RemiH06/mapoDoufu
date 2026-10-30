@@ -9,6 +9,7 @@
 @import "./pieles.css";
 @import "./mesa.css";
 @import "./mapa.css";
+@import "./perfil.css";
 @source "../css";
 @source "../js";
 @source "../../lib/mapo_web";
