@@ -57,33 +57,74 @@ Mapo heredó el tema metro de Gaiarda, pensado para tableros de
 sistemas en operación. Mapo es otra cosa: una mesa donde se decide.
 Frase de concepto: **un plano urbano sobre la mesa, con acetatos
 encima**. Cada fuente (censo, DENUE, isócronas) es una hoja
-translúcida que se apila sobre el plano.
+translúcida que se desliza sobre el plano.
 
-- **Firma:** las capas se mezclan como acetatos reales
-  (`mix-blend-mode: multiply` de día, `screen` en la mesa de luz), así
-  que dos o tres capas se leen a la vez. Cada hoja lleva una pestaña
-  del color de su capa, el orden de la pila es el orden en el mapa, y
-  la coropleta codifica el valor como cantidad de tinta. Un rótulo de
-  lámina (municipio, capas, fuentes, fecha) queda en una esquina, como
-  en un plano.
-- **Modos:** papel albanene de día, mesa de luz de noche.
-- **Color:** los 5 tonos del logo son los colores de capa (guinda,
-  naranja, verde, azul, morado), con variantes más claras para la mesa
-  de luz. Acento del modo claro: el morado de la M (tinta de copia
-  heliográfica). Acento del modo oscuro: amarillo marcatextos, para no
-  caer en morado sobre negro. Todo texto pasa 4.5:1 y los bordes de
-  controles 3:1 en los dos modos; el naranja (3.4:1 sobre papel) solo
-  va en pestañas y trazos, nunca como texto.
-- **Tipografía:** Overpass y Overpass Mono (Bunny Fonts). Overpass
-  viene de Highway Gothic, la rotulación vial; la mono va en cifras y
-  fuentes. Sustituye a DM Sans y Space Mono (esta última es la fuente
-  reservada de metro y hoy se carga de Google Fonts).
-- **Mapa base:** OSM en escala de grises, invertido en la mesa de luz,
-  para que el color quede solo en los acetatos.
-- **Prototipo:** `design/mesa_planeacion/index.html` (se abre directo,
-  sin servidor), con datos reales de Guadalajara: 442 AGEB del censo
-  2020, Voronoi de 1,858 negocios de DENUE con "papel" en el giro, y
-  una isócrona de 10 minutos por OSRM.
+Segunda versión. La primera (panel lateral de tarjetas con switches,
+Overpass, papel gris) se descartó: el concepto solo vivía en el texto,
+la pantalla era un dashboard genérico.
+
+- **El mapa es la mesa entera.** Nada de panel lateral: membrete,
+  rótulo y la cinta de la capa elegida son papeles pegados encima con
+  cinta adhesiva.
+- **Charola de acetatos:** las capas asoman como pestañas por el borde
+  inferior. Tocar una la desliza sobre el plano (barrido con
+  `clip-path`); su cinta muestra fuente, control, escala y orden en una
+  sola tira, que en celular se recorre de lado. El orden de la charola
+  es el orden en el mapa.
+- **Impreso contra anotado:** los datos van en Barlow y Barlow
+  Condensed, las cifras en IBM Plex Mono. Lo que decide el equipo va a
+  mano (Architects Daughter) y en lápiz rojo: la capa "Tus marcas", el
+  rótulo, la ubicación. Las marcas nunca se mezclan con lo impreso.
+- **Dos modos:** claro (papel) y oscuro (en urbanismo, una cianotipia
+  profunda `#0F2444`, ya no el azul medio de la segunda versión). El mapa
+  base de OSM se reimprime con las tintas de la piel activa mediante un
+  filtro SVG de duotono (la idea del retinte por filtro viene de tanGo),
+  así no hace falta servidor de teselas.
+- **Pieles por enfoque, como los biomas de tarot.** La mesa (membrete,
+  rótulo, charola, impreso contra anotado) es la base; cada enfoque trae
+  su documento, sus tintas de día y de noche, su motivo de papel, su letra
+  a mano y el nombre de sus dos modos. El color de cada piel es también el
+  de sus capas en el mapa.
+
+  | Piel | Documento | Motivo del papel | Letra a mano | Película |
+  |---|---|---|---|---|
+  | Urbanismo (base) | plano | cuadrícula | Architects Daughter | azul |
+  | Demografía | cédula censal | renglones y casilla | Architects Daughter | guinda |
+  | Comercio | libro mayor | renglones y doble margen rojo | Caveat | verde |
+  | Consumo | ticket de caja | puntos de impresora térmica | Caveat | ocre |
+  | Seguridad | expediente | perforación y doble raya | Special Elite | morado |
+  | Laboral | tarjeta de checador | columnas y franja | Caveat | verde azulado |
+  | Movilidad | hoja de ruta | franja de precaución | Architects Daughter | naranja |
+
+  Guinda, verde, naranja, azul y morado son los anillos del logo; ocre y
+  verde azulado se agregaron para consumo y laboral. En seguridad el modo
+  oscuro es manila oscuro y no violeta, para no caer en morado sobre
+  negro. Las 14 combinaciones (7 pieles por 2 modos) pasan: texto 7:1,
+  secundario y anotaciones 4.5:1, bordes y películas 3:1.
+- **La piel sigue al análisis:** la toma la capa de arriba de la pila
+  (población pone demografía, DENUE pone comercio, una isócrona pone
+  movilidad); sin capas, urbanismo. Un selector permite fijarla.
+- **Acetatos:** se multiplican sobre el papel (`mix-blend-mode:
+  multiply`); en el modo oscuro van normales, porque `screen` aplanaba
+  las clases de la coropleta.
+- **Vistas sin capas:** la raíz lleva urbanismo y cada bloque que
+  pertenece a un enfoque lleva su propia piel. En `/perfil` eso son cinco
+  documentos sobre el plano del municipio: cédula censal con casillas,
+  libro mayor con el total doblemente subrayado y "las demás clases"
+  explícitas, ticket con la advertencia de que la ENIGH no es municipal,
+  expediente con los 40 tipos de delito (también los que tienen cero) y
+  tarjeta de checador con la tasa sellada y la advertencia de que la ENOE
+  es estatal. La portada muestra las siete pieles como una mano de
+  cartas (el abanico de tarot): pasar encima viste la mesa con esa piel y
+  tocar la deja puesta (patrón de la galería de iroFactory).
+- **Prototipo:** `design/mesa_planeacion/`, se abre directo sin
+  servidor. `index.html` es `/mapa`, `perfil.html` y `portada.html`. Lo
+  común está aparte, como lo leerá Phoenix: `pieles.js` (fuente de
+  verdad de las pieles; genera las reglas `[data-piel]`), `mesa.css`
+  (papel, cinta, motivos, membrete, botones) y `plano.js` (el plano de
+  fondo). Datos reales de Guadalajara: 442 AGEB del censo 2020, Voronoi
+  de 1,858 negocios de DENUE con "papel" en el giro, una isócrona de 10
+  minutos por OSRM y el perfil de zona de `mapo_core`.
 
 Conceptos considerados y guardados para otras piezas (fondo de la home,
 animaciones, un tema futuro):

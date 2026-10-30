@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Mapo · perfil de zona</title>
+<link rel="icon" type="image/svg+xml" href="../favicon.svg">
+<link rel="preconnect" href="https://fonts.bunny.net">
+<link href="https://fonts.bunny.net/css?family=barlow:400,500,600|barlow-condensed:500,700|architects-daughter:400|caveat:500|special-elite:400|ibm-plex-mono:400,500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="mesa.css">
+<script src="pieles.js"></script>
+<style>
+/* /perfil: sobre el plano del municipio quedan cinco documentos, uno por
+   enfoque, cada uno con su piel. Nada se resume en un puntaje: cada
+   documento dice su cifra, su fuente y lo que no sabe. */
+.plano{position:fixed;inset:0;z-index:-1;color:var(--line);opacity:.35;overflow:hidden}
+.plano svg{width:100%;height:100%;overflow:hidden}
+.cabecera{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;padding:16px}
+main{max-width:1280px;margin:0 auto;padding:8px 24px 64px}
+
+.consulta{display:flex;flex-wrap:wrap;align-items:end;gap:12px 24px;padding:14px 18px;margin:8px 0 32px}
+.consulta h1{font-family:var(--cond);font-weight:700;font-size:34px;line-height:1;margin-right:auto}
+.consulta .ubicacion select{font-size:20px;border-bottom:1.5px dashed var(--line)}
+.consulta p{flex-basis:100%;color:var(--text2);max-width:70ch}
+
+.documentos{display:grid;grid-template-columns:repeat(12,1fr);gap:32px 28px;align-items:start}
+.documento{padding:18px 20px 20px;rotate:var(--giro,0deg)}
+.documento header{display:flex;justify-content:space-between;align-items:baseline;gap:12px;border-bottom:1.5px solid var(--text);padding-bottom:6px;margin-bottom:12px}
+.documento .tipo{font-family:var(--cond);font-weight:500;font-size:14px;color:var(--text2)}
+.documento h2{font-family:var(--cond);font-weight:700;font-size:24px;line-height:1.1}
+.documento .fuente{margin-top:12px}
+.documento .falta{font-size:13px;color:var(--text2);margin-top:8px}
+.notas{margin-top:14px;padding-top:8px;border-top:1px dashed var(--line);font-family:var(--mano);color:var(--accent);font-size:17px}
+.notas button{background:none;border:0;font:inherit;color:inherit;cursor:pointer;min-height:28px}
+.cifra{font-family:var(--mono);font-variant-numeric:tabular-nums;font-weight:500}
+
+/* Cédula censal: casillas de formulario */
+.d-demografia{grid-column:span 4;--giro:-.5deg}
+.casillas{display:grid;grid-template-columns:1fr 1fr;border:1px solid var(--line)}
+.casilla{padding:6px 10px;border:1px solid var(--line);margin:-1px 0 0 -1px}
+.casilla.ancha{grid-column:1/-1}
+.casilla dt{font-family:var(--cond);font-size:13px;color:var(--text2)}
+.casilla dd{font-family:var(--mono);font-size:18px}
+.casilla.ancha dd{font-size:30px}
+.reparto{display:flex;height:12px;margin-top:6px;border:1px solid var(--text)}
+.reparto span{background:var(--film)}
+.reparto span+span{background:color-mix(in srgb,var(--film) 35%,var(--bg))}
+
+/* Libro mayor: renglones, columna de cantidades, total doblemente subrayado */
+.d-comercio{grid-column:span 5;--giro:.4deg}
+.libro{width:100%;border-collapse:collapse;font-size:13px}
+.libro th{font-family:var(--cond);font-weight:500;font-size:13px;color:var(--text2);text-align:left;padding:0 0 4px 18px}
+.libro td{padding:2px 0 2px 18px;height:22px;vertical-align:bottom}
+.libro td.n,.libro th.n{text-align:right;font-family:var(--mono);font-variant-numeric:tabular-nums;padding-left:12px;white-space:nowrap}
+.libro tfoot td{padding-top:8px;font-weight:600}
+.libro tfoot .total td.n{border-bottom:3px double var(--text)}
+.libro tfoot .resto td{font-weight:400;color:var(--text2);padding-top:2px}
+
+/* Ticket de caja: angosto, monoespaciado, con dientes abajo */
+.d-consumo{grid-column:span 3;--giro:-.8deg;font-family:var(--mono);font-size:13px;border-bottom:0;text-align:center}
+.d-consumo header{display:block;border-bottom:1px dashed var(--text);text-align:center}
+.d-consumo h2{font-family:var(--mono);font-size:16px;font-weight:500}
+.renglon{display:flex;gap:6px;text-align:left;margin:6px 0}
+.renglon span:nth-child(2){flex:1;border-bottom:1px dotted var(--line);transform:translateY(-4px)}
+.renglon b{font-weight:500}
+.d-consumo .grande{font-size:30px;margin:10px 0 2px}
+.d-consumo hr{border:0;border-top:1px dashed var(--text);margin:10px 0}
+.d-consumo .falta{text-align:left}
+.dientes{position:absolute;left:-1.5px;right:-1.5px;bottom:-9px;height:10px;
+  background:linear-gradient(135deg,var(--bg) 50%,transparent 50%) 0 0/12px 10px,linear-gradient(-135deg,var(--bg) 50%,transparent 50%) 0 0/12px 10px}
+
+/* Expediente: pestaña de carpeta y máquina de escribir */
+.d-seguridad{grid-column:span 7;--giro:.3deg;margin-top:22px;padding-left:34px}
+.d-seguridad .pestana-carpeta{position:absolute;left:28px;top:-25px;padding:3px 16px;background:var(--bg);border:1.5px solid var(--text);border-bottom:0;
+  font-family:var(--mano);font-size:15px}
+.d-seguridad h2{font-family:var(--mano);font-weight:400;font-size:24px}
+.barras{list-style:none;display:grid;gap:5px}
+.barras li{display:grid;grid-template-columns:minmax(0,15em) 1fr auto;gap:10px;align-items:center;font-size:13px}
+.barras .barra{height:10px;background:var(--film);min-width:1px}
+.barras .cifra{font-size:13px}
+details{margin-top:12px}
+summary{cursor:pointer;font-family:var(--cond);font-size:15px;min-height:28px;color:var(--text2)}
+details .barras{margin-top:8px}
+
+/* Tarjeta de checador: columnas y el sello del reloj */
+.d-laboral{grid-column:span 5;--giro:-.4deg}
+.sello{display:inline-block;margin:6px 0 4px;padding:4px 14px;border:2.5px solid var(--film);color:var(--film);rotate:-4deg;
+  font-family:var(--mono);font-size:44px;font-weight:500;line-height:1.1;background:var(--bg)}
+.d-laboral dl{display:grid;grid-template-columns:auto 1fr;gap:4px 14px;margin-top:10px;font-size:13px}
+.d-laboral dt{font-family:var(--cond);color:var(--text2)}
+.d-laboral dd{font-family:var(--mono)}
+
+@media (max-width:1100px){
+  .d-demografia,.d-comercio{grid-column:span 6}
+  .d-consumo{grid-column:span 4}.d-seguridad{grid-column:span 8}
+  .d-laboral{grid-column:span 6}
+}
+@media (max-width:760px){
+  main{padding:8px 20px 48px}
+  .cabecera{flex-direction:column;padding:10px 20px}
+  .cabecera .membrete{width:100%}
+  .documentos{grid-template-columns:1fr;gap:34px}
+  .documento{grid-column:1/-1!important;rotate:0deg}
+  .d-consumo{max-width:340px;justify-self:center;width:100%}
+  .barras li{grid-template-columns:minmax(0,1fr) 30% auto}
+  .consulta h1{font-size:28px}
+  .libro th:nth-child(3),.libro td:nth-child(3){display:none}
+}
+</style>
+</head>
+<body>
+<div class="plano" aria-hidden="true"><svg id="plano"></svg></div>
+
+<div class="cabecera">
+  <header class="membrete pegado">
+    <a class="marca" href="portada.html"><img src="../favicon.svg" alt=""><span>MAPO</span></a>
+    <div class="membrete-datos">
+      <nav class="secciones" aria-label="Secciones">
+        <a href="index.html">Mapa</a><a href="perfil.html" aria-current="page">Perfil</a><a href="#">Logística</a>
+      </nav>
+      <div class="ubicacion"><span class="mano">Perfil de zona</span></div>
+    </div>
+  </header>
+  <div class="esquina"><button class="modo" id="modo" type="button">Cianotipia</button></div>
+</div>
+
+<main>
+  <form class="consulta pegado" onsubmit="return false">
+    <h1>Guadalajara, Jalisco</h1>
+    <div class="ubicacion">
+      <label class="sr" for="estado">Estado</label><select id="estado"><option>Jalisco</option></select>
+      <span aria-hidden="true">/</span>
+      <label class="sr" for="municipio">Municipio</label><select id="municipio"><option>Guadalajara</option></select>
+    </div>
+    <button class="boton primario" type="submit">Ver perfil</button>
+    <p>Cinco documentos, uno por enfoque, cada uno con su fuente. Ninguno se resume en un puntaje: si una fuente no alcanza a este municipio, el documento lo dice.</p>
+  </form>
+
+  <div class="documentos" id="documentos"></div>
+</main>
+
+<script src="datos.js"></script>
+<script src="plano.js"></script>
+<script>
+const P = {"demografia":{"pobtot":1385629,"pobfem":718632,"pobmas":666997,"graproes":10.96,"pea":747410,"pocupada":736543,"pdesocup":10867,"tothog":398543,"vivtot":454874},
+"comercio":{"total_negocios":97128,"top_clases_actividad":[["Comercio al por menor en tiendas de abarrotes, ultramarinos y misceláneas",6339],["Salones y clínicas de belleza y peluquerías",5589],["Comercio al por menor de ropa, excepto de bebé y lencería",2735],["Restaurantes con servicio de preparación de tacos y tortas",2725],["Comercio al por menor de frutas y verduras frescas",2125],["Cafeterías, fuentes de sodas, neverías, refresquerías y similares",1931],["Restaurantes con servicio de preparación de antojitos",1667],["Restaurantes con servicio de preparación de alimentos a la carta o de comida corrida",1645],["Consultorios dentales del sector privado",1508],["Comercio al por menor de artículos de papelería",1494]]},
+"consumo":{"n_hogares_muestra":335,"periodo":"diario","promedio_ponderado":632.0584439439695,"mediana":531.5723835616438},
+"seguridad":{"anio":2025,"total_delitos":28865,"por_tipo":[["Robo",10126],["Otros delitos del Fuero Común",4356],["Fraude",3306],["Amenazas",2319],["Lesiones",2288],["Violencia familiar",2182],["Abuso sexual",791],["Narcomenudeo",690],["Daño a la propiedad",410],["Falsificación",372],["Otros delitos que atentan contra la libertad y la seguridad sexual",354],["Abuso de confianza",312],["Homicidio",294],["Incumplimiento de obligaciones de asistencia familiar",185],["Despojo",168],["Delitos cometidos por servidores públicos",155],["Otros delitos que atentan contra la libertad personal",117],["Violación simple",103],["Extorsión",60],["Corrupción de menores",47],["Acoso sexual",47],["Otros delitos contra la familia",45],["Allanamiento de morada",34],["Otros delitos que atentan contra la vida y la integridad corporal",30],["Falsedad",29],["Hostigamiento sexual",22],["Feminicidio",7],["Violación equiparada",5],["Contra el medio ambiente",4],["Secuestro",2],["Trata de personas",2],["Otros delitos contra la sociedad",2],["Aborto",1],["Violencia de género en todas sus modalidades distinta a la violencia familiar",0],["Rapto",0],["Tráfico de menores",0],["Evasión de presos",0],["Incesto",0],["Electorales",0],["Otros delitos contra el patrimonio",0]]},
+"laboral":{"anio":2025,"trimestre":"trim3","tasa_desocupacion":2.49,"pea_ponderada":3975301}};
+
+const fmt = (n, d = 0) => n.toLocaleString("es-MX", {minimumFractionDigits: d, maximumFractionDigits: d});
+const pesos = n => "$" + fmt(n, 2);
+const notas = `<div class="notas"><button type="button">+ anotar algo para el equipo</button></div>`;
+
+function cedula(d) {
+  const fem = d.pobfem / d.pobtot * 100;
+  return `<article class="documento pegado d-demografia" data-piel="demografia" aria-labelledby="t-dem">
+    <header><h2 id="t-dem">Población</h2><span class="tipo">Cédula censal</span></header>
+    <dl class="casillas">
+      <div class="casilla ancha"><dt>Población total</dt><dd>${fmt(d.pobtot)}</dd>
+        <div class="reparto" role="img" aria-label="Mujeres ${fmt(fem, 1)} por ciento, hombres ${fmt(100 - fem, 1)} por ciento"><span style="width:${fem}%"></span><span style="flex:1"></span></div></div>
+      <div class="casilla"><dt>Mujeres</dt><dd>${fmt(d.pobfem)}</dd></div>
+      <div class="casilla"><dt>Hombres</dt><dd>${fmt(d.pobmas)}</dd></div>
+      <div class="casilla"><dt>Escolaridad promedio</dt><dd>${fmt(d.graproes, 2)} años</dd></div>
+      <div class="casilla"><dt>Económicamente activa</dt><dd>${fmt(d.pea)}</dd></div>
+      <div class="casilla"><dt>Ocupada</dt><dd>${fmt(d.pocupada)}</dd></div>
+      <div class="casilla"><dt>Desocupada</dt><dd>${fmt(d.pdesocup)}</dd></div>
+      <div class="casilla"><dt>Hogares</dt><dd>${fmt(d.tothog)}</dd></div>
+      <div class="casilla"><dt>Viviendas</dt><dd>${fmt(d.vivtot)}</dd></div>
+    </dl>
+    <p class="fuente">INEGI · Censo de Población y Vivienda 2020</p>${notas}</article>`;
+}
+
+function libro(c) {
+  const suma = c.top_clases_actividad.reduce((s, [, n]) => s + n, 0);
+  return `<article class="documento pegado d-comercio" data-piel="comercio" aria-labelledby="t-com">
+    <header><h2 id="t-com">Negocios por giro</h2><span class="tipo">Libro mayor</span></header>
+    <table class="libro"><thead><tr><th>Clase de actividad</th><th class="n">Negocios</th><th class="n">del total</th></tr></thead>
+      <tbody>${c.top_clases_actividad.map(([clase, n]) => `<tr><td>${clase}</td><td class="n">${fmt(n)}</td><td class="n">${fmt(n / c.total_negocios * 100, 1)}%</td></tr>`).join("")}</tbody>
+      <tfoot><tr class="resto"><td>Las demás clases</td><td class="n">${fmt(c.total_negocios - suma)}</td><td class="n">${fmt((c.total_negocios - suma) / c.total_negocios * 100, 1)}%</td></tr>
+        <tr class="total"><td>Total registrado</td><td class="n">${fmt(c.total_negocios)}</td><td></td></tr></tfoot></table>
+    <p class="fuente">INEGI · DENUE</p>${notas}</article>`;
+}
+
+function ticket(c) {
+  return `<article class="documento pegado d-consumo" data-piel="consumo" aria-labelledby="t-con">
+    <header><span class="tipo">Ticket de caja</span><h2 id="t-con">Gasto de los hogares</h2></header>
+    <p>Gasto ${c.periodo} promedio por hogar</p>
+    <p class="grande cifra">${pesos(c.promedio_ponderado)}</p>
+    <div class="renglon"><span>Mediana</span><span></span><b class="cifra">${pesos(c.mediana)}</b></div>
+    <div class="renglon"><span>Hogares en la muestra</span><span></span><b class="cifra">${fmt(c.n_hogares_muestra)}</b></div>
+    <hr>
+    <p class="falta">La ENIGH es representativa por estado o dominio, no por municipio: tómalo como referencia de la región.</p>
+    <p class="fuente">INEGI · ENIGH</p>${notas}<div class="dientes" aria-hidden="true"></div></article>`;
+}
+
+function expediente(s) {
+  const max = s.por_tipo[0][1];
+  const fila = ([tipo, n]) => `<li><span>${tipo}</span><span class="barra" style="width:${n / max * 100}%"></span><span class="cifra">${fmt(n)}</span></li>`;
+  return `<article class="documento pegado d-seguridad" data-piel="seguridad" aria-labelledby="t-seg">
+    <span class="pestana-carpeta">SESNSP · ${s.anio}</span>
+    <header><h2 id="t-seg">Incidencia delictiva</h2><span class="tipo">Expediente</span></header>
+    <p><span class="cifra" style="font-size:28px">${fmt(s.total_delitos)}</span> delitos registrados en ${s.anio}</p>
+    <ul class="barras" style="margin-top:10px">${s.por_tipo.slice(0, 8).map(fila).join("")}</ul>
+    <details><summary>Ver los ${s.por_tipo.length} tipos, también los que tienen cero</summary><ul class="barras">${s.por_tipo.slice(8).map(fila).join("")}</ul></details>
+    <p class="fuente">SESNSP · incidencia del fuero común, carga manual</p>${notas}</article>`;
+}
+
+function tarjeta(l) {
+  const trim = {trim1: "primer", trim2: "segundo", trim3: "tercer", trim4: "cuarto"}[l.trimestre] || l.trimestre;
+  return `<article class="documento pegado d-laboral" data-piel="laboral" aria-labelledby="t-lab">
+    <header><h2 id="t-lab">Desocupación</h2><span class="tipo">Tarjeta de checador</span></header>
+    <p class="sello cifra">${fmt(l.tasa_desocupacion, 2)}%</p>
+    <dl><dt>Periodo</dt><dd>${trim} trimestre de ${l.anio}</dd><dt>Población activa del estado</dt><dd>${fmt(l.pea_ponderada)}</dd></dl>
+    <p class="falta">Cifra de todo Jalisco: la ENOE no es representativa por municipio.</p>
+    <p class="fuente">INEGI · ENOE</p>${notas}</article>`;
+}
+
+document.getElementById("documentos").innerHTML = cedula(P.demografia) + libro(P.comercio) + ticket(P.consumo) + expediente(P.seguridad) + tarjeta(P.laboral);
+
+dibujarPlano(document.getElementById("plano"), DATOS.coropleta);
+
+document.documentElement.dataset.piel = "urbanismo";
+Mesa.iniciarModo(document.getElementById("modo"));
+</script>
+</body>
+</html>

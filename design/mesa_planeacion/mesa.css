@@ -1,0 +1,90 @@
+/* Mesa de planeación: lo común a todas las vistas de Mapo.
+   El plano es la mesa; encima van papeles pegados con cinta (membrete,
+   rótulo, documentos). Lo impreso (datos) va en sans técnica y lo que decide
+   el equipo va a mano. Los tokens de cada piel los genera pieles.js como
+   reglas [data-piel="..."]; los de aquí son la piel base, urbanismo, para
+   cuando no carga el JS. */
+:root{
+  --bg:#EEF1F4;--bg2:#E1E6ED;
+  --text:#12284D;--text2:#46587A;--line:#6A7C9A;
+  --accent:#B3301C;--film:#1A3A6B;
+  --cinta:rgba(226,214,170,.82);
+  --blend:multiply;
+  --sans:"Barlow",system-ui,sans-serif;
+  --cond:"Barlow Condensed","Barlow",sans-serif;
+  --mano:"Architects Daughter",cursive;
+  --mono:"IBM Plex Mono",ui-monospace,monospace;
+  color-scheme:light;
+}
+:root[data-theme="dark"]{
+  --bg:#0F2444;--bg2:#16305A;
+  --text:#EEF3F9;--text2:#B7C8E0;--line:#7E98BE;
+  --accent:#FF9E85;--film:#BFD8FF;
+  --cinta:rgba(226,214,170,.5);
+  --blend:normal;
+  color-scheme:dark;
+}
+[data-piel]{--trazo:color-mix(in srgb,var(--line) 22%,transparent)}
+
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:var(--sans);font-size:14px;line-height:1.45}
+button,select,input{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.num{font-family:var(--mono);font-variant-numeric:tabular-nums}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.mano{font-family:var(--mano);color:var(--accent);font-size:16px}
+.fuente{font-family:var(--mono);font-size:12px;color:var(--text2)}
+
+/* Papel pegado: fondo de su piel, borde de tinta y dos tiras de cinta */
+.pegado{position:relative;background-color:var(--bg);color:var(--text);border:1.5px solid var(--text);
+  transition:background-color .3s,color .3s,border-color .3s}
+.pegado::before,.pegado::after{content:"";position:absolute;width:46px;height:16px;background:var(--cinta);pointer-events:none}
+.pegado::before{left:-14px;top:-6px;transform:rotate(-32deg)}
+.pegado::after{right:-14px;top:-6px;transform:rotate(30deg)}
+
+/* Motivo del papel de cada piel. Un papel toma el de su propia piel o, si
+   no tiene, el de la piel que lo contiene. */
+[data-piel="urbanismo"] .pegado:not([data-piel]),.pegado[data-piel="urbanismo"]{background-image:linear-gradient(var(--trazo) 1px,transparent 1px),linear-gradient(90deg,var(--trazo) 1px,transparent 1px);background-size:12px 12px}
+[data-piel="demografia"] .pegado:not([data-piel]),.pegado[data-piel="demografia"]{background-image:repeating-linear-gradient(transparent 0 25px,var(--trazo) 25px 26px),linear-gradient(90deg,transparent 0 calc(100% - 64px),var(--trazo) calc(100% - 64px) calc(100% - 63px),transparent 0)}
+[data-piel="comercio"] .pegado:not([data-piel]),.pegado[data-piel="comercio"]{background-image:linear-gradient(90deg,transparent 9px,color-mix(in srgb,var(--accent) 45%,transparent) 9px 10px,transparent 10px 12px,color-mix(in srgb,var(--accent) 45%,transparent) 12px 13px,transparent 13px),repeating-linear-gradient(transparent 0 21px,var(--trazo) 21px 22px)}
+[data-piel="consumo"] .pegado:not([data-piel]),.pegado[data-piel="consumo"]{background-image:radial-gradient(var(--trazo) 0.8px,transparent 1.2px);background-size:5px 5px}
+[data-piel="seguridad"] .pegado:not([data-piel]),.pegado[data-piel="seguridad"]{background-image:radial-gradient(circle at 12px 30%,color-mix(in srgb,var(--text) 22%,transparent) 0 5px,transparent 5.5px),radial-gradient(circle at 12px 70%,color-mix(in srgb,var(--text) 22%,transparent) 0 5px,transparent 5.5px),linear-gradient(var(--trazo) 1px,transparent 1px 4px,var(--trazo) 4px 5px,transparent 5px)}
+[data-piel="laboral"] .pegado:not([data-piel]),.pegado[data-piel="laboral"]{background-image:linear-gradient(color-mix(in srgb,var(--film) 55%,transparent) 0 5px,transparent 5px),repeating-linear-gradient(90deg,transparent 0 29px,var(--trazo) 29px 30px)}
+[data-piel="movilidad"] .pegado:not([data-piel]),.pegado[data-piel="movilidad"]{background-image:repeating-linear-gradient(-45deg,var(--film) 0 7px,transparent 7px 14px),repeating-linear-gradient(transparent 0 23px,var(--trazo) 23px 24px);background-size:100% 5px,100% 100%;background-repeat:no-repeat,repeat}
+
+/* Membrete: marca, secciones y ubicación anotada a mano */
+.membrete{display:grid;grid-template-columns:auto 1fr;align-items:stretch}
+.marca{display:flex;align-items:center;gap:8px;padding:8px 14px 8px 10px;border-right:1.5px solid var(--text);text-decoration:none;color:var(--text)}
+.marca img{width:34px;height:34px}
+:root[data-theme="dark"] .marca img{background:#EEF1F4;padding:2px}
+.marca span{font-family:var(--cond);font-weight:700;font-size:30px;letter-spacing:.04em;line-height:1}
+.membrete-datos{display:grid;grid-template-rows:auto auto}
+.secciones{display:flex;border-bottom:1px solid var(--line)}
+.secciones a{padding:5px 12px;font-family:var(--cond);font-weight:500;font-size:16px;color:var(--text2);text-decoration:none}
+.secciones a[aria-current]{color:var(--text);text-decoration:underline;text-decoration-color:var(--accent);text-decoration-thickness:2px;text-underline-offset:5px}
+.ubicacion{display:flex;align-items:center;gap:4px;padding:3px 8px}
+.ubicacion select{background:transparent;border:0;font-family:var(--mano);font-size:17px;color:var(--text);padding:2px 4px;min-height:30px;cursor:pointer}
+.ubicacion span{color:var(--text2)}
+
+/* Esquina: selector de piel y modo */
+.esquina{display:flex;gap:8px}
+.modo{background:var(--bg);border:1.5px solid var(--text);padding:6px 12px;min-height:36px;font-family:var(--cond);font-weight:500;font-size:16px;cursor:pointer}
+.piel{display:flex;align-items:center;gap:6px;background:var(--bg);border:1.5px solid var(--text);padding:2px 4px 2px 10px;font-family:var(--cond);font-size:15px;color:var(--text2)}
+.piel select{background:transparent;border:0;font-family:var(--cond);font-weight:600;font-size:16px;color:var(--text);min-height:30px;cursor:pointer}
+
+/* Botones: uno primario (tinta sólida) por vista, el resto en contorno */
+.boton{display:inline-flex;align-items:center;justify-content:center;min-height:40px;padding:6px 18px;border:1.5px solid var(--text);
+  background:var(--bg);color:var(--text);font-family:var(--cond);font-weight:600;font-size:17px;text-decoration:none;white-space:nowrap;cursor:pointer;
+  transition:transform .12s ease-out}
+.boton:active{transform:translateY(1px)}
+.boton.primario{background:var(--text);color:var(--bg)}
+
+@media (max-width:560px){
+  .marca{padding:6px 10px 6px 8px}.marca img{width:28px;height:28px}.marca span{font-size:24px}
+  .secciones a{padding:4px 8px;font-size:15px}
+  .ubicacion select{font-size:15px;min-width:0}
+  .esquina{gap:6px}
+  .modo{padding:6px 8px;font-size:14px}
+  .piel span{display:none}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
