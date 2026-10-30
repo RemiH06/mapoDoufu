@@ -1,5 +1,6 @@
 import L from "../vendor/leaflet/leaflet"
 import {entintar} from "./plano_tinta"
+import {Marcas} from "./marcas"
 
 // Mapa tecnico: cada capa (coropleta, Voronoi, coloreado, isocrona) es un
 // acetato sobre el plano. El servidor las prende y apaga por push_event y
@@ -11,6 +12,11 @@ import {entintar} from "./plano_tinta"
 // Canvas en vez de SVG: una coropleta de estado son ~5 mil poligonos y en
 // SVG arrastrar el mapa baja a 30 o 40 fps. Cada acetato tiene su propio
 // canvas, para que se mezcle con el plano (mix-blend-mode) por separado.
+//
+// "Tus marcas" no es un acetato: va encima de todos, sin mezclarse, y sus
+// marcas son las de la sesion elegida (marcas.js, compartido con
+// /sesiones/:id). Con su cinta abierta, el clic en el plano pone marca; si
+// no, y hay isocrona activa, elige el punto de salida.
 
 const CENTRO_MEXICO = [23.6345, -102.5528]
 const ZOOM_MEXICO = 5
@@ -47,13 +53,19 @@ export const MapaTecnico = {
       pane.style.zIndex = 460 - i
       this.renderers[id] = L.canvas({pane: `p-${id}`})
     })
+    this.map.createPane("p-marcas").style.zIndex = 480
+    this.marcas = new Marcas(this.map, {push: (e, p) => this.pushEvent(e, p), pane: "p-marcas"})
+    this.modoMarcas = false
+
     this.capas = {coropleta: null, voronoi: null, coloreado: null, isocrona: null}
     this.datos = {coropleta: null, voronoi: null, coloreado: null, isocrona: null}
     this.modoIsocrona = false
     this.origen = null
 
     this.map.on("click", e => {
-      if (this.modoIsocrona) {
+      if (this.modoMarcas) {
+        this.marcas.clic(e.latlng)
+      } else if (this.modoIsocrona) {
         this.origen = e.latlng
         this.pushEvent("click_mapa", {lat: e.latlng.lat, lon: e.latlng.lng})
       }
@@ -66,8 +78,22 @@ export const MapaTecnico = {
     this.handleEvent("capa_isocrona", datos => this._recibir("isocrona", datos))
     this.handleEvent("modo_isocrona", ({activo}) => {
       this.modoIsocrona = activo
-      this.el.style.cursor = activo ? "crosshair" : ""
+      this._cursor()
     })
+    this.handleEvent("modo_marcas", ({activo}) => {
+      this.modoMarcas = activo
+      if (!activo) this.marcas.cancelar()
+      this._cursor()
+    })
+    this.handleEvent("marcas", ({anotaciones}) => {
+      this.marcas.poner(anotaciones)
+      const bordes = this.marcas.bordes()
+      if (bordes) this.map.fitBounds(bordes, {padding: [80, 80], maxZoom: 15})
+    })
+    this.handleEvent("nueva_anotacion", anotacion => this.marcas.agregar(anotacion, true))
+    this.handleEvent("anotacion_actualizada", anotacion => this.marcas.actualizar(anotacion))
+    this.handleEvent("anotacion_borrada", ({id}) => this.marcas.quitar(id))
+    this.handleEvent("herramienta", ({herramienta}) => this.marcas.usar(herramienta))
     this.handleEvent("orden_capas", ({orden}) => {
       orden.forEach((id, i) => { this.map.getPane(`p-${id}`).style.zIndex = 460 - i })
     })
@@ -77,6 +103,10 @@ export const MapaTecnico = {
     })
     this.alCambiarTema = () => this._repintar()
     window.addEventListener("mapo:tema", this.alCambiarTema)
+  },
+
+  _cursor() {
+    this.el.style.cursor = this.modoMarcas || this.modoIsocrona ? "crosshair" : ""
   },
 
   _recibir(id, datos) {
@@ -197,6 +227,7 @@ export const MapaTecnico = {
   destroyed() {
     window.removeEventListener("mapo:tema", this.alCambiarTema)
     raiz.dataset.piel = "urbanismo"
+    this.marcas.destruir()
     this.map.remove()
   },
 }

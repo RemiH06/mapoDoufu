@@ -12,18 +12,18 @@ defmodule MapoWeb.InvitacionLive.Show do
       <section class="doc pegado mx-auto max-w-md" aria-labelledby="t-invitacion">
         <header class="doc-cab">
           <h1 id="t-invitacion">{if @invitacion, do: @invitacion.team.name, else: "Invitación"}</h1>
-           <span class="doc-tipo">Invitación a un equipo</span>
+          <span class="doc-tipo">Invitación a un equipo</span>
         </header>
-        
+
         <div class="doc-seccion">
           <%= cond do %>
             <% @invitacion == nil -> %>
               <p>Esta invitación no existe o ya no es válida.</p>
-              
+
               <p class="secundario">Pide a quien te invitó que te mande otra.</p>
             <% @invitacion.estado == :aceptada -> %>
               <p>Esta invitación ya se aceptó.</p>
-              
+
               <div class="doc-botones">
                 <.button variant="primary" navigate={~p"/teams"}>Ir a mis equipos</.button>
               </div>
@@ -32,11 +32,11 @@ defmodule MapoWeb.InvitacionLive.Show do
                 Te invitaron a <strong>{@invitacion.team.name}</strong>
                 con el rol de {String.downcase(@role_labels[@invitacion.role])}.
               </p>
-              
+
               <p class="secundario">
                 Para aceptarla, entra o crea una cuenta con <span class="mano">{@invitacion.email}</span>.
               </p>
-              
+
               <div class="doc-botones">
                 <.button variant="primary" navigate={~p"/users/log-in"}>Entrar</.button>
                 <.button navigate={~p"/users/register"}>Crear cuenta</.button>
@@ -46,14 +46,14 @@ defmodule MapoWeb.InvitacionLive.Show do
                 Esta invitación es para <span class="mano">{@invitacion.email}</span>
                 y entraste como <span class="mano">{@current_scope.user.email}</span>.
               </p>
-              
+
               <p class="secundario">Sal y vuelve a entrar con el correo de la invitación.</p>
             <% true -> %>
               <p>
                 Te invitaron a <strong>{@invitacion.team.name}</strong>
                 con el rol de {String.downcase(@role_labels[@invitacion.role])}.
               </p>
-              
+
               <div class="doc-botones">
                 <.button variant="primary" phx-click="aceptar">Aceptar invitación</.button>
               </div>

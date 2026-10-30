@@ -184,4 +184,66 @@ defmodule MapoWeb.PerfilLive.IndexTest do
     assert html =~ "No hay incidencia del SESNSP cargada para este municipio."
     assert html =~ "No hay datos de la ENOE cargados para este estado."
   end
+
+  describe "notas del equipo" do
+    import Mapo.TeamsFixtures
+
+    test "without a team, each document invites to create one", %{conn: conn} do
+      stub_catalogo(perfil_con_demografia())
+      {:ok, lv, _html} = live(conn, ~p"/perfil?cve_ent=14&cve_mun=039")
+      render_async(lv)
+
+      assert has_element?(lv, "[data-piel=comercio] .notas a[href='/teams/new']")
+    end
+
+    test "a note written on a document shows up there, and can be deleted", %{
+      conn: conn,
+      scope: scope
+    } do
+      team = team_fixture(scope)
+      stub_catalogo(perfil_con_demografia())
+      {:ok, lv, _html} = live(conn, ~p"/perfil?cve_ent=14&cve_mun=039")
+      render_async(lv)
+
+      lv
+      |> form("[data-piel=comercio] .nota-forma", %{"texto" => "faltan papelerías"})
+      |> render_submit()
+
+      assert has_element?(lv, "[data-piel=comercio] .nota-texto", "faltan papelerías")
+      refute has_element?(lv, "[data-piel=demografia] .nota-texto")
+      assert [nota] = Mapo.Notas.list_notas(scope, team.id, "14", "039")
+      assert nota.documento == "comercio"
+
+      lv |> element("#nota-#{nota.id} .nota-borrar") |> render_click()
+      refute has_element?(lv, "#nota-#{nota.id}")
+    end
+
+    test "with several teams, switching team shows that team's notes", %{
+      conn: conn,
+      scope: scope
+    } do
+      a = team_fixture(scope, %{name: "A"})
+      b = team_fixture(scope, %{name: "B"})
+
+      {:ok, _} =
+        Mapo.Notas.create_nota(scope, b.id, %{
+          "cve_ent" => "14",
+          "cve_mun" => "039",
+          "documento" => "seguridad",
+          "texto" => "nota de B"
+        })
+
+      stub_catalogo(perfil_con_demografia())
+      {:ok, lv, _html} = live(conn, ~p"/perfil?cve_ent=14&cve_mun=039")
+      render_async(lv)
+      refute render(lv) =~ "nota de B"
+
+      lv
+      |> form("#perfil_form", perfil: %{"cve_ent" => "14", "cve_mun" => "039", "equipo" => b.id})
+      |> render_change()
+
+      assert has_element?(lv, "[data-piel=seguridad] .nota-texto", "nota de B")
+      assert a.id != b.id
+    end
+  end
 end

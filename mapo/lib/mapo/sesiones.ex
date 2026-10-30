@@ -27,6 +27,23 @@ defmodule Mapo.Sesiones do
   end
 
   @doc """
+  Todas las sesiones de los equipos del scope, con su equipo precargado,
+  ordenadas por equipo y nombre. Es la lista de donde `/mapa` deja elegir
+  en que sesion van "Tus marcas": solo trae lo que el scope puede ver.
+  """
+  def list_sesiones_del_usuario(%Scope{} = scope) do
+    Repo.all(
+      from s in Sesion,
+        join: m in Membership,
+        on: m.team_id == s.team_id,
+        join: t in assoc(s, :team),
+        where: m.user_id == ^scope.user.id,
+        order_by: [t.name, s.nombre, s.id],
+        preload: [team: t]
+    )
+  end
+
+  @doc """
   Trae una sesion. Requiere que el scope sea miembro del equipo dueno.
 
   Una sola consulta (join contra la membresia), a proposito: si se
@@ -74,21 +91,31 @@ defmodule Mapo.Sesiones do
     Phoenix.PubSub.subscribe(Mapo.PubSub, topico_sesion(sesion_id))
   end
 
+  def unsubscribe_sesion(sesion_id) do
+    Phoenix.PubSub.unsubscribe(Mapo.PubSub, topico_sesion(sesion_id))
+  end
+
   defp broadcast_sesion(sesion_id, mensaje) do
     Phoenix.PubSub.broadcast(Mapo.PubSub, topico_sesion(sesion_id), mensaje)
   end
 
   @doc """
   Crea una anotacion en `lat`/`lon` y la transmite en vivo a todos los
-  que esten viendo la misma sesion (incluido quien la crea). Requiere
-  que el scope sea miembro del equipo dueno de la sesion.
+  que esten viendo la misma sesion (incluido quien la crea), sea en
+  `/sesiones/:id` o en `/mapa`. Requiere que el scope sea miembro del
+  equipo dueno de la sesion.
+
+  `forma` dice como se dibuja (`"punto"` si no se da). Un `"circulo"`
+  guarda su centro en `lat`/`lon` y pide `"radio_m"` en metros.
   """
-  def create_anotacion(%Scope{} = scope, %Sesion{} = sesion, lat, lon, texto) do
+  def create_anotacion(%Scope{} = scope, %Sesion{} = sesion, lat, lon, texto, forma \\ %{}) do
     true = Teams.role_in_team(scope, sesion.team_id) != nil
 
     attrs = %{
       "texto" => texto,
       "geom" => %Geo.Point{coordinates: {lon, lat}, srid: 4326},
+      "forma" => Map.get(forma, "forma", "punto"),
+      "radio_m" => Map.get(forma, "radio_m"),
       "sesion_id" => sesion.id,
       "user_id" => scope.user.id
     }

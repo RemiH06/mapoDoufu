@@ -44,6 +44,7 @@ Qué se construyó en cada etapa, por qué así y qué bugs reales aparecieron.
 - [Concepto visual, octubre 2026](historial/2026-10-concepto-visual.md)
 - [Rediseño del núcleo, octubre 2026](historial/2026-10-rediseno-nucleo.md)
 - [Rediseño del resto, octubre 2026](historial/2026-10-rediseno-resto.md)
+- [Capa "Tus marcas", octubre 2026](historial/2026-10-tus-marcas.md)
 
 ## Gaiarda
 

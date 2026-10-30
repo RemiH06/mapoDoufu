@@ -14,12 +14,12 @@ defmodule MapoWeb.TeamLive.Show do
         <section class="doc pegado" aria-labelledby="t-equipo">
           <header class="doc-cab">
             <h1 id="t-equipo">{@team.name}</h1>
-             <span class="doc-tipo">Tu rol: {@role_labels[@current_role]}</span>
+            <span class="doc-tipo">Tu rol: {@role_labels[@current_role]}</span>
           </header>
-          
+
           <div class="doc-seccion">
             <h2>Miembros</h2>
-            
+
             <ul class="lista-doc">
               <li :for={m <- @memberships} class="lista-fila">
                 <span>{m.user.email}</span>
@@ -38,10 +38,10 @@ defmodule MapoWeb.TeamLive.Show do
               </li>
             </ul>
           </div>
-          
+
           <div :if={@can_manage?} class="doc-seccion">
             <h2>Agregar a alguien</h2>
-            
+
             <.form for={@add_form} id="add_member_form" phx-submit="add_member" class="agregar">
               <.input field={@add_form[:email]} type="email" label="Correo" required />
               <.input
@@ -51,13 +51,13 @@ defmodule MapoWeb.TeamLive.Show do
                 options={[{"Miembro", "member"}, {"Admin", "admin"}]}
               /> <.button phx-disable-with="Agregando...">Agregar</.button>
             </.form>
-            
+
             <p class="secundario">Si todavía no tiene cuenta, le llega una invitación al correo.</p>
           </div>
-          
+
           <div :if={@can_manage? and @invitaciones_pendientes != []} class="doc-seccion">
             <h2>Invitaciones pendientes</h2>
-            
+
             <ul class="lista-doc">
               <li :for={i <- @invitaciones_pendientes} class="lista-fila">
                 <span>{i.email}</span>
@@ -76,24 +76,24 @@ defmodule MapoWeb.TeamLive.Show do
             </ul>
           </div>
         </section>
-        
+
         <section class="doc pegado" aria-labelledby="t-sesiones">
           <header class="doc-cab">
             <h2 id="t-sesiones">Sesiones</h2>
-             <span class="doc-tipo">Mapas compartidos</span>
+            <span class="doc-tipo">Mapas compartidos</span>
           </header>
-          
+
           <div class="doc-seccion">
             <p :if={@sesiones == []} class="nota">
               Todavía no hay sesiones. En una sesión, lo que alguien marca en el mapa lo ven los demás al instante.
             </p>
-            
+
             <ul :if={@sesiones != []} class="lista-doc">
               <li :for={s <- @sesiones} class="lista-fila">
                 <.link navigate={~p"/sesiones/#{s}"} class="lista-enlace">{s.nombre}</.link>
               </li>
             </ul>
-            
+
             <.form for={@sesion_form} id="sesion_form" phx-submit="crear_sesion" class="agregar">
               <.input field={@sesion_form[:nombre]} type="text" label="Sesión nueva" required />
               <.button variant="primary" phx-disable-with="Creando...">Crear sesión</.button>

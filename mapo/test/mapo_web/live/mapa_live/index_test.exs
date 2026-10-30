@@ -394,4 +394,90 @@ defmodule MapoWeb.MapaLive.IndexTest do
       assert MapoWeb.MapaLive.Index.escala_quintiles(coropleta_con_valores([nil, nil])) == nil
     end
   end
+
+  describe "Tus marcas" do
+    import Mapo.TeamsFixtures
+    import Mapo.SesionesFixtures
+
+    alias Mapo.Sesiones
+
+    defp con_sesion(scope) do
+      team = team_fixture(scope, %{name: "Planeación"})
+      sesion_fixture(scope, team, %{"nombre" => "Recorrido"})
+    end
+
+    test "without sessions it points to the teams", %{conn: conn} do
+      stub_estados_y_municipio(fn _ -> raise "no debería llamarse" end)
+      {:ok, lv, _html} = live(conn, ~p"/mapa")
+
+      assert has_element?(lv, "#cinta-marcas a[href='/teams']")
+      assert has_element?(lv, ".pestana[aria-controls=cinta-marcas]", "sin sesión")
+    end
+
+    test "?sesion= opens the strip on that session and pushes its marks", %{
+      conn: conn,
+      scope: scope
+    } do
+      sesion = con_sesion(scope)
+      {:ok, _} = Sesiones.create_anotacion(scope, sesion, 20.67, -103.35, "aquí")
+      stub_estados_y_municipio(fn _ -> raise "no debería llamarse" end)
+
+      {:ok, lv, _html} = live(conn, ~p"/mapa?sesion=#{sesion.id}")
+
+      assert_push_event(lv, "marcas", %{anotaciones: [%{texto: "aquí", forma: "punto"}]})
+      assert_push_event(lv, "modo_marcas", %{activo: true})
+      refute has_element?(lv, "#cinta-marcas[hidden]")
+      assert has_element?(lv, "#cinta-marcas", "1 marca en la sesión")
+      assert has_element?(lv, "#sesion_marcas_form optgroup[label='Planeación']")
+      assert has_element?(lv, ".rotulo dd", "Recorrido")
+    end
+
+    test "choosing a session in the strip patches the URL", %{conn: conn, scope: scope} do
+      sesion = con_sesion(scope)
+      stub_estados_y_municipio(fn _ -> raise "no debería llamarse" end)
+      {:ok, lv, _html} = live(conn, ~p"/mapa")
+
+      lv
+      |> form("#sesion_marcas_form", %{"sesion" => to_string(sesion.id)})
+      |> render_change()
+
+      assert_patch(lv, ~p"/mapa?sesion=#{sesion.id}")
+    end
+
+    test "a circle drawn on /mapa is saved in the session and arrives live", %{
+      conn: conn,
+      scope: scope
+    } do
+      sesion = con_sesion(scope)
+      stub_estados_y_municipio(fn _ -> raise "no debería llamarse" end)
+      {:ok, lv, _html} = live(conn, ~p"/mapa?sesion=#{sesion.id}")
+
+      render_click(lv, "elegir_herramienta", %{"herramienta" => "circulo"})
+      assert_push_event(lv, "herramienta", %{herramienta: "circulo"})
+
+      render_hook(lv, "crear_anotacion", %{
+        "lat" => 20.67,
+        "lon" => -103.35,
+        "texto" => "zona sin papelerías",
+        "forma" => "circulo",
+        "radio_m" => 600
+      })
+
+      assert_push_event(lv, "nueva_anotacion", %{forma: "circulo", radio_m: 600.0})
+      assert [%{forma: "circulo"}] = Sesiones.list_anotaciones(sesion.id)
+      assert has_element?(lv, "#cinta-marcas", "1 marca en la sesión")
+    end
+
+    test "a session of someone else's team is refused", %{conn: conn} do
+      ajeno = Mapo.AccountsFixtures.user_scope_fixture()
+      sesion = con_sesion(ajeno)
+      stub_estados_y_municipio(fn _ -> raise "no debería llamarse" end)
+
+      {:ok, lv, html} = live(conn, ~p"/mapa?sesion=#{sesion.id}")
+
+      assert html =~ "Esa sesión no es de tus equipos."
+      render_hook(lv, "crear_anotacion", %{"lat" => 1.0, "lon" => 1.0, "texto" => ""})
+      assert Sesiones.list_anotaciones(sesion.id) == []
+    end
+  end
 end

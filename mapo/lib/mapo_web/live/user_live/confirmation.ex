@@ -10,12 +10,12 @@ defmodule MapoWeb.UserLive.Confirmation do
       <section class="doc pegado mx-auto max-w-md" aria-labelledby="t-confirmar">
         <header class="doc-cab">
           <h1 id="t-confirmar">{if @user.confirmed_at, do: "Entrar", else: "Confirmar cuenta"}</h1>
-           <span class="doc-tipo">Ficha de acceso</span>
+          <span class="doc-tipo">Ficha de acceso</span>
         </header>
-        
+
         <div class="doc-seccion">
           <p>Entras como <span class="mano">{@user.email}</span></p>
-          
+
           <.form
             :if={!@user.confirmed_at}
             for={@form}
@@ -35,9 +35,9 @@ defmodule MapoWeb.UserLive.Confirmation do
             >
               Confirmar y recordarme
             </.button>
-             <.button phx-disable-with="Confirmando...">Solo esta vez</.button>
+            <.button phx-disable-with="Confirmando...">Solo esta vez</.button>
           </.form>
-          
+
           <.form
             :if={@user.confirmed_at}
             for={@form}
@@ -60,10 +60,10 @@ defmodule MapoWeb.UserLive.Confirmation do
               >
                 Entrar y recordarme
               </.button>
-               <.button phx-disable-with="Entrando...">Solo esta vez</.button>
+              <.button phx-disable-with="Entrando...">Solo esta vez</.button>
             <% end %>
           </.form>
-          
+
           <p :if={!@user.confirmed_at} class="nota">
             Si prefieres contraseña, la puedes poner después en la cuenta.
           </p>

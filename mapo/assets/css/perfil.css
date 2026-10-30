@@ -92,6 +92,78 @@
     margin-top: 8px;
   }
 
+  /* Notas del equipo al pie de cada documento: a mano, en lápiz, debajo de
+     una raya punteada que las separa de lo impreso. */
+  .notas {
+    margin-top: 14px;
+    padding-top: 8px;
+    border-top: 1px dashed var(--line);
+    font-family: var(--mano);
+    color: var(--accent);
+    font-size: 17px;
+    line-height: 1.2;
+  }
+  .notas ul {
+    display: grid;
+    gap: 6px;
+    margin-bottom: 4px;
+  }
+  .notas li {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    column-gap: 8px;
+  }
+  .nota-texto {
+    overflow-wrap: anywhere;
+  }
+  .nota-autor {
+    grid-row: 2;
+    font-family: var(--cond);
+    font-size: 13px;
+    color: var(--text2);
+    overflow-wrap: anywhere;
+  }
+  .nota-borrar {
+    grid-row: 1 / 3;
+    grid-column: 2;
+    align-self: start;
+    min-width: 28px;
+    min-height: 28px;
+    background: none;
+    border: 0;
+    color: var(--text2);
+    font-size: 20px;
+    cursor: pointer;
+  }
+  .nota-borrar:hover {
+    color: var(--accent);
+  }
+  .nota-mas {
+    background: none;
+    border: 0;
+    padding: 0;
+    font: inherit;
+    color: inherit;
+    cursor: pointer;
+    min-height: 28px;
+  }
+  .nota-forma {
+    gap: 6px;
+    margin-top: 4px;
+  }
+  .nota-forma .campo {
+    flex: 1;
+    min-width: 0;
+    font-size: 17px;
+  }
+  .notas-de {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    font-family: var(--cond);
+    color: var(--text2);
+  }
+
   /* Cédula censal: casillas de formulario */
   .d-demografia {
     grid-column: span 4;

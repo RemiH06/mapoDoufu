@@ -40,6 +40,20 @@ defmodule Mapo.SesionesTest do
                Sesiones.create_sesion(scope, team.id, %{"nombre" => ""})
     end
 
+    test "list_sesiones_del_usuario/1 lists sessions of every team of the scope, and only those" do
+      scope = user_scope_fixture()
+      b = team_fixture(scope, %{name: "B"})
+      a = team_fixture(scope, %{name: "A"})
+      de_b = sesion_fixture(scope, b, %{"nombre" => "uno"})
+      de_a = sesion_fixture(scope, a, %{"nombre" => "dos"})
+      ajeno = user_scope_fixture()
+      sesion_fixture(ajeno, team_fixture(ajeno))
+
+      assert [primera, segunda] = Sesiones.list_sesiones_del_usuario(scope)
+      assert {primera.id, segunda.id} == {de_a.id, de_b.id}
+      assert primera.team.name == "A"
+    end
+
     test "get_sesion!/2 raises for a scope that is not a team member" do
       scope = user_scope_fixture()
       team = team_fixture(scope)
@@ -84,6 +98,52 @@ defmodule Mapo.SesionesTest do
                )
 
       assert %{texto: [_]} = errors_on(changeset)
+    end
+
+    test "create_anotacion/6 saves a circle as its center plus a radius" do
+      scope = user_scope_fixture()
+      team = team_fixture(scope)
+      sesion = sesion_fixture(scope, team)
+
+      assert {:ok, circulo} =
+               Sesiones.create_anotacion(scope, sesion, 20.67, -103.35, "zona", %{
+                 "forma" => "circulo",
+                 "radio_m" => 450
+               })
+
+      assert circulo.forma == "circulo"
+      assert circulo.radio_m == 450.0
+      assert %Geo.Point{coordinates: {-103.35, 20.67}} = circulo.geom
+
+      assert %{forma: "circulo", radio_m: 450.0, lat: 20.67, lon: -103.35} =
+               Mapo.Sesiones.Anotacion.a_mapa(circulo)
+    end
+
+    test "create_anotacion/6 rejects a circle without radius and an unknown shape" do
+      scope = user_scope_fixture()
+      team = team_fixture(scope)
+      sesion = sesion_fixture(scope, team)
+
+      assert {:error, cs} =
+               Sesiones.create_anotacion(scope, sesion, 20.67, -103.35, "", %{
+                 "forma" => "circulo"
+               })
+
+      assert %{radio_m: [_]} = errors_on(cs)
+
+      assert {:error, cs} =
+               Sesiones.create_anotacion(scope, sesion, 20.67, -103.35, "", %{"forma" => "flecha"})
+
+      assert %{forma: [_]} = errors_on(cs)
+    end
+
+    test "a point drops any radius it was sent" do
+      scope = user_scope_fixture()
+      team = team_fixture(scope)
+      sesion = sesion_fixture(scope, team)
+
+      assert {:ok, %{forma: "punto", radio_m: nil}} =
+               Sesiones.create_anotacion(scope, sesion, 20.67, -103.35, "", %{"radio_m" => 10})
     end
 
     test "create_anotacion/5 requires the scope to be a team member" do

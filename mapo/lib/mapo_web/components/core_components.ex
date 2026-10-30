@@ -69,10 +69,10 @@ defmodule MapoWeb.CoreComponents do
       <div class={["nota-flash pegado", @kind == :error && "error"]}>
         <div class="flex-1">
           <p :if={@title} class="nota-flash-titulo">{@title}</p>
-          
+
           <p>{msg}</p>
         </div>
-        
+
         <button type="button" class="nota-flash-cerrar" aria-label={gettext("close")}>
           <.icon name="hero-x-mark" class="size-5" />
         </button>
@@ -228,7 +228,7 @@ defmodule MapoWeb.CoreComponents do
           />{@label}
         </span>
       </label>
-      
+
       <.error :for={msg <- @errors}>{msg}</.error>
     </div>
     """
@@ -247,10 +247,10 @@ defmodule MapoWeb.CoreComponents do
           {@rest}
         >
           <option :if={@prompt} value="">{@prompt}</option>
-           {Phoenix.HTML.Form.options_for_select(@options, @value)}
+          {Phoenix.HTML.Form.options_for_select(@options, @value)}
         </select>
       </label>
-      
+
       <.error :for={msg <- @errors}>{msg}</.error>
     </div>
     """
@@ -270,7 +270,7 @@ defmodule MapoWeb.CoreComponents do
           {@rest}
         >{Phoenix.HTML.Form.normalize_value("textarea", @value)}</textarea>
       </label>
-      
+
       <.error :for={msg <- @errors}>{msg}</.error>
     </div>
     """
@@ -294,7 +294,7 @@ defmodule MapoWeb.CoreComponents do
           {@rest}
         />
       </label>
-      
+
       <.error :for={msg <- @errors}>{msg}</.error>
     </div>
     """
@@ -323,12 +323,12 @@ defmodule MapoWeb.CoreComponents do
         <h1 class="text-lg font-semibold leading-8 font-mono">
           {render_slot(@inner_block)}
         </h1>
-        
+
         <p :if={@subtitle != []} class="text-sm text-base-content/70">
           {render_slot(@subtitle)}
         </p>
       </div>
-      
+
       <div class="flex-none">{render_slot(@actions)}</div>
     </header>
     """
@@ -370,13 +370,13 @@ defmodule MapoWeb.CoreComponents do
       <thead>
         <tr>
           <th :for={col <- @col}>{col[:label]}</th>
-          
+
           <th :if={@action != []}>
             <span class="sr-only">{gettext("Actions")}</span>
           </th>
         </tr>
       </thead>
-      
+
       <tbody id={@id} phx-update={is_struct(@rows, Phoenix.LiveView.LiveStream) && "stream"}>
         <tr :for={row <- @rows} id={@row_id && @row_id.(row)}>
           <td
@@ -386,7 +386,7 @@ defmodule MapoWeb.CoreComponents do
           >
             {render_slot(col, @row_item.(row))}
           </td>
-          
+
           <td :if={@action != []} class="w-0 font-semibold">
             <div class="flex gap-4">
               <%= for action <- @action do %>
@@ -420,7 +420,7 @@ defmodule MapoWeb.CoreComponents do
       <li :for={item <- @item} class="list-row">
         <div class="list-col-grow">
           <div class="font-bold">{item.title}</div>
-          
+
           <div>{render_slot(item)}</div>
         </div>
       </li>

@@ -11,14 +11,14 @@ defmodule MapoWeb.UserLive.Registration do
       <section class="doc pegado mx-auto max-w-md" aria-labelledby="t-alta">
         <header class="doc-cab">
           <h1 id="t-alta">Crear cuenta</h1>
-           <span class="doc-tipo">Solicitud de alta</span>
+          <span class="doc-tipo">Solicitud de alta</span>
         </header>
-        
+
         <div class="doc-seccion">
           <p>
             Te mandamos un enlace para confirmar el correo. La contraseña es opcional y se pone después, en la cuenta.
           </p>
-          
+
           <.form
             for={@form}
             id="registration_form"
@@ -37,7 +37,7 @@ defmodule MapoWeb.UserLive.Registration do
             /> <.button variant="primary" phx-disable-with="Creando cuenta...">Crear cuenta</.button>
           </.form>
         </div>
-        
+
         <p class="doc-seccion secundario">
           <span>¿Ya tienes cuenta? <.link navigate={~p"/users/log-in"}>Entra</.link>.</span>
         </p>

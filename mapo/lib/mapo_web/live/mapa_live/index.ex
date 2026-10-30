@@ -3,12 +3,22 @@ defmodule MapoWeb.MapaLive.Index do
 
   import MapoWeb.Cifras
 
+  require MapoWeb.Marcas
+
   alias Mapo.MapoCore
+  alias Mapo.Sesiones
+  alias Mapo.Sesiones.Anotacion
+  alias MapoWeb.Marcas
 
   # Cada capa es un acetato sobre el plano (docs/arquitectura/decisiones.md,
   # "Concepto visual"). El orden de la lista es el orden de la pila: la
   # primera queda encima. La piel de la mesa la pone la capa visible de más
   # arriba, salvo que la persona fije una.
+  #
+  # "Tus marcas" no está en esta lista: no es un acetato impreso sino lo que
+  # el equipo anota a mano, así que va siempre encima, no se reordena y no
+  # pone piel. Sus marcas son las de una sesión del equipo (`?sesion=ID`),
+  # las mismas que se ven en /sesiones/:id y en vivo con ella.
   @capas %{
     "coropleta" => %{
       nombre: "Censo por AGEB",
@@ -77,6 +87,62 @@ defmodule MapoWeb.MapaLive.Index do
       </div>
 
       <section
+        id="cinta-marcas"
+        class="cinta pegado"
+        hidden={@elegida != "marcas"}
+        aria-label="Tus marcas"
+      >
+        <div class="cinta-titulo">
+          <h2>Tus marcas</h2>
+
+          <p class="fuente">a mano, del equipo</p>
+        </div>
+
+        <p :if={@sesiones == []} class="cinta-texto">
+          Las marcas se guardan en una sesión de tu equipo. <.link
+            navigate={~p"/teams"}
+            class="enlace"
+          >Abre o crea una</.link>.
+        </p>
+
+        <.form
+          :if={@sesiones != []}
+          for={%{}}
+          as={:marcas}
+          id="sesion_marcas_form"
+          phx-change="elegir_sesion"
+          class="cinta-campos"
+        >
+          <label>
+            <span class="etiqueta">Sesión</span>
+            <select name="sesion" class="cinta-control">
+              <option value="">Ninguna</option>
+              {Phoenix.HTML.Form.options_for_select(
+                opciones_sesiones(@sesiones),
+                @sesion && @sesion.id
+              )}
+            </select>
+          </label>
+        </.form>
+
+        <Marcas.selector :if={@sesion} herramienta={@herramienta} />
+
+        <p :if={@sesiones != []} class="cinta-texto">
+          <%= cond do %>
+            <% is_nil(@sesion) -> %>
+              Elige una sesión para ver sus marcas y poner nuevas.
+            <% @herramienta == "circulo" -> %>
+              Un clic en el centro y otro en la orilla. {marcas(@num_marcas)}.
+            <% true -> %>
+              Clic en el plano para poner una marca. {marcas(@num_marcas)}.
+          <% end %>
+          <.link :if={@sesion} navigate={~p"/sesiones/#{@sesion}"} class="enlace">
+            Abrir la sesión
+          </.link>
+        </p>
+      </section>
+
+      <section
         :for={id <- @orden}
         id={"cinta-#{id}"}
         class="cinta pegado"
@@ -128,6 +194,10 @@ defmodule MapoWeb.MapaLive.Index do
 
         <dd>{acetatos(assigns)}</dd>
 
+        <dt :if={@sesion}>Marcas</dt>
+
+        <dd :if={@sesion}>{@sesion.nombre}</dd>
+
         <dt>Fuentes</dt>
 
         <dd>{fuentes(assigns)}</dd>
@@ -150,6 +220,20 @@ defmodule MapoWeb.MapaLive.Index do
       </dl>
 
       <nav class="charola" aria-label="Acetatos">
+        <button
+          type="button"
+          class="pestana"
+          phx-click="elegir"
+          phx-value-capa="marcas"
+          aria-pressed={to_string(@sesion != nil)}
+          aria-expanded={to_string(@elegida == "marcas")}
+          aria-controls="cinta-marcas"
+          style="--capa: var(--accent)"
+        >
+          <span class="pelicula lapiz" aria-hidden="true"></span> <b>Tus marcas</b>
+          <em>{if @sesion, do: @sesion.nombre, else: "sin sesión"}</em>
+        </button>
+
         <button
           :for={id <- @orden}
           type="button"
@@ -297,6 +381,8 @@ defmodule MapoWeb.MapaLive.Index do
 
   @impl true
   def mount(_params, _session, socket) do
+    sesiones = Sesiones.list_sesiones_del_usuario(socket.assigns.current_scope)
+
     estados =
       case MapoCore.estados() do
         {:ok, %{"features" => features}} -> opciones_estados(features)
@@ -320,8 +406,17 @@ defmodule MapoWeb.MapaLive.Index do
        orden: ["isocrona", "voronoi", "coropleta", "coloreado"],
        elegida: nil,
        piel_fijada: nil,
-       piel_pintada: "urbanismo"
+       piel_pintada: "urbanismo",
+       sesiones: sesiones,
+       sesion: nil,
+       herramienta: "punto",
+       num_marcas: 0
      )}
+  end
+
+  @impl true
+  def handle_params(params, _uri, socket) do
+    {:noreply, cambiar_sesion(socket, params["sesion"])}
   end
 
   @impl true
@@ -338,9 +433,19 @@ defmodule MapoWeb.MapaLive.Index do
     {:noreply, assign(socket, form: to_form(params, as: "mapa"))}
   end
 
-  def handle_event("elegir", %{"capa" => capa}, socket) when is_map_key(@capas, capa) do
+  def handle_event("elegir", %{"capa" => capa}, socket)
+      when is_map_key(@capas, capa) or capa == "marcas" do
     elegida = if socket.assigns.elegida == capa, do: nil, else: capa
-    {:noreply, assign(socket, elegida: elegida)}
+    {:noreply, socket |> assign(elegida: elegida) |> modo_marcas()}
+  end
+
+  def handle_event("elegir_sesion", %{"sesion" => id}, socket) do
+    destino = if id == "", do: ~p"/mapa", else: ~p"/mapa?#{[sesion: id]}"
+    {:noreply, push_patch(socket, to: destino)}
+  end
+
+  def handle_event(evento, params, socket) when Marcas.evento_de_marca(evento) do
+    {:noreply, Marcas.evento(evento, params, socket)}
   end
 
   def handle_event("mover", %{"capa" => capa, "hacia" => hacia}, socket)
@@ -539,6 +644,65 @@ defmodule MapoWeb.MapaLive.Index do
       {:noreply, socket}
     end
   end
+
+  @impl true
+  def handle_info({:anotacion_creada, _} = mensaje, socket),
+    do: {:noreply, Marcas.mensaje(mensaje, update(socket, :num_marcas, &(&1 + 1)))}
+
+  def handle_info({:anotacion_borrada, _} = mensaje, socket),
+    do: {:noreply, Marcas.mensaje(mensaje, update(socket, :num_marcas, &(&1 - 1)))}
+
+  def handle_info(mensaje, socket) when Marcas.mensaje_de_marca(mensaje),
+    do: {:noreply, Marcas.mensaje(mensaje, socket)}
+
+  # El tópico de la sesión también lleva la presencia de /sesiones/:id; aquí
+  # no se muestra.
+  def handle_info(%Phoenix.Socket.Broadcast{event: "presence_diff"}, socket),
+    do: {:noreply, socket}
+
+  # Cambia la sesión de "Tus marcas": deja el tópico de la anterior, se
+  # suscribe a la nueva y le manda al hook sus marcas. Solo se aceptan
+  # sesiones de los equipos de la persona (las que ya trae `sesiones`).
+  defp cambiar_sesion(socket, id) do
+    previa = socket.assigns.sesion
+    nueva = id && Enum.find(socket.assigns.sesiones, &(to_string(&1.id) == id))
+
+    cond do
+      previa && nueva && previa.id == nueva.id ->
+        socket
+
+      is_nil(previa) and is_nil(nueva) ->
+        if id, do: put_flash(socket, :error, "Esa sesión no es de tus equipos."), else: socket
+
+      true ->
+        if previa && connected?(socket), do: Sesiones.unsubscribe_sesion(previa.id)
+        if nueva && connected?(socket), do: Sesiones.subscribe_sesion(nueva.id)
+        anotaciones = if nueva, do: Sesiones.list_anotaciones(nueva.id), else: []
+
+        socket
+        |> assign(sesion: nueva, num_marcas: length(anotaciones))
+        |> assign(elegida: if(nueva, do: "marcas", else: socket.assigns.elegida))
+        |> push_event("marcas", %{anotaciones: Enum.map(anotaciones, &Anotacion.a_mapa/1)})
+        |> modo_marcas()
+    end
+  end
+
+  # Con la cinta de "Tus marcas" abierta y una sesión elegida, el clic en el
+  # plano pone marca (le gana a la isócrona).
+  defp modo_marcas(socket) do
+    activo = socket.assigns.elegida == "marcas" and socket.assigns.sesion != nil
+    push_event(socket, "modo_marcas", %{activo: activo})
+  end
+
+  defp opciones_sesiones(sesiones) do
+    sesiones
+    |> Enum.group_by(& &1.team.name)
+    |> Enum.sort_by(&elem(&1, 0))
+    |> Enum.map(fn {equipo, lista} -> {equipo, Enum.map(lista, &{&1.nombre, &1.id})} end)
+  end
+
+  defp marcas(1), do: "1 marca en la sesión"
+  defp marcas(n), do: "#{n} marcas en la sesión"
 
   # Le dice al hook el orden de la pila y, si cambió, la piel de la mesa.
   defp actualizar_mesa(socket) do

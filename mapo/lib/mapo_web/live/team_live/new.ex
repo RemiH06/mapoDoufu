@@ -11,12 +11,12 @@ defmodule MapoWeb.TeamLive.New do
       <section class="doc pegado mx-auto max-w-md" aria-labelledby="t-nuevo">
         <header class="doc-cab">
           <h1 id="t-nuevo">Equipo nuevo</h1>
-           <span class="doc-tipo">Acta de formación</span>
+          <span class="doc-tipo">Acta de formación</span>
         </header>
-        
+
         <div class="doc-seccion">
           <p class="secundario">Quedas como titular. Después puedes agregar a más personas.</p>
-          
+
           <.form for={@form} id="team_form" phx-submit="save" phx-change="validate" class="grid gap-3">
             <.input
               field={@form[:name]}

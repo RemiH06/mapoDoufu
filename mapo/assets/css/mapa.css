@@ -202,6 +202,14 @@
   .pestana[aria-pressed="true"] .pelicula {
     opacity: 1;
   }
+  /* La película de "Tus marcas" es un círculo a lápiz, no un acetato */
+  .pelicula.lapiz {
+    width: 22px;
+    background: none;
+    border: 2px solid var(--capa);
+    border-radius: 48% 52% 44% 56% / 55% 45% 55% 45%;
+    rotate: -10deg;
+  }
   .pestana b {
     font-family: var(--cond);
     font-weight: 600;
@@ -281,6 +289,12 @@
     font-size: 13px;
     color: var(--text2);
     align-self: center;
+  }
+  .cinta-texto .enlace {
+    color: var(--accent);
+    text-decoration: underline;
+    text-underline-offset: 2px;
+    white-space: nowrap;
   }
   .cinta-orden {
     display: flex;

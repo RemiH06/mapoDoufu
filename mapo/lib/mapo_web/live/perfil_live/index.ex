@@ -4,11 +4,17 @@ defmodule MapoWeb.PerfilLive.Index do
   import MapoWeb.Cifras
 
   alias Mapo.MapoCore
+  alias Mapo.Notas
+  alias Mapo.Teams
 
   # Sobre el plano del municipio quedan cinco documentos, uno por enfoque y
   # cada uno con su piel (docs/arquitectura/decisiones.md, "Concepto
   # visual"). Nada se resume en un puntaje: cada documento dice su cifra, su
   # fuente y lo que no sabe. La consulta va en la URL para poder compartirla.
+  #
+  # Cada documento lleva al pie las notas del equipo sobre ese municipio
+  # (`Mapo.Notas`): a mano y en lápiz, separadas de lo impreso, y en vivo con
+  # quien tenga abierto el mismo perfil con el mismo equipo.
 
   @impl true
   def render(assigns) do
@@ -54,6 +60,15 @@ defmodule MapoWeb.PerfilLive.Index do
             aria-label="Municipio"
           />
         </div>
+        <label :if={length(@equipos) > 1} class="notas-de">
+          <span>Notas de</span>
+          <select name="perfil[equipo]" class="membrete-select">
+            {Phoenix.HTML.Form.options_for_select(
+              Enum.map(@equipos, &{&1.name, &1.id}),
+              @equipo_id
+            )}
+          </select>
+        </label>
         <.button class="boton primario" phx-disable-with="Consultando...">Ver perfil</.button>
         <p>
           Cinco documentos, uno por enfoque. Ninguno se resume en un puntaje. Si una fuente no
@@ -70,17 +85,53 @@ defmodule MapoWeb.PerfilLive.Index do
       </p>
 
       <div :if={@perfil} class="documentos">
-        <.cedula datos={@perfil["demografia"]} />
-        <.libro datos={@perfil["comercio"]} />
-        <.ticket datos={@perfil["consumo"]} />
-        <.expediente datos={@perfil["seguridad"]} />
-        <.tarjeta datos={@perfil["laboral"]} />
+        <.cedula datos={@perfil["demografia"]}>
+          <.notas
+            documento="demografia"
+            notas={@notas["demografia"] || []}
+            equipo?={@equipo_id != nil}
+            ronda={@nota_ronda}
+          />
+        </.cedula>
+        <.libro datos={@perfil["comercio"]}>
+          <.notas
+            documento="comercio"
+            notas={@notas["comercio"] || []}
+            equipo?={@equipo_id != nil}
+            ronda={@nota_ronda}
+          />
+        </.libro>
+        <.ticket datos={@perfil["consumo"]}>
+          <.notas
+            documento="consumo"
+            notas={@notas["consumo"] || []}
+            equipo?={@equipo_id != nil}
+            ronda={@nota_ronda}
+          />
+        </.ticket>
+        <.expediente datos={@perfil["seguridad"]}>
+          <.notas
+            documento="seguridad"
+            notas={@notas["seguridad"] || []}
+            equipo?={@equipo_id != nil}
+            ronda={@nota_ronda}
+          />
+        </.expediente>
+        <.tarjeta datos={@perfil["laboral"]}>
+          <.notas
+            documento="laboral"
+            notas={@notas["laboral"] || []}
+            equipo?={@equipo_id != nil}
+            ronda={@nota_ronda}
+          />
+        </.tarjeta>
       </div>
     </Layouts.app>
     """
   end
 
   attr :datos, :map
+  slot :inner_block
 
   defp cedula(assigns) do
     assigns = assign(assigns, reparto: reparto(assigns.datos))
@@ -139,11 +190,13 @@ defmodule MapoWeb.PerfilLive.Index do
       </dl>
       <p :if={!@datos} class="falta">El censo no tiene datos de este municipio.</p>
       <p class="fuente">INEGI · Censo de Población y Vivienda 2020</p>
+      {render_slot(@inner_block)}
     </article>
     """
   end
 
   attr :datos, :map
+  slot :inner_block
 
   defp libro(assigns) do
     assigns =
@@ -191,11 +244,13 @@ defmodule MapoWeb.PerfilLive.Index do
       </table>
       <p :if={@total == 0} class="falta">El DENUE no registra negocios en este municipio.</p>
       <p class="fuente">INEGI · DENUE</p>
+      {render_slot(@inner_block)}
     </article>
     """
   end
 
   attr :datos, :map
+  slot :inner_block
 
   defp ticket(assigns) do
     ~H"""
@@ -223,12 +278,14 @@ defmodule MapoWeb.PerfilLive.Index do
         <p class="falta">La muestra de la ENIGH no llegó a este municipio.</p>
       <% end %>
       <p class="fuente">INEGI · ENIGH</p>
+      {render_slot(@inner_block)}
       <div class="dientes" aria-hidden="true"></div>
     </article>
     """
   end
 
   attr :datos, :map
+  slot :inner_block
 
   defp expediente(assigns) do
     tipos = (assigns.datos && assigns.datos["por_tipo"]) || []
@@ -262,7 +319,64 @@ defmodule MapoWeb.PerfilLive.Index do
         </p>
       <% end %>
       <p class="fuente">SESNSP · incidencia del fuero común, carga manual</p>
+      {render_slot(@inner_block)}
     </article>
+    """
+  end
+
+  attr :documento, :string, required: true
+  attr :notas, :list, required: true
+  attr :equipo?, :boolean, required: true
+  attr :ronda, :integer, required: true
+
+  # La forma lleva la ronda en el id: al guardar una nota se vuelve a crear
+  # vacía y cerrada.
+  defp notas(assigns) do
+    assigns = assign(assigns, forma: "nota-forma-#{assigns.documento}-#{assigns.ronda}")
+
+    ~H"""
+    <div class="notas">
+      <ul :if={@notas != []}>
+        <li :for={nota <- @notas} id={"nota-#{nota.id}"}>
+          <span class="nota-texto">{nota.texto}</span>
+          <span class="nota-autor">{nota.user.email}</span>
+          <button
+            type="button"
+            class="nota-borrar"
+            phx-click="borrar_nota"
+            phx-value-id={nota.id}
+            data-confirm="¿Borrar esta nota para todo el equipo?"
+            aria-label="Borrar nota"
+          >
+            ×
+          </button>
+        </li>
+      </ul>
+      <%= if @equipo? do %>
+        <button
+          type="button"
+          class="nota-mas"
+          phx-click={JS.toggle(to: "##{@forma}", display: "flex") |> JS.focus(to: "##{@forma} input")}
+          aria-controls={@forma}
+        >
+          + nota del equipo
+        </button>
+        <form id={@forma} phx-submit="crear_nota" class="nota-forma" style="display: none">
+          <input type="hidden" name="documento" value={@documento} />
+          <input
+            type="text"
+            name="texto"
+            maxlength="500"
+            required
+            aria-label="Nota del equipo"
+            class="campo"
+          />
+          <button class="chico primario">Guardar</button>
+        </form>
+      <% else %>
+        <.link navigate={~p"/teams/new"} class="nota-mas">Crea un equipo para anotar</.link>
+      <% end %>
+    </div>
     """
   end
 
@@ -282,6 +396,7 @@ defmodule MapoWeb.PerfilLive.Index do
   end
 
   attr :datos, :map
+  slot :inner_block
 
   defp tarjeta(assigns) do
     ~H"""
@@ -305,12 +420,15 @@ defmodule MapoWeb.PerfilLive.Index do
         <p class="falta">No hay datos de la ENOE cargados para este estado.</p>
       <% end %>
       <p class="fuente">INEGI · ENOE</p>
+      {render_slot(@inner_block)}
     </article>
     """
   end
 
   @impl true
   def mount(_params, _session, socket) do
+    equipos = socket.assigns.current_scope |> Teams.list_teams() |> Enum.sort_by(& &1.name)
+
     estados =
       case MapoCore.estados() do
         {:ok, %{"features" => features}} -> opciones_estados(features)
@@ -326,7 +444,12 @@ defmodule MapoWeb.PerfilLive.Index do
        lugar: nil,
        perfil: nil,
        plano: nil,
-       consultando: false
+       consultando: false,
+       equipos: equipos,
+       equipo_id: equipos |> List.first() |> then(&(&1 && &1.id)),
+       notas_de: nil,
+       notas: %{},
+       nota_ronda: 0
      )}
   end
 
@@ -341,6 +464,7 @@ defmodule MapoWeb.PerfilLive.Index do
   @impl true
   def handle_event("cambiar_ubicacion", %{"perfil" => params}, socket) do
     cve_ent_previo = socket.assigns.form[:cve_ent].value
+    socket = cambiar_equipo(socket, params["equipo"])
 
     socket =
       if params["cve_ent"] != cve_ent_previo do
@@ -362,6 +486,57 @@ defmodule MapoWeb.PerfilLive.Index do
     else
       {:noreply, push_patch(socket, to: ~p"/perfil?#{[cve_ent: cve_ent, cve_mun: cve_mun]}")}
     end
+  end
+
+  def handle_event("crear_nota", %{"documento" => documento, "texto" => texto}, socket) do
+    case socket.assigns.notas_de do
+      {equipo, cve_ent, cve_mun} ->
+        attrs = %{
+          "cve_ent" => cve_ent,
+          "cve_mun" => cve_mun,
+          "documento" => documento,
+          "texto" => texto
+        }
+
+        case Notas.create_nota(socket.assigns.current_scope, equipo, attrs) do
+          {:ok, _nota} ->
+            {:noreply, update(socket, :nota_ronda, &(&1 + 1))}
+
+          {:error, _changeset} ->
+            {:noreply, put_flash(socket, :error, "No se pudo guardar la nota.")}
+        end
+
+      nil ->
+        {:noreply, socket}
+    end
+  end
+
+  def handle_event("borrar_nota", %{"id" => id}, socket) do
+    case socket.assigns.notas_de do
+      {equipo, _, _} ->
+        {:ok, _nota} = Notas.delete_nota(socket.assigns.current_scope, equipo, id)
+        {:noreply, socket}
+
+      nil ->
+        {:noreply, socket}
+    end
+  end
+
+  # Las notas llegan por PubSub también a quien las escribe: una sola vía
+  # para pintarlas, como las marcas de las sesiones.
+  @impl true
+  def handle_info({:nota_creada, nota}, socket) do
+    if socket.assigns.notas_de == {nota.team_id, nota.cve_ent, nota.cve_mun} do
+      {:noreply,
+       update(socket, :notas, &Map.update(&1, nota.documento, [nota], fn l -> l ++ [nota] end))}
+    else
+      {:noreply, socket}
+    end
+  end
+
+  def handle_info({:nota_borrada, id}, socket) do
+    quitar = fn lista -> Enum.reject(lista, &(&1.id == id)) end
+    {:noreply, update(socket, :notas, &Map.new(&1, fn {doc, lista} -> {doc, quitar.(lista)} end))}
   end
 
   @impl true
@@ -405,12 +580,48 @@ defmodule MapoWeb.PerfilLive.Index do
           plano: nil,
           consultando: true
         )
+        |> cargar_notas(cve_ent, cve_mun)
         |> start_async(:perfil, fn -> MapoCore.perfil_zona(cve_ent, cve_mun) end)
         |> start_async(:plano, fn -> MapoCore.agebs(cve_ent, cve_mun) end)
 
       _ ->
         put_flash(socket, :error, "Ese municipio no está en el catálogo.")
     end
+  end
+
+  defp cambiar_equipo(socket, nil), do: socket
+
+  defp cambiar_equipo(socket, id) do
+    case Enum.find(socket.assigns.equipos, &(to_string(&1.id) == id)) do
+      %{id: equipo} when equipo != socket.assigns.equipo_id ->
+        socket = assign(socket, equipo_id: equipo)
+
+        case socket.assigns.notas_de do
+          {_, cve_ent, cve_mun} -> cargar_notas(socket, cve_ent, cve_mun)
+          nil -> socket
+        end
+
+      _ ->
+        socket
+    end
+  end
+
+  # Cambia el tópico al equipo y municipio de ahora y trae sus notas.
+  defp cargar_notas(socket, cve_ent, cve_mun) do
+    %{equipo_id: equipo, notas_de: previa, current_scope: scope} = socket.assigns
+    clave = equipo && {equipo, cve_ent, cve_mun}
+
+    if connected?(socket) and previa != clave do
+      with {e, ent, mun} <- previa, do: Notas.unsubscribe(e, ent, mun)
+      if clave, do: Notas.subscribe(equipo, cve_ent, cve_mun)
+    end
+
+    notas =
+      if clave,
+        do: scope |> Notas.list_notas(equipo, cve_ent, cve_mun) |> Enum.group_by(& &1.documento),
+        else: %{}
+
+    assign(socket, notas_de: clave, notas: notas)
   end
 
   # Los AGEB del municipio como un solo trazo SVG. Se escala la longitud por

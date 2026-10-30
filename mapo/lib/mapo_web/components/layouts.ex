@@ -64,7 +64,7 @@ defmodule MapoWeb.Layouts do
         <.link navigate={~p"/"} class="marca">
           <img src={~p"/images/mapo-logo.svg"} alt="" /> <span>MAPO</span>
         </.link>
-        
+
         <div :if={@current_scope || @membrete != []} class="membrete-datos">
           <nav :if={@current_scope} class="secciones" aria-label="Secciones">
             <.link
@@ -75,7 +75,7 @@ defmodule MapoWeb.Layouts do
               {texto}
             </.link>
           </nav>
-          
+
           <div class="membrete-fila">
             <%= if @membrete != [] do %>
               {render_slot(@membrete)}
@@ -85,7 +85,7 @@ defmodule MapoWeb.Layouts do
           </div>
         </div>
       </div>
-      
+
       <div class="esquina">
         <%!-- El texto lo pone el script de root.html.heex; ignore evita que un
              parche de LiveView lo regrese a "Modo". --%>
@@ -99,7 +99,7 @@ defmodule MapoWeb.Layouts do
         >
           Modo
         </button>
-        
+
         <%= if @current_scope do %>
           <.link navigate={~p"/users/settings"} class="esquina-enlace">Cuenta</.link>
           <.link href={~p"/users/log-out"} method="delete" class="esquina-enlace">Salir</.link>
@@ -123,7 +123,7 @@ defmodule MapoWeb.Layouts do
         {render_slot(@inner_block)}
       </div>
     </main>
-     <.flash_group flash={@flash} />
+    <.flash_group flash={@flash} />
     """
   end
 
@@ -164,7 +164,7 @@ defmodule MapoWeb.Layouts do
         {gettext("Attempting to reconnect")}
         <.icon name="hero-arrow-path" class="ml-1 size-3 motion-safe:animate-spin" />
       </.flash>
-      
+
       <.flash
         id="server-error"
         kind={:error}

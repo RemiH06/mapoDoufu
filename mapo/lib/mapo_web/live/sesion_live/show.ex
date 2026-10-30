@@ -1,8 +1,12 @@
 defmodule MapoWeb.SesionLive.Show do
   use MapoWeb, :live_view
 
+  require MapoWeb.Marcas
+
   alias Mapo.Sesiones
+  alias Mapo.Sesiones.Anotacion
   alias Mapo.Teams
+  alias MapoWeb.Marcas
 
   @impl true
   def render(assigns) do
@@ -11,7 +15,7 @@ defmodule MapoWeb.SesionLive.Show do
       <:membrete>
         <.link navigate={~p"/teams/#{@team}"} class="mano">{@team.name}</.link>
       </:membrete>
-      
+
       <div
         id="mapa-colaborativo"
         phx-hook="CollabMap"
@@ -23,20 +27,30 @@ defmodule MapoWeb.SesionLive.Show do
         aria-label="Plano compartido de la sesión"
       >
       </div>
-      
+
       <section id="hoja-sesion" class="hoja-sesion pegado" aria-labelledby="t-sesion">
         <header class="hoja-cab">
           <h1 id="t-sesion">{@sesion.nombre}</h1>
-           <span class="tipo">Sesión del equipo</span>
+          <span class="tipo">Sesión del equipo</span>
         </header>
-        
+
+        <Marcas.selector herramienta={@herramienta} />
         <p class="pista">
           <span class="largo">
-            Clic en el plano para poner una marca; tócala para cambiar su nota o borrarla. Todo el equipo la ve al instante.
+            {if @herramienta == "circulo",
+              do: "Un clic en el centro y otro en la orilla para encerrar una zona.",
+              else: "Clic en el plano para poner una marca."} Tócala para cambiar su nota o borrarla. Todo el equipo la ve al instante.
           </span>
-           <span class="corto">Toca el plano para poner una marca.</span>
+          <span class="corto">
+            {if @herramienta == "circulo",
+              do: "Toca el centro y luego la orilla.",
+              else: "Toca el plano para poner una marca."}
+          </span>
         </p>
-        
+        <.link navigate={~p"/mapa?#{[sesion: @sesion.id]}"} class="mano a-mapa">
+          Ver las marcas con las capas de datos
+        </.link>
+
         <p class="presentes">
           <%= if @presentes == [] do %>
             <span class="secundario">Nadie más está viendo la sesión.</span>
@@ -73,67 +87,20 @@ defmodule MapoWeb.SesionLive.Show do
        sesion: sesion,
        team: team,
        topico: topico,
+       herramienta: "punto",
        presentes: presentes_en(topico, scope.user.id),
-       anotaciones_json: Enum.map(anotaciones, &anotacion_a_mapa/1)
+       anotaciones_json: Enum.map(anotaciones, &Anotacion.a_mapa/1)
      )}
   end
 
   @impl true
-  def handle_event("crear_anotacion", %{"lat" => lat, "lon" => lon, "texto" => texto}, socket) do
-    case Sesiones.create_anotacion(
-           socket.assigns.current_scope,
-           socket.assigns.sesion,
-           lat,
-           lon,
-           texto
-         ) do
-      {:ok, _anotacion} ->
-        {:noreply, socket}
-
-      {:error, _changeset} ->
-        {:noreply, put_flash(socket, :error, "No se pudo guardar la anotación.")}
-    end
-  end
-
-  def handle_event("editar_anotacion", %{"id" => id, "texto" => texto}, socket) do
-    scope = socket.assigns.current_scope
-    sesion = socket.assigns.sesion
-    anotacion = Sesiones.get_anotacion!(id)
-
-    case Sesiones.update_anotacion(scope, sesion, anotacion, texto) do
-      {:ok, _anotacion} ->
-        {:noreply, socket}
-
-      {:error, _changeset} ->
-        {:noreply, put_flash(socket, :error, "No se pudo actualizar la anotación.")}
-    end
-  end
-
-  def handle_event("borrar_anotacion", %{"id" => id}, socket) do
-    scope = socket.assigns.current_scope
-    sesion = socket.assigns.sesion
-    anotacion = Sesiones.get_anotacion!(id)
-
-    case Sesiones.delete_anotacion(scope, sesion, anotacion) do
-      {:ok, _anotacion} ->
-        {:noreply, socket}
-
-      {:error, _changeset} ->
-        {:noreply, put_flash(socket, :error, "No se pudo borrar la anotación.")}
-    end
+  def handle_event(evento, params, socket) when Marcas.evento_de_marca(evento) do
+    {:noreply, Marcas.evento(evento, params, socket)}
   end
 
   @impl true
-  def handle_info({:anotacion_creada, anotacion}, socket) do
-    {:noreply, push_event(socket, "nueva_anotacion", anotacion_a_mapa(anotacion))}
-  end
-
-  def handle_info({:anotacion_actualizada, anotacion}, socket) do
-    {:noreply, push_event(socket, "anotacion_actualizada", anotacion_a_mapa(anotacion))}
-  end
-
-  def handle_info({:anotacion_borrada, id}, socket) do
-    {:noreply, push_event(socket, "anotacion_borrada", %{id: id})}
+  def handle_info(mensaje, socket) when Marcas.mensaje_de_marca(mensaje) do
+    {:noreply, Marcas.mensaje(mensaje, socket)}
   end
 
   def handle_info(%Phoenix.Socket.Broadcast{event: "presence_diff"}, socket) do
@@ -152,17 +119,5 @@ defmodule MapoWeb.SesionLive.Show do
     |> Enum.map(fn {_user_id, %{metas: [meta | _]}} -> meta.email end)
     |> Enum.uniq()
     |> Enum.sort()
-  end
-
-  defp anotacion_a_mapa(anotacion) do
-    %Geo.Point{coordinates: {lon, lat}} = anotacion.geom
-
-    %{
-      id: anotacion.id,
-      lat: lat,
-      lon: lon,
-      texto: anotacion.texto,
-      autor: anotacion.user.email
-    }
   end
 end

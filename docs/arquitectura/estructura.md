@@ -10,9 +10,10 @@
 │                            mesa_planeacion/ (prototipos de la mesa y el generador
 │                            del plano de la portada), demos de tema viejas
 ├── mapo/                    Elixir + Phoenix LiveView (módulos Mapo / MapoWeb)
-│   ├── lib/mapo/            contextos: Accounts, Teams, Sesiones, MapoCore (cliente HTTP)
+│   ├── lib/mapo/            contextos: Accounts, Teams, Sesiones, Notas, MapoCore (cliente HTTP)
 │   ├── lib/mapo_web/live/   una carpeta por pantalla (mapa_live, perfil_live, logistica_live, ...)
-│   └── assets/js/           hooks de Leaflet y la portada (sin npm; Leaflet y anime.js
+│   │                        y marcas.ex (eventos de marcas, compartido por /mapa y la sesión)
+│   └── assets/js/           hooks de Leaflet, marcas.js (dibujo de marcas) y la portada (sin npm; Leaflet y anime.js
 │                            vendorizados en assets/vendor/)
 └── mapo_core/               Python + FastAPI. Datos y motor de decisión
     ├── src/mapo_core/
@@ -34,7 +35,7 @@
 - `mapo` le pide a `mapo_core` por HTTP (`Mapo.MapoCore`, con `Req`,
   URL en `MAPO_CORE_URL`) todo lo que es cálculo o datos de fuentes.
 - Las dos piezas comparten la misma Postgres: `mapo` usa Ecto para sus
-  tablas (usuarios, equipos, sesiones, anotaciones); `mapo_core` usa
+  tablas (usuarios, equipos, sesiones, anotaciones, notas_perfil); `mapo_core` usa
   `psycopg` directo para las tablas de fuentes (`entidades`,
   `municipios`, `agebs`, `fuente_*`, `descargas_checkpoint`).
 - `mapo_core` usa OSRM (ruteo por carretera) para VRP e isócronas. Ver

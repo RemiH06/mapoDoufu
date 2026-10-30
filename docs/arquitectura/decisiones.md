@@ -150,9 +150,8 @@ la pantalla era un dashboard genérico.
   cubre el municipio, su documento sigue en la mesa y lo dice. La
   consulta va en la URL (`/perfil?cve_ent=14&cve_mun=039`) para
   compartirla, y el perfil (unos 3 s) y el plano se piden con
-  `start_async` para no congelar la vista. El botón "+ nota del equipo"
-  del prototipo no entró: espera a que las anotaciones se guarden (capa
-  "Tus marcas").
+  `start_async` para no congelar la vista. Cada documento lleva al pie
+  las notas del equipo (ver "Tus marcas", abajo).
 - `/logistica` tiene su prototipo en `design/mesa_planeacion/logistica.html`,
   con un VRP real de `mapo_core` sobre Guadalajara (`ruta.js`: 11 paradas,
   3 vehículos, 48.5 km por carretera). Piel de movilidad (hoja de ruta),
@@ -233,6 +232,24 @@ la pantalla era un dashboard genérico.
 - **Roles sin género:** titular, admin y miembro (antes dueño,
   administrador y miembro). El aviso al entrar dice "De vuelta en la
   mesa."
+
+**Tus marcas** (sesión 6, cerrada el 2026-10-30; historial en
+[2026-10-tus-marcas.md](../historial/2026-10-tus-marcas.md)):
+
+- **Una marca de `/mapa` pertenece a una sesión del equipo,** no al
+  equipo suelto: la sesión ya es el mapa compartido, con su autorización
+  y su canal en vivo. La capa "Tus marcas" elige la sesión (va en la URL,
+  `?sesion=ID`) y lo que se pone ahí aparece en `/sesiones/:id` y al
+  revés.
+- **No es un acetato:** va encima de todos sin mezclarse, no se reordena
+  y no pone piel. Con su cinta abierta, el clic en el plano pone marca y
+  le gana a la isócrona.
+- **Formas:** punto y círculo (centro y radio en metros, dibujado como
+  lápiz). `forma` y la geometría genérica dejan lugar a flechas y trazo
+  libre sin cambiar la tabla.
+- **Notas de `/perfil`:** cuelgan de equipo, municipio y documento
+  (`notas_perfil`), no de una sesión ni de un punto. Cualquier miembro las
+  escribe y borra, como las marcas.
 
 Conceptos considerados y guardados para otras piezas (fondo de la home,
 animaciones, un tema futuro):

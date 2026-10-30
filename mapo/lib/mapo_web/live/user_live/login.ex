@@ -10,16 +10,16 @@ defmodule MapoWeb.UserLive.Login do
       <section class="doc pegado mx-auto max-w-md" aria-labelledby="t-entrar">
         <header class="doc-cab">
           <h1 id="t-entrar">{if @current_scope, do: "Confirma que eres tú", else: "Entrar"}</h1>
-           <span class="doc-tipo">Ficha de acceso</span>
+          <span class="doc-tipo">Ficha de acceso</span>
         </header>
-        
+
         <div :if={@current_scope} class="doc-seccion">
           <p>Para cambiar el correo o la contraseña hay que volver a entrar.</p>
         </div>
-        
+
         <div class="doc-seccion">
           <h2>Con un enlace al correo</h2>
-          
+
           <.form
             :let={f}
             for={@form}
@@ -39,15 +39,15 @@ defmodule MapoWeb.UserLive.Login do
               phx-mounted={JS.focus()}
             /> <.button variant="primary">Mandarme el enlace</.button>
           </.form>
-          
+
           <p :if={local_mail_adapter?()} class="nota">
             En desarrollo los correos no salen: llegan a la <.link href="/dev/mailbox">bandeja de pruebas</.link>.
           </p>
         </div>
-        
+
         <div class="doc-seccion">
           <h2>Con contraseña</h2>
-          
+
           <.form
             :let={f}
             for={@form}
@@ -77,11 +77,11 @@ defmodule MapoWeb.UserLive.Login do
               <.button name={@form[:remember_me].name} value="true">
                 Entrar y recordarme
               </.button>
-               <.button>Solo esta vez</.button>
+              <.button>Solo esta vez</.button>
             </div>
           </.form>
         </div>
-        
+
         <p :if={!@current_scope} class="doc-seccion secundario">
           <span>¿Todavía no tienes cuenta? <.link navigate={~p"/users/register"}>Crea una</.link>.</span>
         </p>
