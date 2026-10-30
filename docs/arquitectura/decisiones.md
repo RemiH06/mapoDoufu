@@ -167,6 +167,22 @@ la pantalla era un dashboard genérico.
   resolvió como "volverla depósito": el orden de visita lo decide el
   solver, no la persona. En celular la hoja baja al borde y se pliega;
   acostado, se va a la derecha.
+- `/logistica` en Phoenix sigue su prototipo. El estado (paradas, flota,
+  cálculo) vive en el LiveView y la hoja es HEEx; el hook solo dibuja y
+  manda `poner`, `mover` (al soltar un arrastre) y las acciones de la
+  ficha. Recalcular es `POST /vrp/calcular` con `start_async`; el
+  resultado se guarda con la foto de las paradas con que se pidió, así
+  que si la persona siguió editando, llega ya marcado como no vigente.
+  Las rutas vacías que regresa el solver (un vehículo sin paradas) no se
+  muestran. Hasta 50 paradas y 10 vehículos por cálculo.
+- `leaflet.css` va en su propia capa CSS, declarada entre `base` y
+  `components` al inicio de `app.css`. Sin capa le ganaba a todo lo de
+  `@layer components` sin importar la especificidad: en `/mapa` el zoom
+  quedaba detrás de la esquina y los bordes de Leaflet no eran los de la
+  mesa. Como primera capa perdía contra el reset de Tailwind (los
+  popups se quedaban sin margen). Los estilos de Leaflet de la mesa van
+  en la clase `.plano-leaflet` y el entintado del plano en
+  `assets/js/plano_tinta.js`, compartidos por `/mapa` y `/logistica`.
 - El botón de modo lleva `phx-update="ignore"`: su texto lo pone el
   script de la raíz y cualquier parche de LiveView lo regresaba a "Modo".
 - El fondo animado de metro se quitó de la raíz: pintaba su propio fondo

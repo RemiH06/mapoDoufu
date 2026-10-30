@@ -3,13 +3,13 @@
    elegida y el rótulo de la lámina son papeles pegados encima. */
 
 @layer components {
-  /* Plano y acetatos */
-  #mapa-tecnico,
-  #mapa-tecnico.leaflet-container {
+  /* Plano y acetatos. .plano-leaflet también lo usa /logistica. */
+  .plano-leaflet,
+  .plano-leaflet.leaflet-container {
     background: var(--bg);
     font-family: var(--sans);
   }
-  #mapa-tecnico .leaflet-tile-pane {
+  .plano-leaflet .leaflet-tile-pane {
     filter: url(#plano-tinta);
   }
   .acetato {
@@ -26,26 +26,26 @@
       clip-path: inset(0 0 0 0);
     }
   }
-  #mapa-tecnico .leaflet-bar {
+  .plano-leaflet .leaflet-bar {
     border: 1.5px solid var(--text);
     border-radius: 0;
     box-shadow: none;
   }
-  #mapa-tecnico .leaflet-bar a {
+  .plano-leaflet .leaflet-bar a {
     background: var(--bg);
     color: var(--text);
     border-color: var(--line);
     border-radius: 0;
   }
-  #mapa-tecnico .leaflet-control-attribution {
+  .plano-leaflet .leaflet-control-attribution {
     background: color-mix(in srgb, var(--bg) 85%, transparent);
     color: var(--text2);
     font-size: 11px;
   }
-  #mapa-tecnico .leaflet-control-attribution a {
+  .plano-leaflet .leaflet-control-attribution a {
     color: var(--text2);
   }
-  #mapa-tecnico .leaflet-control-scale-line {
+  .plano-leaflet .leaflet-control-scale-line {
     background: var(--bg);
     color: var(--text);
     border: 1.5px solid var(--text);
@@ -53,8 +53,8 @@
     font-family: var(--mono);
     font-size: 11px;
   }
-  #mapa-tecnico .leaflet-popup-content-wrapper,
-  #mapa-tecnico .leaflet-popup-tip {
+  .plano-leaflet .leaflet-popup-content-wrapper,
+  .plano-leaflet .leaflet-popup-tip {
     background: var(--bg);
     color: var(--text);
     border-radius: 0;

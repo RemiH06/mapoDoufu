@@ -1,8 +1,13 @@
 /* See the Tailwind configuration guide for advanced usage
    https://tailwindcss.com/docs/configuration */
 
+/* Leaflet va en su propia capa, entre el reset de Tailwind (base) y la mesa
+   (components): sin capa le ganaba a todo lo de @layer components (mapa.css,
+   logistica.css) sin importar la especificidad, y como primera capa perdía
+   contra el reset. El orden se declara antes de cualquier import. */
+@layer theme, base, leaflet, components, utilities;
 @import url("https://fonts.bunny.net/css?family=barlow:400,500,600|barlow-condensed:500,600,700|architects-daughter:400|caveat:500|special-elite:400|ibm-plex-mono:400,500&display=swap");
-@import "../vendor/leaflet/leaflet.css";
+@import "../vendor/leaflet/leaflet.css" layer(leaflet);
 @import "tailwindcss" source(none);
 @import "phoenix-colocated/mapo/colocated.css";
 /* Después de Tailwind, para que su orden de capas ya esté declarado */
@@ -10,6 +15,7 @@
 @import "./mesa.css";
 @import "./mapa.css";
 @import "./perfil.css";
+@import "./logistica.css";
 @source "../css";
 @source "../js";
 @source "../../lib/mapo_web";

@@ -292,7 +292,7 @@
     grid-column: span 5;
     --giro: -0.4deg;
   }
-  .sello {
+  .d-laboral .sello {
     display: inline-block;
     margin: 6px 0 4px;
     padding: 4px 14px;
