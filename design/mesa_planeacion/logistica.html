@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Mapo · rutas de reparto</title>
+<link rel="icon" type="image/svg+xml" href="../favicon.svg">
+<link rel="preconnect" href="https://fonts.bunny.net">
+<link href="https://fonts.bunny.net/css?family=barlow:400,500,600|barlow-condensed:500,600,700|architects-daughter:400|caveat:500|special-elite:400|ibm-plex-mono:400,500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="leaflet.css">
+<link rel="stylesheet" href="mesa.css">
+<script src="pieles.js"></script>
+<style>
+/* /logistica: el plano ocupa la mesa y encima queda una sola hoja de ruta.
+   Las paradas son marcas del equipo: se ponen con un clic, se arrastran y se
+   editan ahí mismo. Las rutas son lo impreso: las calcula el servidor (OR-Tools
+   sobre OSRM) y se pintan con la tinta de cada vehículo. */
+html,body{height:100%}
+body{overflow:hidden}
+
+#mapa{position:fixed;inset:0;background:var(--bg);cursor:crosshair}
+.leaflet-container{font-family:var(--sans);background:var(--bg)}
+.leaflet-tile-pane{filter:url(#plano)}
+.leaflet-bar{border:1.5px solid var(--text)!important;border-radius:0!important}
+.leaflet-bar a{background:var(--bg)!important;color:var(--text)!important;border-color:var(--line)!important;border-radius:0!important}
+.leaflet-control-attribution{background:color-mix(in srgb,var(--bg) 85%,transparent)!important;color:var(--text2)!important;font-size:11px}
+.leaflet-control-attribution a{color:var(--text2)!important}
+.leaflet-control-scale-line{background:var(--bg);color:var(--text);border:1.5px solid var(--text);border-top:0;font-family:var(--mono);font-size:11px}
+.leaflet-top.leaflet-right{top:62px;right:6px}
+.leaflet-popup-content-wrapper,.leaflet-popup-tip{background:var(--bg);color:var(--text);border:1.5px solid var(--text);border-radius:0;box-shadow:none}
+.leaflet-popup-content{margin:10px 12px;font-family:var(--sans);font-size:14px}
+.leaflet-container a.leaflet-popup-close-button{color:var(--text2)}
+
+.membrete,.esquina,.hoja{position:fixed;z-index:1000}
+.membrete{left:16px;top:16px}
+.esquina{right:16px;top:16px}
+
+/* Paradas: marcas a mano. El depósito es un sello; las que no tienen ruta
+   todavía van punteadas en el color de anotar. */
+.pin{display:grid;place-items:center;width:30px;height:30px;border-radius:50%;background:var(--bg);border:2.5px solid var(--v,var(--text));
+  color:var(--text);font-family:var(--cond);font-weight:700;font-size:15px;line-height:1;cursor:grab;transition:transform .12s ease-out}
+.pin.deposito{border-radius:0;background:var(--text);color:var(--bg);border-color:var(--text)}
+.pin.pendiente{border-style:dashed;border-color:var(--accent);color:var(--accent)}
+.pin.resalta{transform:scale(1.25)}
+.leaflet-marker-dragging .pin{cursor:grabbing}
+
+/* Ficha de una parada, sobre el plano */
+.ficha{display:grid;gap:8px;min-width:200px}
+.ficha b{font-family:var(--cond);font-size:18px}
+.ficha p{font-size:13px;color:var(--text2)}
+.ficha .linea{display:flex;align-items:center;justify-content:space-between;gap:10px;font-family:var(--cond);font-size:15px;color:var(--text2)}
+.ficha .acciones{display:flex;gap:6px;flex-wrap:wrap}
+
+.paso{display:inline-flex;align-items:center;border:1.5px solid var(--line)}
+.paso button{width:30px;height:30px;background:var(--bg);border:0;cursor:pointer;font-family:var(--mono);font-size:16px;color:var(--text)}
+.paso button:hover{background:var(--bg2)}
+.paso button:disabled{opacity:.35;cursor:default}
+.paso output{min-width:3ch;text-align:center;font-family:var(--mono);font-variant-numeric:tabular-nums}
+.chico{background:var(--bg);border:1.5px solid var(--line);padding:3px 10px;min-height:32px;cursor:pointer;font-family:var(--cond);font-size:15px;color:var(--text)}
+.chico:hover{border-color:var(--text)}
+
+/* Hoja de ruta: la franja de precaución arriba la pone el motivo de la piel */
+.hoja{left:16px;top:120px;bottom:16px;width:380px;display:flex;flex-direction:column;padding:16px 0 0}
+.hoja > *{padding-left:18px;padding-right:18px}
+.hoja-cab{display:flex;justify-content:space-between;align-items:baseline;gap:12px;border-bottom:1.5px solid var(--text);padding-bottom:6px;margin:0 18px;padding-left:0;padding-right:0}
+.hoja-cab h1{font-family:var(--cond);font-weight:700;font-size:24px;line-height:1.1}
+.hoja-cab .tipo{font-family:var(--cond);font-weight:500;font-size:14px;color:var(--text2)}
+.plegar{display:none}
+.pista{font-family:var(--mano);color:var(--accent);font-size:15px;line-height:1.3;margin-top:8px}
+.pista .corto{display:none}
+.flota{display:flex;flex-wrap:wrap;gap:8px 18px;align-items:center;margin-top:10px;padding-bottom:10px;border-bottom:1px dashed var(--line)}
+.frase{display:flex;align-items:center;gap:8px;font-family:var(--cond);font-size:16px;color:var(--text2)}
+.balance{flex-basis:100%;font-size:13px;color:var(--text2)}
+.balance.no-cabe{color:var(--accent)}
+
+.lista{flex:1;min-height:0;overflow-y:auto;list-style:none;padding-top:6px;padding-bottom:6px}
+.grupo{margin-top:10px}
+.grupo-cab{display:grid;grid-template-columns:22px 1fr auto;gap:2px 10px;align-items:center;font-size:13px;color:var(--text2)}
+.grupo-cab .tinta{height:4px;background:var(--v)}
+.grupo-cab b{font-family:var(--cond);font-size:16px;color:var(--text)}
+.grupo-cab span:last-child{grid-column:2/-1}
+.grupo.sin-ruta .tinta{background:none;border-top:2px dashed var(--accent)}
+.fila{display:grid;grid-template-columns:30px 1fr auto 32px;gap:10px;align-items:center;padding:5px 0;border-bottom:1px solid var(--trazo)}
+.fila .pin{width:26px;height:26px;font-size:13px;cursor:default}
+.fila .nombre{font-family:var(--cond);font-size:16px;line-height:1.1}
+.fila .nombre small{display:block;font-family:var(--mono);font-size:11px;color:var(--text2)}
+.quitar{width:32px;height:32px;background:none;border:1.5px solid transparent;cursor:pointer;font-size:18px;color:var(--text2)}
+.quitar:hover{border-color:var(--line);color:var(--accent)}
+.fila.resalta{background:color-mix(in srgb,var(--film) 12%,transparent)}
+.vacia{font-size:13px;color:var(--text2);padding:10px 0}
+
+.pie{border-top:1.5px solid var(--text);padding-top:10px;padding-bottom:14px;display:grid;gap:10px}
+.resumen{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.sello{display:inline-block;padding:3px 10px;border:2px solid var(--film);color:var(--film);rotate:-2deg;font-family:var(--cond);font-weight:700;font-size:14px;letter-spacing:.04em;text-transform:uppercase}
+.sello.aprox{border-color:var(--accent);color:var(--accent);border-style:dashed}
+.total{font-family:var(--mono);font-size:24px}
+.aviso{font-family:var(--mano);color:var(--accent);font-size:16px}
+.botones{display:flex;gap:8px}
+.botones .boton.primario{flex:1}
+.boton:disabled{opacity:.45;cursor:default}
+
+@media (max-width:760px){
+  .membrete{left:10px;top:10px;right:10px}
+  .esquina{right:10px;top:96px}
+  .leaflet-top.leaflet-right{top:136px}
+  /* La hoja baja al borde como una charola; plegada solo asoma su cabecera y el botón. */
+  .hoja{left:10px;right:10px;top:auto;bottom:0;width:auto;max-height:58vh;border-bottom:0;padding-top:12px}
+  .pista .largo{display:none}.pista .corto{display:inline}
+  .flota{gap:6px 14px;margin-top:6px;padding-bottom:6px}
+  .fila .nombre small{display:none}
+  .flota .paso button{width:34px;height:34px}
+  .hoja.plegada .pista,.hoja.plegada .flota,.hoja.plegada .lista{display:none}
+  .plegar{display:inline-flex}
+  .fila{grid-template-columns:30px 1fr auto 40px}
+  .paso button,.quitar{width:40px;height:40px}
+}
+@media (max-height:500px) and (max-width:900px){
+  .hoja{max-height:none;top:10px;bottom:10px;left:auto;right:10px;width:330px;border-bottom:1.5px solid var(--text)}
+  .esquina{top:auto;bottom:10px;left:10px;right:auto}
+  .membrete{right:auto}
+  .leaflet-control-zoom{display:none}
+  .pista .largo{display:none}.pista .corto{display:inline}
+  .flota{margin-top:6px;padding-bottom:6px}
+  .pie{gap:6px;padding-bottom:10px}
+  .plegar{display:none}
+}
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <filter id="plano" color-interpolation-filters="sRGB">
+    <feColorMatrix type="saturate" values="0"/>
+    <feComponentTransfer id="duotono"><feFuncR type="table"/><feFuncG type="table"/><feFuncB type="table"/></feComponentTransfer>
+  </filter>
+</svg>
+
+<div id="mapa" role="region" aria-label="Plano para poner paradas"></div>
+
+<header class="membrete pegado">
+  <a class="marca" href="portada.html"><img src="../favicon.svg" alt=""><span>MAPO</span></a>
+  <div class="membrete-datos">
+    <nav class="secciones" aria-label="Secciones">
+      <a href="index.html">Mapa</a><a href="perfil.html">Perfil</a><a href="logistica.html" aria-current="page">Logística</a>
+    </nav>
+    <div class="ubicacion"><span class="mano">Rutas de reparto</span></div>
+  </div>
+</header>
+
+<div class="esquina"><button class="modo" id="modo" type="button">Día</button></div>
+
+<section class="hoja pegado" id="hoja" aria-labelledby="t-hoja"></section>
+
+<script src="leaflet.js"></script>
+<script src="ruta.js"></script>
+<script>
+const raiz = document.documentElement;
+raiz.dataset.piel = "movilidad";
+const css = n => getComputedStyle(raiz).getPropertyValue(n).trim();
+const fmt = (n, d = 0) => n.toLocaleString("es-MX", {minimumFractionDigits: d, maximumFractionDigits: d});
+const {PIELES, rgb, mezcla, oscuro} = Mesa;
+
+// Una tinta por vehículo: los anillos del logo, empezando por la de movilidad.
+const TINTAS = ["--f-movilidad", "--f-urbanismo", "--f-demografia", "--f-comercio", "--f-seguridad"];
+const LETRAS = "ABCDEFGHIJ";
+const tinta = k => css(TINTAS[k % TINTAS.length]);
+
+// Estado. El número de cada parada no cambia al quitar otras: es su nombre en el plano.
+let siguiente = 1;
+let paradas = RUTA.solicitud.paradas.map((p, i) => ({id: i === 0 ? 0 : siguiente++, lat: p.lat, lon: p.lon, demanda: p.demanda}));
+const flota = {n: RUTA.solicitud.capacidades_vehiculos.length, cap: RUTA.solicitud.capacidades_vehiculos[0]};
+let calculo = {
+  metodo: RUTA.resultado.metodo, total: RUTA.resultado.distancia_total_km,
+  rutas: RUTA.resultado.rutas.map(r => ({ids: r.orden_paradas.map(i => paradas[i].id), km: r.distancia_km, geometria: r.geometria})),
+};
+let vigente = true, error = null, plegada = false;
+
+const porId = id => paradas.find(p => p.id === id);
+const deposito = () => paradas[0];
+const rutaDe = id => calculo ? calculo.rutas.findIndex(r => r.ids.slice(1, -1).includes(id)) : -1;
+const demandaTotal = () => paradas.slice(1).reduce((s, p) => s + p.demanda, 0);
+function cambio() { vigente = false; error = null; pintar(); }
+
+// El mapa base se reimprime con las tintas de la piel, igual que en /mapa.
+function entintar() {
+  const t = PIELES.movilidad[oscuro() ? "noche" : "dia"];
+  const calles = oscuro() ? mezcla(t.bg2, t.line, 0.3) : mezcla(t.bg, "#F8F9FB", 0.7);
+  const medio = oscuro() ? mezcla(t.bg2, t.bg, -0.4) : mezcla(t.bg2, t.line, 0.12);
+  const tramos = [[0, t.text], [0.45, t.line], [0.72, medio], [0.9, t.bg], [1, calles]].map(([x, h]) => [x, rgb(h)]);
+  const valor = (x, c) => {
+    let k = 1; while (tramos[k][0] < x) k++;
+    const [x0, a] = tramos[k - 1], [x1, b] = tramos[k], f = (x - x0) / (x1 - x0);
+    return (a[c] + (b[c] - a[c]) * f).toFixed(3);
+  };
+  const muestras = Array.from({length: 41}, (_, i) => i / 40);
+  [...document.getElementById("duotono").children].forEach((fn, c) => fn.setAttribute("tableValues", muestras.map(x => valor(x, c)).join(" ")));
+}
+
+const mapa = L.map("mapa", {zoomControl: false});
+L.control.zoom({position: "topright"}).addTo(mapa);
+L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {maxZoom: 18, attribution: "© colaboradores de OpenStreetMap"}).addTo(mapa);
+L.control.scale({imperial: false, position: "bottomright"}).addTo(mapa);
+const capaRutas = L.layerGroup().addTo(mapa);
+const marcadores = new Map();
+
+mapa.on("click", e => {
+  paradas.push({id: siguiente++, lat: e.latlng.lat, lon: e.latlng.lng, demanda: 1});
+  cambio();
+});
+
+function pin(p, clase = "") {
+  const dep = p === deposito(), k = rutaDe(p.id);
+  const tipo = dep ? "deposito" : k < 0 ? "pendiente" : "";
+  const color = !dep && k >= 0 ? `style="--v:${tinta(k)}"` : "";
+  return `<span class="pin ${tipo} ${clase}" ${color}>${dep ? "D" : p.id}</span>`;
+}
+const nombre = p => p === deposito() ? "Depósito" : `Parada ${p.id}`;
+// Contador de − y +: demanda de una parada, vehículos o capacidad.
+const paso = (valor, accion, etiqueta, id = "", minimo = 0) => `<span class="paso">
+  <button type="button" data-accion="${accion}" data-d="-1" data-id="${id}" aria-label="Menos: ${etiqueta}" ${valor <= minimo ? "disabled" : ""}>−</button>
+  <output class="num" aria-label="${etiqueta}">${valor}</output>
+  <button type="button" data-accion="${accion}" data-d="1" data-id="${id}" aria-label="Más: ${etiqueta}">+</button></span>`;
+const demanda = p => paso(p.demanda, "demanda", `demanda de ${nombre(p)}`, p.id);
+
+function ficha(p) {
+  if (p === deposito()) return `<div class="ficha"><b>Depósito</b><p>Aquí empiezan y terminan todas las rutas.</p>
+    <div class="acciones"><button type="button" class="chico" data-accion="quitar" data-id="${p.id}">Quitar</button></div></div>`;
+  return `<div class="ficha"><b>Parada ${p.id}</b>
+    <div class="linea">Demanda ${demanda(p)}</div>
+    <div class="acciones"><button type="button" class="chico" data-accion="deposito" data-id="${p.id}">Volverla depósito</button>
+      <button type="button" class="chico" data-accion="quitar" data-id="${p.id}">Quitar</button></div></div>`;
+}
+
+// Los marcadores se actualizan en su lugar (no se rehacen) para que la ficha
+// abierta no se cierre al cambiar la demanda.
+function pintarPlano() {
+  for (const [id, m] of marcadores) if (!porId(id)) { m.remove(); marcadores.delete(id); }
+  paradas.forEach(p => {
+    const icono = L.divIcon({className: "", html: pin(p), iconSize: [30, 30], iconAnchor: [15, 15], popupAnchor: [0, -14]});
+    let m = marcadores.get(p.id);
+    if (!m) {
+      m = L.marker([p.lat, p.lon], {icon: icono, draggable: true, keyboard: true, title: nombre(p)}).addTo(mapa).bindPopup("");
+      m.on("dragend", () => { const ll = m.getLatLng(); Object.assign(porId(p.id), {lat: ll.lat, lon: ll.lng}); cambio(); });
+      m.on("mouseover", () => resaltar(p.id, true)).on("mouseout", () => resaltar(p.id, false));
+      marcadores.set(p.id, m);
+    } else m.setIcon(icono);
+    m.setPopupContent(ficha(p));
+    m.setZIndexOffset(p === deposito() ? 1000 : 0);
+  });
+
+  capaRutas.clearLayers();
+  (calculo?.rutas || []).forEach((r, k) => {
+    const puntos = r.geometria ? r.geometria.coordinates.map(([x, y]) => [y, x])
+      : r.ids.map(porId).filter(Boolean).map(p => [p.lat, p.lon]);
+    const recta = !r.geometria || !vigente;
+    L.polyline(puntos, {color: css("--bg"), weight: 8, opacity: vigente ? 0.85 : 0.4, interactive: false}).addTo(capaRutas);
+    L.polyline(puntos, {color: tinta(k), weight: 4, opacity: vigente ? 1 : 0.45, dashArray: recta ? "8 7" : null, interactive: false}).addTo(capaRutas);
+  });
+}
+
+function fila(p) {
+  return `<li class="fila" data-fila="${p.id}">${pin(p)}
+    <span class="nombre">${nombre(p)}<small>${p.lat.toFixed(4)}, ${p.lon.toFixed(4)}</small></span>
+    ${p === deposito() ? "<span></span>" : demanda(p)}
+    <button type="button" class="quitar" data-accion="quitar" data-id="${p.id}" aria-label="Quitar ${nombre(p)}">×</button></li>`;
+}
+
+function lista() {
+  if (paradas.length === 0) return `<li class="vacia">Sin paradas. La primera que pongas será el depósito.</li>`;
+  const resto = paradas.slice(1);
+  if (!calculo) return fila(deposito()) + resto.map(fila).join("");
+  const grupos = calculo.rutas.map((r, k) => {
+    const ps = r.ids.slice(1, -1).map(porId).filter(Boolean);
+    const carga = ps.reduce((s, p) => s + p.demanda, 0);
+    return `<li class="grupo" style="--v:${tinta(k)}"><div class="grupo-cab"><span class="tinta"></span><b>Vehículo ${LETRAS[k]}</b>
+      <span class="num">${fmt(r.km, 1)} km</span><span class="num">carga ${carga} de ${flota.cap} · ${ps.length} paradas</span></div>
+      <ol>${ps.map(fila).join("")}</ol></li>`;
+  }).join("");
+  const sueltas = resto.filter(p => rutaDe(p.id) < 0);
+  const sinRuta = sueltas.length ? `<li class="grupo sin-ruta"><div class="grupo-cab"><span class="tinta"></span><b>Sin ruta todavía</b><span></span>
+    <span>Se reparten al recalcular.</span></div><ol>${sueltas.map(fila).join("")}</ol></li>` : "";
+  return fila(deposito()) + grupos + sinRuta;
+}
+
+function pie() {
+  const listos = paradas.length >= 2;
+  let resumen = "";
+  if (error) resumen = `<p class="aviso">${error}</p>`;
+  else if (calculo) resumen = `<div class="resumen">
+      <span class="sello ${calculo.metodo === "carretera_real" ? "" : "aprox"}">${calculo.metodo === "carretera_real" ? "Carretera real · OSRM" : "Línea recta aproximada"}</span>
+      <span><span class="total">${fmt(calculo.total, 1)}</span> km</span></div>
+    ${vigente ? "" : `<p class="aviso">Cambiaste paradas: las rutas ya no corresponden. Recalcula.</p>`}`;
+  return `${resumen}<div class="botones">
+    <button type="button" class="boton primario" data-accion="calcular" ${!listos || (calculo && vigente) ? "disabled" : ""}>${calculo ? "Recalcular rutas" : "Calcular rutas"}</button>
+    <button type="button" class="boton" data-accion="limpiar" ${paradas.length ? "" : "disabled"}>Limpiar</button></div>`;
+}
+
+function pintarHoja() {
+  const hoja = document.getElementById("hoja"), scroll = hoja.querySelector(".lista")?.scrollTop || 0;
+  const capacidad = flota.n * flota.cap, demanda = demandaTotal();
+  hoja.classList.toggle("plegada", plegada);
+  hoja.innerHTML = `
+    <div class="hoja-cab"><h1 id="t-hoja">Hoja de ruta</h1>
+      <button type="button" class="chico plegar" data-accion="plegar" aria-expanded="${!plegada}">${plegada ? "Ver paradas" : "Plegar"}</button>
+      <span class="tipo">${Math.max(paradas.length - 1, 0)} paradas</span></div>
+    <p class="pista"><span class="largo">Clic en el plano para poner una parada; arrástrala para moverla o tócala para editarla.</span><span class="corto">Toca el plano para poner una parada.</span></p>
+    <div class="flota">
+      <p class="frase">${paso(flota.n, "flota-n", "vehículos", "", 1)} ${flota.n === 1 ? "vehículo" : "vehículos"} de ${paso(flota.cap, "flota-cap", "capacidad por vehículo", "", 5)}</p>
+      <p class="balance ${demanda > capacidad ? "no-cabe" : ""}">Demanda <span class="num">${demanda}</span> de <span class="num">${capacidad}</span> de capacidad${demanda > capacidad ? ": no cabe, agrega vehículos o capacidad" : ""}</p>
+    </div>
+    <ol class="lista" aria-label="Paradas">${lista()}</ol>
+    <div class="pie">${pie()}</div>`;
+  hoja.querySelector(".lista").scrollTop = scroll;
+}
+
+function pintar() { pintarPlano(); pintarHoja(); }
+
+function resaltar(id, si) {
+  document.querySelector(`[data-fila="${id}"]`)?.classList.toggle("resalta", si);
+  marcadores.get(id)?.getElement()?.querySelector(".pin")?.classList.toggle("resalta", si);
+}
+document.getElementById("hoja").addEventListener("mouseover", e => { const f = e.target.closest("[data-fila]"); if (f) resaltar(Number(f.dataset.fila), true); });
+document.getElementById("hoja").addEventListener("mouseout", e => { const f = e.target.closest("[data-fila]"); if (f) resaltar(Number(f.dataset.fila), false); });
+
+// Solo del prototipo, que no tiene servidor: reparte por vecino más cercano en
+// línea recta, como el respaldo de mapo_core cuando OSRM no responde, y lo
+// rotula igual. En Phoenix esto es POST /vrp/calcular.
+function calcularSinServidor() {
+  const km = (a, b) => { const r = Math.PI / 180, dLa = (b.lat - a.lat) * r, dLo = (b.lon - a.lon) * r;
+    return 12742 * Math.asin(Math.sqrt(Math.sin(dLa / 2) ** 2 + Math.cos(a.lat * r) * Math.cos(b.lat * r) * Math.sin(dLo / 2) ** 2)); };
+  const d = deposito(), pendientes = new Set(paradas.slice(1)), rutas = [];
+  for (let v = 0; v < flota.n && pendientes.size; v++) {
+    let aqui = d, carga = 0, dist = 0; const ids = [d.id];
+    for (;;) {
+      const cabe = [...pendientes].filter(p => carga + p.demanda <= flota.cap).sort((a, b) => km(aqui, a) - km(aqui, b))[0];
+      if (!cabe) break;
+      dist += km(aqui, cabe); carga += cabe.demanda; ids.push(cabe.id); pendientes.delete(cabe); aqui = cabe;
+    }
+    dist += km(aqui, d); ids.push(d.id);
+    if (ids.length > 2) rutas.push({ids, km: dist, geometria: null});
+  }
+  if (pendientes.size) return null;
+  return {metodo: "linea_recta_aproximada", total: rutas.reduce((s, r) => s + r.km, 0), rutas};
+}
+
+document.addEventListener("click", e => {
+  const b = e.target.closest("[data-accion]"); if (!b) return;
+  const id = Number(b.dataset.id), p = porId(id), d = Number(b.dataset.d);
+  switch (b.dataset.accion) {
+    case "demanda": p.demanda = Math.max(0, p.demanda + d); cambio(); break;
+    case "flota-n": flota.n = Math.max(1, flota.n + d); cambio(); break;
+    case "flota-cap": flota.cap = Math.max(5, flota.cap + d * 5); cambio(); break;
+    case "quitar": marcadores.get(id)?.closePopup(); paradas = paradas.filter(x => x !== p); cambio(); break;
+    case "deposito": paradas = [p, ...paradas.filter(x => x !== p)]; marcadores.get(id)?.closePopup(); cambio(); break;
+    case "limpiar": paradas = []; calculo = null; cambio(); break;
+    case "plegar": plegada = !plegada; pintarHoja(); break;
+    case "calcular": {
+      const nuevo = calcularSinServidor();
+      if (nuevo) { calculo = nuevo; vigente = true; error = null; }
+      else error = "No se encontró un reparto: la demanda no cabe en los vehículos.";
+      pintar();
+    }
+  }
+});
+
+Mesa.iniciarModo(document.getElementById("modo"), () => { entintar(); pintar(); });
+entintar();
+pintar();
+// Encuadre: las paradas en el hueco que deja la hoja (izquierda en
+// escritorio, abajo en celular, derecha en celular acostado).
+const hoja = document.getElementById("hoja").getBoundingClientRect();
+const relleno = hoja.top > innerHeight / 3 ? {paddingTopLeft: [20, 170], paddingBottomRight: [20, innerHeight - hoja.top + 20]}
+  : hoja.left > innerWidth / 3 ? {paddingTopLeft: [20, 100], paddingBottomRight: [innerWidth - hoja.left + 20, 20]}
+  : {paddingTopLeft: [hoja.right + 20, 60], paddingBottomRight: [60, 40]};
+mapa.fitBounds(L.latLngBounds(paradas.map(p => [p.lat, p.lon])), relleno);
+</script>
+</body>
+</html>

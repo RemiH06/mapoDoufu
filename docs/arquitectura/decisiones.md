@@ -118,7 +118,7 @@ la pantalla era un dashboard genérico.
   cartas (el abanico de tarot): pasar encima viste la mesa con esa piel y
   tocar la deja puesta (patrón de la galería de iroFactory).
 - **Prototipo:** `design/mesa_planeacion/`, se abre directo sin
-  servidor. `index.html` es `/mapa`, `perfil.html` y `portada.html`. Lo
+  servidor. `index.html` es `/mapa`, `perfil.html`, `logistica.html` y `portada.html`. Lo
   común está aparte, como lo leerá Phoenix: `pieles.js` (fuente de
   verdad de las pieles; genera las reglas `[data-piel]`), `mesa.css`
   (papel, cinta, motivos, membrete, botones) y `plano.js` (el plano de
@@ -152,6 +152,21 @@ la pantalla era un dashboard genérico.
   `start_async` para no congelar la vista. El botón "+ nota del equipo"
   del prototipo no entró: espera a que las anotaciones se guarden (capa
   "Tus marcas").
+- `/logistica` tiene su prototipo en `design/mesa_planeacion/logistica.html`,
+  con un VRP real de `mapo_core` sobre Guadalajara (`ruta.js`: 11 paradas,
+  3 vehículos, 48.5 km por carretera). Piel de movilidad (hoja de ruta),
+  plano a pantalla completa y una sola hoja pegada en vez del panel
+  lateral. Las paradas son marcas del equipo: un clic pone una, se
+  arrastran para moverlas y al tocarlas sale una ficha para cambiar la
+  demanda, volverla depósito o quitarla. Cada vehículo lleva una tinta
+  de los anillos del logo, con un halo del color del papel para leerse
+  sobre el plano. Si se edita algo después de calcular, las rutas se
+  quedan desvanecidas y la hoja pide recalcular: nunca se muestra una
+  ruta que ya no corresponde como si fuera vigente. El número de cada
+  parada es su nombre y no cambia al quitar otras. "Reordenar" se
+  resolvió como "volverla depósito": el orden de visita lo decide el
+  solver, no la persona. En celular la hoja baja al borde y se pliega;
+  acostado, se va a la derecha.
 - El botón de modo lleva `phx-update="ignore"`: su texto lo pone el
   script de la raíz y cualquier parche de LiveView lo regresaba a "Modo".
 - El fondo animado de metro se quitó de la raíz: pintaba su propio fondo
