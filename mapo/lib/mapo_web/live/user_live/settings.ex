@@ -9,78 +9,85 @@ defmodule MapoWeb.UserLive.Settings do
   def render(assigns) do
     ~H"""
     <Layouts.app flash={@flash} current_scope={@current_scope}>
-      <div class="text-center">
-        <.header>
-          Configuración de la cuenta
-          <:subtitle>Administra el correo y la contraseña de tu cuenta</:subtitle>
-        </.header>
-      </div>
-
-      <div class="card bg-base-200 flex flex-row items-center justify-between gap-4 p-4 mb-4">
-        <div>
-          <p class="font-semibold">Fondo animado</p>
-          <p class="text-sm text-base-content/70">
-            Anima el fondo en pantallas como esta y la de inicio de sesión.
-          </p>
+      <section class="doc pegado" aria-labelledby="t-cuenta">
+        <header class="doc-cab">
+          <h1 id="t-cuenta">Cuenta</h1>
+           <span class="doc-tipo">Datos de acceso</span>
+        </header>
+        
+        <div class="doc-seccion">
+          <h2>Correo</h2>
+          
+          <.form
+            for={@email_form}
+            id="email_form"
+            phx-submit="update_email"
+            phx-change="validate_email"
+            class="grid gap-3"
+          >
+            <.input
+              field={@email_form[:email]}
+              type="email"
+              label="Correo electrónico"
+              autocomplete="username"
+              spellcheck="false"
+              required
+            />
+            <p class="secundario">
+              El cambio vale hasta que abras el enlace que llega al correo nuevo.
+            </p>
+            
+            <div class="doc-botones">
+              <.button phx-disable-with="Mandando...">Cambiar correo</.button>
+            </div>
+          </.form>
         </div>
-        <input
-          type="checkbox"
-          id="bg-animation-toggle"
-          phx-hook="BgAnimationToggle"
-          phx-update="ignore"
-          class="toggle toggle-primary"
-        />
-      </div>
-
-      <.form for={@email_form} id="email_form" phx-submit="update_email" phx-change="validate_email">
-        <.input
-          field={@email_form[:email]}
-          type="email"
-          label="Correo electrónico"
-          autocomplete="username"
-          spellcheck="false"
-          required
-        />
-        <.button variant="primary" phx-disable-with="Cambiando...">Cambiar correo</.button>
-      </.form>
-
-      <div class="divider" />
-
-      <.form
-        for={@password_form}
-        id="password_form"
-        action={~p"/users/update-password"}
-        method="post"
-        phx-change="validate_password"
-        phx-submit="update_password"
-        phx-trigger-action={@trigger_submit}
-      >
-        <input
-          name={@password_form[:email].name}
-          type="hidden"
-          id="hidden_user_email"
-          spellcheck="false"
-          value={@current_email}
-        />
-        <.input
-          field={@password_form[:password]}
-          type="password"
-          label="Contraseña nueva"
-          autocomplete="new-password"
-          spellcheck="false"
-          required
-        />
-        <.input
-          field={@password_form[:password_confirmation]}
-          type="password"
-          label="Confirmar contraseña nueva"
-          autocomplete="new-password"
-          spellcheck="false"
-        />
-        <.button variant="primary" phx-disable-with="Guardando...">
-          Guardar contraseña
-        </.button>
-      </.form>
+        
+        <div class="doc-seccion">
+          <h2>Contraseña</h2>
+          
+          <.form
+            for={@password_form}
+            id="password_form"
+            action={~p"/users/update-password"}
+            method="post"
+            phx-change="validate_password"
+            phx-submit="update_password"
+            phx-trigger-action={@trigger_submit}
+            class="grid gap-3"
+          >
+            <input
+              name={@password_form[:email].name}
+              type="hidden"
+              id="hidden_user_email"
+              spellcheck="false"
+              value={@current_email}
+            />
+            <.input
+              field={@password_form[:password]}
+              type="password"
+              label="Contraseña nueva"
+              autocomplete="new-password"
+              spellcheck="false"
+              required
+            />
+            <.input
+              field={@password_form[:password_confirmation]}
+              type="password"
+              label="Otra vez, para confirmar"
+              autocomplete="new-password"
+              spellcheck="false"
+            />
+            <p class="secundario">
+              Al guardarla se cierran las demás sesiones abiertas de esta cuenta.
+            </p>
+            
+            <div class="doc-botones">
+              <.button phx-disable-with="Guardando...">Guardar contraseña</.button>
+            </div>
+          </.form>
+        </div>
+      </section>
     </Layouts.app>
     """
   end

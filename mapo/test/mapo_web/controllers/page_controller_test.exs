@@ -7,17 +7,19 @@ defmodule MapoWeb.PageControllerTest do
     conn = get(conn, ~p"/")
     html = html_response(conn, 200)
 
-    assert html =~ "Mapo, powered by Gaiarda"
+    assert html =~ "qué deberías hacer con eso"
+    assert html =~ "plano-portada"
     assert html =~ "Crear cuenta"
-    assert html =~ "Iniciar sesión"
-    refute html =~ "Ir a mis equipos"
+    assert html =~ ~p"/users/log-in"
+    refute html =~ "Mis equipos"
   end
 
   test "GET / shows the teams CTA when logged in", %{conn: conn} do
     conn = conn |> log_in_user(user_fixture()) |> get(~p"/")
     html = html_response(conn, 200)
 
-    assert html =~ "Ir a mis equipos"
+    assert html =~ "Mis equipos"
+    assert html =~ "Abrir el mapa"
     refute html =~ "Crear cuenta"
   end
 

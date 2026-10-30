@@ -9,7 +9,7 @@ defmodule MapoWeb.UserSessionController do
   end
 
   def create(conn, params) do
-    create(conn, params, "¡Bienvenido de vuelta!")
+    create(conn, params, "De vuelta en la mesa.")
   end
 
   # magic link login

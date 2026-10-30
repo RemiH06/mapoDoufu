@@ -4,109 +4,103 @@ defmodule MapoWeb.TeamLive.Show do
   alias Mapo.Teams
   alias Mapo.Sesiones
 
-  @role_labels %{owner: "Dueño", admin: "Administrador", member: "Miembro"}
+  @role_labels %{owner: "Titular", admin: "Admin", member: "Miembro"}
 
   @impl true
   def render(assigns) do
     ~H"""
-    <Layouts.app flash={@flash} current_scope={@current_scope} seccion="equipos">
-      <.header>
-        {@team.name}
-        <:subtitle>Tu rol: {@role_labels[@current_role]}</:subtitle>
-      </.header>
-
-      <h3 class="font-mono text-sm font-bold mt-8 mb-2">Miembros</h3>
-      <ul class="space-y-2">
-        <li
-          :for={m <- @memberships}
-          class="card bg-base-200 p-3 flex flex-row items-center justify-between"
-        >
-          <div>
-            <span>{m.user.email}</span>
-            <span class="badge ml-2">{@role_labels[m.role]}</span>
+    <Layouts.app flash={@flash} current_scope={@current_scope} seccion="equipos" amplio?={true}>
+      <div class="equipo">
+        <section class="doc pegado" aria-labelledby="t-equipo">
+          <header class="doc-cab">
+            <h1 id="t-equipo">{@team.name}</h1>
+             <span class="doc-tipo">Tu rol: {@role_labels[@current_role]}</span>
+          </header>
+          
+          <div class="doc-seccion">
+            <h2>Miembros</h2>
+            
+            <ul class="lista-doc">
+              <li :for={m <- @memberships} class="lista-fila">
+                <span>{m.user.email}</span>
+                <span class="lista-fin">
+                  <span class={["sello-rol", m.role == :owner && "dueno"]}>{@role_labels[m.role]}</span>
+                  <.button
+                    :if={@can_manage? and not (m.role == :owner and @owner_count <= 1)}
+                    phx-click="remove_member"
+                    phx-value-id={m.id}
+                    data-confirm="¿Quitar a esta persona del equipo?"
+                    class="boton chico-doc borrar"
+                  >
+                    Quitar
+                  </.button>
+                </span>
+              </li>
+            </ul>
           </div>
-          <.button
-            :if={@can_manage? and not (m.role == :owner and @owner_count <= 1)}
-            phx-click="remove_member"
-            phx-value-id={m.id}
-            data-confirm="¿Quitar a este miembro del equipo?"
-            class="btn btn-sm btn-soft btn-error"
-          >
-            Quitar
-          </.button>
-        </li>
-      </ul>
-
-      <div :if={@can_manage?} class="mt-8">
-        <h3 class="font-mono text-sm font-bold mb-2">Agregar miembro</h3>
-        <.form for={@add_form} id="add_member_form" phx-submit="add_member">
-          <div class="flex gap-2 items-start">
-            <div class="flex-1">
+          
+          <div :if={@can_manage?} class="doc-seccion">
+            <h2>Agregar a alguien</h2>
+            
+            <.form for={@add_form} id="add_member_form" phx-submit="add_member" class="agregar">
               <.input field={@add_form[:email]} type="email" label="Correo" required />
-            </div>
-            <div class="w-40">
               <.input
                 field={@add_form[:role]}
                 type="select"
                 label="Rol"
-                options={[{"Miembro", "member"}, {"Administrador", "admin"}]}
-              />
-            </div>
+                options={[{"Miembro", "member"}, {"Admin", "admin"}]}
+              /> <.button phx-disable-with="Agregando...">Agregar</.button>
+            </.form>
+            
+            <p class="secundario">Si todavía no tiene cuenta, le llega una invitación al correo.</p>
           </div>
-          <.button phx-disable-with="Agregando..." class="btn btn-primary">
-            Agregar
-          </.button>
-        </.form>
+          
+          <div :if={@can_manage? and @invitaciones_pendientes != []} class="doc-seccion">
+            <h2>Invitaciones pendientes</h2>
+            
+            <ul class="lista-doc">
+              <li :for={i <- @invitaciones_pendientes} class="lista-fila">
+                <span>{i.email}</span>
+                <span class="lista-fin">
+                  <span class="sello-rol">{@role_labels[i.role]}</span>
+                  <.button
+                    phx-click="cancelar_invitacion"
+                    phx-value-id={i.id}
+                    data-confirm="¿Cancelar esta invitación?"
+                    class="boton chico-doc borrar"
+                  >
+                    Cancelar
+                  </.button>
+                </span>
+              </li>
+            </ul>
+          </div>
+        </section>
+        
+        <section class="doc pegado" aria-labelledby="t-sesiones">
+          <header class="doc-cab">
+            <h2 id="t-sesiones">Sesiones</h2>
+             <span class="doc-tipo">Mapas compartidos</span>
+          </header>
+          
+          <div class="doc-seccion">
+            <p :if={@sesiones == []} class="nota">
+              Todavía no hay sesiones. En una sesión, lo que alguien marca en el mapa lo ven los demás al instante.
+            </p>
+            
+            <ul :if={@sesiones != []} class="lista-doc">
+              <li :for={s <- @sesiones} class="lista-fila">
+                <.link navigate={~p"/sesiones/#{s}"} class="lista-enlace">{s.nombre}</.link>
+              </li>
+            </ul>
+            
+            <.form for={@sesion_form} id="sesion_form" phx-submit="crear_sesion" class="agregar">
+              <.input field={@sesion_form[:nombre]} type="text" label="Sesión nueva" required />
+              <.button variant="primary" phx-disable-with="Creando...">Crear sesión</.button>
+            </.form>
+          </div>
+        </section>
       </div>
-
-      <div :if={@can_manage? and @invitaciones_pendientes != []} class="mt-8">
-        <h3 class="font-mono text-sm font-bold mb-2">Invitaciones pendientes</h3>
-        <ul class="space-y-2">
-          <li
-            :for={i <- @invitaciones_pendientes}
-            class="card bg-base-200 p-3 flex flex-row items-center justify-between"
-          >
-            <div>
-              <span>{i.email}</span>
-              <span class="badge ml-2">{@role_labels[i.role]}</span>
-            </div>
-            <.button
-              phx-click="cancelar_invitacion"
-              phx-value-id={i.id}
-              data-confirm="¿Cancelar esta invitación?"
-              class="btn btn-sm btn-soft btn-error"
-            >
-              Cancelar
-            </.button>
-          </li>
-        </ul>
-      </div>
-
-      <h3 class="font-mono text-sm font-bold mt-8 mb-2">Sesiones</h3>
-      <p :if={@sesiones == []} class="text-sm text-base-content/70">
-        Este equipo todavía no tiene ninguna sesión.
-      </p>
-      <ul class="space-y-2">
-        <li :for={s <- @sesiones} class="card bg-base-200 p-3">
-          <.link navigate={~p"/sesiones/#{s}"} class="font-semibold hover:underline">
-            {s.nombre}
-          </.link>
-        </li>
-      </ul>
-
-      <.form
-        for={@sesion_form}
-        id="sesion_form"
-        phx-submit="crear_sesion"
-        class="mt-4 flex gap-2 items-start"
-      >
-        <div class="flex-1">
-          <.input field={@sesion_form[:nombre]} type="text" label="Nueva sesión" required />
-        </div>
-        <.button phx-disable-with="Creando..." class="btn btn-primary mt-6">
-          Crear
-        </.button>
-      </.form>
     </Layouts.app>
     """
   end
@@ -210,7 +204,7 @@ defmodule MapoWeb.TeamLive.Show do
          )}
 
       {:error, :last_owner} ->
-        {:noreply, put_flash(socket, :error, "No puedes quitar al único dueño del equipo.")}
+        {:noreply, put_flash(socket, :error, "El equipo necesita al menos una persona titular.")}
     end
   end
 

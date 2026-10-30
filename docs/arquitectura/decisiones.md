@@ -114,7 +114,7 @@ la pantalla era un dashboard genérico.
   explícitas, ticket con la advertencia de que la ENIGH no es municipal,
   expediente con los 40 tipos de delito (también los que tienen cero) y
   tarjeta de checador con la tasa sellada y la advertencia de que la ENOE
-  es estatal. La portada muestra las siete pieles como una mano de
+  es estatal. La portada del prototipo muestra las siete pieles como una mano de
   cartas (el abanico de tarot): pasar encima viste la mesa con esa piel y
   tocar la deja puesta (patrón de la galería de iroFactory).
 - **Prototipo:** `design/mesa_planeacion/`, se abre directo sin
@@ -190,7 +190,49 @@ la pantalla era un dashboard genérico.
 - El botón de modo lleva `phx-update="ignore"`: su texto lo pone el
   script de la raíz y cualquier parche de LiveView lo regresaba a "Modo".
 - El fondo animado de metro se quitó de la raíz: pintaba su propio fondo
-  encima de la paleta. Qué fondo lleva Mapo se decide en la sesión 5.
+  encima de la paleta. En la sesión 5 se borró del todo, junto con su
+  interruptor en la cuenta: Mapo no lleva fondo animado (ver abajo).
+
+**Resto de las pantallas** (sesión 5, cerrada el 2026-10-30; historial en
+[2026-10-rediseno-resto.md](../historial/2026-10-rediseno-resto.md)):
+
+- **Portada: la mesa se arma.** En vez de describir el producto, lo
+  muestra: el plano real de Guadalajara (442 AGEB) y, uno tras otro, los
+  acetatos del censo (población en quintiles), de DENUE (1,858 negocios
+  con "papel" en el giro) y de la isócrona de 10 minutos desde el Centro,
+  hasta la marca del equipo: un círculo a mano con "¿aquí?" y, en el
+  rótulo, las dos cifras que lo justifican (habitantes y negocios del giro
+  a 500 m), nunca un puntaje. La mesa se viste con la piel del acetato de
+  arriba, como en `/mapa`, y al terminar la charola prende y apaga cada
+  uno. El plano es un SVG que genera
+  `design/mesa_planeacion/portada_plano.js` a partir de los mismos datos
+  reales del prototipo (`datos.js`); va dentro del HTML para que, sin
+  JavaScript, la mesa ya esté armada. La marca se elige con una regla
+  dicha en el generador (dentro de la isócrona, el AGEB con menos negocios
+  del giro cerca y, entre esos, el de más gente).
+- **Movimiento:** anime.js 4.5.0 vendorizado en `assets/vendor/anime/`,
+  solo en la portada. esbuild corre con `--splitting --format=esm` y la
+  portada se importa aparte, así las demás páginas no cargan la librería
+  (la raíz carga `app.js` como `type="module"`). Con
+  `prefers-reduced-motion` no hay animación: la mesa aparece armada. El
+  único otro movimiento es la onda al llegar una marca nueva a la sesión
+  colaborativa (CSS, la apaga la misma preferencia). No hay fondo
+  animado ni interruptor propio: la preferencia del sistema basta.
+- **Documentos:** cuenta, entrar, registro, confirmación, equipos e
+  invitación son papeles pegados (`.doc`) con su tipo de documento en la
+  cabecera (ficha de acceso, solicitud de alta, acta de formación,
+  invitación). Los campos son un renglón para escribir y lo escrito va a
+  mano (`.campo`); un solo botón primario por documento. `<.input>`,
+  `<.button>` y los avisos (flash) de `core_components` ya usan las piezas
+  de la mesa, no las de daisyUI.
+- **Sesión colaborativa:** plano entintado a pantalla completa, como
+  `/logistica`, con una hoja pegada (nombre, quién más está viendo). Las
+  anotaciones son marcas del equipo en lápiz (el acento de la piel) con su
+  nota al lado; al tocar el plano sale una ficha para escribirla, en vez
+  del `prompt` del navegador. Una marca sin nota es válida.
+- **Roles sin género:** titular, admin y miembro (antes dueño,
+  administrador y miembro). El aviso al entrar dice "De vuelta en la
+  mesa."
 
 Conceptos considerados y guardados para otras piezas (fondo de la home,
 animaciones, un tema futuro):

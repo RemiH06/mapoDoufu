@@ -16,8 +16,8 @@ defmodule MapoWeb.TeamLive.ShowTest do
 
     assert html =~ team.name
     assert html =~ scope.user.email
-    assert html =~ "Dueño"
-    assert html =~ "Agregar miembro"
+    assert html =~ "Titular"
+    assert html =~ "Agregar a alguien"
   end
 
   test "plain member does not see the add-member form", %{conn: conn} do

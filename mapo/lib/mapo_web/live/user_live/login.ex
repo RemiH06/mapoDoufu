@@ -7,90 +7,85 @@ defmodule MapoWeb.UserLive.Login do
   def render(assigns) do
     ~H"""
     <Layouts.app flash={@flash} current_scope={@current_scope}>
-      <div class="mx-auto max-w-sm space-y-4">
-        <div class="text-center">
-          <.header>
-            <p>Iniciar sesión</p>
-            <:subtitle>
-              <%= if @current_scope do %>
-                Necesitas volver a autenticarte para realizar acciones sensibles en tu cuenta.
-              <% else %>
-                ¿No tienes cuenta? <.link
-                  navigate={~p"/users/register"}
-                  class="font-semibold text-brand hover:underline"
-                  phx-no-format
-                >Regístrate</.link> ahora.
-              <% end %>
-            </:subtitle>
-          </.header>
+      <section class="doc pegado mx-auto max-w-md" aria-labelledby="t-entrar">
+        <header class="doc-cab">
+          <h1 id="t-entrar">{if @current_scope, do: "Confirma que eres tú", else: "Entrar"}</h1>
+           <span class="doc-tipo">Ficha de acceso</span>
+        </header>
+        
+        <div :if={@current_scope} class="doc-seccion">
+          <p>Para cambiar el correo o la contraseña hay que volver a entrar.</p>
         </div>
-
-        <div :if={local_mail_adapter?()} class="alert alert-info">
-          <.icon name="hero-information-circle" class="size-6 shrink-0" />
-          <div>
-            <p>Estás usando el adaptador de correo local.</p>
-            <p>
-              Para ver los correos enviados, visita <.link href="/dev/mailbox" class="underline">la bandeja de pruebas</.link>.
-            </p>
-          </div>
+        
+        <div class="doc-seccion">
+          <h2>Con un enlace al correo</h2>
+          
+          <.form
+            :let={f}
+            for={@form}
+            id="login_form_magic"
+            action={~p"/users/log-in"}
+            phx-submit="submit_magic"
+            class="grid gap-3"
+          >
+            <.input
+              readonly={!!@current_scope}
+              field={f[:email]}
+              type="email"
+              label="Correo electrónico"
+              autocomplete="username"
+              spellcheck="false"
+              required
+              phx-mounted={JS.focus()}
+            /> <.button variant="primary">Mandarme el enlace</.button>
+          </.form>
+          
+          <p :if={local_mail_adapter?()} class="nota">
+            En desarrollo los correos no salen: llegan a la <.link href="/dev/mailbox">bandeja de pruebas</.link>.
+          </p>
         </div>
-
-        <.form
-          :let={f}
-          for={@form}
-          id="login_form_magic"
-          action={~p"/users/log-in"}
-          phx-submit="submit_magic"
-        >
-          <.input
-            readonly={!!@current_scope}
-            field={f[:email]}
-            type="email"
-            label="Correo electrónico"
-            autocomplete="username"
-            spellcheck="false"
-            required
-            phx-mounted={JS.focus()}
-          />
-          <.button class="btn btn-primary w-full">
-            Iniciar sesión con correo <span aria-hidden="true">→</span>
-          </.button>
-        </.form>
-
-        <div class="divider">o</div>
-
-        <.form
-          :let={f}
-          for={@form}
-          id="login_form_password"
-          action={~p"/users/log-in"}
-          phx-submit="submit_password"
-          phx-trigger-action={@trigger_submit}
-        >
-          <.input
-            readonly={!!@current_scope}
-            field={f[:email]}
-            type="email"
-            label="Correo electrónico"
-            autocomplete="username"
-            spellcheck="false"
-            required
-          />
-          <.input
-            field={@form[:password]}
-            type="password"
-            label="Contraseña"
-            autocomplete="current-password"
-            spellcheck="false"
-          />
-          <.button class="btn btn-primary w-full" name={@form[:remember_me].name} value="true">
-            Iniciar sesión y mantenerme conectado <span aria-hidden="true">→</span>
-          </.button>
-          <.button class="btn btn-primary btn-soft w-full mt-2">
-            Iniciar sesión solo esta vez
-          </.button>
-        </.form>
-      </div>
+        
+        <div class="doc-seccion">
+          <h2>Con contraseña</h2>
+          
+          <.form
+            :let={f}
+            for={@form}
+            id="login_form_password"
+            action={~p"/users/log-in"}
+            phx-submit="submit_password"
+            phx-trigger-action={@trigger_submit}
+            class="grid gap-3"
+          >
+            <.input
+              readonly={!!@current_scope}
+              field={f[:email]}
+              type="email"
+              label="Correo electrónico"
+              autocomplete="username"
+              spellcheck="false"
+              required
+            />
+            <.input
+              field={@form[:password]}
+              type="password"
+              label="Contraseña"
+              autocomplete="current-password"
+              spellcheck="false"
+            />
+            <div class="doc-botones">
+              <.button name={@form[:remember_me].name} value="true">
+                Entrar y recordarme
+              </.button>
+               <.button>Solo esta vez</.button>
+            </div>
+          </.form>
+        </div>
+        
+        <p :if={!@current_scope} class="doc-seccion secundario">
+          <span>¿Todavía no tienes cuenta? <.link navigate={~p"/users/register"}>Crea una</.link>.</span>
+        </p>
+      </section>
     </Layouts.app>
     """
   end

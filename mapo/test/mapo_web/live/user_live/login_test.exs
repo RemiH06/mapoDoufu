@@ -8,9 +8,9 @@ defmodule MapoWeb.UserLive.LoginTest do
     test "renders login page", %{conn: conn} do
       {:ok, _lv, html} = live(conn, ~p"/users/log-in")
 
-      assert html =~ "Iniciar sesión"
-      assert html =~ "Regístrate"
-      assert html =~ "Iniciar sesión con correo"
+      assert html =~ "Entrar"
+      assert html =~ "Crea una"
+      assert html =~ "Mandarme el enlace"
     end
   end
 
@@ -81,11 +81,11 @@ defmodule MapoWeb.UserLive.LoginTest do
 
       {:ok, _login_live, login_html} =
         lv
-        |> element("main a", "Regístrate")
+        |> element("main a", "Crea una")
         |> render_click()
         |> follow_redirect(conn, ~p"/users/register")
 
-      assert login_html =~ "Crear una cuenta"
+      assert login_html =~ "Solicitud de alta"
     end
   end
 
@@ -98,9 +98,9 @@ defmodule MapoWeb.UserLive.LoginTest do
     test "shows login page with email filled in", %{conn: conn, user: user} do
       {:ok, _lv, html} = live(conn, ~p"/users/log-in")
 
-      assert html =~ "Necesitas volver a autenticarte"
-      refute html =~ "Regístrate"
-      assert html =~ "Iniciar sesión con correo"
+      assert html =~ "hay que volver a entrar"
+      refute html =~ "Crea una"
+      assert html =~ "Mandarme el enlace"
 
       assert html =~
                ~s(<input type="email" name="user[email]" id="login_form_magic_email" value="#{user.email}")

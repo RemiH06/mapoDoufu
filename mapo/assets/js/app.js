@@ -24,8 +24,6 @@ import {Socket} from "phoenix"
 import {LiveSocket} from "phoenix_live_view"
 import {hooks as colocatedHooks} from "phoenix-colocated/mapo"
 import topbar from "../vendor/topbar"
-import {iniciarFondoAnimado} from "./metro_bg"
-import {BgAnimationToggle} from "./bg_animation_toggle"
 import {CollabMap} from "./collab_map"
 import {MapaTecnico} from "./mapa_tecnico"
 import {LogisticaMap} from "./logistica_map"
@@ -36,18 +34,11 @@ const liveSocket = new LiveSocket("/live", Socket, {
   params: {_csrf_token: csrfToken},
   hooks: {
     ...colocatedHooks,
-    BgAnimationToggle,
     CollabMap,
     MapaTecnico,
     LogisticaMap,
   },
 })
-
-// El fondo animado vive en root.html.heex, fuera del contenido que
-// controla cada LiveView, para que no se reinicie al navegar entre
-// pantallas (ver metro_bg.js). Se inicializa una sola vez aqui, no
-// como hook de LiveView.
-iniciarFondoAnimado()
 
 // Show progress bar on live navigation and form submits
 topbar.config({barColors: {0: "#29d"}, shadowColor: "rgba(0, 0, 0, .3)"})
@@ -56,6 +47,11 @@ window.addEventListener("phx:page-loading-stop", _info => topbar.hide())
 
 // connect if there are any LiveViews on the page
 liveSocket.connect()
+
+// La portada no es LiveView y es la única que anima con anime.js: se carga
+// aparte (esbuild --splitting) para no sumarlo a las demás páginas.
+const portada = document.getElementById("portada")
+if (portada) import("./portada").then(({iniciarPortada}) => iniciarPortada(portada))
 
 // expose liveSocket on window for web console debug logs and latency simulation:
 // >> liveSocket.enableDebug()

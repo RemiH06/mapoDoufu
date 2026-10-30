@@ -14,8 +14,11 @@ defmodule Mapo.Sesiones.Anotacion do
   @doc false
   def changeset(anotacion, attrs) do
     anotacion
-    |> cast(attrs, [:texto, :geom, :sesion_id, :user_id])
+    # Una marca sin nota es válida: "" se guarda tal cual (la columna es NOT
+    # NULL y cast lo volvería nil). El tope es el del varchar de la columna.
+    |> cast(attrs, [:texto, :geom, :sesion_id, :user_id], empty_values: [nil])
     |> validate_required([:geom, :sesion_id, :user_id])
+    |> validate_length(:texto, max: 255)
     |> foreign_key_constraint(:sesion_id)
     |> foreign_key_constraint(:user_id)
   end

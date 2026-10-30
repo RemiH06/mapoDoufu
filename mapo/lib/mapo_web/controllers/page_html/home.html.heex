@@ -1,27 +1,91 @@
-<Layouts.app flash={@flash} current_scope={@current_scope}>
-  <div class="max-w-2xl mx-auto text-center py-16">
-    <img src={~p"/images/mapo-logo.svg"} width="80" class="mx-auto mb-6" />
+<%!-- Portada: la mesa se arma. El plano real de Guadalajara y, encima, los
+     acetatos que se deslizan uno tras otro (censo, DENUE, isócrona) hasta la
+     marca del equipo. Sin JavaScript, o con movimiento reducido, la mesa ya
+     está armada. La animación vive en assets/js/portada.js. --%>
+<div class="esquina portada-esquina">
+  <button id="modo" type="button" class="modo" data-modo>Modo</button>
+  <%= if @current_scope do %>
+    <.link href={~p"/users/settings"} class="esquina-enlace">Cuenta</.link>
+    <.link href={~p"/users/log-out"} method="delete" class="esquina-enlace">Salir</.link>
+  <% else %>
+    <.link href={~p"/users/log-in"} class="esquina-enlace">Entrar</.link>
+  <% end %>
+</div>
 
-    <h1 class="text-4xl font-mono font-bold tracking-tight">Mapo</h1>
-    <p class="mt-2 text-base-content/70">Mapo, powered by Gaiarda</p>
-
-    <p class="mt-8 text-lg leading-relaxed">
-      Gaiarda contesta <strong>qué hay</strong>. Mapo contesta <strong>qué deberías hacer con eso</strong>.
+<main id="portada" class="portada">
+  <section class="lamina pegado" aria-labelledby="t-portada">
+    <div class="lamina-titulo">
+      <img src={~p"/images/mapo-logo.svg"} alt="" />
+      <h1 id="t-portada">MAPO</h1>
+    </div>
+    
+    <p class="lamina-lema">
+      Gaiarda contesta <b>qué hay</b>. Mapo contesta <b>qué deberías hacer con eso</b>.
     </p>
-
-    <div class="mt-10 flex justify-center gap-4">
+    
+    <div class="lamina-acciones">
       <%= if @current_scope do %>
-        <.link href={~p"/teams"} class="btn btn-primary">
-          Ir a mis equipos
-        </.link>
+        <.link href={~p"/mapa"} class="boton primario">Abrir el mapa</.link>
+        <.link href={~p"/teams"} class="boton">Mis equipos</.link>
       <% else %>
-        <.link href={~p"/users/register"} class="btn btn-primary">
-          Crear cuenta
-        </.link>
-        <.link href={~p"/users/log-in"} class="btn btn-soft">
-          Iniciar sesión
-        </.link>
+        <.link href={~p"/users/register"} class="boton primario">Crear cuenta</.link>
+        <.link href={~p"/users/log-in"} class="boton">Entrar</.link>
       <% end %>
     </div>
-  </div>
-</Layouts.app>
+    
+    <dl>
+      <dt>Lámina</dt>
+      
+      <dd>0 · portada</dd>
+      
+      <dt>Plano</dt>
+      
+      <dd>Guadalajara, 442 AGEB</dd>
+      
+      <dt>Fuentes</dt>
+      
+      <dd>INEGI, SESNSP, OpenStreetMap</dd>
+      
+      <%= if @current_scope do %>
+        <dt>Cuenta</dt>
+        
+        <dd>{@current_scope.user.email}</dd>
+      <% end %>
+    </dl>
+  </section>
+  
+  <figure class="mesa-portada" aria-labelledby="rotulo-pregunta">
+    {plano_portada(assigns)}
+    <figcaption id="rotulo" class="rotulo-portada pegado" aria-live="polite">
+      <span id="rotulo-tipo" class="doc-tipo">Cuatro acetatos sobre el plano</span>
+      <span id="rotulo-pregunta" class="rotulo-pregunta">
+        ¿Dónde abrir una papelería en el centro de Guadalajara?
+      </span>
+      
+      <span id="rotulo-dato" class="rotulo-dato">
+        Población del censo 2020, negocios de DENUE, 10 minutos por carretera y la marca del equipo.
+      </span>
+    </figcaption>
+     <%!-- La charola solo sirve con JavaScript: el script le quita el hidden. --%>
+    <nav id="charola-portada" class="charola-portada" aria-label="Acetatos de la portada" hidden>
+      <button
+        :for={
+          {clave, piel, nombre} <- [
+            {"censo", "demografia", "Población"},
+            {"denue", "comercio", "Papelerías"},
+            {"isocrona", "movilidad", "10 minutos"},
+            {"marca", "urbanismo", "Tus marcas"}
+          ]
+        }
+        type="button"
+        class="pestana-portada"
+        data-acetato={clave}
+        data-piel={piel}
+        aria-pressed="true"
+      >
+        {nombre}
+      </button>
+    </nav>
+  </figure>
+</main>
+ <Layouts.flash_group flash={@flash} />

@@ -249,7 +249,7 @@
     align-items: flex-end;
     gap: 10px;
   }
-  .cinta .label {
+  .cinta .etiqueta {
     font-family: var(--cond);
     font-size: 14px;
     color: var(--text2);

@@ -7,32 +7,45 @@ defmodule MapoWeb.SesionLive.Show do
   @impl true
   def render(assigns) do
     ~H"""
-    <Layouts.app flash={@flash} current_scope={@current_scope}>
-      <.header>
-        {@sesion.nombre}
-        <:subtitle>
-          Sesión de {@team.name}. Los demás miembros del equipo ven tus anotaciones al instante.
-        </:subtitle>
-      </.header>
-
-      <p :if={@presentes != []} class="text-sm text-base-content/70 mb-2">
-        Viendo ahora: {Enum.join(@presentes, ", ")}
-      </p>
-
+    <Layouts.app flash={@flash} current_scope={@current_scope} seccion="equipos" full_width?={true}>
+      <:membrete>
+        <.link navigate={~p"/teams/#{@team}"} class="mano">{@team.name}</.link>
+      </:membrete>
+      
       <div
         id="mapa-colaborativo"
         phx-hook="CollabMap"
         phx-update="ignore"
         data-sesion-id={@sesion.id}
         data-anotaciones={Jason.encode!(@anotaciones_json)}
-        class="w-full h-[70vh] rounded-box border border-base-300 mt-4"
+        class="plano-leaflet flex-1 min-h-0 w-full"
+        role="region"
+        aria-label="Plano compartido de la sesión"
       >
       </div>
-
-      <p class="text-sm text-base-content/70 mt-2">
-        Haz clic en el mapa para agregar una anotación. Haz clic en una anotación
-        para editar su texto o borrarla.
-      </p>
+      
+      <section id="hoja-sesion" class="hoja-sesion pegado" aria-labelledby="t-sesion">
+        <header class="hoja-cab">
+          <h1 id="t-sesion">{@sesion.nombre}</h1>
+           <span class="tipo">Sesión del equipo</span>
+        </header>
+        
+        <p class="pista">
+          <span class="largo">
+            Clic en el plano para poner una marca; tócala para cambiar su nota o borrarla. Todo el equipo la ve al instante.
+          </span>
+           <span class="corto">Toca el plano para poner una marca.</span>
+        </p>
+        
+        <p class="presentes">
+          <%= if @presentes == [] do %>
+            <span class="secundario">Nadie más está viendo la sesión.</span>
+          <% else %>
+            <span class="secundario">Viendo ahora:</span>
+            <span :for={correo <- @presentes} class="mano">{correo}</span>
+          <% end %>
+        </p>
+      </section>
     </Layouts.app>
     """
   end

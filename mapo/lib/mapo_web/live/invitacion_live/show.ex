@@ -3,71 +3,63 @@ defmodule MapoWeb.InvitacionLive.Show do
 
   alias Mapo.Teams
 
-  @role_labels %{admin: "Administrador", member: "Miembro"}
+  @role_labels %{admin: "Admin", member: "Miembro"}
 
   @impl true
   def render(assigns) do
     ~H"""
     <Layouts.app flash={@flash} current_scope={@current_scope}>
-      <div class="mx-auto max-w-sm text-center">
-        <.header>Invitación a un equipo</.header>
-
-        <div :if={@invitacion == nil} class="mt-6">
-          <p>Esta invitación no existe o ya no es válida.</p>
+      <section class="doc pegado mx-auto max-w-md" aria-labelledby="t-invitacion">
+        <header class="doc-cab">
+          <h1 id="t-invitacion">{if @invitacion, do: @invitacion.team.name, else: "Invitación"}</h1>
+           <span class="doc-tipo">Invitación a un equipo</span>
+        </header>
+        
+        <div class="doc-seccion">
+          <%= cond do %>
+            <% @invitacion == nil -> %>
+              <p>Esta invitación no existe o ya no es válida.</p>
+              
+              <p class="secundario">Pide a quien te invitó que te mande otra.</p>
+            <% @invitacion.estado == :aceptada -> %>
+              <p>Esta invitación ya se aceptó.</p>
+              
+              <div class="doc-botones">
+                <.button variant="primary" navigate={~p"/teams"}>Ir a mis equipos</.button>
+              </div>
+            <% @current_scope == nil -> %>
+              <p>
+                Te invitaron a <strong>{@invitacion.team.name}</strong>
+                con el rol de {String.downcase(@role_labels[@invitacion.role])}.
+              </p>
+              
+              <p class="secundario">
+                Para aceptarla, entra o crea una cuenta con <span class="mano">{@invitacion.email}</span>.
+              </p>
+              
+              <div class="doc-botones">
+                <.button variant="primary" navigate={~p"/users/log-in"}>Entrar</.button>
+                <.button navigate={~p"/users/register"}>Crear cuenta</.button>
+              </div>
+            <% not correo_coincide?(@invitacion, @current_scope) -> %>
+              <p>
+                Esta invitación es para <span class="mano">{@invitacion.email}</span>
+                y entraste como <span class="mano">{@current_scope.user.email}</span>.
+              </p>
+              
+              <p class="secundario">Sal y vuelve a entrar con el correo de la invitación.</p>
+            <% true -> %>
+              <p>
+                Te invitaron a <strong>{@invitacion.team.name}</strong>
+                con el rol de {String.downcase(@role_labels[@invitacion.role])}.
+              </p>
+              
+              <div class="doc-botones">
+                <.button variant="primary" phx-click="aceptar">Aceptar invitación</.button>
+              </div>
+          <% end %>
         </div>
-
-        <div :if={@invitacion && @invitacion.estado == :aceptada} class="mt-6">
-          <p>Esta invitación ya fue aceptada.</p>
-          <.link navigate={~p"/teams"} class="font-semibold text-brand hover:underline">
-            Ir a mis equipos
-          </.link>
-        </div>
-
-        <div
-          :if={@invitacion && @invitacion.estado == :pendiente && @current_scope == nil}
-          class="mt-6"
-        >
-          <p>
-            Te invitaron a unirte al equipo <strong>{@invitacion.team.name}</strong>
-            como {@role_labels[@invitacion.role]}.
-          </p>
-          <p class="mt-2 text-sm text-base-content/70">
-            Inicia sesión o crea una cuenta con el correo {@invitacion.email} para aceptar.
-          </p>
-          <div class="mt-4 flex gap-2 justify-center">
-            <.link navigate={~p"/users/log-in"} class="btn btn-primary">Iniciar sesión</.link>
-            <.link navigate={~p"/users/register"} class="btn btn-soft">Crear cuenta</.link>
-          </div>
-        </div>
-
-        <div
-          :if={
-            @invitacion && @invitacion.estado == :pendiente && @current_scope &&
-              not correo_coincide?(@invitacion, @current_scope)
-          }
-          class="mt-6"
-        >
-          <p>
-            Esta invitación es para {@invitacion.email}, pero iniciaste sesión como {@current_scope.user.email}.
-          </p>
-        </div>
-
-        <div
-          :if={
-            @invitacion && @invitacion.estado == :pendiente && @current_scope &&
-              correo_coincide?(@invitacion, @current_scope)
-          }
-          class="mt-6"
-        >
-          <p>
-            Te invitaron a unirte al equipo <strong>{@invitacion.team.name}</strong>
-            como {@role_labels[@invitacion.role]}.
-          </p>
-          <.button phx-click="aceptar" class="btn btn-primary mt-4">
-            Aceptar invitación
-          </.button>
-        </div>
-      </div>
+      </section>
     </Layouts.app>
     """
   end

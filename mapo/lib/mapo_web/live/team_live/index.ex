@@ -7,22 +7,28 @@ defmodule MapoWeb.TeamLive.Index do
   def render(assigns) do
     ~H"""
     <Layouts.app flash={@flash} current_scope={@current_scope} seccion="equipos">
-      <div class="flex items-center justify-between mb-6">
-        <.header>Mis equipos</.header>
-        <.link navigate={~p"/teams/new"} class="btn btn-primary">Crear equipo</.link>
-      </div>
+      <section class="doc pegado" aria-labelledby="t-equipos">
+        <header class="doc-cab">
+          <h1 id="t-equipos">Equipos</h1>
+          <span class="doc-tipo">{length(@teams)} {if length(@teams) == 1,
+            do: "equipo",
+            else: "equipos"}</span>
+        </header>
 
-      <div :if={@teams == []} class="alert alert-info">
-        Todavía no perteneces a ningún equipo.
-      </div>
-
-      <ul class="space-y-2">
-        <li :for={team <- @teams} class="card bg-base-200 p-4">
-          <.link navigate={~p"/teams/#{team}"} class="font-semibold hover:underline">
-            {team.name}
-          </.link>
-        </li>
-      </ul>
+        <div class="doc-seccion">
+          <p :if={@teams == []} class="nota">
+            Todavía no estás en ningún equipo. Crea uno o pide que te inviten.
+          </p>
+          <ul :if={@teams != []} class="lista-doc">
+            <li :for={team <- @teams} class="lista-fila">
+              <.link navigate={~p"/teams/#{team}"} class="lista-enlace">{team.name}</.link>
+            </li>
+          </ul>
+          <div class="doc-botones">
+            <.button variant="primary" navigate={~p"/teams/new"}>Crear equipo</.button>
+          </div>
+        </div>
+      </section>
     </Layouts.app>
     """
   end

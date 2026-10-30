@@ -20,7 +20,7 @@ defmodule MapoWeb.TeamLive.IndexTest do
   test "shows an empty state with no teams", %{conn: conn} do
     {:ok, _lv, html} = live(conn, ~p"/teams")
 
-    assert html =~ "Todavía no perteneces a ningún equipo."
+    assert html =~ "Todavía no estás en ningún equipo."
   end
 
   test "links to the new team page", %{conn: conn} do

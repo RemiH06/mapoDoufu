@@ -58,7 +58,7 @@ defmodule MapoWeb.UserSessionControllerTest do
         })
 
       assert redirected_to(conn) == "/foo/bar"
-      assert Phoenix.Flash.get(conn.assigns.flash, :info) =~ "¡Bienvenido de vuelta!"
+      assert Phoenix.Flash.get(conn.assigns.flash, :info) =~ "De vuelta en la mesa."
     end
 
     test "redirects to login page with invalid credentials", %{conn: conn, user: user} do

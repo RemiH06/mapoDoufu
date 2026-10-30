@@ -24,7 +24,7 @@ defmodule MapoWeb.InvitacionLive.ShowTest do
 
     {:ok, _lv, html} = live(conn, ~p"/invitaciones/#{invitacion.token}")
 
-    assert html =~ "ya fue aceptada"
+    assert html =~ "ya se aceptó"
   end
 
   test "shows login/register CTA for an anonymous visitor", %{conn: conn} do
@@ -36,7 +36,7 @@ defmodule MapoWeb.InvitacionLive.ShowTest do
 
     assert html =~ team.name
     assert html =~ "invitado@example.com"
-    assert html =~ "Iniciar sesión"
+    assert html =~ "Entrar"
     assert html =~ "Crear cuenta"
   end
 

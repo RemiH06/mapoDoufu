@@ -146,6 +146,9 @@
     grid-template-columns: auto 1fr;
     align-items: stretch;
   }
+  .marca:only-child {
+    border-right: 0;
+  }
   .marca {
     display: flex;
     align-items: center;
@@ -289,6 +292,249 @@
       padding: 6px 8px;
       font-size: 14px;
     }
+  }
+}
+
+/* Documentos de las vistas sin plano (cuenta, equipos, invitación): un papel
+   pegado con su cabecera impresa. Lo que la persona escribe en un campo va a
+   mano, como en un formulario de papel. */
+@layer components {
+  .doc {
+    margin-top: 12px;
+  }
+  .doc-cab {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 2px 16px;
+    padding: 16px 22px 8px;
+    border-bottom: 1.5px solid var(--text);
+  }
+  .doc-cab h1 {
+    font-family: var(--cond);
+    font-weight: 700;
+    font-size: 32px;
+    line-height: 1.05;
+    overflow-wrap: anywhere;
+  }
+  .doc-cab h2 {
+    font-family: var(--cond);
+    font-weight: 700;
+    font-size: 26px;
+    line-height: 1.1;
+  }
+  .doc-tipo {
+    font-family: var(--cond);
+    font-weight: 500;
+    font-size: 15px;
+    color: var(--text2);
+  }
+  .doc-seccion {
+    display: grid;
+    gap: 12px;
+    padding: 16px 22px 20px;
+  }
+  .doc-seccion + .doc-seccion {
+    border-top: 1px dashed var(--line);
+  }
+  .doc h2 {
+    font-family: var(--cond);
+    font-weight: 600;
+    font-size: 20px;
+    line-height: 1.2;
+  }
+  .doc p {
+    line-height: 1.45;
+  }
+  .doc .secundario {
+    color: var(--text2);
+    font-size: 15px;
+  }
+  .doc a:not(.boton) {
+    color: var(--text);
+    text-decoration: underline;
+    text-decoration-color: var(--accent);
+    text-underline-offset: 3px;
+  }
+  /* Nota a mano: lo que el equipo anota o lo que Mapo le advierte */
+  .nota {
+    font-family: var(--mano);
+    color: var(--accent);
+    font-size: 17px;
+    line-height: 1.3;
+  }
+  .doc-botones {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .doc-botones .boton {
+    flex: 1 1 auto;
+  }
+
+  /* Campos: un renglón para escribir, no una caja */
+  .etiqueta {
+    display: block;
+    font-family: var(--cond);
+    font-weight: 500;
+    font-size: 15px;
+    color: var(--text2);
+    margin-bottom: 2px;
+  }
+  .campo {
+    width: 100%;
+    min-height: 42px;
+    padding: 4px 2px;
+    background: transparent;
+    border: 0;
+    border-bottom: 1.5px solid var(--line);
+    border-radius: 0;
+    font-family: var(--mano);
+    font-size: 20px;
+    color: var(--text);
+  }
+  select.campo {
+    background: var(--bg);
+    cursor: pointer;
+  }
+  .campo:focus-visible {
+    outline: none;
+    border-bottom: 2.5px solid var(--accent);
+  }
+  .campo[readonly] {
+    color: var(--text2);
+    border-bottom-style: dashed;
+  }
+  .campo.con-error {
+    border-bottom-color: var(--accent);
+  }
+  .campo-error {
+    margin-top: 4px;
+    font-size: 14px;
+    color: var(--accent);
+  }
+
+  /* Renglones de una lista impresa (miembros, sesiones) */
+  .lista-doc {
+    display: grid;
+  }
+  .lista-fila {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 6px 12px;
+    padding: 8px 0;
+    border-bottom: 1px solid var(--trazo);
+    min-width: 0;
+  }
+  .lista-fila > :first-child {
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+  .sello-rol {
+    display: inline-block;
+    padding: 1px 8px;
+    border: 1.5px solid var(--line);
+    font-family: var(--cond);
+    font-weight: 500;
+    font-size: 14px;
+    color: var(--text2);
+    white-space: nowrap;
+  }
+  .sello-rol.dueno {
+    border-color: var(--text);
+    color: var(--text);
+  }
+  .boton.chico-doc {
+    min-height: 32px;
+    padding: 3px 12px;
+    font-size: 15px;
+  }
+  .boton.borrar {
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+  .lista-enlace {
+    font-family: var(--cond);
+    font-weight: 600;
+    font-size: 19px;
+    padding: 2px 0;
+  }
+  .lista-enlace:hover {
+    text-decoration: underline;
+    text-decoration-color: var(--accent);
+    text-underline-offset: 4px;
+  }
+  .lista-fin {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  /* Formulario de un renglón: campo, a veces un select, y su botón */
+  .agregar {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto auto;
+    align-items: end;
+    gap: 10px;
+  }
+  .agregar:not(:has(select)) {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+  @media (max-width: 560px) {
+    .agregar {
+      grid-template-columns: minmax(0, 1fr) auto;
+    }
+    .agregar .fieldset:first-child {
+      grid-column: 1 / -1;
+    }
+  }
+
+  /* /teams/:id: el acta del equipo y sus sesiones, lado a lado */
+  .equipo {
+    display: grid;
+    grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+    align-items: start;
+    gap: 28px;
+    max-width: 64rem;
+    margin: 0 auto;
+  }
+  @media (max-width: 900px) {
+    .equipo {
+      grid-template-columns: minmax(0, 1fr);
+    }
+  }
+
+  /* Aviso (flash): una nota pegada en la esquina */
+  .nota-flash {
+    display: flex;
+    gap: 10px;
+    align-items: flex-start;
+    width: min(24rem, calc(100vw - 40px));
+    padding: 12px 14px;
+    font-size: 15px;
+    line-height: 1.4;
+    white-space: normal;
+  }
+  .nota-flash-titulo {
+    font-family: var(--cond);
+    font-weight: 600;
+    font-size: 17px;
+  }
+  .nota-flash.error {
+    border-color: var(--accent);
+  }
+  .nota-flash.error .nota-flash-titulo {
+    color: var(--accent);
+  }
+  .nota-flash-cerrar {
+    display: grid;
+    place-items: center;
+    min-width: 28px;
+    min-height: 28px;
+    color: var(--text2);
+    cursor: pointer;
   }
 }
 

@@ -1,0 +1,183 @@
+/* /sesiones/:id: el plano compartido del equipo. Las anotaciones son marcas
+   a mano en lápiz rojo (el acento), con su nota al lado; nunca se mezclan con
+   lo impreso. La hoja de la sesión va pegada abajo a la izquierda. */
+
+@layer components {
+  #mapa-colaborativo {
+    cursor: crosshair;
+  }
+  #mapa-colaborativo .leaflet-top.leaflet-right {
+    top: 64px;
+    right: 10px;
+  }
+
+  .hoja-sesion {
+    position: fixed;
+    z-index: 1000;
+    left: 20px;
+    bottom: 24px;
+    width: min(360px, calc(100vw - 40px));
+    display: grid;
+    gap: 8px;
+    padding: 14px 18px 14px;
+  }
+  .hoja-sesion .hoja-cab {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 2px 12px;
+    border-bottom: 1.5px solid var(--text);
+    padding-bottom: 6px;
+  }
+  .hoja-sesion h1 {
+    font-family: var(--cond);
+    font-weight: 700;
+    font-size: 24px;
+    line-height: 1.1;
+    overflow-wrap: anywhere;
+  }
+  .hoja-sesion .tipo {
+    font-family: var(--cond);
+    font-weight: 500;
+    font-size: 14px;
+    color: var(--text2);
+  }
+  .hoja-sesion .pista {
+    margin-top: 0;
+  }
+  .presentes {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 2px 10px;
+    font-size: 15px;
+  }
+  .presentes .secundario {
+    font-family: var(--cond);
+    color: var(--text2);
+  }
+  .presentes .mano {
+    font-size: 16px;
+    overflow-wrap: anywhere;
+  }
+
+  /* La marca: un punto rodeado a mano y la nota en lápiz, con halo del papel
+     para leerse sobre el plano. */
+  .marca-mano {
+    position: relative;
+    display: block;
+    width: 22px;
+    height: 22px;
+  }
+  .marca-punto {
+    position: absolute;
+    inset: 0;
+    border: 2.5px solid var(--accent);
+    border-radius: 48% 52% 44% 56% / 55% 45% 55% 45%;
+    rotate: -12deg;
+    background: color-mix(in srgb, var(--bg) 55%, transparent);
+  }
+  .marca-punto::after {
+    content: "";
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: 6px;
+    height: 6px;
+    margin: -3px 0 0 -3px;
+    border-radius: 50%;
+    background: var(--accent);
+  }
+  .marca-texto {
+    position: absolute;
+    left: 26px;
+    top: -6px;
+    width: max-content;
+    max-width: 200px;
+    font-family: var(--mano);
+    font-size: 17px;
+    line-height: 1.15;
+    color: var(--accent);
+    text-shadow: 0 0 2px var(--bg), 0 0 4px var(--bg), 0 0 6px var(--bg);
+    pointer-events: none;
+  }
+  /* Onda de alcance: el pulso al llegar una marca nueva (la mía o la de
+     alguien más). La regla global de reduced motion la apaga. */
+  .marca-mano.nueva::after {
+    content: "";
+    position: absolute;
+    inset: -2px;
+    border: 2px solid var(--accent);
+    border-radius: 50%;
+    opacity: 0;
+    animation: onda-marca 0.9s cubic-bezier(0.2, 0.7, 0.2, 1) 2;
+  }
+  @keyframes onda-marca {
+    from {
+      transform: scale(0.6);
+      opacity: 0.9;
+    }
+    to {
+      transform: scale(3);
+      opacity: 0;
+    }
+  }
+
+  .ficha-marca .leaflet-popup-content {
+    margin: 12px 14px;
+  }
+  .ficha-marca .ficha {
+    min-width: 220px;
+  }
+  .ficha-autor {
+    font-family: var(--cond);
+    font-size: 14px;
+    color: var(--text2);
+    overflow-wrap: anywhere;
+  }
+  .ficha-marca .campo {
+    font-size: 18px;
+    min-height: 36px;
+  }
+  .chico.primario {
+    background: var(--text);
+    border-color: var(--text);
+    color: var(--bg);
+  }
+  .chico.borrar {
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+
+  @media (max-width: 760px) {
+    #mapa-colaborativo .leaflet-top.leaflet-right {
+      top: 150px;
+    }
+    .hoja-sesion {
+      left: 10px;
+      right: 10px;
+      bottom: 0;
+      width: auto;
+      border-bottom: 0;
+    }
+    .hoja-sesion .pista .largo {
+      display: none;
+    }
+    .hoja-sesion .pista .corto {
+      display: inline;
+    }
+    #mapa-colaborativo .leaflet-bottom.leaflet-right {
+      bottom: 150px;
+    }
+  }
+  @media (max-height: 500px) and (max-width: 900px) {
+    .hoja-sesion {
+      left: auto;
+      right: 10px;
+      bottom: 10px;
+      width: 300px;
+      border-bottom: 1.5px solid var(--text);
+    }
+  }
+}

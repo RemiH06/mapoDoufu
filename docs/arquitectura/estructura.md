@@ -7,11 +7,13 @@
 ├── docker-compose.yml       db (Postgres + PostGIS) + mapo_core + mapo
 ├── docs/                    esta documentación
 ├── design/                  favicon.svg (definitivo), mapo-logo.png (boceto),
-│                            demos de tema: metro_theme_demo.html, elixir_theme_demo.html
+│                            mesa_planeacion/ (prototipos de la mesa y el generador
+│                            del plano de la portada), demos de tema viejas
 ├── mapo/                    Elixir + Phoenix LiveView (módulos Mapo / MapoWeb)
 │   ├── lib/mapo/            contextos: Accounts, Teams, Sesiones, MapoCore (cliente HTTP)
 │   ├── lib/mapo_web/live/   una carpeta por pantalla (mapa_live, perfil_live, logistica_live, ...)
-│   └── assets/js/           hooks de Leaflet y fondo animado (sin npm, Leaflet vendorizado)
+│   └── assets/js/           hooks de Leaflet y la portada (sin npm; Leaflet y anime.js
+│                            vendorizados en assets/vendor/)
 └── mapo_core/               Python + FastAPI. Datos y motor de decisión
     ├── src/mapo_core/
     │   ├── server.py        rutas HTTP

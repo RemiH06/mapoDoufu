@@ -8,18 +8,30 @@ defmodule MapoWeb.TeamLive.New do
   def render(assigns) do
     ~H"""
     <Layouts.app flash={@flash} current_scope={@current_scope} seccion="equipos">
-      <div class="mx-auto max-w-sm">
-        <div class="text-center">
-          <.header>Crear equipo</.header>
+      <section class="doc pegado mx-auto max-w-md" aria-labelledby="t-nuevo">
+        <header class="doc-cab">
+          <h1 id="t-nuevo">Equipo nuevo</h1>
+           <span class="doc-tipo">Acta de formación</span>
+        </header>
+        
+        <div class="doc-seccion">
+          <p class="secundario">Quedas como titular. Después puedes agregar a más personas.</p>
+          
+          <.form for={@form} id="team_form" phx-submit="save" phx-change="validate" class="grid gap-3">
+            <.input
+              field={@form[:name]}
+              type="text"
+              label="Nombre del equipo"
+              required
+              phx-mounted={JS.focus()}
+            />
+            <div class="doc-botones">
+              <.button variant="primary" phx-disable-with="Creando...">Crear equipo</.button>
+              <.button navigate={~p"/teams"}>Cancelar</.button>
+            </div>
+          </.form>
         </div>
-
-        <.form for={@form} id="team_form" phx-submit="save" phx-change="validate">
-          <.input field={@form[:name]} type="text" label="Nombre" required phx-mounted={JS.focus()} />
-          <.button phx-disable-with="Creando..." class="btn btn-primary w-full">
-            Crear equipo
-          </.button>
-        </.form>
-      </div>
+      </section>
     </Layouts.app>
     """
   end

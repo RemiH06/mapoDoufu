@@ -16,6 +16,8 @@
 @import "./mapa.css";
 @import "./perfil.css";
 @import "./logistica.css";
+@import "./sesion.css";
+@import "./portada.css";
 @source "../css";
 @source "../js";
 @source "../../lib/mapo_web";

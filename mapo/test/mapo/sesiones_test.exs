@@ -67,6 +67,25 @@ defmodule Mapo.SesionesTest do
       assert_received {:anotacion_creada, ^anotacion}
     end
 
+    test "create_anotacion/5 accepts a mark without text and rejects one too long" do
+      scope = user_scope_fixture()
+      team = team_fixture(scope)
+      sesion = sesion_fixture(scope, team)
+
+      assert {:ok, %{texto: ""}} = Sesiones.create_anotacion(scope, sesion, 20.67, -103.35, "")
+
+      assert {:error, changeset} =
+               Sesiones.create_anotacion(
+                 scope,
+                 sesion,
+                 20.67,
+                 -103.35,
+                 String.duplicate("a", 256)
+               )
+
+      assert %{texto: [_]} = errors_on(changeset)
+    end
+
     test "create_anotacion/5 requires the scope to be a team member" do
       owner_scope = user_scope_fixture()
       team = team_fixture(owner_scope)

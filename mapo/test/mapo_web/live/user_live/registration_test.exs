@@ -8,8 +8,8 @@ defmodule MapoWeb.UserLive.RegistrationTest do
     test "renders registration page", %{conn: conn} do
       {:ok, _lv, html} = live(conn, ~p"/users/register")
 
-      assert html =~ "Crear una cuenta"
-      assert html =~ "Inicia sesión"
+      assert html =~ "Solicitud de alta"
+      assert html =~ "Entra"
     end
 
     test "redirects if already logged in", %{conn: conn} do
@@ -30,7 +30,7 @@ defmodule MapoWeb.UserLive.RegistrationTest do
         |> element("#registration_form")
         |> render_change(user: %{"email" => "with spaces"})
 
-      assert result =~ "Crear una cuenta"
+      assert result =~ "Solicitud de alta"
       assert result =~ "debe tener un signo @ y sin espacios"
     end
   end
@@ -72,11 +72,11 @@ defmodule MapoWeb.UserLive.RegistrationTest do
 
       {:ok, _login_live, login_html} =
         lv
-        |> element("main a", "Inicia sesión")
+        |> element("main a", "Entra")
         |> render_click()
         |> follow_redirect(conn, ~p"/users/log-in")
 
-      assert login_html =~ "Iniciar sesión"
+      assert login_html =~ "Ficha de acceso"
     end
   end
 end

@@ -8,36 +8,40 @@ defmodule MapoWeb.UserLive.Registration do
   def render(assigns) do
     ~H"""
     <Layouts.app flash={@flash} current_scope={@current_scope}>
-      <div class="mx-auto max-w-sm">
-        <div class="text-center">
-          <.header>
-            Crear una cuenta
-            <:subtitle>
-              ¿Ya tienes cuenta?
-              <.link navigate={~p"/users/log-in"} class="font-semibold text-brand hover:underline">
-                Inicia sesión
-              </.link>
-              en tu cuenta ahora.
-            </:subtitle>
-          </.header>
+      <section class="doc pegado mx-auto max-w-md" aria-labelledby="t-alta">
+        <header class="doc-cab">
+          <h1 id="t-alta">Crear cuenta</h1>
+           <span class="doc-tipo">Solicitud de alta</span>
+        </header>
+        
+        <div class="doc-seccion">
+          <p>
+            Te mandamos un enlace para confirmar el correo. La contraseña es opcional y se pone después, en la cuenta.
+          </p>
+          
+          <.form
+            for={@form}
+            id="registration_form"
+            phx-submit="save"
+            phx-change="validate"
+            class="grid gap-3"
+          >
+            <.input
+              field={@form[:email]}
+              type="email"
+              label="Correo electrónico"
+              autocomplete="username"
+              spellcheck="false"
+              required
+              phx-mounted={JS.focus()}
+            /> <.button variant="primary" phx-disable-with="Creando cuenta...">Crear cuenta</.button>
+          </.form>
         </div>
-
-        <.form for={@form} id="registration_form" phx-submit="save" phx-change="validate">
-          <.input
-            field={@form[:email]}
-            type="email"
-            label="Correo electrónico"
-            autocomplete="username"
-            spellcheck="false"
-            required
-            phx-mounted={JS.focus()}
-          />
-
-          <.button phx-disable-with="Creando cuenta..." class="btn btn-primary w-full">
-            Crear cuenta
-          </.button>
-        </.form>
-      </div>
+        
+        <p class="doc-seccion secundario">
+          <span>¿Ya tienes cuenta? <.link navigate={~p"/users/log-in"}>Entra</.link>.</span>
+        </p>
+      </section>
     </Layouts.app>
     """
   end
