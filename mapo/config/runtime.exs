@@ -26,6 +26,10 @@ config :mapo, MapoWeb.Endpoint, http: [port: String.to_integer(System.get_env("P
 # /privacidad. Sin él, el aviso dice que falta.
 config :mapo, :contacto_privacidad, System.get_env("MAPO_CONTACTO")
 
+# Misma variable que lee mapo_core. Con OSRM propio, /privacidad deja de
+# decir que los puntos van al servidor público de demostración.
+config :mapo, :osrm_propio, System.get_env("MAPO_OSRM_URL") not in [nil, ""]
+
 if config_env() == :dev do
   # Reload browser tabs when matching files change.
   config :mapo, MapoWeb.Endpoint,

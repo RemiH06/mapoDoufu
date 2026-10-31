@@ -479,5 +479,19 @@ defmodule MapoWeb.MapaLive.IndexTest do
       render_hook(lv, "crear_anotacion", %{"lat" => 1.0, "lon" => 1.0, "texto" => ""})
       assert Sesiones.list_anotaciones(sesion.id) == []
     end
+
+    test "leaving the team after mount stops the session from opening", %{
+      conn: conn,
+      scope: scope
+    } do
+      sesion = con_sesion(scope)
+      stub_estados_y_municipio(fn _ -> raise "no debería llamarse" end)
+      {:ok, lv, _html} = live(conn, ~p"/mapa")
+
+      Mapo.Repo.delete_all(Mapo.Teams.Membership)
+
+      assert render_patch(lv, ~p"/mapa?sesion=#{sesion.id}") =~
+               "Esa sesión no es de tus equipos."
+    end
   end
 end

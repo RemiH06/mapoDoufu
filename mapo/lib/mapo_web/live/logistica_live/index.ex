@@ -316,6 +316,11 @@ defmodule MapoWeb.LogisticaLive.Index do
     {:noreply, assign(socket, plegada: !socket.assigns.plegada)}
   end
 
+  # El botón se deshabilita mientras calcula, pero un doble clic llega antes
+  # del re-render: sin esto, mapo_core resolvería el mismo VRP dos veces.
+  def handle_event("calcular", _params, %{assigns: %{calculando: true}} = socket),
+    do: {:noreply, socket}
+
   def handle_event("calcular", _params, socket) do
     %{paradas: paradas, flota: flota} = socket.assigns
 

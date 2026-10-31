@@ -34,7 +34,8 @@ TIMEOUT_SEGUNDOS = 15.0
 
 
 def _url_por_defecto() -> str:
-    return os.environ.get(OSRM_URL_ENV_VAR, OSRM_BASE_URL_DEMO).rstrip("/")
+    # `or`: el compose de produccion la pasa vacia cuando no hay OSRM propio
+    return (os.environ.get(OSRM_URL_ENV_VAR) or OSRM_BASE_URL_DEMO).rstrip("/")
 
 
 def _coords_url(coords: list[tuple[float, float]]) -> str:

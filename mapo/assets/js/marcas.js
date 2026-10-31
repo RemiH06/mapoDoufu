@@ -12,7 +12,7 @@ import L from "../vendor/leaflet/leaflet"
 // forma nueva (trazo libre, flecha) agrega su caso en _dibujar y en _clic, y
 // su validacion en Mapo.Sesiones.Anotacion.
 
-const escapar = t => String(t ?? "").replace(/[&<>"']/g, c =>
+export const escapar = t => String(t ?? "").replace(/[&<>"']/g, c =>
   ({"&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"})[c])
 
 const METROS_POR_GRADO = 111320

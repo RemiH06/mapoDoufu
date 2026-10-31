@@ -26,8 +26,13 @@ defmodule MapoWeb.PageControllerTest do
 
   describe "GET /privacidad" do
     setup do
-      anterior = Application.get_env(:mapo, :contacto_privacidad)
-      on_exit(fn -> Application.put_env(:mapo, :contacto_privacidad, anterior) end)
+      contacto = Application.get_env(:mapo, :contacto_privacidad)
+      osrm = Application.get_env(:mapo, :osrm_propio)
+
+      on_exit(fn ->
+        Application.put_env(:mapo, :contacto_privacidad, contacto)
+        Application.put_env(:mapo, :osrm_propio, osrm)
+      end)
     end
 
     test "says the contact is missing when none is configured", %{conn: conn} do
@@ -44,6 +49,16 @@ defmodule MapoWeb.PageControllerTest do
 
       assert html =~ "datos@mapo.test"
       refute html =~ "todavía no publica un contacto"
+    end
+
+    test "names the public OSRM demo only when there is no own server", %{conn: conn} do
+      Application.put_env(:mapo, :osrm_propio, false)
+      assert conn |> get(~p"/privacidad") |> html_response(200) =~ "demostración de OSRM"
+
+      Application.put_env(:mapo, :osrm_propio, true)
+      html = build_conn() |> get(~p"/privacidad") |> html_response(200)
+      assert html =~ "los puntos no salen de aquí"
+      refute html =~ "demostración de OSRM"
     end
   end
 

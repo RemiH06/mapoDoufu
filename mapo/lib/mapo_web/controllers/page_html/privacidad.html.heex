@@ -42,7 +42,10 @@
         <li>
           Las calles del mapa vienen de los servidores de OpenStreetMap, y las letras, de Bunny Fonts. Los dos reciben tu dirección IP y, en el caso de OpenStreetMap, la zona que estás viendo.
         </li>
-        <li>
+        <li :if={@osrm_propio}>
+          Las isócronas y las rutas se calculan en un servidor de ruteo (OSRM) de esta misma instalación: los puntos no salen de aquí.
+        </li>
+        <li :if={!@osrm_propio}>
           Las isócronas y las rutas se calculan con el servidor público de demostración de OSRM: recibe los puntos de origen y de las paradas, no quién los pidió.
         </li>
       </ul>

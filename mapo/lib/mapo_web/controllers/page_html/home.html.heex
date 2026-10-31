@@ -18,11 +18,11 @@
       <img src={~p"/images/mapo-logo.svg"} alt="" />
       <h1 id="t-portada">MAPO</h1>
     </div>
-    
+
     <p class="lamina-lema">
       Los datos abiertos de México <b>sobre la mesa</b>, para que <b>tu equipo decida</b> dónde.
     </p>
-    
+
     <div class="lamina-acciones">
       <%= if @current_scope do %>
         <.link href={~p"/mapa"} class="boton primario">Abrir el mapa</.link>
@@ -32,32 +32,32 @@
         <.link href={~p"/users/log-in"} class="boton">Entrar</.link>
       <% end %>
     </div>
-    
+
     <dl>
       <dt>Lámina</dt>
-      
+
       <dd>0 · portada</dd>
-      
+
       <dt>Plano</dt>
-      
+
       <dd>Guadalajara, 442 AGEB</dd>
-      
+
       <dt>Fuentes</dt>
-      
+
       <dd>INEGI, SESNSP, OpenStreetMap</dd>
-      
+
       <dt>Datos</dt>
-      
+
       <dd><.link href={~p"/privacidad"}>Aviso de privacidad</.link></dd>
-      
+
       <%= if @current_scope do %>
         <dt>Cuenta</dt>
-        
+
         <dd>{@current_scope.user.email}</dd>
       <% end %>
     </dl>
   </section>
-  
+
   <figure class="mesa-portada" aria-labelledby="rotulo-pregunta">
     {plano_portada(assigns)}
     <figcaption id="rotulo" class="rotulo-portada pegado" aria-live="polite">
@@ -65,12 +65,12 @@
       <span id="rotulo-pregunta" class="rotulo-pregunta">
         ¿Dónde abrir una papelería en el centro de Guadalajara?
       </span>
-      
+
       <span id="rotulo-dato" class="rotulo-dato">
         Población del censo 2020, negocios de DENUE, 10 minutos por carretera y la marca del equipo.
       </span>
     </figcaption>
-     <%!-- La charola solo sirve con JavaScript: el script le quita el hidden. --%>
+    <%!-- La charola solo sirve con JavaScript: el script le quita el hidden. --%>
     <nav id="charola-portada" class="charola-portada" aria-label="Acetatos de la portada" hidden>
       <button
         :for={
@@ -92,4 +92,4 @@
     </nav>
   </figure>
 </main>
- <Layouts.flash_group flash={@flash} />
+<Layouts.flash_group flash={@flash} />

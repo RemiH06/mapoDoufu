@@ -1,0 +1,104 @@
+# Producción: se monta encima de docker-compose.yml.
+#
+#   docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
+#
+# Secretos en .env junto a este archivo (plantilla: .env.example). Detalle
+# en docs/despliegue.md.
+#
+# `name` separa contenedores, redes y volúmenes de los de desarrollo: la
+# base de producción no es la de `docker compose up` a secas.
+name: mapo-prod
+
+x-comun: &comun
+  restart: unless-stopped
+  logging:
+    driver: json-file
+    options:
+      max-size: "10m"
+      max-file: "3"
+
+services:
+  db:
+    <<: *comun
+    ports: !reset []
+    environment:
+      POSTGRES_USER: mapo
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?falta POSTGRES_PASSWORD en .env}
+      POSTGRES_DB: mapo_prod
+    networks: [interna]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U mapo -d mapo_prod"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  osrm:
+    <<: *comun
+    image: ghcr.io/project-osrm/osrm-backend:v26.7.3-debian
+    # Los datos tienen que salir de la misma versión de OSRM que la imagen
+    # (docs/fuentes/osrm.md).
+    command: osrm-routed --algorithm mld /data/mexico-latest.osrm
+    volumes:
+      - ${MAPO_OSRM_DATOS:?falta MAPO_OSRM_DATOS en .env}:/data:ro
+    networks: [interna]
+
+  mapo_core:
+    <<: *comun
+    ports: !reset []
+    volumes: !reset []
+    # La imagen es la de dev (corre como root); en prod, sin privilegios
+    user: "65534:65534"
+    command: ["uvicorn", "mapo_core.server:app", "--host", "0.0.0.0", "--port", "8010"]
+    environment:
+      DATABASE_NAME: mapo_prod
+      DATABASE_USER: mapo
+      DATABASE_PASSWORD: ${POSTGRES_PASSWORD}
+      MAPO_OSRM_URL: http://osrm:5000
+    # `default` da salida a internet para refrescar fuentes con el CLI
+    networks: [interna, default]
+    depends_on: !override
+      db:
+        condition: service_healthy
+      osrm:
+        condition: service_started
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8010/salud', timeout=3)"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+
+  mapo:
+    <<: *comun
+    build: !override
+      context: ./mapo
+      dockerfile: Dockerfile.prod
+    # Único puerto en el host y solo en 127.0.0.1: Tailscale corre fuera de
+    # Docker y lo publica a la tailnet con `tailscale serve`. No es el 1864
+    # de dev a propósito: si alguien levanta dev en el servidor por error,
+    # `tailscale serve` no publica /dev/mailbox ni el dashboard.
+    ports: !override
+      - "127.0.0.1:1865:4000"
+    volumes: !reset []
+    init: true
+    environment:
+      DATABASE_URL: ecto://mapo:${POSTGRES_PASSWORD}@db/mapo_prod
+      SECRET_KEY_BASE: ${SECRET_KEY_BASE:?falta SECRET_KEY_BASE en .env}
+      PHX_HOST: ${PHX_HOST:?falta PHX_HOST en .env}
+      MAPO_CONTACTO: ${MAPO_CONTACTO:?falta MAPO_CONTACTO en .env}
+      MAPO_OSRM_URL: http://osrm:5000
+    networks: [interna, default]
+    depends_on: !override
+      db:
+        condition: service_healthy
+      mapo_core:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "-o", "/dev/null", "http://localhost:4000/"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+
+# `interna` no tiene salida a internet: la base y OSRM no la necesitan.
+networks:
+  interna:
+    internal: true

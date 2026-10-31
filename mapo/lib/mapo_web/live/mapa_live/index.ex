@@ -662,10 +662,14 @@ defmodule MapoWeb.MapaLive.Index do
 
   # Cambia la sesión de "Tus marcas": deja el tópico de la anterior, se
   # suscribe a la nueva y le manda al hook sus marcas. Solo se aceptan
-  # sesiones de los equipos de la persona (las que ya trae `sesiones`).
+  # sesiones de los equipos de la persona: la lista `sesiones` es del mount,
+  # así que la membresía se vuelve a revisar por si la sacaron del equipo.
   defp cambiar_sesion(socket, id) do
     previa = socket.assigns.sesion
     nueva = id && Enum.find(socket.assigns.sesiones, &(to_string(&1.id) == id))
+
+    nueva =
+      nueva && Mapo.Teams.role_in_team(socket.assigns.current_scope, nueva.team_id) && nueva
 
     cond do
       previa && nueva && previa.id == nueva.id ->

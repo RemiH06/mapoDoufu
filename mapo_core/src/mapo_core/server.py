@@ -1,3 +1,6 @@
+# Lo pesado de CPU (OR-Tools, Voronoi, coloreado) corre con asyncio.to_thread:
+# dentro de un `async def` bloquearia el event loop para todas las peticiones.
+import asyncio
 import json
 
 import psycopg
@@ -234,7 +237,8 @@ async def vrp_calcular(
     resultado_osrm = await osrm.matriz_carretera([(p.lat, p.lon) for p in paradas])
 
     if resultado_osrm is not None:
-        solucion = resolver_vrp(
+        solucion = await asyncio.to_thread(
+            resolver_vrp,
             paradas,
             vehiculos,
             deposito=solicitud.deposito,
@@ -243,7 +247,8 @@ async def vrp_calcular(
         )
         metodo = "carretera_real"
     else:
-        solucion = resolver_vrp(
+        solucion = await asyncio.to_thread(
+            resolver_vrp,
             paradas,
             vehiculos,
             deposito=solicitud.deposito,
@@ -408,7 +413,7 @@ async def voronoi_denue(
         )
 
     try:
-        resultado = calcular_voronoi(puntos, limite=municipio["geometry"])
+        resultado = await asyncio.to_thread(calcular_voronoi, puntos, limite=municipio["geometry"])
     except ValueError as exc:
         raise HTTPException(422, str(exc)) from None
 
@@ -454,7 +459,7 @@ async def coloreado_municipios(cve_ent: str, pool: AsyncConnectionPool = Depends
         for cvegeo, _cve_mun, _nombre, geom in filas
         if geom is not None
     ]
-    resultado = colorear_mapa(poligonos)
+    resultado = await asyncio.to_thread(colorear_mapa, poligonos)
 
     features = [
         _feature(

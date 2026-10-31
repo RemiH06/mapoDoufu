@@ -21,8 +21,26 @@ para distancias y tiempos reales por carretera. Lo usan el VRP
 
 El demo público sirve para desarrollar, pero tiene límites de uso y no
 garantiza disponibilidad: para hostear Mapo hace falta un OSRM propio.
-Gaiarda ya lo corrió con el mapa de México completo: `osrm-extract`
-llega a un pico de ~14.8 GB de RAM, así que Docker/WSL2 necesita 16 GB
-asignados (con menos, muere sin avisar a medio preprocesar). La guía
-con las cifras reales está en `gaiarda/docs/osrm_propio.md` del repo
-de Gaiarda.
+En producción es el servicio `osrm` de `docker-compose.prod.yml`
+([despliegue.md](../despliegue.md)), y `MAPO_OSRM_URL` apunta a él en
+`mapo_core` y en `mapo` (que con eso cambia la línea de OSRM en
+`/privacidad`). Una `MAPO_OSRM_URL` vacía cuenta como no definida.
+
+**Los datos se reusan de Gaiarda.** Gaiarda ya preprocesó el mapa de
+México completo (Geofabrik, 2026-08-01) con el algoritmo MLD: 8 GB en
+su carpeta `osrm-data/`. Preprocesarlo de nuevo no hace falta, y es lo
+caro: `osrm-extract` llega a un pico de ~14.8 GB de RAM, así que
+Docker/WSL2 necesita 16 GB asignados (con menos, muere sin avisar a
+medio preprocesar). Servirlo es mucho menos: 5.1 GB de RAM medidos.
+
+**La versión de la imagen tiene que ser la misma con que se
+prepararon los datos.** El archivo `.osrm.timestamp` (y cualquier
+`.osrm.*`) lleva una huella en los bytes 512 a 519: `OSRO` seguido de
+la versión (`1a 07 03` = 26.7.3). Por eso la imagen va fija en
+`v26.7.3-debian`. Ensayo del 2026-10-30 con esos datos: una ruta dentro
+de Guadalajara dio 7.9 km y 9 minutos por carretera.
+
+Para actualizar el mapa: bajar `mexico-latest.osm.pbf` de Geofabrik y
+correr con la misma imagen `osrm-extract -p /opt/car.lua`,
+`osrm-partition` y `osrm-customize` sobre la carpeta, en una máquina
+con 16 GB para Docker.

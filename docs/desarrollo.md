@@ -15,6 +15,12 @@ docker compose up -d
 | `mapo_core` | 8010 | FastAPI |
 | `db` | 5432 | Postgres 16 + PostGIS, bases `mapo_dev` y `mapo_test` |
 
+Los tres escuchan solo en `127.0.0.1`: dev trae `/dev/mailbox`, el
+dashboard y la base con `postgres/postgres`, y nada de eso debe verse
+desde la red local. Para entrar desde otra máquina propia, usar
+`tailscale serve --bg 1864` en vez de abrir el puerto: lo ve solo la
+tailnet, y se apaga con `tailscale serve reset` al terminar.
+
 Mapo corre en el 1864 porque el 4000 estaba ocupado en la máquina de
 desarrollo. Por eso `config.exs` trae `url: [port: 1864]`: sin eso, los
 links de los correos (confirmación, magic link, invitaciones) salen con

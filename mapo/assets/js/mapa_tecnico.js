@@ -1,6 +1,6 @@
 import L from "../vendor/leaflet/leaflet"
 import {entintar} from "./plano_tinta"
-import {Marcas} from "./marcas"
+import {Marcas, escapar} from "./marcas"
 
 // Mapa tecnico: cada capa (coropleta, Voronoi, coloreado, isocrona) es un
 // acetato sobre el plano. El servidor las prende y apaga por push_event y
@@ -177,7 +177,7 @@ export const MapaTecnico = {
       ...opciones,
       style: {color, weight: 0.8, opacity: 0.9, fill: true, fillOpacity: 0},
       onEachFeature: (f, capa) => {
-        const nombre = f.properties.nombre || `Negocio ${f.properties.id}`
+        const nombre = escapar(f.properties.nombre || `Negocio ${f.properties.id}`)
         const otros = f.properties.num_puntos - 1
         capa.bindPopup(otros > 0 ? `${nombre}<br>y ${otros} más en el mismo punto` : nombre)
       },
@@ -207,7 +207,7 @@ export const MapaTecnico = {
         color, weight: 0.8, opacity: 0.7, fillColor: color,
         fillOpacity: TINTA_COLOREADO[(f.properties.color_indice ?? 0) % TINTA_COLOREADO.length],
       }),
-      onEachFeature: (f, capa) => capa.bindPopup(f.properties.nomgeo || f.properties.cvegeo),
+      onEachFeature: (f, capa) => capa.bindPopup(escapar(f.properties.nomgeo || f.properties.cvegeo)),
     })
   },
 

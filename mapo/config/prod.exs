@@ -19,6 +19,12 @@ config :mapo, MapoWeb.Endpoint,
     ]
   ]
 
+# Mientras no haya dominio ni correo real, los correos (enlaces de acceso,
+# invitaciones) se escriben completos en el log y quien administra los
+# reenvía a mano: `docker compose logs mapo`. El log trae enlaces de
+# acceso vigentes, así que solo lo lee quien opera el servidor.
+config :mapo, Mapo.Mailer, adapter: Swoosh.Adapters.Logger, log_full_email: true
+
 # Configure Swoosh API Client
 config :swoosh, api_client: Swoosh.ApiClient.Req
 

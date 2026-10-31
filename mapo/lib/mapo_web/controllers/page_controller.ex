@@ -8,7 +8,8 @@ defmodule MapoWeb.PageController do
   def privacidad(conn, _params) do
     render(conn, :privacidad,
       page_title: "Aviso de privacidad",
-      contacto: Application.get_env(:mapo, :contacto_privacidad)
+      contacto: Application.get_env(:mapo, :contacto_privacidad),
+      osrm_propio: Application.get_env(:mapo, :osrm_propio, false)
     )
   end
 
