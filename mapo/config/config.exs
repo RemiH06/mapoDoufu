@@ -25,9 +25,9 @@ config :mapo,
   generators: [timestamp_type: :utc_datetime]
 
 # mapo_core es el motor de datos/decision (Python); mapo le pega por
-# HTTP. `mapo_core_req_options` deja inyectar un `plug:` de Req.Test en
-# los tests, sin pegarle nunca a la red de verdad.
-config :mapo, :mapo_core_url, System.get_env("MAPO_CORE_URL", "http://localhost:8010")
+# HTTP (su URL se lee en runtime.exs). `mapo_core_req_options` deja
+# inyectar un `plug:` de Req.Test en los tests, sin pegarle nunca a la
+# red de verdad.
 config :mapo, :mapo_core_req_options, []
 
 # Le enseña a Postgrex los tipos de geometria de PostGIS (Geo.Point,

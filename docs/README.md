@@ -26,7 +26,7 @@ Una por fuente: de dónde sale, cómo se carga, sus problemas conocidos y las ci
 ## Desarrollo
 
 - [desarrollo.md](desarrollo.md): levantar, probar, cargar datos y problemas de Docker/Phoenix ya resueltos.
-- [despliegue.md](despliegue.md): compose de producción, secretos, acceso por Tailscale, correo a mano, migraciones y OSRM propio.
+- [despliegue.md](despliegue.md): compose de producción, secretos, acceso por Tailscale, correo a mano, migraciones, primera carga de datos, respaldos y OSRM propio.
 
 ## Historial
 
@@ -48,6 +48,7 @@ Qué se construyó en cada etapa, por qué así y qué bugs reales aparecieron.
 - [Capa "Tus marcas", octubre 2026](historial/2026-10-tus-marcas.md)
 - [Revisión contra anti-vibecode, octubre 2026](historial/2026-10-anti-vibecode.md)
 - [Preparar el hosteo, octubre 2026](historial/2026-10-hosteo.md)
+- [Primer despliegue, octubre 2026](historial/2026-10-despliegue.md)
 
 ## Gaiarda
 

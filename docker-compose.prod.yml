@@ -84,6 +84,7 @@ services:
       DATABASE_URL: ecto://mapo:${POSTGRES_PASSWORD}@db/mapo_prod
       SECRET_KEY_BASE: ${SECRET_KEY_BASE:?falta SECRET_KEY_BASE en .env}
       PHX_HOST: ${PHX_HOST:?falta PHX_HOST en .env}
+      PHX_PORT: ${PHX_PORT:-443}
       MAPO_CONTACTO: ${MAPO_CONTACTO:?falta MAPO_CONTACTO en .env}
       MAPO_OSRM_URL: http://osrm:5000
     networks: [interna, default]

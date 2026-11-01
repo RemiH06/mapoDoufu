@@ -30,6 +30,13 @@ config :mapo, :contacto_privacidad, System.get_env("MAPO_CONTACTO")
 # decir que los puntos van al servidor público de demostración.
 config :mapo, :osrm_propio, System.get_env("MAPO_OSRM_URL") not in [nil, ""]
 
+# Aquí y no en config.exs: en un release, config.exs se evalúa al
+# construir la imagen y la URL quedaría fija en la de la máquina que
+# construyó. Test usa la suya (config/test.exs).
+if config_env() != :test do
+  config :mapo, :mapo_core_url, System.get_env("MAPO_CORE_URL", "http://localhost:8010")
+end
+
 if config_env() == :dev do
   # Reload browser tabs when matching files change.
   config :mapo, MapoWeb.Endpoint,
@@ -78,11 +85,14 @@ if config_env() == :prod do
       """
 
   host = System.get_env("PHX_HOST") || "example.com"
+  # Puerto HTTPS con que se entra; distinto de 443 cuando la máquina
+  # comparte nombre con otros servicios (docs/despliegue.md).
+  port = String.to_integer(System.get_env("PHX_PORT") || "443")
 
   config :mapo, :dns_cluster_query, System.get_env("DNS_CLUSTER_QUERY")
 
   config :mapo, MapoWeb.Endpoint,
-    url: [host: host, port: 443, scheme: "https"],
+    url: [host: host, port: port, scheme: "https"],
     http: [
       # Enable IPv6 and bind on all interfaces.
       # Set it to  {0, 0, 0, 0, 0, 0, 0, 1} for local network only access.

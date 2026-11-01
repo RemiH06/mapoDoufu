@@ -38,6 +38,7 @@ En `.env` junto al compose, con `chmod 600`. Plantilla: `.env.example`.
 | `POSTGRES_PASSWORD` | `openssl rand -hex 32` (solo hexadecimal: va dentro de `DATABASE_URL`) |
 | `SECRET_KEY_BASE` | `openssl rand -base64 48` |
 | `PHX_HOST` | el nombre con que se entra, sin `https://` |
+| `PHX_PORT` | el puerto HTTPS con que se entra; vacío es 443 |
 | `MAPO_CONTACTO` | el correo que sale en `/privacidad` |
 | `MAPO_OSRM_DATOS` | carpeta con `mexico-latest.osrm.*` |
 
@@ -52,6 +53,11 @@ Sin dominio todavía: solo por Tailscale. En la máquina que hostea,
 `tailscale serve --bg 1865` publica `https://<máquina>.<tailnet>.ts.net`
 a la tailnet, con certificado. `PHX_HOST` es ese nombre: Phoenix
 rechaza el WebSocket de LiveView si el origen no coincide.
+
+Si la máquina ya publica otro servicio en el 443 (así está Pixilate),
+`tailscale serve --bg 1865` lo reemplazaría. Ahí Mapo va en su propio
+puerto, `tailscale serve --bg --https=1865 http://127.0.0.1:1865`, y
+`PHX_PORT=1865` para que los enlaces de los correos lo lleven.
 
 Phoenix en prod redirige a HTTPS (`force_ssl`) y confía en
 `X-Forwarded-Proto` para saber que la petición ya llegó cifrada. Al
@@ -79,7 +85,7 @@ docker compose -p mapo-prod exec mapo bin/mapo rpc '
   spawn(fn ->
     Process.group_leader(self(), gl)
     {:ok, u} = Mapo.Accounts.register_user(%{email: "alguien@correo.mx"})
-    Mapo.Accounts.deliver_login_instructions(u, &"https://<PHX_HOST>/users/log-in/#{&1}")
+    Mapo.Accounts.deliver_login_instructions(u, &MapoWeb.Endpoint.url() <> "/users/log-in/#{&1}")
   end)'
 ```
 
@@ -95,12 +101,62 @@ docker compose -p mapo-prod exec db pg_dump -U mapo -Fc mapo_prod > respaldo.dum
 docker compose -f docker-compose.yml -f docker-compose.prod.yml run --rm mapo bin/migrate
 ```
 
+`run` levanta antes `db` y `mapo_core` por el `depends_on` de `mapo`.
+
+## Primera carga de datos
+
+Las tablas de fuentes (`entidades`, `municipios`, `agebs`, `fuente_*`,
+`descargas_checkpoint`) las crea `mapo_core`; las de cuentas, las
+migraciones. En vez de volver a descargar todo (SESNSP son 30 millones
+de filas), se copian de otra instalación que ya las tenga:
+
+```bash
+# en la instalación de origen (dev: usuario postgres, base mapo_dev)
+pg_dump -U postgres -d mapo_dev -Fc -t entidades -t municipios -t agebs   -t 'fuente_*' -t descargas_checkpoint > fuentes.dump
+
+# en el servidor, con solo db y osrm arriba (antes que mapo_core cree
+# las tablas vacías)
+docker compose -p mapo-prod exec -T db pg_restore -U mapo -d mapo_prod   --no-owner --role=mapo --exit-on-error < fuentes.dump
+```
+
+Después, `bin/migrate` y el `up -d` normal. Las cuentas de la
+instalación de origen no se copian. Comparar `count(*)` de cada tabla
+en los dos lados antes de dar la carga por buena.
+
+## Respaldos
+
+`scripts/respaldo.sh` saca un `pg_dump -Fc` completo a
+`~/srv/mapo-respaldos/` (o a la carpeta que reciba): lo escribe a
+`.tmp` y lo renombra al terminar, con permisos solo del dueño (trae
+correos y tokens), y guarda los últimos 7. Cada uno pesa unos 250 MB.
+Se programa con el cron del usuario que opera Docker:
+
+```
+0 4 * * * bash $HOME/srv/mapo/scripts/respaldo.sh >> $HOME/srv/mapo-respaldos/respaldo.log 2>&1
+```
+
+Restaurar en un contenedor aparte para comprobar un respaldo (probado
+el 2026-10-31: mismos conteos en las nueve tablas de fuentes y las
+ocho migraciones):
+
+```bash
+docker run -d --rm --name restaura --network none   -e POSTGRES_PASSWORD=prueba postgis/postgis:16-3.4-alpine
+docker exec restaura createdb -U postgres prueba
+docker exec -i restaura pg_restore -U postgres -d prueba --no-owner < respaldo.dump
+docker stop restaura
+```
+
+Para volver la base real a un respaldo: `docker compose -p mapo-prod
+stop mapo mapo_core` y luego `pg_restore --clean --if-exists
+--no-owner --role=mapo -d mapo_prod` contra el servicio `db`.
+
 ## OSRM
 
 Sirve el mapa de México ya preprocesado (algoritmo MLD). Ocupa unos
-8 GB en disco y 5.1 GB de RAM al cargar; tarda unos minutos en
-responder después de arrancar (3.5 minutos medidos en Aerilate). Mientras tanto, `mapo_core` cae a línea
-recta y lo dice en `metodo`. Detalle en [fuentes/osrm.md](fuentes/osrm.md).
+8 GB en disco y 5.1 GB de RAM al cargar. Con los datos en un disco
+ext4 (el de WSL) responde a los 13 segundos de arrancar; desde una
+carpeta de Windows montada tardó 3.5 minutos. Mientras tanto,
+`mapo_core` cae a línea recta y lo dice en `metodo`. Detalle en [fuentes/osrm.md](fuentes/osrm.md).
 
 ## Operación
 
