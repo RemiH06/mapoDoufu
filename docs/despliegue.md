@@ -135,6 +135,15 @@ Se programa con el cron del usuario que opera Docker:
 0 4 * * * bash $HOME/srv/mapo/scripts/respaldo.sh >> $HOME/srv/mapo-respaldos/respaldo.log 2>&1
 ```
 
+Con `MAPO_RESPALDO_SSH=<host>` en la línea de cron, el script además
+manda cada respaldo a otra máquina y compara el sha256 que ésta
+responde con el local; si no coinciden, termina con error. Del otro
+lado, la llave autorizada lleva `restrict,command="<receptor>"`: el
+receptor guarda stdin con un nombre que pone él, con tope de tamaño,
+conserva los últimos 7 y responde el sha256. Así, quien tome el
+servidor y su llave no obtiene una terminal en la otra máquina ni
+puede leer o borrar respaldos anteriores.
+
 Restaurar en un contenedor aparte para comprobar un respaldo (probado
 el 2026-10-31: mismos conteos en las nueve tablas de fuentes y las
 ocho migraciones):
