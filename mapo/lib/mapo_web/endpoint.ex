@@ -8,7 +8,8 @@ defmodule MapoWeb.Endpoint do
     store: :cookie,
     key: "_mapo_key",
     signing_salt: "DSwVv4dv",
-    same_site: "Lax"
+    same_site: "Lax",
+    secure: true
   ]
 
   # compress: el GeoJSON de las capas de /mapa viaja por aqui y se
