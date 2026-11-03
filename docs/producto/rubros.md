@@ -33,4 +33,9 @@ prueba Mapo (modo técnico y buscador):
   y no vale la pena inventar una clasificación que la fuente no trae)
 - Estación de policía: confirmado que DENUE la cubre, vía la clase
   `Mantenimiento de la seguridad y el orden público` (ver
-  `../fuentes/denue.md`)
+  `../fuentes/denue.md`). Esa clase también trae fiscalía, protección
+  civil y oficinas de seguridad: no se puede aislar la estación de
+  policía, y la respuesta lo dice
+
+Los cinco se probaron en los dos modos con datos reales
+(`../historial/2026-11-casos-rubro.md`).

@@ -202,7 +202,7 @@ defmodule MapoWeb.BuscadorLive.Index do
 
   defp frase(%{intencion: "donde_poner"} = assigns) do
     ~H"""
-    ¿Dónde pongo <.que plantilla={@plantilla} catalogo={@catalogo} /> en
+    ¿Dónde poner <.que plantilla={@plantilla} catalogo={@catalogo} /> en
     <.lugares plantilla={@plantilla} municipios={@municipios} />?
     """
   end
@@ -333,7 +333,7 @@ defmodule MapoWeb.BuscadorLive.Index do
         <% "cuantos_cerca" -> %>
           <p class="grande num">{cifra(@resultado["cifras"]["total_negocios"])}</p>
           <p>
-            negocios a {@resultado["cifras"]["minutos"]} minutos en auto, {metodo(
+            {unidad(@resultado["cifras"])} a {@resultado["cifras"]["minutos"]} minutos en auto, {metodo(
               @resultado["cifras"]["metodo"]
             )}.
           </p>
@@ -364,9 +364,11 @@ defmodule MapoWeb.BuscadorLive.Index do
             <thead>
               <tr>
                 <th>Municipio</th>
-                <th class="num">Negocios</th>
+                <th class="num">{String.capitalize(unidad(@resultado["cifras"]))}</th>
                 <th :if={intencion == "donde_poner"} class="num">Población</th>
-                <th :if={intencion == "donde_poner"} class="num">Hab. por negocio</th>
+                <th :if={intencion == "donde_poner"} class="num">
+                  Hab. por {singular(@resultado["cifras"])}
+                </th>
               </tr>
             </thead>
             <tbody>
@@ -396,8 +398,8 @@ defmodule MapoWeb.BuscadorLive.Index do
             {@resultado["cifras"]["formula"]}
           </p>
           <p :if={intencion == "donde_poner"} class="leyenda">
-            Las celdas son la zona más cerca de cada negocio que de otro: celda grande, poca
-            competencia. La tinta es la población por AGEB. Ninguna cifra decide sola.
+            {leyenda(@resultado["cifras"])} La tinta es la población por AGEB. Ninguna cifra decide
+            sola.
           </p>
       <% end %>
 
@@ -702,6 +704,19 @@ defmodule MapoWeb.BuscadorLive.Index do
   defp valor_que(%{"rubro" => r}) when is_binary(r), do: "rubro:#{r}"
   defp valor_que(%{"sector" => s}) when is_binary(s), do: "sector:#{s}"
   defp valor_que(_), do: nil
+
+  defp unidad(cifras), do: cifras["unidad"] || "negocios"
+
+  # Un servicio público no compite: lo que se lee en la celda es cobertura.
+  defp leyenda(%{"unidad" => "unidades"}),
+    do:
+      "Las celdas son la zona más cerca de cada unidad que de otra: celda grande, menos cobertura."
+
+  defp leyenda(_),
+    do:
+      "Las celdas son la zona más cerca de cada negocio que de otro: celda grande, poca competencia."
+
+  defp singular(cifras), do: if(unidad(cifras) == "unidades", do: "unidad", else: "negocio")
 
   defp tipo("rubro"), do: "rubro"
   defp tipo("sector"), do: "sector"

@@ -55,6 +55,8 @@ def test_voronoi_calcular_con_puntos_colineales_da_422():
     assert respuesta.status_code == 422
 
 
+PAPELERIA = "Comercio al por menor de artículos de papelería"
+
 MUNICIPIO_GEOJSON = {
     "type": "Polygon",
     "coordinates": [[[-2, -2], [12, -2], [12, 12], [-2, 12], [-2, -2]]],
@@ -100,9 +102,9 @@ async def test_voronoi_denue_usa_negocios_reales_y_el_poligono_real_del_municipi
 async def test_voronoi_denue_filtra_por_clase_actividad(conn, pool_de_una_conexion):
     await _insertar_municipio_guadalajara(conn)
     for id_, lat, lon in [("1", 0.0, 0.0), ("2", 0.0, 10.0), ("3", 10.0, 0.0)]:
-        await _insertar_negocio(conn, id_, lat, lon, clase_actividad="papeleria")
+        await _insertar_negocio(conn, id_, lat, lon, clase_actividad=PAPELERIA)
     for id_, lat, lon in [("4", 5.0, 5.0), ("5", 6.0, 6.0), ("6", 7.0, 7.0)]:
-        await _insertar_negocio(conn, id_, lat, lon, clase_actividad="farmacia")
+        await _insertar_negocio(conn, id_, lat, lon, clase_actividad="Farmacias sin minisúper")
 
     app.dependency_overrides[get_pool] = lambda: pool_de_una_conexion
     cliente = TestClient(app)

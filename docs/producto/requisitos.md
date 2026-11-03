@@ -21,7 +21,7 @@ detalle de lo ya construido vive en `../historial/`.
 | RF6 | Modo buscador: preguntas en lenguaje natural acotado (intención + parámetros fijos), resueltas por un sistema experto contra la misma data del modo técnico, sin generar texto libre ni inventar respuestas | Listo: pantalla `/buscador`, analizador determinista y resolución sobre las consultas del modo técnico (`buscador.md`). Falta probarlo con los casos por rubro (Fase 7) |
 | RF7 | Motor de logística (VRP): múltiples vehículos, capacidad de carga, ventanas de tiempo de entrega, paradas comerciales con restricciones propias | Parcial: motor completo en `mapo_core` (OR-Tools, `POST /vrp/calcular`) y pantalla `/logistica` con geometría real de cada ruta. La interfaz todavía no expone ventanas de tiempo ni capacidad distinta por vehículo (el backend sí las soporta) |
 | RF8 | Vendorizar (no consumir en vivo) las fuentes de datos de Gaiarda: código de descarga/normalización propio, sin depender de un Gaiarda corriendo en ningún lado | Listo: geoestadístico, censo, DENUE, ENIGH, ENOE y SESNSP vendorizados y cargados con datos reales (ver `../fuentes/`). SESNSP se carga a mano (no hay descarga pública automatizable) |
-| RF9 | Casos de ejemplo iniciales, probados en ambos modos: floristería, call center, supermercado, consultorio/hospital, estación de policía | Pendiente (Fase 7). La estación de policía ya está confirmada como posible vía DENUE |
+| RF9 | Casos de ejemplo iniciales, probados en ambos modos: floristería, call center, supermercado, consultorio/hospital, estación de policía | Listo: los cinco casos probados en los dos modos con datos reales y las mismas cifras (`../historial/2026-11-casos-rubro.md`, `tests/test_casos_rubro.py`) |
 
 ## Requerimientos no funcionales
 

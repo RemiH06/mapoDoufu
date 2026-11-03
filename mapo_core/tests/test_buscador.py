@@ -215,7 +215,7 @@ async def test_cuantos_por_municipio_con_puntos(conn, pool_de_una_conexion):
     assert [m["negocios"] for m in cuerpo["cifras"]["municipios"]] == [1, 2]
     assert cuerpo["cifras"]["total_negocios"] == 3
     assert len(cuerpo["capas"]["puntos"]) == 2
-    assert any("no traen ubicación" in a for a in cuerpo["avisos"])
+    assert any("sin ubicación" in a for a in cuerpo["avisos"])
 
 
 @pytest.mark.asyncio

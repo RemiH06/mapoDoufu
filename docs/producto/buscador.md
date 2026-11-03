@@ -67,6 +67,9 @@ Reglas del analizador (`mapo_core/src/mapo_core/buscador.py`):
   rubro, no el filtro `solo_publicos`.
 - **Sin palabra de intención**, los minutos implican `cuantos_cerca` y la
   edad implica `donde_contratar`, las únicas intenciones que los usan.
+- **`donde_contratar` y `perfil` no usan rubro.** Si la pregunta nombra
+  uno, se quita y se avisa.
+- **"Centro de salud" implica `solo_publicos`.**
 
 ## Pantalla
 
@@ -105,6 +108,18 @@ por igual el modo técnico y el buscador. Criterios:
   dan las cifras y se avisa. En `donde_poner`, el Voronoi conserva el
   tope y el mínimo del modo técnico.
 - **`perfil`** no resuelve nada: lleva a `/perfil` del municipio.
+- **No todo es un negocio.** En gobierno y con `solo_publicos`, las cifras
+  dicen "unidades" (`cifras.unidad`) y la leyenda habla de cobertura, no
+  de competencia.
+
+## Filtro "giro" del modo técnico
+
+El campo "Giro" de `/mapa` entiende las mismas palabras que el buscador
+(`buscador.giro_tecnico`). Si el texto es un término de la tabla, usa las
+clases de ese rubro o sector; si no, las clases que lo contienen, sin
+importar acentos. Si nada coincide, cae al `ILIKE`, para clases de un
+estado que todavía no están en la tabla. `/voronoi/denue` regresa en
+`filtro` lo que reconoció y la cinta lo muestra.
 
 ## Tabla de rubros
 
@@ -118,7 +133,11 @@ no se genera en vivo:
   modo técnico) y no tienen rubros.
 - `rubros.csv`: 183 rubros con nombre para mostrar y sinónimos. Los
   `otros_*` no llevan sinónimos: existen para que ninguna clase quede
-  huérfana.
+  huérfana. Dos columnas más:
+  - `marcas`: se reconocen ("oxxo", "walmart"), pero DENUE clasifica por
+    giro: se resuelve el giro entero y se avisa.
+  - `nota`: lo que hay que saber al leer la cifra de ese rubro. Sale en
+    los avisos de la respuesta.
 - `clases.csv`: las 918 clases de DENUE de Jalisco, cada una con su
   sector, rubro, `sector_publico` y `origen` (de dónde salió la
   asignación).

@@ -31,6 +31,8 @@ class Rubro:
     sector: str
     nombre: str
     sinonimos: tuple[str, ...]
+    marcas: tuple[str, ...] = ()  # se reconocen, pero DENUE no filtra por marca
+    nota: str = ""  # lo que hay que saber de este rubro al leer su cifra
 
 
 def _leer(nombre: str) -> list[dict[str, str]]:
@@ -46,7 +48,13 @@ def sectores() -> dict[str, dict[str, str]]:
 @cache
 def rubros() -> dict[str, Rubro]:
     return {
-        f["rubro"]: Rubro(f["sector"], f["nombre"], tuple(s for s in f["sinonimos"].split("|") if s))
+        f["rubro"]: Rubro(
+            f["sector"],
+            f["nombre"],
+            tuple(filter(None, f["sinonimos"].split("|"))),
+            tuple(filter(None, f["marcas"].split("|"))),
+            f["nota"],
+        )
         for f in _leer("rubros.csv")
     }
 
@@ -74,7 +82,7 @@ def terminos() -> dict[str, tuple[str, str]]:
     `tests/test_rubros.py`."""
     salida: dict[str, tuple[str, str]] = {}
     for clave, rubro in rubros().items():
-        for t in (rubro.nombre, *rubro.sinonimos):
+        for t in (rubro.nombre, *rubro.sinonimos, *rubro.marcas):
             salida[normalizar(t)] = ("rubro", clave)
     for clave, fila in sectores().items():
         if fila["buscable"] == "si":
@@ -96,6 +104,12 @@ def clases_de(*, rubro: str | None = None, sector: str | None = None, solo_publi
         for nombre, c in clases().items()
         if (c.rubro == rubro if rubro else c.sector == sector) and (not solo_publicos or es_publica(c))
     )
+
+
+def clases_con_texto(texto: str) -> list[str]:
+    """Clases cuyo nombre contiene el texto, sin importar acentos."""
+    buscado = normalizar(texto)
+    return sorted(c for c in clases() if buscado in normalizar(c))
 
 
 @cache

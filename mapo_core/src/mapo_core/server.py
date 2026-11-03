@@ -293,10 +293,11 @@ async def voronoi_denue(
     clase_actividad: str | None = None,
     pool: AsyncConnectionPool = Depends(get_pool),
 ) -> dict:
-    """Voronoi de los negocios de DENUE en un municipio (opcionalmente
-    filtrados por texto en `clase_actividad`), recortado al poligono
-    real del municipio: "a cual de estos negocios le queda mas cerca
-    cada lugar dentro del municipio"."""
+    """Voronoi de los negocios de DENUE en un municipio, recortado al
+    poligono real del municipio: "a cual de estos negocios le queda mas
+    cerca cada lugar dentro del municipio". `clase_actividad` filtra por
+    un termino de la tabla de rubros o por texto en el nombre de la clase;
+    `filtro` dice que rubro o sector se reconocio, o null."""
     limite = await consultas.limite_municipios(pool, cve_ent, [cve_mun])
     if limite is None:
         raise HTTPException(
@@ -305,7 +306,11 @@ async def voronoi_denue(
             "'python -m mapo_core.cli municipios --estado' para ese estado?).",
         )
 
-    puntos = await consultas.negocios(pool, cve_ent, [cve_mun], patron=clase_actividad)
+    # El filtro acepta las mismas palabras que el buscador ("florería",
+    # "policía"), no solo texto del nombre oficial de la clase.
+    clases, filtro = buscador.giro_tecnico(clase_actividad) if clase_actividad else (None, None)
+    patron = clase_actividad if clases is None else None
+    puntos = await consultas.negocios(pool, cve_ent, [cve_mun], patron=patron, clases=clases)
 
     if aviso := consultas.aviso_voronoi(len(puntos)):
         raise HTTPException(422, aviso)
@@ -315,7 +320,7 @@ async def voronoi_denue(
     except ValueError as exc:
         raise HTTPException(422, str(exc)) from None
 
-    return {"celdas": resultado.celdas, "metodo": resultado.metodo, "num_negocios": len(puntos)}
+    return {"celdas": resultado.celdas, "metodo": resultado.metodo, "num_negocios": len(puntos), "filtro": filtro}
 
 
 class PoligonoColoreableEntrada(BaseModel):

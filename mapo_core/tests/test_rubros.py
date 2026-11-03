@@ -28,7 +28,7 @@ def test_ningun_termino_lleva_a_dos_rubros():
     si dos comparten nombre o sinónimo, la pregunta sería ambigua sin avisar."""
     vistos: dict[str, str] = {}
     for clave, rubro in rubros.rubros().items():
-        for termino in (rubro.nombre, *rubro.sinonimos):
+        for termino in (rubro.nombre, *rubro.sinonimos, *rubro.marcas):
             t = rubros.normalizar(termino)
             assert vistos.setdefault(t, clave) == clave, f"'{termino}' en {vistos[t]} y {clave}"
     for clave, fila in rubros.sectores().items():

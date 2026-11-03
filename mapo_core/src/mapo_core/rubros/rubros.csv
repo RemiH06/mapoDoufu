@@ -1,184 +1,184 @@
-rubro,sector,nombre,sinonimos
-taqueria,alimentos_preparados,Taquería,tacos|tortas|tortería|taquerías|lonchería
-antojitos,alimentos_preparados,Antojitos,antojería|tamales|gorditas|sopes|pozolería|birriería|menudería|tostadas
-restaurante,alimentos_preparados,Restaurante,restaurantes|fonda|comida corrida|cocina económica|comedor
-marisqueria,alimentos_preparados,Marisquería,mariscos|cevichería
-comida_rapida,alimentos_preparados,Comida rápida,autoservicio|hamburguesas|pizzería|pizzas|hot dogs|pollos rostizados
-cafeteria_y_neveria,alimentos_preparados,Cafetería y nevería,cafetería|café|cafés|nevería|heladería|fuente de sodas|refresquería|juguería
-bar_y_cantina,alimentos_preparados,Bar y cantina,bar|bares|cantina|cantinas|cervecería|pulquería
-comida_para_llevar,alimentos_preparados,Comida para llevar,para llevar|food truck|puesto de comida|cocina oculta
-banquetes,alimentos_preparados,Banquetes,banquetería|catering|eventos
-comedor_comunitario,alimentos_preparados,Comedor comunitario,comedor comunitario|comedor industrial|comedor de empresa
-tienda_de_abarrotes,abarrotes_y_alimentos,Tienda de abarrotes,abarrotes|tiendita|tienda de la esquina|miscelánea|ultramarinos
-minisuper,abarrotes_y_alimentos,Minisúper,minisuper|tienda de conveniencia|oxxo|seven
-supermercado,abarrotes_y_alimentos,Supermercado,súper|super|supermercados|autoservicio de abarrotes
-carniceria,abarrotes_y_alimentos,Carnicería,carne|carnes rojas|carnicerías
-polleria,abarrotes_y_alimentos,Pollería,pollo|pollerías
-pescaderia,abarrotes_y_alimentos,Pescadería,pescado|pescaderías
-fruteria,abarrotes_y_alimentos,Frutería,fruta|frutas|verdulería|verduras|fruterías
-cremeria,abarrotes_y_alimentos,Cremería,lácteos|quesos|salchichonería|embutidos|cremerías
-dulceria,abarrotes_y_alimentos,Dulcería,dulces|repostería|materias primas|dulcerías
-paleteria,abarrotes_y_alimentos,Paletería,paletas|helados|paleterías
-semillas_y_chiles,abarrotes_y_alimentos,Semillas y chiles,semillas|granos|chiles secos|especias|forrajera
-vinateria,abarrotes_y_alimentos,Vinatería,vinos|licores|vinaterías|licorería
-deposito_de_cerveza,abarrotes_y_alimentos,Depósito de cerveza,depósito|cerveza|six|modelorama
-agua_y_hielo,abarrotes_y_alimentos,Agua y hielo,purificadora|garrafones|hielo|refrescos
-tabaqueria,abarrotes_y_alimentos,Tabaquería,tabaco|cigarros|puros
-otros_alimentos,abarrotes_y_alimentos,Otros alimentos,
-consultorio_medico,salud,Consultorio médico,consultorio|médico|médico general|doctor|clínica|consultorios
-consultorio_especialista,salud,Consultorio de especialista,especialista|ginecólogo|pediatra|cardiólogo|dermatólogo
-dentista,salud,Dentista,dentistas|consultorio dental|odontólogo|ortodoncista
-hospital,salud,Hospital,hospitales|sanatorio|hospitalización|urgencias
-laboratorio_clinico,salud,Laboratorio clínico,laboratorio|análisis clínicos|rayos x|diagnóstico
-farmacia,salud,Farmacia,farmacias|botica|medicinas
-naturista,salud,Tienda naturista,naturista|homeopatía|suplementos
-psicologo,salud,Psicólogo,psicología|terapeuta|psicólogos
-nutriologo,salud,Nutriólogo,nutrióloga|nutrición|dietista
-terapia_y_rehabilitacion,salud,Terapia y rehabilitación,fisioterapia|rehabilitación|quiropráctico|terapia física|terapia de lenguaje
-optica,salud,Óptica,ópticas|lentes|optometrista|anteojos
-veterinaria,salud,Veterinaria,veterinario|veterinarias|clínica veterinaria
-asilo_y_cuidado,salud,Asilo y cuidado,asilo|casa de retiro|residencia de ancianos|estancia de día
-salud_mental_y_adicciones,salud,Salud mental y adicciones,anexo|centro de rehabilitación|adicciones|psiquiátrico
-ortopedia,salud,Ortopedia,ortopédico|aparatos ortopédicos
-ambulancia,salud,Ambulancias,ambulancia
-asistencia_social,salud,Asistencia social,orfanato|casa hogar|albergue|trabajo social|refugio
-otros_salud,salud,Otros de salud,
-guarderia,educacion,Guardería,guarderías|estancia infantil|maternal
-preescolar,educacion,Preescolar,kínder|kinder|jardín de niños
-primaria,educacion,Primaria,primarias|escuela primaria
-secundaria,educacion,Secundaria,secundarias|secundaria técnica
-preparatoria,educacion,Preparatoria,prepa|bachillerato|media superior|conalep|cbtis
-universidad,educacion,Universidad,universidades|educación superior|tecnológico|facultad
-escuela_varios_niveles,educacion,Escuela de varios niveles,colegio|instituto
-escuela_de_idiomas,educacion,Escuela de idiomas,idiomas|inglés|clases de inglés
-escuela_de_arte,educacion,Escuela de arte,clases de música|clases de danza|clases de pintura|academia de arte
-escuela_de_deporte,educacion,Escuela de deporte,academia deportiva|clases de natación|artes marciales
-escuela_de_oficios,educacion,Escuela de oficios,oficios|capacitación|escuela de computación|cursos
-educacion_especial,educacion,Educación especial,CAM|necesidades especiales
-clases_particulares,educacion,Clases particulares,profesor particular|regularización|asesorías
-otros_educacion,educacion,Otros de educación,
-estetica,belleza_y_cuidado_personal,Estética,estéticas|salón de belleza|peluquería|barbería|uñas|spa
-perfumeria,belleza_y_cuidado_personal,Perfumería,perfumes|cosméticos|maquillaje
-otros_cuidado_personal,belleza_y_cuidado_personal,Otros de cuidado personal,pañales
-ropa,ropa_calzado_y_accesorios,Tienda de ropa,ropa|boutique|lencería|ropa de bebé|vestidos de novia|sombrerería
-zapateria,ropa_calzado_y_accesorios,Zapatería,zapatos|calzado|tenis|zapaterías
-joyeria,ropa_calzado_y_accesorios,Joyería,joyas|relojes|relojería|bisutería|accesorios
-merceria_y_telas,ropa_calzado_y_accesorios,Mercería y telas,mercería|telas|boneterías|hilos
-blancos,ropa_calzado_y_accesorios,Blancos,sábanas|toallas|colchas
-ferreteria,hogar_ferreteria_y_construccion_menudeo,Ferretería,ferreterías|tlapalería|materiales para construcción
-pintura,hogar_ferreteria_y_construccion_menudeo,Tienda de pintura,pinturas|comex|impermeabilizante
-muebleria,hogar_ferreteria_y_construccion_menudeo,Mueblería,muebles|mueblerías|colchones
-decoracion,hogar_ferreteria_y_construccion_menudeo,Decoración,cortinas|alfombras|lámparas|candiles
-electrodomesticos,hogar_ferreteria_y_construccion_menudeo,Electrodomésticos,línea blanca|electrónica
-articulos_de_cocina,hogar_ferreteria_y_construccion_menudeo,Artículos de cocina,cristalería|loza|trastes|vajillas
-vidrieria,hogar_ferreteria_y_construccion_menudeo,Vidriería,vidrios|espejos|cancelería
-pisos_y_azulejos,hogar_ferreteria_y_construccion_menudeo,Pisos y azulejos,pisos|azulejos|recubrimientos
-gas_lp,hogar_ferreteria_y_construccion_menudeo,Gas LP,gas|cilindros de gas|gasera
-instalaciones,hogar_ferreteria_y_construccion_menudeo,Instalaciones,electricista|plomero|plomería|aire acondicionado
-papeleria,otros_comercios_al_menudeo,Papelería,papelerías|útiles escolares
-floreria,otros_comercios_al_menudeo,Florería,florerías|floristería|flores|plantas|vivero
-regalos,otros_comercios_al_menudeo,Tienda de regalos,regalos|novedades|bazar
-artesanias,otros_comercios_al_menudeo,Artesanías,artesanías|antigüedades|arte
-jugueteria,otros_comercios_al_menudeo,Juguetería,juguetes|jugueterías
-articulos_deportivos,otros_comercios_al_menudeo,Artículos deportivos,deportes|tienda deportiva
-celulares,otros_comercios_al_menudeo,Celulares,teléfonos|accesorios de celular
-computo,otros_comercios_al_menudeo,Cómputo,computadoras|computación|laptops
-articulos_de_limpieza,otros_comercios_al_menudeo,Artículos de limpieza,limpieza|desechables|jarciería
-tienda_de_mascotas,otros_comercios_al_menudeo,Tienda de mascotas,mascotas|alimento para mascotas|acuario
-libreria,otros_comercios_al_menudeo,Librería,librerías|libros|revistas|puesto de periódicos
-tienda_departamental,otros_comercios_al_menudeo,Tienda departamental,departamental
-segunda_mano,otros_comercios_al_menudeo,Artículos usados,segunda mano|usados|bazar de usados
-musica,otros_comercios_al_menudeo,Música,instrumentos musicales|discos
-renta_de_articulos,otros_comercios_al_menudeo,Renta de artículos,renta de mesas|renta de sillas|renta de trajes|alquiler
-loteria,otros_comercios_al_menudeo,Lotería,billetes de lotería|pronósticos
-fotografia,otros_comercios_al_menudeo,Revelado y fotografía,revelado|impresión de fotos
-articulos_religiosos,otros_comercios_al_menudeo,Artículos religiosos,
-otros_menudeo,otros_comercios_al_menudeo,Otros comercios,
-agencia_de_autos,autos,Agencia de autos,agencia|autos nuevos|autos usados|lote de autos
-motocicletas,autos,Venta de motocicletas,motos|motocicletas
-refaccionaria,autos,Refaccionaria,refacciones|autopartes|lubricantes
-llantera,autos,Llantera,llantas|vulcanizadora|alineación y balanceo
-taller_mecanico,autos,Taller mecánico,mecánico|taller|eléctrico automotriz|transmisiones
-hojalateria,autos,Hojalatería y pintura,hojalatería|carrocería|tapicería automotriz
-autolavado,autos,Autolavado,lavado de autos|car wash|autolavados
-gasolinera,autos,Gasolinera,gasolineras|gasolina|diésel|gas vehicular
-banco,finanzas_y_seguros,Banco,bancos|sucursal bancaria|cajero
-caja_de_ahorro,finanzas_y_seguros,Caja de ahorro,caja popular|cooperativa|unión de crédito
-financiera,finanzas_y_seguros,Financiera,sofom|préstamos|créditos
-casa_de_empeno,finanzas_y_seguros,Casa de empeño,empeño|monte de piedad|montepío
-casa_de_cambio,finanzas_y_seguros,Casa de cambio,cambio de dólares|centro cambiario|divisas
-seguros,finanzas_y_seguros,Seguros,aseguradora|agente de seguros|fianzas
-otros_financieros,finanzas_y_seguros,Otros financieros,
-call_center,servicios_profesionales_y_oficinas,Call center,centro de llamadas|centro de contacto|telemarketing
-despacho_contable,servicios_profesionales_y_oficinas,Despacho contable,contador|contabilidad|auditoría
-abogado,servicios_profesionales_y_oficinas,Abogado,abogados|bufete|despacho jurídico|trámites
-notaria,servicios_profesionales_y_oficinas,Notaría,notario|notarías
-agencia_de_viajes,servicios_profesionales_y_oficinas,Agencia de viajes,viajes|turismo|reservaciones
-cibercafe,servicios_profesionales_y_oficinas,Cibercafé,ciber|café internet
-copias_e_impresion,servicios_profesionales_y_oficinas,Copias e impresión,copias|fotocopias|impresiones
-fotografia_y_video,servicios_profesionales_y_oficinas,Fotografía y video,fotógrafo|estudio fotográfico
-publicidad_y_diseno,servicios_profesionales_y_oficinas,Publicidad y diseño,publicidad|diseño gráfico|rotulación|agencia de publicidad
-arquitectura_e_ingenieria,servicios_profesionales_y_oficinas,Arquitectura e ingeniería,arquitecto|ingeniero|despacho de arquitectura
-consultoria,servicios_profesionales_y_oficinas,Consultoría,consultor|asesoría empresarial|investigación de mercados
-seguridad_privada,servicios_profesionales_y_oficinas,Seguridad privada,vigilancia|guardias|alarmas|monitoreo
-agencia_de_empleo,servicios_profesionales_y_oficinas,Agencia de empleo,bolsa de trabajo|reclutamiento|outsourcing
-telecomunicaciones,servicios_profesionales_y_oficinas,Telecomunicaciones,internet|telefonía|cable
-sistemas_y_software,servicios_profesionales_y_oficinas,Sistemas y software,software|desarrollo de software|sistemas
-residuos,servicios_profesionales_y_oficinas,Manejo de residuos,basura|reciclaje|recolección
-otros_servicios_profesionales,servicios_profesionales_y_oficinas,Otros servicios profesionales,
-lavanderia,reparacion_y_servicios_personales,Lavandería,lavanderías|tintorería|planchaduría
-cerrajeria,reparacion_y_servicios_personales,Cerrajería,cerrajero|llaves
-reparacion_de_calzado,reparacion_y_servicios_personales,Reparación de calzado,zapatero|reparadora de calzado
-tapiceria,reparacion_y_servicios_personales,Tapicería,tapicero|retapizado
-reparacion_de_aparatos,reparacion_y_servicios_personales,Reparación de aparatos,reparación de celulares|reparación de electrodomésticos|técnico
-taller_de_bicicletas,reparacion_y_servicios_personales,Taller de bicicletas,reparación de bicicletas|bicicletería
-taller_de_motos,reparacion_y_servicios_personales,Taller de motos,reparación de motos
-funeraria,reparacion_y_servicios_personales,Funeraria,funerarias|velatorio
-banos_publicos,reparacion_y_servicios_personales,Baños públicos,baños|sanitarios|bolería
-limpieza_y_fumigacion,reparacion_y_servicios_personales,Limpieza y fumigación,fumigación|plagas|jardinería
-reparacion_industrial,reparacion_y_servicios_personales,Reparación industrial,mantenimiento industrial|reparación de maquinaria
-otros_servicios_personales,reparacion_y_servicios_personales,Otros servicios personales,
-oficina_de_gobierno,gobierno_y_seguridad,Oficina de gobierno,gobierno|ayuntamiento|presidencia municipal|oficina pública|DIF
-seguridad_publica,gobierno_y_seguridad,Seguridad pública,policía|estación de policía|comandancia|ministerio público|guardia nacional
-juzgado,gobierno_y_seguridad,Juzgado,juzgados|tribunal
-emergencias,gobierno_y_seguridad,Emergencias,cruz roja|protección civil|bomberos
-cementerio,gobierno_y_seguridad,Cementerio,panteón|cementerios
-otros_gobierno,gobierno_y_seguridad,Otros de gobierno,
-museo,cultura_deporte_y_entretenimiento,Museo,museos
-biblioteca,cultura_deporte_y_entretenimiento,Biblioteca,bibliotecas
-cine,cultura_deporte_y_entretenimiento,Cine,cines
-teatro_y_auditorio,cultura_deporte_y_entretenimiento,Teatro y auditorio,teatro|auditorio|estadio|arena|foro
-parque_recreativo,cultura_deporte_y_entretenimiento,Parque recreativo,parque de diversiones|balneario|parque acuático|zoológico
-centro_nocturno,cultura_deporte_y_entretenimiento,Centro nocturno,antro|discoteca|club nocturno
-billar_y_maquinitas,cultura_deporte_y_entretenimiento,Billar y maquinitas,billar|maquinitas|boliche
-casino,cultura_deporte_y_entretenimiento,Casino,casinos|juegos de azar
-club_deportivo,cultura_deporte_y_entretenimiento,Club deportivo,club|campo de golf|liga deportiva
-gimnasio,cultura_deporte_y_entretenimiento,Gimnasio,gym|gimnasios|crossfit
-medios_y_edicion,cultura_deporte_y_entretenimiento,Medios y edición,
-otros_entretenimiento,cultura_deporte_y_entretenimiento,Otros de entretenimiento,
-hotel,hospedaje,Hotel,hoteles
-motel,hospedaje,Motel,moteles
-cabanas_y_departamentos,hospedaje,Cabañas y departamentos,cabañas|villas|departamento amueblado|campamento
-casa_de_huespedes,hospedaje,Casa de huéspedes,pensión|hostal|hostel
-templo,religion_y_asociaciones,Templo,iglesia|templos|parroquia|capilla
-asociacion_civil,religion_y_asociaciones,Asociación civil,ONG|organización civil|fundación
-grupo_de_autoayuda,religion_y_asociaciones,Grupo de autoayuda,AA|alcohólicos anónimos
-camara_o_sindicato,religion_y_asociaciones,Cámara o sindicato,sindicato|cámara de comercio|colegio de profesionistas
-salon_de_fiestas,inmobiliario_y_construccion,Salón de fiestas,salón de eventos|jardín de eventos|salones
-inmobiliaria,inmobiliario_y_construccion,Inmobiliaria,bienes raíces|inmobiliarias
-renta_de_locales,inmobiliario_y_construccion,Renta de locales,locales comerciales|oficinas en renta
-renta_de_vivienda,inmobiliario_y_construccion,Renta de vivienda,casas en renta|departamentos en renta
-constructora,inmobiliario_y_construccion,Constructora,constructoras|construcción
-trabajos_de_construccion,inmobiliario_y_construccion,Trabajos de construcción,albañil|albañilería|yesero
-otros_inmobiliario,inmobiliario_y_construccion,Otros inmobiliarios,
-estacionamiento,transporte_y_logistica,Estacionamiento,estacionamientos|pensión de autos
-paqueteria,transporte_y_logistica,Paquetería,mensajería|correos|envíos
-mudanzas,transporte_y_logistica,Mudanzas,mudanza|fletes
-gruas,transporte_y_logistica,Grúas,grúa
-renta_de_autos,transporte_y_logistica,Renta de autos,rent a car|alquiler de autos
-transporte_de_pasajeros,transporte_y_logistica,Transporte de pasajeros,camiones de pasajeros|central de autobuses|transporte de personal
-transporte_de_carga,transporte_y_logistica,Transporte de carga,fletera|transportista|carga
-almacen,transporte_y_logistica,Almacén,bodega|almacenes|centro de distribución
-transporte_turistico,transporte_y_logistica,Transporte turístico,tour|recorridos turísticos
-renta_de_maquinaria,transporte_y_logistica,Renta de maquinaria,renta de maquinaria|montacargas
-otros_transporte,transporte_y_logistica,Otros de transporte,
+rubro,sector,nombre,sinonimos,marcas,nota
+taqueria,alimentos_preparados,Taquería,tacos|tortas|tortería|taquerías|lonchería,,
+antojitos,alimentos_preparados,Antojitos,antojería|tamales|gorditas|sopes|pozolería|birriería|menudería|tostadas,,
+restaurante,alimentos_preparados,Restaurante,restaurantes|fonda|comida corrida|cocina económica|comedor,,
+marisqueria,alimentos_preparados,Marisquería,mariscos|cevichería,,
+comida_rapida,alimentos_preparados,Comida rápida,hamburguesas|pizzería|pizzas|hot dogs|pollos rostizados|restaurante de autoservicio,,
+cafeteria_y_neveria,alimentos_preparados,Cafetería y nevería,cafetería|café|cafés|nevería|heladería|fuente de sodas|refresquería|juguería,,
+bar_y_cantina,alimentos_preparados,Bar y cantina,bar|bares|cantina|cantinas|cervecería|pulquería,,
+comida_para_llevar,alimentos_preparados,Comida para llevar,para llevar|food truck|puesto de comida|cocina oculta,,
+banquetes,alimentos_preparados,Banquetes,banquetería|catering|eventos,,
+comedor_comunitario,alimentos_preparados,Comedor comunitario,comedor comunitario|comedor industrial|comedor de empresa,,
+tienda_de_abarrotes,abarrotes_y_alimentos,Tienda de abarrotes,abarrotes|tiendita|tienda de la esquina|miscelánea|ultramarinos,,
+minisuper,abarrotes_y_alimentos,Minisúper,minisuper|tienda de conveniencia,oxxo|seven|7 eleven,
+supermercado,abarrotes_y_alimentos,Supermercado,súper|super|supermercados|autoservicio de abarrotes|autoservicio,walmart|soriana|chedraui,
+carniceria,abarrotes_y_alimentos,Carnicería,carne|carnes rojas|carnicerías,,
+polleria,abarrotes_y_alimentos,Pollería,pollo|pollerías,,
+pescaderia,abarrotes_y_alimentos,Pescadería,pescado|pescaderías,,
+fruteria,abarrotes_y_alimentos,Frutería,fruta|frutas|verdulería|verduras|fruterías,,
+cremeria,abarrotes_y_alimentos,Cremería,lácteos|quesos|salchichonería|embutidos|cremerías,,
+dulceria,abarrotes_y_alimentos,Dulcería,dulces|repostería|materias primas|dulcerías,,
+paleteria,abarrotes_y_alimentos,Paletería,paletas|helados|paleterías,,
+semillas_y_chiles,abarrotes_y_alimentos,Semillas y chiles,semillas|granos|chiles secos|especias|forrajera,,
+vinateria,abarrotes_y_alimentos,Vinatería,vinos|licores|vinaterías|licorería,,
+deposito_de_cerveza,abarrotes_y_alimentos,Depósito de cerveza,depósito|cerveza|six|modelorama,,
+agua_y_hielo,abarrotes_y_alimentos,Agua y hielo,purificadora|garrafones|hielo|refrescos,,
+tabaqueria,abarrotes_y_alimentos,Tabaquería,tabaco|cigarros|puros,,
+otros_alimentos,abarrotes_y_alimentos,Otros alimentos,,,
+consultorio_medico,salud,Consultorio médico,consultorio|médico|médico general|doctor|clínica|consultorios|centro de salud,,"Medicina general y clínicas. Especialistas, dentistas y psicólogos son rubros aparte."
+consultorio_especialista,salud,Consultorio de especialista,especialista|ginecólogo|pediatra|cardiólogo|dermatólogo,,
+dentista,salud,Dentista,dentistas|consultorio dental|odontólogo|ortodoncista,,
+hospital,salud,Hospital,hospitales|sanatorio|hospitalización|urgencias,,
+laboratorio_clinico,salud,Laboratorio clínico,laboratorio|análisis clínicos|rayos x|diagnóstico,,
+farmacia,salud,Farmacia,farmacias|botica|medicinas,,
+naturista,salud,Tienda naturista,naturista|homeopatía|suplementos,,
+psicologo,salud,Psicólogo,psicología|terapeuta|psicólogos,,
+nutriologo,salud,Nutriólogo,nutrióloga|nutrición|dietista,,
+terapia_y_rehabilitacion,salud,Terapia y rehabilitación,fisioterapia|rehabilitación|quiropráctico|terapia física|terapia de lenguaje,,
+optica,salud,Óptica,ópticas|lentes|optometrista|anteojos,,
+veterinaria,salud,Veterinaria,veterinario|veterinarias|clínica veterinaria,,
+asilo_y_cuidado,salud,Asilo y cuidado,asilo|casa de retiro|residencia de ancianos|estancia de día,,
+salud_mental_y_adicciones,salud,Salud mental y adicciones,anexo|centro de rehabilitación|adicciones|psiquiátrico,,
+ortopedia,salud,Ortopedia,ortopédico|aparatos ortopédicos,,
+ambulancia,salud,Ambulancias,ambulancia,,
+asistencia_social,salud,Asistencia social,orfanato|casa hogar|albergue|trabajo social|refugio,,
+otros_salud,salud,Otros de salud,,,
+guarderia,educacion,Guardería,guarderías|estancia infantil|maternal,,
+preescolar,educacion,Preescolar,kínder|kinder|jardín de niños,,
+primaria,educacion,Primaria,primarias|escuela primaria,,
+secundaria,educacion,Secundaria,secundarias|secundaria técnica,,
+preparatoria,educacion,Preparatoria,prepa|bachillerato|media superior|conalep|cbtis,,
+universidad,educacion,Universidad,universidades|educación superior|tecnológico|facultad,,
+escuela_varios_niveles,educacion,Escuela de varios niveles,colegio|instituto,,
+escuela_de_idiomas,educacion,Escuela de idiomas,idiomas|inglés|clases de inglés,,
+escuela_de_arte,educacion,Escuela de arte,clases de música|clases de danza|clases de pintura|academia de arte,,
+escuela_de_deporte,educacion,Escuela de deporte,academia deportiva|clases de natación|artes marciales,,
+escuela_de_oficios,educacion,Escuela de oficios,oficios|capacitación|escuela de computación|cursos,,
+educacion_especial,educacion,Educación especial,CAM|necesidades especiales,,
+clases_particulares,educacion,Clases particulares,profesor particular|regularización|asesorías,,
+otros_educacion,educacion,Otros de educación,,,
+estetica,belleza_y_cuidado_personal,Estética,estéticas|salón de belleza|peluquería|barbería|uñas|spa,,
+perfumeria,belleza_y_cuidado_personal,Perfumería,perfumes|cosméticos|maquillaje,,
+otros_cuidado_personal,belleza_y_cuidado_personal,Otros de cuidado personal,pañales,,
+ropa,ropa_calzado_y_accesorios,Tienda de ropa,ropa|boutique|lencería|ropa de bebé|vestidos de novia|sombrerería,,
+zapateria,ropa_calzado_y_accesorios,Zapatería,zapatos|calzado|tenis|zapaterías,,
+joyeria,ropa_calzado_y_accesorios,Joyería,joyas|relojes|relojería|bisutería|accesorios,,
+merceria_y_telas,ropa_calzado_y_accesorios,Mercería y telas,mercería|telas|boneterías|hilos,,
+blancos,ropa_calzado_y_accesorios,Blancos,sábanas|toallas|colchas,,
+ferreteria,hogar_ferreteria_y_construccion_menudeo,Ferretería,ferreterías|tlapalería|materiales para construcción,,
+pintura,hogar_ferreteria_y_construccion_menudeo,Tienda de pintura,pinturas|comex|impermeabilizante,,
+muebleria,hogar_ferreteria_y_construccion_menudeo,Mueblería,muebles|mueblerías|colchones,,
+decoracion,hogar_ferreteria_y_construccion_menudeo,Decoración,cortinas|alfombras|lámparas|candiles,,
+electrodomesticos,hogar_ferreteria_y_construccion_menudeo,Electrodomésticos,línea blanca|electrónica,,
+articulos_de_cocina,hogar_ferreteria_y_construccion_menudeo,Artículos de cocina,cristalería|loza|trastes|vajillas,,
+vidrieria,hogar_ferreteria_y_construccion_menudeo,Vidriería,vidrios|espejos|cancelería,,
+pisos_y_azulejos,hogar_ferreteria_y_construccion_menudeo,Pisos y azulejos,pisos|azulejos|recubrimientos,,
+gas_lp,hogar_ferreteria_y_construccion_menudeo,Gas LP,gas|cilindros de gas|gasera,,
+instalaciones,hogar_ferreteria_y_construccion_menudeo,Instalaciones,electricista|plomero|plomería|aire acondicionado,,
+papeleria,otros_comercios_al_menudeo,Papelería,papelerías|útiles escolares,,
+floreria,otros_comercios_al_menudeo,Florería,florerías|floristería|flores|plantas|vivero,,
+regalos,otros_comercios_al_menudeo,Tienda de regalos,regalos|novedades|bazar,,
+artesanias,otros_comercios_al_menudeo,Artesanías,artesanías|antigüedades|arte,,
+jugueteria,otros_comercios_al_menudeo,Juguetería,juguetes|jugueterías,,
+articulos_deportivos,otros_comercios_al_menudeo,Artículos deportivos,deportes|tienda deportiva,,
+celulares,otros_comercios_al_menudeo,Celulares,teléfonos|accesorios de celular,,
+computo,otros_comercios_al_menudeo,Cómputo,computadoras|computación|laptops,,
+articulos_de_limpieza,otros_comercios_al_menudeo,Artículos de limpieza,limpieza|desechables|jarciería,,
+tienda_de_mascotas,otros_comercios_al_menudeo,Tienda de mascotas,mascotas|alimento para mascotas|acuario,,
+libreria,otros_comercios_al_menudeo,Librería,librerías|libros|revistas|puesto de periódicos,,
+tienda_departamental,otros_comercios_al_menudeo,Tienda departamental,departamental,,
+segunda_mano,otros_comercios_al_menudeo,Artículos usados,segunda mano|usados|bazar de usados,,
+musica,otros_comercios_al_menudeo,Música,instrumentos musicales|discos,,
+renta_de_articulos,otros_comercios_al_menudeo,Renta de artículos,renta de mesas|renta de sillas|renta de trajes|alquiler,,
+loteria,otros_comercios_al_menudeo,Lotería,billetes de lotería|pronósticos,,
+fotografia,otros_comercios_al_menudeo,Revelado y fotografía,revelado|impresión de fotos,,
+articulos_religiosos,otros_comercios_al_menudeo,Artículos religiosos,,,
+otros_menudeo,otros_comercios_al_menudeo,Otros comercios,,,
+agencia_de_autos,autos,Agencia de autos,agencia|autos nuevos|autos usados|lote de autos,,
+motocicletas,autos,Venta de motocicletas,motos|motocicletas,,
+refaccionaria,autos,Refaccionaria,refacciones|autopartes|lubricantes,,
+llantera,autos,Llantera,llantas|vulcanizadora|alineación y balanceo,,
+taller_mecanico,autos,Taller mecánico,mecánico|taller|eléctrico automotriz|transmisiones,,
+hojalateria,autos,Hojalatería y pintura,hojalatería|carrocería|tapicería automotriz,,
+autolavado,autos,Autolavado,lavado de autos|car wash|autolavados,,
+gasolinera,autos,Gasolinera,gasolineras|gasolina|diésel|gas vehicular,,
+banco,finanzas_y_seguros,Banco,bancos|sucursal bancaria|cajero,,
+caja_de_ahorro,finanzas_y_seguros,Caja de ahorro,caja popular|cooperativa|unión de crédito,,
+financiera,finanzas_y_seguros,Financiera,sofom|préstamos|créditos,,
+casa_de_empeno,finanzas_y_seguros,Casa de empeño,empeño|monte de piedad|montepío,,
+casa_de_cambio,finanzas_y_seguros,Casa de cambio,cambio de dólares|centro cambiario|divisas,,
+seguros,finanzas_y_seguros,Seguros,aseguradora|agente de seguros|fianzas,,
+otros_financieros,finanzas_y_seguros,Otros financieros,,,
+call_center,servicios_profesionales_y_oficinas,Call center,centro de llamadas|centro de contacto|telemarketing|contact center,,
+despacho_contable,servicios_profesionales_y_oficinas,Despacho contable,contador|contabilidad|auditoría,,
+abogado,servicios_profesionales_y_oficinas,Abogado,abogados|bufete|despacho jurídico|trámites,,
+notaria,servicios_profesionales_y_oficinas,Notaría,notario|notarías,,
+agencia_de_viajes,servicios_profesionales_y_oficinas,Agencia de viajes,viajes|turismo|reservaciones,,
+cibercafe,servicios_profesionales_y_oficinas,Cibercafé,ciber|café internet,,
+copias_e_impresion,servicios_profesionales_y_oficinas,Copias e impresión,copias|fotocopias|impresiones,,
+fotografia_y_video,servicios_profesionales_y_oficinas,Fotografía y video,fotógrafo|estudio fotográfico,,
+publicidad_y_diseno,servicios_profesionales_y_oficinas,Publicidad y diseño,publicidad|diseño gráfico|rotulación|agencia de publicidad,,
+arquitectura_e_ingenieria,servicios_profesionales_y_oficinas,Arquitectura e ingeniería,arquitecto|ingeniero|despacho de arquitectura,,
+consultoria,servicios_profesionales_y_oficinas,Consultoría,consultor|asesoría empresarial|investigación de mercados,,
+seguridad_privada,servicios_profesionales_y_oficinas,Seguridad privada,vigilancia|guardias|alarmas|monitoreo,,
+agencia_de_empleo,servicios_profesionales_y_oficinas,Agencia de empleo,bolsa de trabajo|reclutamiento|outsourcing,,
+telecomunicaciones,servicios_profesionales_y_oficinas,Telecomunicaciones,internet|telefonía|cable,,
+sistemas_y_software,servicios_profesionales_y_oficinas,Sistemas y software,software|desarrollo de software|sistemas,,
+residuos,servicios_profesionales_y_oficinas,Manejo de residuos,basura|reciclaje|recolección,,
+otros_servicios_profesionales,servicios_profesionales_y_oficinas,Otros servicios profesionales,,,
+lavanderia,reparacion_y_servicios_personales,Lavandería,lavanderías|tintorería|planchaduría,,
+cerrajeria,reparacion_y_servicios_personales,Cerrajería,cerrajero|llaves,,
+reparacion_de_calzado,reparacion_y_servicios_personales,Reparación de calzado,zapatero|reparadora de calzado,,
+tapiceria,reparacion_y_servicios_personales,Tapicería,tapicero|retapizado,,
+reparacion_de_aparatos,reparacion_y_servicios_personales,Reparación de aparatos,reparación de celulares|reparación de electrodomésticos|técnico,,
+taller_de_bicicletas,reparacion_y_servicios_personales,Taller de bicicletas,reparación de bicicletas|bicicletería,,
+taller_de_motos,reparacion_y_servicios_personales,Taller de motos,reparación de motos,,
+funeraria,reparacion_y_servicios_personales,Funeraria,funerarias|velatorio,,
+banos_publicos,reparacion_y_servicios_personales,Baños públicos,baños|sanitarios|bolería,,
+limpieza_y_fumigacion,reparacion_y_servicios_personales,Limpieza y fumigación,fumigación|plagas|jardinería,,
+reparacion_industrial,reparacion_y_servicios_personales,Reparación industrial,mantenimiento industrial|reparación de maquinaria,,
+otros_servicios_personales,reparacion_y_servicios_personales,Otros servicios personales,,,
+oficina_de_gobierno,gobierno_y_seguridad,Oficina de gobierno,gobierno|ayuntamiento|presidencia municipal|oficina pública|DIF,,
+seguridad_publica,gobierno_y_seguridad,Seguridad pública,policía|estación de policía|comandancia|ministerio público|guardia nacional|comisaría|fiscalía,,"DENUE junta aquí policía, fiscalía, protección civil y oficinas de seguridad: no todas son estaciones de policía."
+juzgado,gobierno_y_seguridad,Juzgado,juzgados|tribunal,,
+emergencias,gobierno_y_seguridad,Emergencias,cruz roja|protección civil|bomberos,,"Casi toda la protección civil y los bomberos públicos están en DENUE dentro de Seguridad pública, no aquí."
+cementerio,gobierno_y_seguridad,Cementerio,panteón|cementerios,,
+otros_gobierno,gobierno_y_seguridad,Otros de gobierno,,,
+museo,cultura_deporte_y_entretenimiento,Museo,museos,,
+biblioteca,cultura_deporte_y_entretenimiento,Biblioteca,bibliotecas,,
+cine,cultura_deporte_y_entretenimiento,Cine,cines,,
+teatro_y_auditorio,cultura_deporte_y_entretenimiento,Teatro y auditorio,teatro|auditorio|estadio|arena|foro,,
+parque_recreativo,cultura_deporte_y_entretenimiento,Parque recreativo,parque de diversiones|balneario|parque acuático|zoológico,,
+centro_nocturno,cultura_deporte_y_entretenimiento,Centro nocturno,antro|discoteca|club nocturno,,
+billar_y_maquinitas,cultura_deporte_y_entretenimiento,Billar y maquinitas,billar|maquinitas|boliche,,
+casino,cultura_deporte_y_entretenimiento,Casino,casinos|juegos de azar,,
+club_deportivo,cultura_deporte_y_entretenimiento,Club deportivo,club|campo de golf|liga deportiva,,
+gimnasio,cultura_deporte_y_entretenimiento,Gimnasio,gym|gimnasios|crossfit,,
+medios_y_edicion,cultura_deporte_y_entretenimiento,Medios y edición,,,
+otros_entretenimiento,cultura_deporte_y_entretenimiento,Otros de entretenimiento,,,
+hotel,hospedaje,Hotel,hoteles,,
+motel,hospedaje,Motel,moteles,,
+cabanas_y_departamentos,hospedaje,Cabañas y departamentos,cabañas|villas|departamento amueblado|campamento,,
+casa_de_huespedes,hospedaje,Casa de huéspedes,pensión|hostal|hostel,,
+templo,religion_y_asociaciones,Templo,iglesia|templos|parroquia|capilla,,
+asociacion_civil,religion_y_asociaciones,Asociación civil,ONG|organización civil|fundación,,
+grupo_de_autoayuda,religion_y_asociaciones,Grupo de autoayuda,AA|alcohólicos anónimos,,
+camara_o_sindicato,religion_y_asociaciones,Cámara o sindicato,sindicato|cámara de comercio|colegio de profesionistas,,
+salon_de_fiestas,inmobiliario_y_construccion,Salón de fiestas,salón de eventos|jardín de eventos|salones,,
+inmobiliaria,inmobiliario_y_construccion,Inmobiliaria,bienes raíces|inmobiliarias,,
+renta_de_locales,inmobiliario_y_construccion,Renta de locales,locales comerciales|oficinas en renta,,
+renta_de_vivienda,inmobiliario_y_construccion,Renta de vivienda,casas en renta|departamentos en renta,,
+constructora,inmobiliario_y_construccion,Constructora,constructoras|construcción,,
+trabajos_de_construccion,inmobiliario_y_construccion,Trabajos de construcción,albañil|albañilería|yesero,,
+otros_inmobiliario,inmobiliario_y_construccion,Otros inmobiliarios,,,
+estacionamiento,transporte_y_logistica,Estacionamiento,estacionamientos|pensión de autos,,
+paqueteria,transporte_y_logistica,Paquetería,mensajería|correos|envíos,,
+mudanzas,transporte_y_logistica,Mudanzas,mudanza|fletes,,
+gruas,transporte_y_logistica,Grúas,grúa,,
+renta_de_autos,transporte_y_logistica,Renta de autos,rent a car|alquiler de autos,,
+transporte_de_pasajeros,transporte_y_logistica,Transporte de pasajeros,camiones de pasajeros|central de autobuses|transporte de personal,,
+transporte_de_carga,transporte_y_logistica,Transporte de carga,fletera|transportista|carga,,
+almacen,transporte_y_logistica,Almacén,bodega|almacenes|centro de distribución,,
+transporte_turistico,transporte_y_logistica,Transporte turístico,tour|recorridos turísticos,,
+renta_de_maquinaria,transporte_y_logistica,Renta de maquinaria,renta de maquinaria|montacargas,,
+otros_transporte,transporte_y_logistica,Otros de transporte,,,

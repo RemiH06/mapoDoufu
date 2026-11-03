@@ -161,7 +161,13 @@ defmodule MapoWeb.MapaLive.Index do
           indicadores={@indicadores}
           activa?={@coropleta_activa?}
           escala={@coropleta_escala}
-        /> <.cinta_voronoi :if={id == "voronoi"} form={@voronoi_form} activa?={@voronoi_activa?} />
+        />
+        <.cinta_voronoi
+          :if={id == "voronoi"}
+          form={@voronoi_form}
+          activa?={@voronoi_activa?}
+          resumen={@voronoi_resumen}
+        />
         <.cinta_coloreado :if={id == "coloreado"} activa?={@coloreado_activa?} />
         <.cinta_isocrona :if={id == "isocrona"} form={@isocrona_form} activa?={@isocrona_activa?} />
         <div :if={activa?(assigns, id)} class="cinta-orden">
@@ -296,6 +302,7 @@ defmodule MapoWeb.MapaLive.Index do
 
   attr :form, :any, required: true
   attr :activa?, :boolean, required: true
+  attr :resumen, :string, default: nil
 
   defp cinta_voronoi(assigns) do
     ~H"""
@@ -303,8 +310,8 @@ defmodule MapoWeb.MapaLive.Index do
       <.input
         field={@form[:clase_actividad]}
         type="text"
-        label="Giro contiene"
-        placeholder="papelería"
+        label="Giro"
+        placeholder="florería, policía..."
         class="cinta-control"
       />
       <div class="cinta-botones">
@@ -319,8 +326,8 @@ defmodule MapoWeb.MapaLive.Index do
     </.form>
 
     <p class="cinta-texto">
-      Cada celda es la zona más cerca de ese negocio que de otro. Celda grande, poca oferta.
-      Necesita un municipio.
+      {@resumen ||
+        "Cada celda es la zona más cerca de ese negocio que de otro. Celda grande, poca oferta. Necesita un municipio."}
     </p>
     """
   end
@@ -400,6 +407,7 @@ defmodule MapoWeb.MapaLive.Index do
        isocrona_form: to_form(%{"minutos" => "10"}, as: "isocrona_capa"),
        coropleta_activa?: false,
        voronoi_activa?: false,
+       voronoi_resumen: nil,
        coloreado_activa?: false,
        isocrona_activa?: false,
        coropleta_escala: nil,
@@ -537,10 +545,10 @@ defmodule MapoWeb.MapaLive.Index do
 
       true ->
         case MapoCore.voronoi_denue(cve_ent, cve_mun, clase_actividad) do
-          {:ok, %{"celdas" => geojson}} ->
+          {:ok, %{"celdas" => geojson} = respuesta} ->
             {:noreply,
              socket
-             |> assign(voronoi_activa?: true)
+             |> assign(voronoi_activa?: true, voronoi_resumen: resumen_voronoi(respuesta))
              |> push_event("capa_voronoi", %{activa: true, geojson: geojson})
              |> actualizar_mesa()}
 
@@ -563,7 +571,7 @@ defmodule MapoWeb.MapaLive.Index do
   def handle_event("quitar_voronoi", _params, socket) do
     {:noreply,
      socket
-     |> assign(voronoi_activa?: false)
+     |> assign(voronoi_activa?: false, voronoi_resumen: nil)
      |> push_event("capa_voronoi", %{activa: false})
      |> actualizar_mesa()}
   end
@@ -772,6 +780,15 @@ defmodule MapoWeb.MapaLive.Index do
 
   defp nombre_de(opciones, valor),
     do: Enum.find_value(opciones, fn {n, v} -> if v == valor, do: n end)
+
+  # Dice qué se dibujó: el filtro pudo reconocer un rubro de la tabla.
+  defp resumen_voronoi(%{"num_negocios" => n, "filtro" => filtro}) when is_binary(filtro),
+    do: "#{filtro}: #{cifra(n)} en el plano. Celda grande, poca oferta."
+
+  defp resumen_voronoi(%{"num_negocios" => n}),
+    do: "#{cifra(n)} en el plano. Celda grande, poca oferta."
+
+  defp resumen_voronoi(_respuesta), do: nil
 
   defp vacio_para_nil(nil), do: nil
   defp vacio_para_nil(""), do: nil
