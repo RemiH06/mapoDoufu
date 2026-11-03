@@ -40,7 +40,9 @@ en laboratorio clínico. Además, sus respuestas traen los índices
 desglosados y leerlas cuesta casi lo mismo que clasificar; por eso los
 12 sectores de nombres regulares se hicieron con reglas por palabra
 clave. Para tablas que van a quedar como dato, la revisión humana
-completa no es opcional.
+no es opcional: aquí se revisó completo lo del Baker, las reglas por
+sus casos generales y Remi aprobó la tabla por muestreo. Los casos de
+la Fase 7 son la siguiente revisión, ya con preguntas reales.
 
 El test de sinónimos encontró dos choques reales al primer intento
 (`computación` y `maquinaria` en dos rubros cada uno).
