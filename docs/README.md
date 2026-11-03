@@ -5,6 +5,7 @@
 - [vision.md](producto/vision.md): qué es Mapo, su relación con Gaiarda, modos de uso y preguntas que debe poder responder.
 - [rubros.md](producto/rubros.md): enfoques temáticos con su fuente y los casos de ejemplo por rubro.
 - [requisitos.md](producto/requisitos.md): requerimientos funcionales y no funcionales, con su estado.
+- [buscador.md](producto/buscador.md): intenciones y parámetros del modo buscador y la tabla de rubros de DENUE.
 
 ## Arquitectura
 
@@ -49,6 +50,7 @@ Qué se construyó en cada etapa, por qué así y qué bugs reales aparecieron.
 - [Revisión contra anti-vibecode, octubre 2026](historial/2026-10-anti-vibecode.md)
 - [Preparar el hosteo, octubre 2026](historial/2026-10-hosteo.md)
 - [Primer despliegue, octubre 2026](historial/2026-10-despliegue.md)
+- [Fase 6a: intenciones y rubros, noviembre 2026](historial/2026-11-intenciones.md)
 
 ## Gaiarda
 

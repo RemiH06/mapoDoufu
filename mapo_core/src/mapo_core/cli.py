@@ -16,6 +16,7 @@ from mapo_core import (
     enigh_downloader,
     enoe_downloader,
     geo_downloader,
+    rubros,
     sesnsp_ingesta,
 )
 from mapo_core.db import cerrar_pool, get_pool, inicializar_esquema
@@ -54,6 +55,19 @@ async def _denue(args) -> None:
     except denue_downloader.TokenFaltante as exc:
         raise SystemExit(str(exc)) from None
     print(f"{total} negocios guardados/actualizados para el estado {args.estado}.")
+
+    pool = await get_pool()
+    async with pool.connection() as conn:
+        cursor = await conn.execute(
+            "SELECT DISTINCT clase_actividad FROM fuente_denue_negocios"
+            " WHERE cve_ent = %(cve_ent)s AND clase_actividad IS NOT NULL",
+            {"cve_ent": args.estado},
+        )
+        nuevas = rubros.sin_clasificar({fila[0] for fila in await cursor.fetchall()})
+    if nuevas:
+        print(f"AVISO: {len(nuevas)} clase(s) sin rubro; agregarlas a mapo_core/rubros/clases.csv:")
+        for clase in nuevas:
+            print(f"  {clase}")
 
 
 async def _enigh(_args) -> None:

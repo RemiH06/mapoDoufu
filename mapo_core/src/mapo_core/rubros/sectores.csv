@@ -1,0 +1,22 @@
+sector,nombre,buscable
+alimentos_preparados,Comida y bebida preparada,si
+abarrotes_y_alimentos,Abarrotes y alimentos,si
+salud,Salud y asistencia,si
+educacion,Educación,si
+belleza_y_cuidado_personal,Belleza y cuidado personal,si
+ropa_calzado_y_accesorios,"Ropa, calzado y accesorios",si
+hogar_ferreteria_y_construccion_menudeo,Hogar y ferretería,si
+otros_comercios_al_menudeo,Otros comercios,si
+autos,Autos,si
+transporte_y_logistica,Transporte y logística,si
+finanzas_y_seguros,Finanzas y seguros,si
+servicios_profesionales_y_oficinas,Servicios profesionales,si
+reparacion_y_servicios_personales,Reparaciones y servicios personales,si
+gobierno_y_seguridad,Gobierno y seguridad,si
+cultura_deporte_y_entretenimiento,"Cultura, deporte y entretenimiento",si
+hospedaje,Hospedaje,si
+religion_y_asociaciones,Religión y asociaciones,si
+inmobiliario_y_construccion,Inmobiliario y construcción,si
+mayoreo,Comercio al por mayor,no
+industria,Industria,no
+agro_mineria_y_energia,"Agro, minería y energía",no

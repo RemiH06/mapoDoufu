@@ -46,3 +46,10 @@ de arquitectura de arriba:
 - 8 tests nuevos en `mapo_core` (99 en total), 229 en `mapo` (fixture
   de `perfil_live/index_test.exs` actualizado al nuevo formato de
   `comercio`)
+
+## Rubros para el buscador (2026-11-03)
+
+Las 918 clases de actividad de Jalisco quedaron clasificadas en sector
+y rubro en `mapo_core/src/mapo_core/rubros/clases.csv` (detalle en
+`../producto/buscador.md`). Al cargar otro estado, `cli denue` avisa
+de las clases que todavía no están en la tabla.

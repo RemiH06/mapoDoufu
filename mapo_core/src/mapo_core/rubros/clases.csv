@@ -1,0 +1,919 @@
+clase_actividad,sector,rubro,sector_publico,origen
+Comercio al por menor de bebidas no alcohólicas y hielo,abarrotes_y_alimentos,agua_y_hielo,no,baker
+Comercio al por menor de carnes rojas,abarrotes_y_alimentos,carniceria,no,baker
+"Comercio al por menor de leche, otros productos lácteos y embutidos",abarrotes_y_alimentos,cremeria,no,baker
+Comercio al por menor de cerveza,abarrotes_y_alimentos,deposito_de_cerveza,no,baker
+Comercio al por menor de dulces y materias primas para repostería,abarrotes_y_alimentos,dulceria,no,baker
+Comercio al por menor de frutas y verduras frescas,abarrotes_y_alimentos,fruteria,no,baker
+Comercio al por menor en minisupers,abarrotes_y_alimentos,minisuper,no,baker
+Comercio al por menor de otros alimentos,abarrotes_y_alimentos,otros_alimentos,no,baker
+Comercio al por menor de paletas de hielo y helados,abarrotes_y_alimentos,paleteria,no,a_mano
+Comercio al por menor de pescados y mariscos,abarrotes_y_alimentos,pescaderia,no,baker
+Comercio al por menor de carne de aves,abarrotes_y_alimentos,polleria,no,baker
+"Comercio al por menor de semillas y granos alimenticios, especias y chiles secos",abarrotes_y_alimentos,semillas_y_chiles,no,baker
+Comercio al por menor en supermercados,abarrotes_y_alimentos,supermercado,no,baker
+"Comercio al por menor de cigarros, puros y tabaco",abarrotes_y_alimentos,tabaqueria,no,baker
+"Comercio al por menor en tiendas de abarrotes, ultramarinos y misceláneas",abarrotes_y_alimentos,tienda_de_abarrotes,no,baker
+Comercio al por menor de vinos y licores,abarrotes_y_alimentos,vinateria,no,baker
+Beneficio de productos agrícolas,agro_mineria_y_energia,,no,sin_rubro
+"Captación, tratamiento y suministro de agua realizados por el sector privado",agro_mineria_y_energia,,no,sin_rubro
+"Captación, tratamiento y suministro de agua realizados por el sector público",agro_mineria_y_energia,,si,sin_rubro
+Comercialización de energía eléctrica,agro_mineria_y_energia,,no,sin_rubro
+Distribución de energía eléctrica,agro_mineria_y_energia,,no,sin_rubro
+Extracción de gas natural no asociado,agro_mineria_y_energia,,no,sin_rubro
+Generación de electricidad a partir de combustibles fósiles,agro_mineria_y_energia,,no,sin_rubro
+"Matanza de ganado, aves y otros animales comestibles",agro_mineria_y_energia,,no,sin_rubro
+Minería de arena y grava para la construcción,agro_mineria_y_energia,,no,sin_rubro
+Minería de barita,agro_mineria_y_energia,,no,sin_rubro
+Minería de caolín,agro_mineria_y_energia,,no,sin_rubro
+Minería de cobre,agro_mineria_y_energia,,no,sin_rubro
+Minería de hierro,agro_mineria_y_energia,,no,sin_rubro
+Minería de mármol,agro_mineria_y_energia,,no,sin_rubro
+Minería de otras piedras dimensionadas,agro_mineria_y_energia,,no,sin_rubro
+Minería de otros minerales no metálicos,agro_mineria_y_energia,,no,sin_rubro
+Minería de piedra caliza,agro_mineria_y_energia,,no,sin_rubro
+Minería de plata,agro_mineria_y_energia,,no,sin_rubro
+Minería de plomo y zinc,agro_mineria_y_energia,,no,sin_rubro
+Minería de tezontle y tepetate,agro_mineria_y_energia,,no,sin_rubro
+Otra acuicultura,agro_mineria_y_energia,,no,sin_rubro
+Otros servicios relacionados con la agricultura,agro_mineria_y_energia,,no,sin_rubro
+Otros servicios relacionados con la minería,agro_mineria_y_energia,,no,sin_rubro
+Pesca de camarón,agro_mineria_y_energia,,no,sin_rubro
+"Pesca y captura de peces, crustáceos, moluscos y otras especies",agro_mineria_y_energia,,no,sin_rubro
+Piscicultura en agua dulce,agro_mineria_y_energia,,no,sin_rubro
+Piscicultura en agua salada,agro_mineria_y_energia,,no,sin_rubro
+Servicios de fumigación agrícola,agro_mineria_y_energia,,no,sin_rubro
+Servicios relacionados con el aprovechamiento forestal,agro_mineria_y_energia,,no,sin_rubro
+Servicios relacionados con la cría y explotación de animales,agro_mineria_y_energia,,no,sin_rubro
+Servicios veterinarios para la ganadería prestados por el sector privado,agro_mineria_y_energia,,no,sin_rubro
+Servicios veterinarios para la ganadería prestados por el sector público,agro_mineria_y_energia,,si,sin_rubro
+Suministro de gas natural por ductos al consumidor final,agro_mineria_y_energia,,no,sin_rubro
+Transmisión de energía eléctrica,agro_mineria_y_energia,,no,sin_rubro
+Restaurantes con servicio de preparación de antojitos,alimentos_preparados,antojitos,no,baker
+Servicios de preparación de alimentos para ocasiones especiales,alimentos_preparados,banquetes,no,baker
+"Bares, cantinas y similares",alimentos_preparados,bar_y_cantina,no,baker
+"Cafeterías, fuentes de sodas, neverías, refresquerías y similares",alimentos_preparados,cafeteria_y_neveria,no,baker
+Servicios de alimentación comunitarios prestados por el sector privado,alimentos_preparados,comedor_comunitario,no,baker
+Servicios de alimentación comunitarios prestados por el sector público,alimentos_preparados,comedor_comunitario,si,baker
+Servicios de comedor para empresas e instituciones,alimentos_preparados,comedor_comunitario,no,baker
+"Restaurantes con servicio de preparación de pizzas, hamburguesas, hot dogs y pollos rostizados para llevar",alimentos_preparados,comida_para_llevar,no,baker
+Restaurantes que preparan otro tipo de alimentos para llevar,alimentos_preparados,comida_para_llevar,no,baker
+Servicios de preparación de alimentos en unidades móviles,alimentos_preparados,comida_para_llevar,no,baker
+Servicios de preparación de otros alimentos para consumo inmediato,alimentos_preparados,comida_para_llevar,no,baker
+Restaurantes de autoservicio,alimentos_preparados,comida_rapida,no,baker
+Restaurantes con servicio de preparación de pescados y mariscos,alimentos_preparados,marisqueria,no,baker
+Restaurantes con servicio de preparación de alimentos a la carta o de comida corrida,alimentos_preparados,restaurante,no,baker
+Restaurantes con servicio de preparación de tacos y tortas,alimentos_preparados,taqueria,no,baker
+Comercio al por menor de automóviles y camionetas nuevos,autos,agencia_de_autos,no,regla
+Comercio al por menor de automóviles y camionetas usados,autos,agencia_de_autos,no,regla
+Comercio al por menor de otros vehículos de motor,autos,agencia_de_autos,no,regla
+Lavado y lubricado de automóviles y camiones,autos,autolavado,no,a_mano
+Comercio al por menor de gas L. P. en estaciones de carburación,autos,gasolinera,no,regla
+Comercio al por menor de gasolina y diesel,autos,gasolinera,no,regla
+Comercio al por menor de otros combustibles,autos,gasolinera,no,regla
+Comercio al por menor en estaciones de gas natural vehicular,autos,gasolinera,no,a_mano
+Hojalatería y pintura de automóviles y camiones,autos,hojalateria,no,a_mano
+Instalación de cristales y otras reparaciones a la carrocería de automóviles y camiones,autos,hojalateria,no,a_mano
+Tapicería de automóviles y camiones,autos,hojalateria,no,a_mano
+Alineación y balanceo de automóviles y camiones,autos,llantera,no,regla
+"Comercio al por menor de llantas y cámaras para automóviles, camionetas y camiones",autos,llantera,no,regla
+Reparación menor de llantas,autos,llantera,no,regla
+Revitalización de llantas,autos,llantera,no,regla
+Comercio al por menor de motocicletas,autos,motocicletas,no,regla
+"Comercio al por menor de aceites y grasas lubricantes, aditivos y similares para vehículos de motor",autos,refaccionaria,no,a_mano
+"Comercio al por menor de partes y refacciones nuevas para automóviles, camionetas y camiones",autos,refaccionaria,no,regla
+"Comercio al por menor de partes y refacciones usadas para automóviles, camionetas y camiones",autos,refaccionaria,no,regla
+Otras reparaciones mecánicas de automóviles y camiones,autos,taller_mecanico,no,regla
+Otros servicios de reparación y mantenimiento de automóviles y camiones,autos,taller_mecanico,no,regla
+Rectificación de partes de motor de automóviles y camiones,autos,taller_mecanico,no,regla
+Reparación de suspensiones de automóviles y camiones,autos,taller_mecanico,no,regla
+Reparación de transmisiones de automóviles y camiones,autos,taller_mecanico,no,regla
+Reparación del sistema eléctrico de automóviles y camiones,autos,taller_mecanico,no,regla
+Reparación mecánica en general de automóviles y camiones,autos,taller_mecanico,no,regla
+Servicios de blindaje y de adaptación de automóviles y camiones,autos,taller_mecanico,no,regla
+Salones y clínicas de belleza y peluquerías,belleza_y_cuidado_personal,estetica,no,regla
+Comercio al por menor de otros artículos de uso personal,belleza_y_cuidado_personal,otros_cuidado_personal,no,regla
+Comercio al por menor de pañales desechables,belleza_y_cuidado_personal,otros_cuidado_personal,no,regla
+Comercio al por menor de artículos de perfumería y cosméticos,belleza_y_cuidado_personal,perfumeria,no,regla
+Bibliotecas y archivos del sector privado,cultura_deporte_y_entretenimiento,biblioteca,no,regla
+Bibliotecas y archivos del sector público,cultura_deporte_y_entretenimiento,biblioteca,si,regla
+Billares,cultura_deporte_y_entretenimiento,billar_y_maquinitas,no,regla
+Boliches,cultura_deporte_y_entretenimiento,billar_y_maquinitas,no,regla
+Casas de juegos electrónicos,cultura_deporte_y_entretenimiento,billar_y_maquinitas,no,regla
+Otros juegos de azar,cultura_deporte_y_entretenimiento,casino,no,regla
+"Centros nocturnos, discotecas y similares",cultura_deporte_y_entretenimiento,centro_nocturno,no,regla
+Exhibición de películas y otros materiales audiovisuales,cultura_deporte_y_entretenimiento,cine,no,regla
+Campos de golf,cultura_deporte_y_entretenimiento,club_deportivo,no,regla
+Clubes deportivos del sector privado,cultura_deporte_y_entretenimiento,club_deportivo,no,regla
+Clubes deportivos del sector público,cultura_deporte_y_entretenimiento,club_deportivo,si,regla
+Clubes o ligas de aficionados,cultura_deporte_y_entretenimiento,club_deportivo,no,regla
+Centros de acondicionamiento físico del sector privado,cultura_deporte_y_entretenimiento,gimnasio,no,a_mano
+Centros de acondicionamiento físico del sector público,cultura_deporte_y_entretenimiento,gimnasio,si,a_mano
+Edición de libros en formato electrónico,cultura_deporte_y_entretenimiento,medios_y_edicion,no,regla
+Edición de libros integrada con la impresión,cultura_deporte_y_entretenimiento,medios_y_edicion,no,regla
+Edición de otros materiales en formato electrónico,cultura_deporte_y_entretenimiento,medios_y_edicion,no,regla
+Edición de otros materiales integrada con la impresión,cultura_deporte_y_entretenimiento,medios_y_edicion,no,regla
+Edición de periódicos en formato electrónico,cultura_deporte_y_entretenimiento,medios_y_edicion,no,regla
+Edición de periódicos integrada con la impresión,cultura_deporte_y_entretenimiento,medios_y_edicion,no,regla
+Edición de revistas y otras publicaciones periódicas en formato electrónico,cultura_deporte_y_entretenimiento,medios_y_edicion,no,regla
+Edición de revistas y otras publicaciones periódicas integrada con la impresión,cultura_deporte_y_entretenimiento,medios_y_edicion,no,regla
+Editoras de música,cultura_deporte_y_entretenimiento,medios_y_edicion,no,regla
+Estaciones de transmisión de programas de radio,cultura_deporte_y_entretenimiento,medios_y_edicion,no,regla
+Estaciones de transmisión de programas de televisión,cultura_deporte_y_entretenimiento,medios_y_edicion,no,regla
+Otros servicios de grabación del sonido,cultura_deporte_y_entretenimiento,medios_y_edicion,no,regla
+Producción de películas,cultura_deporte_y_entretenimiento,medios_y_edicion,no,regla
+Producción de programas para la televisión,cultura_deporte_y_entretenimiento,medios_y_edicion,no,regla
+"Producción de videoclips, comerciales y otros materiales audiovisuales",cultura_deporte_y_entretenimiento,medios_y_edicion,no,regla
+Productoras y distribuidoras discográficas,cultura_deporte_y_entretenimiento,medios_y_edicion,no,regla
+"Servicios de distribución de audio y video en tiempo real (streaming), redes sociales, cadenas de radio y televisión y otros proveedores de contenido",cultura_deporte_y_entretenimiento,medios_y_edicion,no,regla
+Servicios de postproducción y otros servicios para la industria fílmica y del video,cultura_deporte_y_entretenimiento,medios_y_edicion,no,regla
+Museos del sector privado,cultura_deporte_y_entretenimiento,museo,no,regla
+Museos del sector público,cultura_deporte_y_entretenimiento,museo,si,regla
+Cantantes y grupos musicales del sector privado,cultura_deporte_y_entretenimiento,otros_entretenimiento,no,regla
+Compañías de danza del sector privado,cultura_deporte_y_entretenimiento,otros_entretenimiento,no,regla
+Compañías de teatro del sector privado,cultura_deporte_y_entretenimiento,otros_entretenimiento,no,regla
+Deportistas profesionales,cultura_deporte_y_entretenimiento,otros_entretenimiento,no,regla
+Grupos musicales del sector público,cultura_deporte_y_entretenimiento,otros_entretenimiento,si,regla
+Otras compañías y grupos de espectáculos artísticos del sector privado,cultura_deporte_y_entretenimiento,otros_entretenimiento,no,regla
+Otros servicios recreativos prestados por el sector privado,cultura_deporte_y_entretenimiento,otros_entretenimiento,no,regla
+Otros servicios recreativos prestados por el sector público,cultura_deporte_y_entretenimiento,otros_entretenimiento,si,regla
+"Promotores de espectáculos artísticos, culturales, deportivos y similares que no cuentan con instalaciones para presentarlos",cultura_deporte_y_entretenimiento,otros_entretenimiento,no,regla
+"Grutas, parques naturales y otros sitios del patrimonio cultural de la nación",cultura_deporte_y_entretenimiento,parque_recreativo,no,regla
+Jardines botánicos y zoológicos del sector privado,cultura_deporte_y_entretenimiento,parque_recreativo,no,regla
+Jardines botánicos y zoológicos del sector público,cultura_deporte_y_entretenimiento,parque_recreativo,si,regla
+Parques acuáticos y balnearios del sector privado,cultura_deporte_y_entretenimiento,parque_recreativo,no,regla
+Parques acuáticos y balnearios del sector público,cultura_deporte_y_entretenimiento,parque_recreativo,si,regla
+Parques de diversiones y temáticos del sector privado,cultura_deporte_y_entretenimiento,parque_recreativo,no,regla
+Parques de diversiones y temáticos del sector público,cultura_deporte_y_entretenimiento,parque_recreativo,si,regla
+"Promotores del sector privado de espectáculos artísticos, culturales, deportivos y similares que cuentan con instalaciones para presentarlos",cultura_deporte_y_entretenimiento,teatro_y_auditorio,no,regla
+"Promotores del sector público de espectáculos artísticos, culturales, deportivos y similares que cuentan con instalaciones para presentarlos",cultura_deporte_y_entretenimiento,teatro_y_auditorio,si,regla
+Servicios de profesores particulares,educacion,clases_particulares,no,baker
+Escuelas del sector privado de educación para necesidades especiales,educacion,educacion_especial,no,baker
+Escuelas del sector público de educación para necesidades especiales,educacion,educacion_especial,si,baker
+Escuelas de arte del sector privado,educacion,escuela_de_arte,no,baker
+Escuelas de arte del sector público,educacion,escuela_de_arte,si,baker
+Escuelas de deporte del sector privado,educacion,escuela_de_deporte,no,baker
+Escuelas de deporte del sector público,educacion,escuela_de_deporte,si,baker
+Escuelas de idiomas del sector privado,educacion,escuela_de_idiomas,no,baker
+Escuelas de idiomas del sector público,educacion,escuela_de_idiomas,si,baker
+Escuelas comerciales y secretariales del sector privado,educacion,escuela_de_oficios,no,baker
+Escuelas de computación del sector privado,educacion,escuela_de_oficios,no,baker
+Escuelas de computación del sector público,educacion,escuela_de_oficios,si,baker
+Escuelas del sector privado dedicadas a la enseñanza de oficios,educacion,escuela_de_oficios,no,baker
+Escuelas del sector público dedicadas a la enseñanza de oficios,educacion,escuela_de_oficios,si,baker
+Escuelas del sector privado que combinan diversos niveles de educación,educacion,escuela_varios_niveles,no,baker
+Escuelas del sector público que combinan diversos niveles de educación,educacion,escuela_varios_niveles,si,baker
+Guarderías del sector privado,educacion,guarderia,no,baker
+Guarderías del sector público,educacion,guarderia,si,baker
+Escuelas para la capacitación de ejecutivos del sector privado,educacion,otros_educacion,no,baker
+Otros servicios educativos proporcionados por el sector privado,educacion,otros_educacion,no,baker
+Otros servicios educativos proporcionados por el sector público,educacion,otros_educacion,si,baker
+Servicios de apoyo a la educación,educacion,otros_educacion,no,baker
+"Servicios de capacitación para el trabajo prestados por el sector privado para personas desempleadas, subempleadas o discapacitadas",educacion,otros_educacion,no,baker
+"Servicios de capacitación para el trabajo prestados por el sector público para personas desempleadas, subempleadas o discapacitadas",educacion,otros_educacion,si,baker
+Escuelas de educación preescolar del sector privado,educacion,preescolar,no,baker
+Escuelas de educación preescolar del sector público,educacion,preescolar,si,baker
+Escuelas de educación media superior del sector privado,educacion,preparatoria,no,baker
+Escuelas de educación media superior del sector público,educacion,preparatoria,si,baker
+Escuelas de educación media técnica terminal del sector privado,educacion,preparatoria,no,a_mano
+Escuelas de educación media técnica terminal del sector público,educacion,preparatoria,si,a_mano
+Escuelas de educación primaria del sector privado,educacion,primaria,no,baker
+Escuelas de educación primaria del sector público,educacion,primaria,si,baker
+Escuelas de educación secundaria general del sector privado,educacion,secundaria,no,baker
+Escuelas de educación secundaria general del sector público,educacion,secundaria,si,baker
+Escuelas de educación secundaria técnica del sector privado,educacion,secundaria,no,baker
+Escuelas de educación secundaria técnica del sector público,educacion,secundaria,si,baker
+Escuelas de educación superior del sector privado,educacion,universidad,no,baker
+Escuelas de educación superior del sector público,educacion,universidad,si,baker
+Escuelas de educación técnica superior del sector privado,educacion,universidad,no,baker
+Escuelas de educación técnica superior del sector público,educacion,universidad,si,baker
+Banca central,finanzas_y_seguros,banco,no,regla
+Banca de desarrollo,finanzas_y_seguros,banco,no,regla
+Banca múltiple,finanzas_y_seguros,banco,no,regla
+Cajas de ahorro popular,finanzas_y_seguros,caja_de_ahorro,no,regla
+Otras instituciones de ahorro y préstamo,finanzas_y_seguros,caja_de_ahorro,no,regla
+Uniones de crédito,finanzas_y_seguros,caja_de_ahorro,no,regla
+Casas de cambio,finanzas_y_seguros,casa_de_cambio,no,regla
+Centros cambiarios,finanzas_y_seguros,casa_de_cambio,no,regla
+Casas de empeño,finanzas_y_seguros,casa_de_empeno,no,regla
+Montepíos,finanzas_y_seguros,casa_de_empeno,no,a_mano
+Compañías de autofinanciamiento,finanzas_y_seguros,financiera,no,regla
+Otras instituciones de intermediación crediticia y financiera no bursátil,finanzas_y_seguros,financiera,no,regla
+Servicios relacionados con la intermediación crediticia no bursátil,finanzas_y_seguros,financiera,no,regla
+Sociedades financieras de objeto múltiple,finanzas_y_seguros,financiera,no,regla
+Asesoría en inversiones,finanzas_y_seguros,otros_financieros,no,regla
+Casas de bolsa,finanzas_y_seguros,otros_financieros,no,regla
+Fondos y fideicomisos financieros,finanzas_y_seguros,otros_financieros,no,regla
+Otros servicios relacionados con la intermediación bursátil,finanzas_y_seguros,otros_financieros,no,regla
+Tenedoras de acciones,finanzas_y_seguros,otros_financieros,no,regla
+"Agentes, ajustadores y gestores de seguros y fianzas",finanzas_y_seguros,seguros,no,regla
+Compañías afianzadoras,finanzas_y_seguros,seguros,no,regla
+Compañías de seguros,finanzas_y_seguros,seguros,no,regla
+Fondos de aseguramiento campesino,finanzas_y_seguros,seguros,no,regla
+Administración de cementerios pertenecientes al sector privado,gobierno_y_seguridad,cementerio,no,regla
+Administración de cementerios pertenecientes al sector público,gobierno_y_seguridad,cementerio,si,regla
+Servicios de emergencia comunitarios prestados por el sector privado,gobierno_y_seguridad,emergencias,no,regla
+Servicios de emergencia comunitarios prestados por el sector público,gobierno_y_seguridad,emergencias,si,regla
+Impartición de justicia,gobierno_y_seguridad,juzgado,si,regla
+Actividades administrativas de instituciones de bienestar social,gobierno_y_seguridad,oficina_de_gobierno,si,regla
+Administración pública en general,gobierno_y_seguridad,oficina_de_gobierno,si,regla
+Regulación y fomento de actividades para mejorar y preservar el medio ambiente,gobierno_y_seguridad,oficina_de_gobierno,si,regla
+Regulación y fomento del desarrollo económico,gobierno_y_seguridad,oficina_de_gobierno,si,regla
+Relaciones exteriores,gobierno_y_seguridad,oficina_de_gobierno,si,regla
+Órganos legislativos,gobierno_y_seguridad,oficina_de_gobierno,si,regla
+Administración de aeropuertos y helipuertos,gobierno_y_seguridad,otros_gobierno,si,regla
+Administración de cajas de pensión y de seguros independientes,gobierno_y_seguridad,otros_gobierno,si,regla
+Administración de puertos y muelles,gobierno_y_seguridad,otros_gobierno,si,regla
+Instalación de señalamientos y protecciones en obras viales,gobierno_y_seguridad,otros_gobierno,si,regla
+Recuperación de residuos por el sector público,gobierno_y_seguridad,otros_gobierno,si,regla
+"Servicios de administración de carreteras, puentes y servicios auxiliares",gobierno_y_seguridad,otros_gobierno,si,regla
+Tratamiento y disposición final de residuos no peligrosos por el sector público,gobierno_y_seguridad,otros_gobierno,si,regla
+Actividades de seguridad nacional,gobierno_y_seguridad,seguridad_publica,si,regla
+Mantenimiento de la seguridad y el orden público,gobierno_y_seguridad,seguridad_publica,si,regla
+"Comercio al por menor de cristalería, loza y utensilios de cocina",hogar_ferreteria_y_construccion_menudeo,articulos_de_cocina,no,regla
+"Comercio al por menor de alfombras, cortinas, tapices y similares",hogar_ferreteria_y_construccion_menudeo,decoracion,no,regla
+Comercio al por menor de lámparas ornamentales y candiles,hogar_ferreteria_y_construccion_menudeo,decoracion,no,regla
+Comercio al por menor de otros artículos para la decoración de interiores,hogar_ferreteria_y_construccion_menudeo,decoracion,no,regla
+Comercio al por menor de electrodomésticos menores y aparatos de línea blanca,hogar_ferreteria_y_construccion_menudeo,electrodomesticos,no,regla
+Comercio al por menor de materiales para la construcción en tiendas de autoservicio especializadas,hogar_ferreteria_y_construccion_menudeo,ferreteria,no,regla
+Comercio al por menor en ferreterías y tlapalerías,hogar_ferreteria_y_construccion_menudeo,ferreteria,no,regla
+Comercio al por menor de gas L. P. en cilindros y para tanques estacionarios,hogar_ferreteria_y_construccion_menudeo,gas_lp,no,regla
+Instalaciones de sistemas centrales de aire acondicionado y calefacción,hogar_ferreteria_y_construccion_menudeo,instalaciones,no,regla
+Instalaciones eléctricas en construcciones,hogar_ferreteria_y_construccion_menudeo,instalaciones,no,regla
+Instalaciones hidrosanitarias y de gas,hogar_ferreteria_y_construccion_menudeo,instalaciones,no,regla
+Comercio al por menor de muebles para el hogar,hogar_ferreteria_y_construccion_menudeo,muebleria,no,regla
+Comercio al por menor de muebles para jardín,hogar_ferreteria_y_construccion_menudeo,muebleria,no,regla
+Comercio al por menor de pintura,hogar_ferreteria_y_construccion_menudeo,pintura,no,regla
+Comercio al por menor de pisos y recubrimientos cerámicos,hogar_ferreteria_y_construccion_menudeo,pisos_y_azulejos,no,regla
+Comercio al por menor de vidrios y espejos,hogar_ferreteria_y_construccion_menudeo,vidrieria,no,regla
+"Cabañas, villas y similares",hospedaje,cabanas_y_departamentos,no,regla
+Campamentos y albergues recreativos,hospedaje,cabanas_y_departamentos,no,regla
+Departamentos y casas amueblados con servicios de hotelería,hospedaje,cabanas_y_departamentos,no,regla
+Pensiones y casas de huéspedes,hospedaje,casa_de_huespedes,no,regla
+Hoteles con otros servicios integrados,hospedaje,hotel,no,regla
+Hoteles sin otros servicios integrados,hospedaje,hotel,no,regla
+Moteles,hospedaje,motel,no,regla
+Acabado de productos textiles,industria,,no,sin_rubro
+Aserrado de tablas y tablones,industria,,no,sin_rubro
+Complejos siderúrgicos,industria,,no,sin_rubro
+"Confección de cortinas, blancos y similares",industria,,no,sin_rubro
+Confección de costales,industria,,no,sin_rubro
+Confección de otros accesorios y prendas de vestir no clasificados en otra parte,industria,,no,sin_rubro
+"Confección de prendas de vestir de cuero, piel y de materiales sucedáneos",industria,,no,sin_rubro
+Confección de prendas de vestir sobre medida,industria,,no,sin_rubro
+Confección de productos de textiles recubiertos y de materiales sucedáneos,industria,,no,sin_rubro
+Confección de sombreros y gorras,industria,,no,sin_rubro
+Confección en serie de camisas,industria,,no,sin_rubro
+Confección en serie de disfraces y trajes típicos,industria,,no,sin_rubro
+Confección en serie de otra ropa exterior de materiales textiles,industria,,no,sin_rubro
+Confección en serie de ropa interior y de dormir,industria,,no,sin_rubro
+Confección en serie de uniformes,industria,,no,sin_rubro
+"Confección, bordado y deshilado de productos textiles",industria,,no,sin_rubro
+Congelación de frutas y verduras,industria,,no,sin_rubro
+Congelación de guisos y otros alimentos preparados,industria,,no,sin_rubro
+Conservación de frutas y verduras por procesos distintos a la congelación y la deshidratación,industria,,no,sin_rubro
+Conservación de guisos y otros alimentos preparados por procesos distintos a la congelación,industria,,no,sin_rubro
+"Corte y empacado de carne de ganado, aves y otros animales comestibles",industria,,no,sin_rubro
+Curtido y acabado de cuero y piel,industria,,no,sin_rubro
+Deshidratación de frutas y verduras,industria,,no,sin_rubro
+Despepite de algodón,industria,,no,sin_rubro
+Elaboración de aceites y grasas vegetales comestibles,industria,,no,sin_rubro
+Elaboración de alimentos frescos para consumo inmediato,industria,,no,sin_rubro
+Elaboración de alimentos para animales,industria,,no,sin_rubro
+Elaboración de azúcar de caña,industria,,no,sin_rubro
+Elaboración de bebidas alcohólicas a base de uva,industria,,no,sin_rubro
+Elaboración de botanas,industria,,no,sin_rubro
+Elaboración de café instantáneo,industria,,no,sin_rubro
+Elaboración de café tostado y molido,industria,,no,sin_rubro
+Elaboración de cereales para el desayuno,industria,,no,sin_rubro
+Elaboración de cerveza,industria,,no,sin_rubro
+Elaboración de chocolate y productos de chocolate,industria,,no,sin_rubro
+Elaboración de cigarros,industria,,no,sin_rubro
+"Elaboración de concentrados, polvos, jarabes y esencias de sabor para bebidas",industria,,no,sin_rubro
+Elaboración de condimentos y aderezos,industria,,no,sin_rubro
+Elaboración de derivados y fermentos lácteos,industria,,no,sin_rubro
+"Elaboración de dulces, chicles y productos de confitería que no sean de chocolate",industria,,no,sin_rubro
+Elaboración de féculas y otros almidones y sus derivados,industria,,no,sin_rubro
+Elaboración de galletas y pastas para sopa,industria,,no,sin_rubro
+Elaboración de harina de maíz,industria,,no,sin_rubro
+Elaboración de harina de otros productos agrícolas,industria,,no,sin_rubro
+Elaboración de harina de trigo,industria,,no,sin_rubro
+Elaboración de helados y paletas,industria,,no,sin_rubro
+Elaboración de hielo,industria,,no,sin_rubro
+"Elaboración de leche en polvo, condensada y evaporada",industria,,no,sin_rubro
+Elaboración de leche líquida,industria,,no,sin_rubro
+Elaboración de levadura,industria,,no,sin_rubro
+Elaboración de manteca y otras grasas animales comestibles,industria,,no,sin_rubro
+Elaboración de mezcal,industria,,no,sin_rubro
+Elaboración de otras bebidas destiladas,industria,,no,sin_rubro
+Elaboración de otros alimentos,industria,,no,sin_rubro
+Elaboración de pulque,industria,,no,sin_rubro
+Elaboración de puros y otros productos de tabaco,industria,,no,sin_rubro
+Elaboración de refrescos y otras bebidas no alcohólicas,industria,,no,sin_rubro
+Elaboración de ron y otras bebidas destiladas de caña,industria,,no,sin_rubro
+Elaboración de sidra y otras bebidas fermentadas,industria,,no,sin_rubro
+Elaboración de tequila,industria,,no,sin_rubro
+Elaboración de tortillas de harina de trigo de forma tradicional,industria,,no,sin_rubro
+Elaboración de tortillas de maíz y molienda de nixtamal,industria,,no,sin_rubro
+Equipos deportivos profesionales,industria,,no,sin_rubro
+Fabricación de aceites y grasas lubricantes,industria,,no,sin_rubro
+Fabricación de acumuladores y pilas,industria,,no,sin_rubro
+Fabricación de adhesivos,industria,,no,sin_rubro
+"Fabricación de alambre, productos de alambre y resortes",industria,,no,sin_rubro
+Fabricación de alfombras y tapetes,industria,,no,sin_rubro
+Fabricación de anuncios y señalamientos,industria,,no,sin_rubro
+Fabricación de aparatos de línea blanca,industria,,no,sin_rubro
+Fabricación de aparatos e instrumentos para pesar,industria,,no,sin_rubro
+"Fabricación de artículos de alfarería, porcelana y loza",industria,,no,sin_rubro
+Fabricación de artículos de vidrio de uso doméstico,industria,,no,sin_rubro
+Fabricación de artículos deportivos,industria,,no,sin_rubro
+Fabricación de artículos oftálmicos,industria,,no,sin_rubro
+"Fabricación de artículos y accesorios para escritura, pintura, dibujo y actividades de oficina",industria,,no,sin_rubro
+Fabricación de artículos y utensilios de madera para el hogar,industria,,no,sin_rubro
+Fabricación de asientos y accesorios interiores para vehículos automotores,industria,,no,sin_rubro
+Fabricación de ataúdes,industria,,no,sin_rubro
+Fabricación de autopartes de plástico con y sin reforzamiento,industria,,no,sin_rubro
+Fabricación de azulejos y losetas no refractarias,industria,,no,sin_rubro
+Fabricación de baleros y rodamientos,industria,,no,sin_rubro
+Fabricación de bandas y mangueras de hule y de plástico,industria,,no,sin_rubro
+Fabricación de banderas y otros productos textiles no clasificados en otra parte,industria,,no,sin_rubro
+Fabricación de bicicletas y triciclos,industria,,no,sin_rubro
+Fabricación de bolsas de papel y productos celulósicos recubiertos y tratados,industria,,no,sin_rubro
+Fabricación de bolsas y películas de plástico flexible,industria,,no,sin_rubro
+"Fabricación de bolsos de mano, maletas y similares",industria,,no,sin_rubro
+Fabricación de bombas y sistemas de bombeo,industria,,no,sin_rubro
+Fabricación de botellas de plástico,industria,,no,sin_rubro
+Fabricación de cables de conducción eléctrica,industria,,no,sin_rubro
+Fabricación de cal,industria,,no,sin_rubro
+Fabricación de calcetines y medias de tejido de punto,industria,,no,sin_rubro
+Fabricación de calderas industriales,industria,,no,sin_rubro
+Fabricación de calzado con corte de piel y cuero,industria,,no,sin_rubro
+Fabricación de calzado con corte de tela,industria,,no,sin_rubro
+Fabricación de calzado de hule,industria,,no,sin_rubro
+Fabricación de calzado de plástico,industria,,no,sin_rubro
+Fabricación de camiones y tractocamiones,industria,,no,sin_rubro
+Fabricación de carrocerías y remolques,industria,,no,sin_rubro
+Fabricación de cartón en plantas integradas,industria,,no,sin_rubro
+Fabricación de cartón y cartoncillo a partir de pulpa,industria,,no,sin_rubro
+Fabricación de cemento y productos a base de cemento en plantas integradas,industria,,no,sin_rubro
+"Fabricación de cierres, botones y agujas",industria,,no,sin_rubro
+Fabricación de cocinas integrales y muebles modulares de baño,industria,,no,sin_rubro
+Fabricación de colchones,industria,,no,sin_rubro
+Fabricación de componentes electrónicos,industria,,no,sin_rubro
+Fabricación de computadoras y equipo periférico,industria,,no,sin_rubro
+Fabricación de concreto,industria,,no,sin_rubro
+"Fabricación de cosméticos, perfumes y otras preparaciones de tocador",industria,,no,sin_rubro
+Fabricación de embarcaciones,industria,,no,sin_rubro
+"Fabricación de enchufes, contactos, fusibles y otros accesorios para instalaciones eléctricas",industria,,no,sin_rubro
+Fabricación de enseres electrodomésticos menores,industria,,no,sin_rubro
+Fabricación de envases de cartón,industria,,no,sin_rubro
+Fabricación de envases metálicos de calibre ligero,industria,,no,sin_rubro
+Fabricación de envases y ampolletas de vidrio,industria,,no,sin_rubro
+Fabricación de envases y contenedores de plástico para embalaje con y sin reforzamiento,industria,,no,sin_rubro
+Fabricación de equipo aeroespacial,industria,,no,sin_rubro
+Fabricación de equipo de aire acondicionado y calefacción,industria,,no,sin_rubro
+Fabricación de equipo de audio y de video,industria,,no,sin_rubro
+Fabricación de equipo de refrigeración industrial y comercial,industria,,no,sin_rubro
+"Fabricación de equipo de transmisión y recepción de señales de radio y televisión, y equipo de comunicación inalámbrico",industria,,no,sin_rubro
+Fabricación de equipo eléctrico y electrónico y sus partes para vehículos automotores,industria,,no,sin_rubro
+Fabricación de equipo ferroviario,industria,,no,sin_rubro
+"Fabricación de equipo no electrónico para uso médico, dental y para laboratorio",industria,,no,sin_rubro
+Fabricación de equipo para soldar y soldaduras,industria,,no,sin_rubro
+Fabricación de equipo telefónico,industria,,no,sin_rubro
+Fabricación de equipo y aparatos de distribución de energía eléctrica,industria,,no,sin_rubro
+"Fabricación de escobas, cepillos y similares",industria,,no,sin_rubro
+Fabricación de espumas y productos de poliestireno,industria,,no,sin_rubro
+Fabricación de espumas y productos de uretano,industria,,no,sin_rubro
+Fabricación de estructuras metálicas,industria,,no,sin_rubro
+Fabricación de explosivos,industria,,no,sin_rubro
+Fabricación de fertilizantes,industria,,no,sin_rubro
+Fabricación de fibra de vidrio,industria,,no,sin_rubro
+Fabricación de fibras químicas,industria,,no,sin_rubro
+Fabricación de focos,industria,,no,sin_rubro
+Fabricación de gases industriales,industria,,no,sin_rubro
+Fabricación de herrajes y cerraduras,industria,,no,sin_rubro
+Fabricación de herramientas de mano metálicas sin motor,industria,,no,sin_rubro
+Fabricación de hilos para coser y bordar,industria,,no,sin_rubro
+Fabricación de huaraches y calzado de otro tipo de materiales,industria,,no,sin_rubro
+Fabricación de hules sintéticos,industria,,no,sin_rubro
+Fabricación de instrumentos musicales,industria,,no,sin_rubro
+"Fabricación de jabones, limpiadores y dentífricos",industria,,no,sin_rubro
+Fabricación de juguetes,industria,,no,sin_rubro
+Fabricación de ladrillos no refractarios,industria,,no,sin_rubro
+Fabricación de laminados de plástico rígido,industria,,no,sin_rubro
+Fabricación de laminados y aglutinados de madera,industria,,no,sin_rubro
+Fabricación de llantas y cámaras,industria,,no,sin_rubro
+Fabricación de lámparas ornamentales,industria,,no,sin_rubro
+Fabricación de maquinaria y equipo agrícola,industria,,no,sin_rubro
+Fabricación de maquinaria y equipo para envasar y empacar,industria,,no,sin_rubro
+Fabricación de maquinaria y equipo para la construcción,industria,,no,sin_rubro
+Fabricación de maquinaria y equipo para la industria alimentaria y de las bebidas,industria,,no,sin_rubro
+Fabricación de maquinaria y equipo para la industria de la impresión,industria,,no,sin_rubro
+Fabricación de maquinaria y equipo para la industria de la madera,industria,,no,sin_rubro
+Fabricación de maquinaria y equipo para la industria del hule y del plástico,industria,,no,sin_rubro
+Fabricación de maquinaria y equipo para la industria del vidrio y otros minerales no metálicos,industria,,no,sin_rubro
+Fabricación de maquinaria y equipo para la industria extractiva,industria,,no,sin_rubro
+Fabricación de maquinaria y equipo para la industria metalmecánica,industria,,no,sin_rubro
+Fabricación de maquinaria y equipo para la industria textil,industria,,no,sin_rubro
+Fabricación de maquinaria y equipo para levantar y trasladar,industria,,no,sin_rubro
+Fabricación de maquinaria y equipo para otras industrias manufactureras,industria,,no,sin_rubro
+Fabricación de maquinaria y equipo pecuario,industria,,no,sin_rubro
+Fabricación de material desechable de uso médico,industria,,no,sin_rubro
+Fabricación de materias primas para la industria farmacéutica,industria,,no,sin_rubro
+Fabricación de motocicletas,industria,,no,sin_rubro
+"Fabricación de motores de combustión interna, turbinas y transmisiones",industria,,no,sin_rubro
+Fabricación de motores de gasolina y sus partes para vehículos automotrices,industria,,no,sin_rubro
+Fabricación de motores y generadores eléctricos,industria,,no,sin_rubro
+Fabricación de muebles de baño,industria,,no,sin_rubro
+Fabricación de muebles de oficina y estantería,industria,,no,sin_rubro
+"Fabricación de muebles, excepto cocinas integrales, muebles modulares de baño y muebles de oficina y estantería",industria,,no,sin_rubro
+Fabricación de otra maquinaria y equipo para el comercio y los servicios,industria,,no,sin_rubro
+Fabricación de otra maquinaria y equipo para la industria en general,industria,,no,sin_rubro
+Fabricación de otras partes para vehículos automotrices,industria,,no,sin_rubro
+Fabricación de otro equipo de transporte,industria,,no,sin_rubro
+Fabricación de otros equipos de comunicación,industria,,no,sin_rubro
+"Fabricación de otros instrumentos de medición, control, navegación, y equipo médico electrónico",industria,,no,sin_rubro
+Fabricación de otros productos a base de minerales no metálicos,industria,,no,sin_rubro
+Fabricación de otros productos de cartón y papel,industria,,no,sin_rubro
+Fabricación de otros productos de cemento y concreto,industria,,no,sin_rubro
+"Fabricación de otros productos de cuero, piel y materiales sucedáneos",industria,,no,sin_rubro
+Fabricación de otros productos de hierro y acero,industria,,no,sin_rubro
+Fabricación de otros productos de hule,industria,,no,sin_rubro
+Fabricación de otros productos de madera,industria,,no,sin_rubro
+Fabricación de otros productos de plástico con reforzamiento,industria,,no,sin_rubro
+Fabricación de otros productos de plástico de uso industrial sin reforzamiento,industria,,no,sin_rubro
+Fabricación de otros productos de plástico sin reforzamiento,industria,,no,sin_rubro
+Fabricación de otros productos de vidrio,industria,,no,sin_rubro
+Fabricación de otros productos eléctricos,industria,,no,sin_rubro
+Fabricación de otros productos metálicos,industria,,no,sin_rubro
+Fabricación de otros productos químicos,industria,,no,sin_rubro
+Fabricación de otros productos químicos básicos inorgánicos,industria,,no,sin_rubro
+Fabricación de otros productos químicos básicos orgánicos,industria,,no,sin_rubro
+Fabricación de papel a partir de pulpa,industria,,no,sin_rubro
+Fabricación de partes de sistemas de dirección y de suspensión para vehículos automotrices,industria,,no,sin_rubro
+Fabricación de partes de sistemas de frenos para vehículos automotrices,industria,,no,sin_rubro
+Fabricación de partes de sistemas de transmisión para vehículos automotores,industria,,no,sin_rubro
+Fabricación de pañales desechables y productos sanitarios,industria,,no,sin_rubro
+"Fabricación de películas, placas y papel fotosensible para fotografía",industria,,no,sin_rubro
+Fabricación de persianas y cortineros,industria,,no,sin_rubro
+"Fabricación de pesticidas y otros agroquímicos, excepto fertilizantes",industria,,no,sin_rubro
+Fabricación de petroquímicos básicos del gas natural y del petróleo refinado,industria,,no,sin_rubro
+Fabricación de piezas metálicas troqueladas para vehículos automotrices,industria,,no,sin_rubro
+Fabricación de pigmentos y colorantes sintéticos,industria,,no,sin_rubro
+Fabricación de pinturas y recubrimientos,industria,,no,sin_rubro
+Fabricación de preparaciones farmacéuticas,industria,,no,sin_rubro
+Fabricación de productos a base de piedras de cantera,industria,,no,sin_rubro
+Fabricación de productos abrasivos,industria,,no,sin_rubro
+Fabricación de productos de asfalto,industria,,no,sin_rubro
+Fabricación de productos de herrería,industria,,no,sin_rubro
+Fabricación de productos de madera de uso industrial,industria,,no,sin_rubro
+Fabricación de productos de madera para la construcción,industria,,no,sin_rubro
+"Fabricación de productos de materiales trenzables, excepto palma",industria,,no,sin_rubro
+Fabricación de productos de papelería,industria,,no,sin_rubro
+Fabricación de productos de plástico para el hogar con y sin reforzamiento,industria,,no,sin_rubro
+Fabricación de productos eléctricos de carbón y grafito,industria,,no,sin_rubro
+Fabricación de productos metálicos forjados y troquelados,industria,,no,sin_rubro
+Fabricación de productos para embalaje y envases de madera,industria,,no,sin_rubro
+Fabricación de productos preesforzados de concreto,industria,,no,sin_rubro
+Fabricación de productos refractarios,industria,,no,sin_rubro
+Fabricación de productos textiles reciclados,industria,,no,sin_rubro
+Fabricación de redes y otros productos de cordelería,industria,,no,sin_rubro
+Fabricación de resinas de plásticos reciclados,industria,,no,sin_rubro
+Fabricación de resinas sintéticas,industria,,no,sin_rubro
+Fabricación de ropa exterior de tejido de punto,industria,,no,sin_rubro
+Fabricación de ropa interior de tejido de punto,industria,,no,sin_rubro
+Fabricación de tanques metálicos de calibre grueso,industria,,no,sin_rubro
+Fabricación de telas anchas de tejido de trama,industria,,no,sin_rubro
+Fabricación de telas angostas de tejido de trama y pasamanería,industria,,no,sin_rubro
+Fabricación de telas de tejido de punto,industria,,no,sin_rubro
+Fabricación de telas no tejidas (comprimidas),industria,,no,sin_rubro
+Fabricación de telas recubiertas,industria,,no,sin_rubro
+Fabricación de tintas para impresión,industria,,no,sin_rubro
+"Fabricación de tornillos, tuercas, remaches y similares",industria,,no,sin_rubro
+"Fabricación de tubería y conexiones, y tubos para embalaje",industria,,no,sin_rubro
+Fabricación de tubos y bloques de cemento y concreto,industria,,no,sin_rubro
+Fabricación de tubos y postes de hierro y acero,industria,,no,sin_rubro
+Fabricación de utensilios de cocina metálicos,industria,,no,sin_rubro
+Fabricación de velas y veladoras,industria,,no,sin_rubro
+Fabricación de vidrio,industria,,no,sin_rubro
+Fabricación de válvulas metálicas,industria,,no,sin_rubro
+Fabricación de yeso y productos de yeso,industria,,no,sin_rubro
+Fabricación y reproducción de medios magnéticos y ópticos,industria,,no,sin_rubro
+Fundición y refinación de metales preciosos,industria,,no,sin_rubro
+Fundición y refinación de otros metales no ferrosos,industria,,no,sin_rubro
+Grabación de discos compactos (CD) y de video digital (DVD) o casetes musicales,industria,,no,sin_rubro
+Impresión de formas continuas y otros impresos,industria,,no,sin_rubro
+"Impresión de libros, periódicos y revistas",industria,,no,sin_rubro
+Industria básica del aluminio,industria,,no,sin_rubro
+Industrias conexas a la impresión,industria,,no,sin_rubro
+Joyería de metales y piedras no preciosos y de otros materiales,industria,,no,sin_rubro
+Laminación secundaria de cobre,industria,,no,sin_rubro
+Laminación secundaria de otros metales no ferrosos,industria,,no,sin_rubro
+Maquinado de piezas metálicas para maquinaria y equipo en general,industria,,no,sin_rubro
+Metalistería de metales no preciosos,industria,,no,sin_rubro
+Moldeo por fundición de piezas de hierro y acero,industria,,no,sin_rubro
+Moldeo por fundición de piezas metálicas no ferrosas,industria,,no,sin_rubro
+Obtención de alcohol etílico potable,industria,,no,sin_rubro
+Orfebrería y joyería de metales y piedras preciosos,industria,,no,a_mano
+Otras industrias manufactureras,industria,,no,sin_rubro
+Panificación industrial,industria,,no,sin_rubro
+Panificación tradicional,industria,,no,sin_rubro
+"Preparación de embutidos y otras conservas de carne de ganado, aves y otros animales comestibles",industria,,no,sin_rubro
+Preparación e hilado de fibras blandas naturales,industria,,no,sin_rubro
+Preparación e hilado de fibras duras naturales,industria,,no,sin_rubro
+Preparación y envasado de pescados y mariscos,industria,,no,sin_rubro
+Preparación y envasado de té,industria,,no,sin_rubro
+Purificación y embotellado de agua,industria,,no,sin_rubro
+Recubrimientos y terminados metálicos,industria,,no,sin_rubro
+Servicios de empacado y etiquetado,industria,,no,sin_rubro
+Tratamiento de la madera y fabricación de postes y durmientes,industria,,no,sin_rubro
+"Construcción de carreteras, puentes y similares",inmobiliario_y_construccion,constructora,no,regla
+Construcción de obras de generación y conducción de energía eléctrica,inmobiliario_y_construccion,constructora,no,regla
+Construcción de obras de urbanización,inmobiliario_y_construccion,constructora,no,regla
+"Construcción de obras marítimas, fluviales y subacuáticas",inmobiliario_y_construccion,constructora,no,regla
+"Construcción de obras para el tratamiento, distribución y suministro de agua y drenaje",inmobiliario_y_construccion,constructora,no,regla
+Construcción de obras para telecomunicaciones,inmobiliario_y_construccion,constructora,no,regla
+Construcción de obras para transporte eléctrico y ferroviario,inmobiliario_y_construccion,constructora,no,regla
+Construcción de presas y represas,inmobiliario_y_construccion,constructora,no,regla
+Construcción de sistemas de distribución de petróleo y gas,inmobiliario_y_construccion,constructora,no,regla
+Construcción de sistemas de riego agrícola,inmobiliario_y_construccion,constructora,no,regla
+División de terrenos,inmobiliario_y_construccion,constructora,no,regla
+"Edificación de inmuebles comerciales y de servicios, excepto la supervisión",inmobiliario_y_construccion,constructora,no,regla
+"Edificación de naves y plantas industriales, excepto la supervisión",inmobiliario_y_construccion,constructora,no,regla
+Edificación de vivienda multifamiliar,inmobiliario_y_construccion,constructora,no,regla
+Edificación de vivienda unifamiliar,inmobiliario_y_construccion,constructora,no,regla
+Otras construcciones de ingeniería civil,inmobiliario_y_construccion,constructora,no,regla
+Otros trabajos de acabados en edificaciones,inmobiliario_y_construccion,constructora,no,regla
+Alquiler sin intermediación de otros bienes raíces,inmobiliario_y_construccion,inmobiliaria,no,regla
+Inmobiliarias y corredores de bienes raíces,inmobiliario_y_construccion,inmobiliaria,no,regla
+Otros servicios relacionados con los servicios inmobiliarios,inmobiliario_y_construccion,inmobiliaria,no,regla
+Servicios de administración de bienes raíces,inmobiliario_y_construccion,inmobiliaria,no,regla
+Centros generales de alquiler,inmobiliario_y_construccion,otros_inmobiliario,no,regla
+Alquiler sin intermediación de edificios industriales dentro de un parque industrial,inmobiliario_y_construccion,renta_de_locales,no,regla
+Alquiler sin intermediación de oficinas y locales comerciales,inmobiliario_y_construccion,renta_de_locales,no,regla
+"Alquiler sin intermediación de teatros, estadios, auditorios y similares",inmobiliario_y_construccion,renta_de_locales,no,regla
+Alquiler sin intermediación de viviendas amuebladas,inmobiliario_y_construccion,renta_de_vivienda,no,regla
+Alquiler sin intermediación de viviendas no amuebladas,inmobiliario_y_construccion,renta_de_vivienda,no,regla
+Alquiler sin intermediación de salones para fiestas y convenciones,inmobiliario_y_construccion,salon_de_fiestas,no,regla
+Colocación de muros falsos y aislamiento,inmobiliario_y_construccion,trabajos_de_construccion,no,regla
+Colocación de pisos cerámicos y azulejos,inmobiliario_y_construccion,trabajos_de_construccion,no,regla
+Colocación de pisos flexibles y de madera,inmobiliario_y_construccion,trabajos_de_construccion,no,regla
+Montaje de estructuras de acero prefabricadas,inmobiliario_y_construccion,trabajos_de_construccion,no,regla
+Montaje de estructuras de concreto prefabricadas,inmobiliario_y_construccion,trabajos_de_construccion,no,regla
+Otras instalaciones y equipamiento en construcciones,inmobiliario_y_construccion,trabajos_de_construccion,no,regla
+Otros trabajos en exteriores,inmobiliario_y_construccion,trabajos_de_construccion,no,regla
+Otros trabajos especializados para la construcción,inmobiliario_y_construccion,trabajos_de_construccion,no,regla
+Preparación de terrenos para la construcción,inmobiliario_y_construccion,trabajos_de_construccion,no,regla
+Realización de trabajos de carpintería en el lugar de la construcción,inmobiliario_y_construccion,trabajos_de_construccion,no,regla
+Trabajos de albañilería,inmobiliario_y_construccion,trabajos_de_construccion,no,regla
+Trabajos de cimentaciones,inmobiliario_y_construccion,trabajos_de_construccion,no,regla
+"Trabajos de enyesado, empastado y tiroleado",inmobiliario_y_construccion,trabajos_de_construccion,no,regla
+Trabajos de pintura y otros cubrimientos de paredes,inmobiliario_y_construccion,trabajos_de_construccion,no,regla
+Comercio al por mayor de abarrotes,mayoreo,,no,sin_rubro
+Comercio al por mayor de artículos de joyería y relojes,mayoreo,,no,sin_rubro
+Comercio al por mayor de artículos de papelería,mayoreo,,no,sin_rubro
+Comercio al por mayor de artículos de perfumería y cosméticos,mayoreo,,no,sin_rubro
+Comercio al por mayor de artículos desechables,mayoreo,,no,sin_rubro
+Comercio al por mayor de artículos y accesorios para diseño y pintura artística,mayoreo,,no,sin_rubro
+Comercio al por mayor de artículos y aparatos deportivos,mayoreo,,no,sin_rubro
+Comercio al por mayor de bebidas no alcohólicas y hielo,mayoreo,,no,sin_rubro
+Comercio al por mayor de blancos,mayoreo,,no,sin_rubro
+Comercio al por mayor de botanas y frituras,mayoreo,,no,sin_rubro
+Comercio al por mayor de calzado,mayoreo,,no,sin_rubro
+Comercio al por mayor de camiones,mayoreo,,no,sin_rubro
+Comercio al por mayor de carne de aves,mayoreo,,no,sin_rubro
+Comercio al por mayor de carnes rojas,mayoreo,,no,sin_rubro
+"Comercio al por mayor de cemento, tabique y grava",mayoreo,,no,sin_rubro
+Comercio al por mayor de cerveza,mayoreo,,no,sin_rubro
+"Comercio al por mayor de cigarros, puros y tabaco",mayoreo,,no,sin_rubro
+Comercio al por mayor de combustibles de uso industrial,mayoreo,,no,sin_rubro
+Comercio al por mayor de conservas alimenticias,mayoreo,,no,sin_rubro
+Comercio al por mayor de cueros y pieles,mayoreo,,no,sin_rubro
+Comercio al por mayor de desechos de papel y de cartón,mayoreo,,no,sin_rubro
+Comercio al por mayor de desechos de plástico,mayoreo,,no,sin_rubro
+Comercio al por mayor de desechos de vidrio,mayoreo,,no,sin_rubro
+Comercio al por mayor de desechos metálicos,mayoreo,,no,sin_rubro
+Comercio al por mayor de discos y casetes,mayoreo,,no,sin_rubro
+Comercio al por mayor de dulces y materias primas para repostería,mayoreo,,no,sin_rubro
+Comercio al por mayor de electrodomésticos menores y aparatos de línea blanca,mayoreo,,no,sin_rubro
+Comercio al por mayor de embutidos,mayoreo,,no,sin_rubro
+"Comercio al por mayor de envases en general, papel y cartón para la industria",mayoreo,,no,sin_rubro
+"Comercio al por mayor de equipo de telecomunicaciones, fotografía y cinematografía",mayoreo,,no,sin_rubro
+Comercio al por mayor de equipo y material eléctrico,mayoreo,,no,sin_rubro
+"Comercio al por mayor de fertilizantes, plaguicidas y semillas para siembra",mayoreo,,no,sin_rubro
+"Comercio al por mayor de fibras, hilos y telas",mayoreo,,no,sin_rubro
+Comercio al por mayor de frutas y verduras frescas,mayoreo,,no,sin_rubro
+Comercio al por mayor de ganado y aves en pie,mayoreo,,no,sin_rubro
+Comercio al por mayor de huevo,mayoreo,,no,sin_rubro
+Comercio al por mayor de juguetes y bicicletas,mayoreo,,no,sin_rubro
+Comercio al por mayor de leche y otros productos lácteos,mayoreo,,no,sin_rubro
+Comercio al por mayor de libros,mayoreo,,no,sin_rubro
+Comercio al por mayor de madera para la construcción y la industria,mayoreo,,no,sin_rubro
+"Comercio al por mayor de maquinaria y equipo agropecuario, forestal y para la pesca",mayoreo,,no,sin_rubro
+Comercio al por mayor de maquinaria y equipo para la construcción y la minería,mayoreo,,no,sin_rubro
+Comercio al por mayor de maquinaria y equipo para la industria manufacturera,mayoreo,,no,sin_rubro
+Comercio al por mayor de maquinaria y equipo para otros servicios y para actividades comerciales,mayoreo,,no,sin_rubro
+Comercio al por mayor de materiales metálicos para la construcción y la manufactura,mayoreo,,no,sin_rubro
+"Comercio al por mayor de medicamentos veterinarios y alimentos para animales, excepto mascotas",mayoreo,,no,sin_rubro
+Comercio al por mayor de miel,mayoreo,,no,sin_rubro
+Comercio al por mayor de mobiliario y equipo de oficina,mayoreo,,no,sin_rubro
+"Comercio al por mayor de mobiliario, equipo e instrumental médico y de laboratorio",mayoreo,,no,sin_rubro
+"Comercio al por mayor de mobiliario, equipo, y accesorios de cómputo",mayoreo,,no,sin_rubro
+Comercio al por mayor de otra maquinaria y equipo de uso general,mayoreo,,no,sin_rubro
+Comercio al por mayor de otras materias primas para otras industrias,mayoreo,,no,sin_rubro
+Comercio al por mayor de otros alimentos,mayoreo,,no,sin_rubro
+Comercio al por mayor de otros materiales de desecho,mayoreo,,no,sin_rubro
+"Comercio al por mayor de otros materiales para la construcción, excepto de madera y metálicos",mayoreo,,no,sin_rubro
+Comercio al por mayor de otros productos textiles,mayoreo,,no,sin_rubro
+Comercio al por mayor de pan y pasteles,mayoreo,,no,sin_rubro
+"Comercio al por mayor de partes y refacciones nuevas para automóviles, camionetas y camiones",mayoreo,,no,sin_rubro
+Comercio al por mayor de pescados y mariscos,mayoreo,,no,sin_rubro
+Comercio al por mayor de pintura,mayoreo,,no,sin_rubro
+Comercio al por mayor de productos farmacéuticos,mayoreo,,no,sin_rubro
+Comercio al por mayor de productos químicos para la industria farmacéutica y para otro uso industrial,mayoreo,,no,sin_rubro
+Comercio al por mayor de revistas y periódicos,mayoreo,,no,sin_rubro
+"Comercio al por mayor de ropa, bisutería y accesorios de vestir",mayoreo,,no,sin_rubro
+"Comercio al por mayor de semillas y granos alimenticios, especias y chiles secos",mayoreo,,no,sin_rubro
+Comercio al por mayor de vidrios y espejos,mayoreo,,no,sin_rubro
+Comercio al por mayor de vinos y licores,mayoreo,,no,sin_rubro
+Distribución de material publicitario,mayoreo,,no,sin_rubro
+Intermediación de comercio al por mayor de productos agropecuarios,mayoreo,,no,sin_rubro
+Intermediación de comercio al por mayor de productos de uso doméstico y personal,mayoreo,,no,sin_rubro
+"Intermediación de comercio al por mayor de productos para la industria, el comercio y los servicios",mayoreo,,no,sin_rubro
+Comercio al por menor en tiendas de artesanías,otros_comercios_al_menudeo,artesanias,no,baker
+Comercio al por menor de artículos desechables,otros_comercios_al_menudeo,articulos_de_limpieza,no,baker
+Comercio al por menor de artículos para la limpieza,otros_comercios_al_menudeo,articulos_de_limpieza,no,baker
+Comercio al por menor de artículos y aparatos deportivos,otros_comercios_al_menudeo,articulos_deportivos,no,baker
+Comercio al por menor de bicicletas,otros_comercios_al_menudeo,articulos_deportivos,no,baker
+Comercio al por menor de artículos religiosos,otros_comercios_al_menudeo,articulos_religiosos,no,a_mano
+Comercio al por menor de teléfonos y otros aparatos de comunicación,otros_comercios_al_menudeo,celulares,no,baker
+"Comercio al por menor de mobiliario, equipo y accesorios de cómputo",otros_comercios_al_menudeo,computo,no,baker
+Comercio al por menor de plantas y flores naturales,otros_comercios_al_menudeo,floreria,no,baker
+Comercio al por menor de equipo y material fotográfico,otros_comercios_al_menudeo,fotografia,no,baker
+Servicios de revelado e impresión de fotografías,otros_comercios_al_menudeo,fotografia,no,a_mano
+Comercio al por menor de juguetes,otros_comercios_al_menudeo,jugueteria,no,baker
+Comercio al por menor de libros,otros_comercios_al_menudeo,libreria,no,baker
+Comercio al por menor de revistas y periódicos,otros_comercios_al_menudeo,libreria,no,baker
+"Venta de billetes de lotería, pronósticos deportivos y otros boletos de sorteo",otros_comercios_al_menudeo,loteria,no,baker
+Comercio al por menor de discos y casetes,otros_comercios_al_menudeo,musica,no,baker
+Comercio al por menor de instrumentos musicales,otros_comercios_al_menudeo,musica,no,baker
+Comercio al por menor de artículos para albercas y otros artículos,otros_comercios_al_menudeo,otros_menudeo,no,a_mano
+"Comercio al por menor exclusivamente a través de Internet, y catálogos impresos, televisión y similares",otros_comercios_al_menudeo,otros_menudeo,no,a_mano
+Comercio al por menor de artículos de papelería,otros_comercios_al_menudeo,papeleria,no,baker
+Comercio al por menor de regalos,otros_comercios_al_menudeo,regalos,no,baker
+Alquiler de aparatos eléctricos y electrónicos para el hogar y personales,otros_comercios_al_menudeo,renta_de_articulos,no,baker
+Alquiler de equipo de cómputo y de otras máquinas y mobiliario de oficina,otros_comercios_al_menudeo,renta_de_articulos,no,baker
+"Alquiler de mesas, sillas, vajillas y similares",otros_comercios_al_menudeo,renta_de_articulos,no,baker
+Alquiler de otros artículos para el hogar y personales,otros_comercios_al_menudeo,renta_de_articulos,no,baker
+Alquiler de prendas de vestir,otros_comercios_al_menudeo,renta_de_articulos,no,baker
+Comercio al por menor de antigüedades y obras de arte,otros_comercios_al_menudeo,segunda_mano,no,baker
+Comercio al por menor de artículos usados,otros_comercios_al_menudeo,segunda_mano,no,baker
+Comercio al por menor de mascotas,otros_comercios_al_menudeo,tienda_de_mascotas,no,baker
+Comercio al por menor en tiendas departamentales,otros_comercios_al_menudeo,tienda_departamental,no,baker
+Asociaciones y organizaciones civiles,religion_y_asociaciones,asociacion_civil,no,regla
+Asociaciones regulatorias de actividades recreativas,religion_y_asociaciones,camara_o_sindicato,no,regla
+Asociaciones y organizaciones de profesionistas,religion_y_asociaciones,camara_o_sindicato,no,regla
+Asociaciones y organizaciones laborales y sindicales,religion_y_asociaciones,camara_o_sindicato,no,regla
+"Asociaciones, organizaciones y cámaras de productores, comerciantes y prestadores de servicios",religion_y_asociaciones,camara_o_sindicato,no,regla
+Agrupaciones de autoayuda para alcohólicos y personas con otras adicciones,religion_y_asociaciones,grupo_de_autoayuda,no,regla
+Asociaciones y organizaciones religiosas,religion_y_asociaciones,templo,no,regla
+Baños públicos,reparacion_y_servicios_personales,banos_publicos,no,regla
+Sanitarios públicos y bolerías,reparacion_y_servicios_personales,banos_publicos,no,regla
+Cerrajerías,reparacion_y_servicios_personales,cerrajeria,no,regla
+Servicios funerarios,reparacion_y_servicios_personales,funeraria,no,regla
+Lavanderías y tintorerías,reparacion_y_servicios_personales,lavanderia,no,regla
+Otros servicios de limpieza,reparacion_y_servicios_personales,limpieza_y_fumigacion,no,regla
+Servicios de control y exterminación de plagas,reparacion_y_servicios_personales,limpieza_y_fumigacion,no,regla
+Servicios de instalación y mantenimiento de áreas verdes,reparacion_y_servicios_personales,limpieza_y_fumigacion,no,regla
+Servicios de limpieza de inmuebles,reparacion_y_servicios_personales,limpieza_y_fumigacion,no,regla
+Otros servicios personales,reparacion_y_servicios_personales,otros_servicios_personales,no,regla
+Reparación y mantenimiento de aparatos eléctricos para el hogar y personales,reparacion_y_servicios_personales,reparacion_de_aparatos,no,regla
+Reparación y mantenimiento de equipo electrónico de uso doméstico,reparacion_y_servicios_personales,reparacion_de_aparatos,no,regla
+Reparación y mantenimiento de otro equipo electrónico y de equipo de precisión,reparacion_y_servicios_personales,reparacion_de_aparatos,no,regla
+Reparación y mantenimiento de otros artículos para el hogar y personales,reparacion_y_servicios_personales,reparacion_de_aparatos,no,regla
+Reparación de calzado y otros artículos de piel y cuero,reparacion_y_servicios_personales,reparacion_de_calzado,no,regla
+Reparación y mantenimiento de maquinaria y equipo agropecuario y forestal,reparacion_y_servicios_personales,reparacion_industrial,no,regla
+Reparación y mantenimiento de maquinaria y equipo comercial y de servicios,reparacion_y_servicios_personales,reparacion_industrial,no,regla
+Reparación y mantenimiento de maquinaria y equipo industrial,reparacion_y_servicios_personales,reparacion_industrial,no,regla
+"Reparación y mantenimiento de maquinaria y equipo para mover, levantar y acomodar materiales",reparacion_y_servicios_personales,reparacion_industrial,no,regla
+Reparación y mantenimiento de bicicletas,reparacion_y_servicios_personales,taller_de_bicicletas,no,regla
+Reparación y mantenimiento de motocicletas,reparacion_y_servicios_personales,taller_de_motos,no,regla
+Reparación de tapicería de muebles para el hogar,reparacion_y_servicios_personales,tapiceria,no,regla
+"Servicios de limpieza de tapicería, alfombras y muebles",reparacion_y_servicios_personales,tapiceria,no,regla
+Comercio al por menor de blancos,ropa_calzado_y_accesorios,blancos,no,regla
+Comercio al por menor de artículos de joyería y relojes,ropa_calzado_y_accesorios,joyeria,no,regla
+Comercio al por menor de bisutería y accesorios de vestir,ropa_calzado_y_accesorios,joyeria,no,regla
+Comercio al por menor de artículos de mercería y bonetería,ropa_calzado_y_accesorios,merceria_y_telas,no,regla
+Comercio al por menor de telas,ropa_calzado_y_accesorios,merceria_y_telas,no,a_mano
+"Comercio al por menor de disfraces, vestimenta regional y vestidos de novia",ropa_calzado_y_accesorios,ropa,no,regla
+Comercio al por menor de lencería,ropa_calzado_y_accesorios,ropa,no,regla
+Comercio al por menor de ropa de bebé,ropa_calzado_y_accesorios,ropa,no,regla
+Comercio al por menor de ropa de cuero y piel y de otros artículos de estos materiales,ropa_calzado_y_accesorios,ropa,no,regla
+"Comercio al por menor de ropa, excepto de bebé y lencería",ropa_calzado_y_accesorios,ropa,no,regla
+Comercio al por menor de sombreros,ropa_calzado_y_accesorios,ropa,no,regla
+Comercio al por menor de calzado,ropa_calzado_y_accesorios,zapateria,no,regla
+Servicios de ambulancias,salud,ambulancia,no,baker
+Asilos y otras residencias del sector privado para el cuidado de ancianos,salud,asilo_y_cuidado,no,baker
+Asilos y otras residencias del sector público para el cuidado de ancianos,salud,asilo_y_cuidado,si,baker
+Centros del sector privado dedicados a la atención y cuidado diurno de ancianos y discapacitados,salud,asilo_y_cuidado,no,baker
+Centros del sector público dedicados a la atención y cuidado diurno de ancianos y discapacitados,salud,asilo_y_cuidado,si,baker
+"Residencias del sector privado con cuidados de enfermeras para enfermos convalecientes, en rehabilitación, incurables y terminales",salud,asilo_y_cuidado,no,baker
+Residencias del sector privado para el cuidado de personas con problemas de retardo mental,salud,asilo_y_cuidado,no,baker
+"Residencias del sector público con cuidados de enfermeras para enfermos convalecientes, en rehabilitación, incurables y terminales",salud,asilo_y_cuidado,si,baker
+Residencias del sector público para el cuidado de personas con problemas de retardo mental,salud,asilo_y_cuidado,si,baker
+Orfanatos y otras residencias de asistencia social del sector privado,salud,asistencia_social,no,a_mano
+Orfanatos y otras residencias de asistencia social del sector público,salud,asistencia_social,si,a_mano
+Otros servicios de orientación y trabajo social prestados por el sector privado,salud,asistencia_social,no,a_mano
+Otros servicios de orientación y trabajo social prestados por el sector público,salud,asistencia_social,si,a_mano
+Refugios temporales comunitarios del sector privado,salud,asistencia_social,no,a_mano
+Refugios temporales comunitarios del sector público,salud,asistencia_social,si,a_mano
+Servicios de orientación y trabajo social para la niñez y la juventud prestados por el sector privado,salud,asistencia_social,no,a_mano
+Servicios de orientación y trabajo social para la niñez y la juventud prestados por el sector público,salud,asistencia_social,si,a_mano
+Consultorios de medicina especializada del sector privado,salud,consultorio_especialista,no,baker
+Consultorios de medicina especializada del sector público,salud,consultorio_especialista,si,baker
+Clínicas de consultorios médicos del sector privado,salud,consultorio_medico,no,baker
+Clínicas de consultorios médicos del sector público,salud,consultorio_medico,si,baker
+Consultorios de medicina general del sector privado,salud,consultorio_medico,no,baker
+Consultorios de medicina general del sector público,salud,consultorio_medico,si,baker
+Otros centros del sector privado para la atención de pacientes que no requieren hospitalización,salud,consultorio_medico,no,baker
+Otros consultorios del sector privado para el cuidado de la salud,salud,consultorio_medico,no,baker
+Otros consultorios del sector público para el cuidado de la salud,salud,consultorio_medico,si,baker
+Consultorios dentales del sector privado,salud,dentista,no,baker
+Consultorios dentales del sector público,salud,dentista,si,baker
+Farmacias con minisúper,salud,farmacia,no,baker
+Farmacias sin minisúper,salud,farmacia,no,baker
+Hospitales del sector privado de otras especialidades médicas,salud,hospital,no,baker
+Hospitales del sector público de otras especialidades médicas,salud,hospital,si,baker
+Hospitales generales del sector privado,salud,hospital,no,baker
+Hospitales generales del sector público,salud,hospital,si,baker
+Laboratorios médicos y de diagnóstico del sector privado,salud,laboratorio_clinico,no,baker
+Laboratorios médicos y de diagnóstico del sector público,salud,laboratorio_clinico,si,baker
+"Servicios de bancos de órganos, bancos de sangre y otros servicios auxiliares al tratamiento médico prestados por el sector privado",salud,laboratorio_clinico,no,baker
+"Servicios de bancos de órganos, bancos de sangre y otros servicios auxiliares al tratamiento médico prestados por el sector público",salud,laboratorio_clinico,si,baker
+"Comercio al por menor de productos naturistas, medicamentos homeopáticos y de complementos alimenticios",salud,naturista,no,baker
+Consultorios de nutriólogos y dietistas del sector privado,salud,nutriologo,no,baker
+Consultorios de nutriólogos y dietistas del sector público,salud,nutriologo,si,baker
+Comercio al por menor de lentes,salud,optica,no,a_mano
+Consultorios de optometría,salud,optica,no,a_mano
+Comercio al por menor de artículos ortopédicos,salud,ortopedia,no,baker
+Centros de planificación familiar del sector privado,salud,otros_salud,no,baker
+Centros de planificación familiar del sector público,salud,otros_salud,si,baker
+Servicios de enfermería a domicilio,salud,otros_salud,no,baker
+Consultorios de psicología del sector privado,salud,psicologo,no,baker
+Consultorios de psicología del sector público,salud,psicologo,si,baker
+Centros del sector privado de atención médica externa para enfermos mentales y adictos,salud,salud_mental_y_adicciones,no,baker
+Centros del sector público de atención médica externa para enfermos mentales y adictos,salud,salud_mental_y_adicciones,si,baker
+Hospitales psiquiátricos y para el tratamiento por adicción del sector privado,salud,salud_mental_y_adicciones,no,baker
+Residencias del sector privado para el cuidado de personas con problemas de trastorno mental y adicción,salud,salud_mental_y_adicciones,no,baker
+Residencias del sector público para el cuidado de personas con problemas de trastorno mental y adicción,salud,salud_mental_y_adicciones,si,baker
+Consultorios de quiropráctica del sector privado,salud,terapia_y_rehabilitacion,no,baker
+Consultorios de quiropráctica del sector público,salud,terapia_y_rehabilitacion,si,baker
+"Consultorios del sector privado de audiología y de terapia ocupacional, física y del lenguaje",salud,terapia_y_rehabilitacion,no,baker
+"Consultorios del sector público de audiología y de terapia ocupacional, física y del lenguaje",salud,terapia_y_rehabilitacion,si,baker
+Servicios veterinarios para mascotas prestados por el sector privado,salud,veterinaria,no,baker
+Servicios veterinarios para mascotas prestados por el sector público,salud,veterinaria,si,baker
+Bufetes jurídicos,servicios_profesionales_y_oficinas,abogado,no,baker
+Servicios de apoyo para efectuar trámites legales,servicios_profesionales_y_oficinas,abogado,no,baker
+Agencias de colocación,servicios_profesionales_y_oficinas,agencia_de_empleo,no,a_mano
+Agencias de empleo temporal,servicios_profesionales_y_oficinas,agencia_de_empleo,no,baker
+Suministro de personal permanente,servicios_profesionales_y_oficinas,agencia_de_empleo,no,baker
+Agencias de viajes,servicios_profesionales_y_oficinas,agencia_de_viajes,no,baker
+Organización de excursiones y paquetes turísticos para agencias de viajes,servicios_profesionales_y_oficinas,agencia_de_viajes,no,baker
+Otros servicios de reservaciones,servicios_profesionales_y_oficinas,agencia_de_viajes,no,a_mano
+Servicios de arquitectura,servicios_profesionales_y_oficinas,arquitectura_e_ingenieria,no,baker
+Servicios de arquitectura de paisaje y urbanismo,servicios_profesionales_y_oficinas,arquitectura_e_ingenieria,no,baker
+Servicios de elaboración de mapas,servicios_profesionales_y_oficinas,arquitectura_e_ingenieria,no,a_mano
+Servicios de ingeniería,servicios_profesionales_y_oficinas,arquitectura_e_ingenieria,no,baker
+Servicios de inspección de edificios,servicios_profesionales_y_oficinas,arquitectura_e_ingenieria,no,a_mano
+Servicios de levantamiento geofísico,servicios_profesionales_y_oficinas,arquitectura_e_ingenieria,no,a_mano
+Supervisión de construcción de obras de generación y conducción de energía eléctrica y de obras para telecomunicaciones,servicios_profesionales_y_oficinas,arquitectura_e_ingenieria,no,baker
+"Supervisión de construcción de obras para el tratamiento, distribución y suministro de agua, drenaje y riego",servicios_profesionales_y_oficinas,arquitectura_e_ingenieria,no,baker
+Supervisión de construcción de otras obras de ingeniería civil,servicios_profesionales_y_oficinas,arquitectura_e_ingenieria,no,baker
+Supervisión de división de terrenos y de construcción de obras de urbanización,servicios_profesionales_y_oficinas,arquitectura_e_ingenieria,no,baker
+Supervisión de edificación de inmuebles comerciales y de servicios,servicios_profesionales_y_oficinas,arquitectura_e_ingenieria,no,baker
+Supervisión de edificación de naves y plantas industriales,servicios_profesionales_y_oficinas,arquitectura_e_ingenieria,no,baker
+Supervisión de edificación residencial,servicios_profesionales_y_oficinas,arquitectura_e_ingenieria,no,baker
+Servicios de recepción de llamadas telefónicas y promoción por teléfono,servicios_profesionales_y_oficinas,call_center,no,baker
+Servicios de acceso a computadoras,servicios_profesionales_y_oficinas,cibercafe,no,baker
+Despachos de investigación de solvencia financiera,servicios_profesionales_y_oficinas,consultoria,no,a_mano
+Laboratorios de pruebas,servicios_profesionales_y_oficinas,consultoria,no,a_mano
+Otros servicios de apoyo a los negocios,servicios_profesionales_y_oficinas,consultoria,no,baker
+Otros servicios de consultoría científica y técnica,servicios_profesionales_y_oficinas,consultoria,no,baker
+Servicios de administración de negocios,servicios_profesionales_y_oficinas,consultoria,no,baker
+Servicios de consultoría en administración,servicios_profesionales_y_oficinas,consultoria,no,baker
+Servicios de consultoría en medio ambiente,servicios_profesionales_y_oficinas,consultoria,no,baker
+Servicios de investigación de mercados y encuestas de opinión pública,servicios_profesionales_y_oficinas,consultoria,no,baker
+"Servicios de fotocopiado, fax y afines",servicios_profesionales_y_oficinas,copias_e_impresion,no,baker
+Servicios de preparación de documentos,servicios_profesionales_y_oficinas,copias_e_impresion,no,a_mano
+Otros servicios relacionados con la contabilidad,servicios_profesionales_y_oficinas,despacho_contable,no,baker
+Servicios de contabilidad y auditoría,servicios_profesionales_y_oficinas,despacho_contable,no,baker
+Servicios de fotografía y videograbación,servicios_profesionales_y_oficinas,fotografia_y_video,no,baker
+Notarías públicas,servicios_profesionales_y_oficinas,notaria,no,baker
+Agencias de cobranza,servicios_profesionales_y_oficinas,otros_servicios_profesionales,no,a_mano
+Agencias de representación de medios,servicios_profesionales_y_oficinas,otros_servicios_profesionales,no,a_mano
+"Agentes y representantes de artistas, deportistas y similares",servicios_profesionales_y_oficinas,otros_servicios_profesionales,no,a_mano
+"Artistas, escritores y técnicos independientes",servicios_profesionales_y_oficinas,otros_servicios_profesionales,no,a_mano
+Corporativos,servicios_profesionales_y_oficinas,otros_servicios_profesionales,no,a_mano
+Organizadores de convenciones y ferias comerciales e industriales,servicios_profesionales_y_oficinas,otros_servicios_profesionales,no,a_mano
+Otros servicios de apoyo secretarial y similares,servicios_profesionales_y_oficinas,otros_servicios_profesionales,no,a_mano
+"Otros servicios profesionales, científicos y técnicos",servicios_profesionales_y_oficinas,otros_servicios_profesionales,no,baker
+Servicios combinados de apoyo en instalaciones,servicios_profesionales_y_oficinas,otros_servicios_profesionales,no,a_mano
+Servicios de agencias aduanales,servicios_profesionales_y_oficinas,otros_servicios_profesionales,no,a_mano
+"Servicios de alquiler de marcas registradas, patentes y franquicias",servicios_profesionales_y_oficinas,otros_servicios_profesionales,no,a_mano
+"Servicios de investigación científica y desarrollo en ciencias naturales y exactas, ingeniería, y ciencias de la vida, prestados por el sector privado",servicios_profesionales_y_oficinas,otros_servicios_profesionales,no,a_mano
+"Servicios de investigación científica y desarrollo en ciencias naturales y exactas, ingeniería, y ciencias de la vida, prestados por el sector público",servicios_profesionales_y_oficinas,otros_servicios_profesionales,si,a_mano
+"Servicios de investigación científica y desarrollo en ciencias sociales y humanidades, prestados por el sector privado",servicios_profesionales_y_oficinas,otros_servicios_profesionales,no,a_mano
+"Servicios de investigación científica y desarrollo en ciencias sociales y humanidades, prestados por el sector público",servicios_profesionales_y_oficinas,otros_servicios_profesionales,si,a_mano
+Servicios de traducción e interpretación,servicios_profesionales_y_oficinas,otros_servicios_profesionales,no,a_mano
+Agencias de anuncios publicitarios,servicios_profesionales_y_oficinas,publicidad_y_diseno,no,baker
+Agencias de correo directo,servicios_profesionales_y_oficinas,publicidad_y_diseno,no,baker
+Agencias de publicidad,servicios_profesionales_y_oficinas,publicidad_y_diseno,no,baker
+Agencias de relaciones públicas,servicios_profesionales_y_oficinas,publicidad_y_diseno,no,baker
+Diseño de modas y otros diseños especializados,servicios_profesionales_y_oficinas,publicidad_y_diseno,no,baker
+Diseño gráfico,servicios_profesionales_y_oficinas,publicidad_y_diseno,no,baker
+Diseño industrial,servicios_profesionales_y_oficinas,publicidad_y_diseno,no,baker
+Diseño y decoración de interiores,servicios_profesionales_y_oficinas,publicidad_y_diseno,no,baker
+Servicios de dibujo,servicios_profesionales_y_oficinas,publicidad_y_diseno,no,baker
+Servicios de rotulación y otros servicios de publicidad,servicios_profesionales_y_oficinas,publicidad_y_diseno,no,baker
+Manejo de desechos no peligrosos y servicios de remediación a zonas dañadas por desechos no peligrosos,servicios_profesionales_y_oficinas,residuos,no,a_mano
+Manejo de residuos peligrosos y servicios de remediación a zonas dañadas por materiales o residuos peligrosos,servicios_profesionales_y_oficinas,residuos,no,a_mano
+Otros servicios de manejo de residuos por el sector privado,servicios_profesionales_y_oficinas,residuos,no,a_mano
+Recolección de residuos no peligrosos por el sector privado,servicios_profesionales_y_oficinas,residuos,no,baker
+Recolección de residuos no peligrosos por el sector público,servicios_profesionales_y_oficinas,residuos,si,baker
+Recuperación de residuos por el sector privado,servicios_profesionales_y_oficinas,residuos,no,baker
+Servicios de remediación de residuos por el sector privado,servicios_profesionales_y_oficinas,residuos,no,baker
+Tratamiento y disposición final de residuos no peligrosos por el sector privado,servicios_profesionales_y_oficinas,residuos,no,baker
+Tratamiento y disposición final de residuos peligrosos por el sector privado,servicios_profesionales_y_oficinas,residuos,no,baker
+"Servicios de investigación y de protección y custodia, excepto mediante monitoreo",servicios_profesionales_y_oficinas,seguridad_privada,no,baker
+Servicios de protección y custodia mediante el monitoreo de sistemas de seguridad,servicios_profesionales_y_oficinas,seguridad_privada,no,baker
+Edición de software,servicios_profesionales_y_oficinas,sistemas_y_software,no,baker
+Portales de búsqueda en la red y otros servicios de suministro de información,servicios_profesionales_y_oficinas,sistemas_y_software,no,baker
+"Procesamiento electrónico de información, hospedaje y otros servicios relacionados",servicios_profesionales_y_oficinas,sistemas_y_software,no,baker
+Servicios de diseño de sistemas de cómputo y servicios relacionados,servicios_profesionales_y_oficinas,sistemas_y_software,no,baker
+Operadores de servicios de telecomunicaciones alámbricas,servicios_profesionales_y_oficinas,telecomunicaciones,no,baker
+Operadores de servicios de telecomunicaciones inalámbricas,servicios_profesionales_y_oficinas,telecomunicaciones,no,baker
+Operadores de servicios de telecomunicaciones vía satélite,servicios_profesionales_y_oficinas,telecomunicaciones,no,baker
+Otros servicios de telecomunicaciones,servicios_profesionales_y_oficinas,telecomunicaciones,no,baker
+Servicios de casetas telefónicas,servicios_profesionales_y_oficinas,telecomunicaciones,no,baker
+Almacenamiento con refrigeración,transporte_y_logistica,almacen,no,regla
+Almacenamiento de productos agrícolas que no requieren refrigeración,transporte_y_logistica,almacen,no,regla
+Almacenes generales de depósito,transporte_y_logistica,almacen,no,regla
+Otros servicios de almacenamiento con instalaciones especializadas,transporte_y_logistica,almacen,no,regla
+Otros servicios de almacenamiento general sin instalaciones especializadas,transporte_y_logistica,almacen,no,regla
+Estacionamientos y pensiones para vehículos automotores,transporte_y_logistica,estacionamiento,no,regla
+Servicios de grúa,transporte_y_logistica,gruas,no,regla
+Servicios de mudanzas,transporte_y_logistica,mudanzas,no,regla
+Otros servicios relacionados con el transporte,transporte_y_logistica,otros_transporte,no,regla
+Otros servicios relacionados con el transporte aéreo,transporte_y_logistica,otros_transporte,no,regla
+Otros servicios relacionados con el transporte por agua,transporte_y_logistica,otros_transporte,no,regla
+Servicios a la navegación aérea,transporte_y_logistica,otros_transporte,no,regla
+Servicios de báscula para el transporte y otros servicios relacionados con el transporte por carretera,transporte_y_logistica,otros_transporte,no,regla
+Servicios relacionados con el transporte por ferrocarril,transporte_y_logistica,otros_transporte,no,regla
+Transporte aéreo no regular,transporte_y_logistica,otros_transporte,no,regla
+Transporte aéreo regular en líneas aéreas extranjeras,transporte_y_logistica,otros_transporte,no,regla
+Transporte aéreo regular en líneas aéreas nacionales,transporte_y_logistica,otros_transporte,no,regla
+Transporte de gas natural por ductos,transporte_y_logistica,otros_transporte,no,regla
+"Transporte marítimo de altura, excepto de petróleo y gas natural",transporte_y_logistica,otros_transporte,no,regla
+"Transporte marítimo de cabotaje, excepto de petróleo y gas natural",transporte_y_logistica,otros_transporte,no,regla
+Transporte por aguas interiores,transporte_y_logistica,otros_transporte,no,regla
+Transporte por ductos de productos refinados del petróleo,transporte_y_logistica,otros_transporte,no,regla
+Transporte por ferrocarril,transporte_y_logistica,otros_transporte,no,regla
+Servicios de mensajería y paquetería foránea,transporte_y_logistica,paqueteria,no,regla
+Servicios de mensajería y paquetería local,transporte_y_logistica,paqueteria,no,regla
+Servicios postales,transporte_y_logistica,paqueteria,no,regla
+Alquiler de automóviles con chofer,transporte_y_logistica,renta_de_autos,no,regla
+Alquiler de automóviles sin chofer,transporte_y_logistica,renta_de_autos,no,regla
+"Alquiler de equipo de transporte, excepto terrestre",transporte_y_logistica,renta_de_maquinaria,no,regla
+"Alquiler de maquinaria y equipo agropecuario, pesquero y para la industria manufacturera",transporte_y_logistica,renta_de_maquinaria,no,regla
+Alquiler de maquinaria y equipo comercial y de servicios,transporte_y_logistica,renta_de_maquinaria,no,regla
+"Alquiler de maquinaria y equipo para construcción, minería y actividades forestales",transporte_y_logistica,renta_de_maquinaria,no,regla
+"Alquiler de maquinaria y equipo para mover, levantar y acomodar materiales",transporte_y_logistica,renta_de_maquinaria,no,regla
+Alquiler de camiones de carga sin chofer,transporte_y_logistica,transporte_de_carga,no,regla
+Autotransporte foráneo con refrigeración,transporte_y_logistica,transporte_de_carga,no,regla
+Autotransporte foráneo de madera,transporte_y_logistica,transporte_de_carga,no,regla
+Autotransporte foráneo de materiales para la construcción,transporte_y_logistica,transporte_de_carga,no,regla
+Autotransporte foráneo de materiales y residuos peligrosos,transporte_y_logistica,transporte_de_carga,no,regla
+Autotransporte foráneo de productos agrícolas sin refrigeración,transporte_y_logistica,transporte_de_carga,no,regla
+Autotransporte local con refrigeración,transporte_y_logistica,transporte_de_carga,no,regla
+Autotransporte local de madera,transporte_y_logistica,transporte_de_carga,no,regla
+Autotransporte local de materiales para la construcción,transporte_y_logistica,transporte_de_carga,no,regla
+Autotransporte local de materiales y residuos peligrosos,transporte_y_logistica,transporte_de_carga,no,regla
+Autotransporte local de productos agrícolas sin refrigeración,transporte_y_logistica,transporte_de_carga,no,regla
+Otro autotransporte foráneo de carga especializado,transporte_y_logistica,transporte_de_carga,no,regla
+Otro autotransporte foráneo de carga general,transporte_y_logistica,transporte_de_carga,no,regla
+Otro autotransporte local de carga especializado,transporte_y_logistica,transporte_de_carga,no,regla
+Otro autotransporte local de carga general,transporte_y_logistica,transporte_de_carga,no,regla
+Otros servicios de intermediación para el transporte de carga,transporte_y_logistica,transporte_de_carga,no,regla
+Alquiler de autobuses con chofer,transporte_y_logistica,transporte_de_pasajeros,no,regla
+"Alquiler de autobuses, minibuses y remolques sin chofer",transporte_y_logistica,transporte_de_pasajeros,no,regla
+Otro transporte terrestre de pasajeros,transporte_y_logistica,transporte_de_pasajeros,no,regla
+Servicios de administración de centrales camioneras,transporte_y_logistica,transporte_de_pasajeros,no,regla
+Transporte colectivo foráneo de pasajeros de ruta fija,transporte_y_logistica,transporte_de_pasajeros,no,regla
+Transporte colectivo urbano y suburbano de pasajeros en autobuses de ruta fija,transporte_y_logistica,transporte_de_pasajeros,no,regla
+Transporte colectivo urbano y suburbano de pasajeros en autobuses que transitan en carril exclusivo,transporte_y_logistica,transporte_de_pasajeros,no,regla
+Transporte colectivo urbano y suburbano de pasajeros en trolebuses y trenes ligeros,transporte_y_logistica,transporte_de_pasajeros,no,regla
+Transporte escolar y de personal,transporte_y_logistica,transporte_de_pasajeros,no,regla
+Marinas turísticas,transporte_y_logistica,transporte_turistico,no,regla
+Otro transporte turístico,transporte_y_logistica,transporte_turistico,no,regla
+Transporte turístico por agua,transporte_y_logistica,transporte_turistico,no,regla
+Transporte turístico por tierra,transporte_y_logistica,transporte_turistico,no,regla
