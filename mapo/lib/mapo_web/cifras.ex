@@ -39,4 +39,32 @@ defmodule MapoWeb.Cifras do
 
     signo <> Enum.join([entero | decimales], ".")
   end
+
+  @doc """
+  Quintiles de los valores con dato de una coropleta: los mismos cortes
+  pintan el mapa (en el hook) y la escala de la cinta. Los AGEB sin dato se
+  cuentan aparte, nunca como cero. `nil` si ninguno trae dato.
+  """
+  def escala_quintiles(%{"features" => features}) do
+    valores =
+      features
+      |> Enum.map(&get_in(&1, ["properties", "valor_choropleth"]))
+      |> Enum.reject(&is_nil/1)
+      |> Enum.sort()
+
+    case valores do
+      [] ->
+        nil
+
+      _ ->
+        n = length(valores)
+        cortes = Enum.map([0.2, 0.4, 0.6, 0.8], fn q -> Enum.at(valores, floor(q * (n - 1))) end)
+
+        %{
+          cortes: cortes,
+          limites: [hd(valores) | cortes] ++ [List.last(valores)],
+          nulos: length(features) - n
+        }
+    end
+  end
 end

@@ -382,7 +382,7 @@ defmodule MapoWeb.MapaLive.IndexTest do
 
     test "los quintiles cuentan aparte los AGEB sin dato, nunca como cero" do
       escala =
-        MapoWeb.MapaLive.Index.escala_quintiles(coropleta_con_valores([nil, 1, 2, 3, 4, 5, nil]))
+        MapoWeb.Cifras.escala_quintiles(coropleta_con_valores([nil, 1, 2, 3, 4, 5, nil]))
 
       assert escala.nulos == 2
       assert hd(escala.limites) == 1
@@ -391,7 +391,7 @@ defmodule MapoWeb.MapaLive.IndexTest do
     end
 
     test "sin valores con dato no hay escala" do
-      assert MapoWeb.MapaLive.Index.escala_quintiles(coropleta_con_valores([nil, nil])) == nil
+      assert MapoWeb.Cifras.escala_quintiles(coropleta_con_valores([nil, nil])) == nil
     end
   end
 

@@ -773,33 +773,6 @@ defmodule MapoWeb.MapaLive.Index do
   defp nombre_de(opciones, valor),
     do: Enum.find_value(opciones, fn {n, v} -> if v == valor, do: n end)
 
-  @doc false
-  # Quintiles de los valores con dato: los mismos cortes pintan el mapa (en el
-  # hook) y la escala de la cinta. Los AGEB sin dato se cuentan aparte, nunca
-  # como cero.
-  def escala_quintiles(%{"features" => features}) do
-    valores =
-      features
-      |> Enum.map(&get_in(&1, ["properties", "valor_choropleth"]))
-      |> Enum.reject(&is_nil/1)
-      |> Enum.sort()
-
-    case valores do
-      [] ->
-        nil
-
-      _ ->
-        n = length(valores)
-        cortes = Enum.map([0.2, 0.4, 0.6, 0.8], fn q -> Enum.at(valores, floor(q * (n - 1))) end)
-
-        %{
-          cortes: cortes,
-          limites: [hd(valores) | cortes] ++ [List.last(valores)],
-          nulos: length(features) - n
-        }
-    end
-  end
-
   defp vacio_para_nil(nil), do: nil
   defp vacio_para_nil(""), do: nil
   defp vacio_para_nil(valor), do: valor

@@ -17,10 +17,13 @@ import {Marcas, escapar} from "./marcas"
 // marcas son las de la sesion elegida (marcas.js, compartido con
 // /sesiones/:id). Con su cinta abierta, el clic en el plano pone marca; si
 // no, y hay isocrona activa, elige el punto de salida.
+//
+// /buscador usa este mismo hook: le manda las mismas capas, mas "puntos"
+// (un punto por negocio) y "pedir_ubicacion" para el punto de partida.
 
 const CENTRO_MEXICO = [23.6345, -102.5528]
 const ZOOM_MEXICO = 5
-const ENFOQUE = {coropleta: "demografia", voronoi: "comercio", coloreado: "urbanismo", isocrona: "movilidad"}
+const ENFOQUE = {puntos: "comercio", coropleta: "demografia", voronoi: "comercio", coloreado: "urbanismo", isocrona: "movilidad"}
 // Opacidad de la pelicula por clase: mas valor, mas tinta.
 const TINTA_QUINTIL = [0.12, 0.26, 0.42, 0.6, 0.8]
 const TINTA_COLOREADO = [0.14, 0.32, 0.5, 0.68]
@@ -57,8 +60,8 @@ export const MapaTecnico = {
     this.marcas = new Marcas(this.map, {push: (e, p) => this.pushEvent(e, p), pane: "p-marcas"})
     this.modoMarcas = false
 
-    this.capas = {coropleta: null, voronoi: null, coloreado: null, isocrona: null}
-    this.datos = {coropleta: null, voronoi: null, coloreado: null, isocrona: null}
+    this.capas = {puntos: null, coropleta: null, voronoi: null, coloreado: null, isocrona: null}
+    this.datos = {puntos: null, coropleta: null, voronoi: null, coloreado: null, isocrona: null}
     this.modoIsocrona = false
     this.interactivas = true
     this.origen = null
@@ -77,6 +80,11 @@ export const MapaTecnico = {
     this.handleEvent("capa_voronoi", datos => this._recibir("voronoi", datos))
     this.handleEvent("capa_coloreado", datos => this._recibir("coloreado", datos))
     this.handleEvent("capa_isocrona", datos => this._recibir("isocrona", datos))
+    this.handleEvent("capa_puntos", datos => this._recibir("puntos", datos))
+    this.handleEvent("pedir_ubicacion", () => this._ubicacion())
+    this.handleEvent("centrar", ({lat, lon, zoom}) => {
+      this.map.setView([lat, lon], Math.max(this.map.getZoom(), zoom))
+    })
     this.handleEvent("modo_isocrona", ({activo}) => {
       this.modoIsocrona = activo
       this._cambioModo()
@@ -127,7 +135,18 @@ export const MapaTecnico = {
     if (nueva) this._deslizar(id)
     const capa = this.capas[id]
     const bordes = capa && capa.getBounds && capa.getBounds()
-    if (bordes && bordes.isValid()) this.map.fitBounds(bordes)
+    if (bordes && bordes.isValid()) this.map.fitBounds(bordes, this._margen())
+  },
+
+  // /buscador trae papeles fijos a los lados (data-margen, data-margen-der, en
+  // px): lo que se encuadra queda entre ellos. Si no cabe a la derecha, se
+  // queda solo el de la izquierda; en celular los papeles van arriba y abajo.
+  _margen() {
+    const izq = Number(this.el.dataset.margen)
+    if (!izq || window.innerWidth <= 760) return {}
+    const der = Number(this.el.dataset.margenDer) || 0
+    const cabe = window.innerWidth - izq - der >= 360
+    return {paddingTopLeft: [izq, 20], paddingBottomRight: [cabe ? der : 20, 20]}
   },
 
   // El acetato entra deslizandose sobre el plano.
@@ -220,6 +239,27 @@ export const MapaTecnico = {
       }),
       onEachFeature: (f, capa) => capa.bindPopup(escapar(f.properties.nomgeo || f.properties.cvegeo)),
     })
+  },
+
+  _puntos({puntos}, color, opciones) {
+    return L.featureGroup(puntos.map(p => L.circleMarker([p.lat, p.lon], {
+      ...opciones, radius: 3.5, weight: 1, color: tinta("--bg"), fillColor: color, fillOpacity: 0.9,
+    }).bindPopup(escapar(p.nombre || "Negocio sin nombre"))))
+  },
+
+  // El navegador pregunta antes de dar la ubicacion; si la niega o no hay
+  // HTTPS, se dice y queda el clic en el plano.
+  _ubicacion() {
+    if (!navigator.geolocation) return this.pushEvent("ubicacion_fallida", {})
+    navigator.geolocation.getCurrentPosition(
+      ({coords}) => {
+        this.origen = L.latLng(coords.latitude, coords.longitude)
+        this.map.setView(this.origen, Math.max(this.map.getZoom(), 13))
+        this.pushEvent("click_mapa", {lat: coords.latitude, lon: coords.longitude})
+      },
+      () => this.pushEvent("ubicacion_fallida", {}),
+      {timeout: 10000},
+    )
   },
 
   _isocrona({poligono, metodo}, color, opciones) {

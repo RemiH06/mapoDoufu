@@ -132,7 +132,7 @@ async def test_voronoi_denue_con_pocos_negocios_da_422(conn, pool_de_una_conexio
 
 @pytest.mark.asyncio
 async def test_voronoi_denue_con_demasiados_negocios_da_422(conn, pool_de_una_conexion, monkeypatch):
-    monkeypatch.setattr("mapo_core.server._MAX_NEGOCIOS_VORONOI", 3)
+    monkeypatch.setattr("mapo_core.consultas.MAX_NEGOCIOS_VORONOI", 3)
     await _insertar_municipio_guadalajara(conn)
     for i, (lat, lon) in enumerate([(0.0, 0.0), (0.0, 10.0), (10.0, 0.0), (10.0, 10.0)]):
         await _insertar_negocio(conn, str(i), lat, lon)

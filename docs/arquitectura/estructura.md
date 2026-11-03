@@ -18,6 +18,8 @@
 └── mapo_core/               Python + FastAPI. Datos y motor de decisión
     ├── src/mapo_core/
     │   ├── server.py        rutas HTTP
+    │   ├── consultas.py     consultas compartidas por el modo técnico y el buscador
+    │   ├── buscador.py      analizador de preguntas y resolución de intenciones
     │   ├── cli.py           carga de fuentes (python -m mapo_core.cli ...)
     │   ├── db.py            conexión psycopg v3 a la misma Postgres, sin ORM
     │   ├── *_downloader.py  una por fuente (geo, censo, denue, enigh, enoe)

@@ -68,6 +68,7 @@ defmodule MapoWeb.Router do
       live "/sesiones/:id", SesionLive.Show, :show
 
       live "/mapa", MapaLive.Index, :index
+      live "/buscador", BuscadorLive.Index, :index
       live "/perfil", PerfilLive.Index, :index
       live "/logistica", LogisticaLive.Index, :index
     end

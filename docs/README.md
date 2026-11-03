@@ -51,6 +51,7 @@ Qué se construyó en cada etapa, por qué así y qué bugs reales aparecieron.
 - [Preparar el hosteo, octubre 2026](historial/2026-10-hosteo.md)
 - [Primer despliegue, octubre 2026](historial/2026-10-despliegue.md)
 - [Fase 6a: intenciones y rubros, noviembre 2026](historial/2026-11-intenciones.md)
+- [Fase 6b: buscador, noviembre 2026](historial/2026-11-buscador.md)
 
 ## Gaiarda
 

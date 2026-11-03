@@ -52,14 +52,68 @@ Las dos formas desde el inicio, y llevan a lo mismo:
 
 Si falta un parámetro, el hueco queda vacío y se pide; si un término
 coincide con dos rubros, no se elige uno en silencio (el test
-`test_ningun_termino_lleva_a_dos_rubros` lo impide en la tabla).
+`test_ningun_termino_lleva_a_dos_rubros` lo impide en la tabla). Si la
+pregunta nombra dos rubros distintos, tampoco: se avisa y el hueco queda
+vacío.
+
+Reglas del analizador (`mapo_core/src/mapo_core/buscador.py`):
+
+- **Gana el término más largo sin traslape.** "Tienda de mascotas" le
+  gana al municipio Mascota y "San Juan de los Lagos" a "Lagos".
+- **Cada palabra admite plural** ("consultorios médicos").
+- **Rubro le gana a sector.** Si aparecen los dos y son de sectores
+  distintos, se usa el rubro y se avisa.
+- **Lo ya reconocido no cuenta para lo demás.** "Baños públicos" es un
+  rubro, no el filtro `solo_publicos`.
+- **Sin palabra de intención**, los minutos implican `cuantos_cerca` y la
+  edad implica `donde_contratar`, las únicas intenciones que los usan.
+
+## Pantalla
+
+`/buscador` usa el mismo plano y el mismo hook de `/mapa` (`MapaTecnico`),
+con la piel del enfoque de la respuesta. A la izquierda va la pregunta y
+su plantilla, escrita como frase con los huecos; a la derecha, la
+respuesta con sus cifras, su fórmula, sus avisos y sus fuentes. En
+celular la plantilla se pliega al resolver para dejar ver el plano.
+
+La pregunta va en la URL (`?q=`) para poder compartirla. Las ediciones a
+mano de la plantilla no viajan en la URL.
+
+Qué huecos lleva cada intención lo dice `GET /buscador/catalogo`, que
+también trae los rubros por sector y los grupos de edad. Nada de eso se
+repite en Phoenix. `POST /buscador/interpretar` convierte el texto en
+plantilla y `POST /buscador/resolver` da capas y cifras; si a la
+plantilla le falta un hueco responde 422 con `faltan`.
+
+## Resolución
+
+Las consultas viven en `mapo_core/src/mapo_core/consultas.py` y las usan
+por igual el modo técnico y el buscador. Criterios:
+
+- **Varios municipios: un solo Voronoi recortado a su unión.** La
+  competencia no se detiene en la frontera municipal: una florería de
+  Zapopan compite con la de Guadalajara de enfrente. Dibujar uno por
+  municipio cortaría esas celdas en una línea que nadie ve en la calle.
+- **El rubro filtra por lista exacta de clases**, no por texto: el
+  `ILIKE` del modo técnico mezclaría clases que la tabla ya separó.
+- **La población es la del municipio**, no la suma de sus AGEB: esa suma
+  deja fuera a la población rural.
+- **Negocios sin coordenadas** cuentan en `cuantos` y `donde_poner`, pero
+  no se dibujan, y se avisa cuántos son. En `cuantos_cerca` no pueden
+  contar, porque no se sabe si caen en la isócrona, y también se dice.
+- **Más de 5,000 negocios** no se dibujan uno por uno (`MAX_PUNTOS`): se
+  dan las cifras y se avisa. En `donde_poner`, el Voronoi conserva el
+  tope y el mínimo del modo técnico.
+- **`perfil`** no resuelve nada: lleva a `/perfil` del municipio.
 
 ## Tabla de rubros
 
 Vive en `mapo_core/src/mapo_core/rubros/` y es dato revisado a mano,
 no se genera en vivo:
 
-- `sectores.csv`: 21 sectores. `industria`, `mayoreo` y
+- `sectores.csv`: 21 sectores, con sinónimos propios para preguntar por
+  un sector entero. El nombre del sector no cuenta como término: el de
+  "Otros comercios" también es nombre de rubro. `industria`, `mayoreo` y
   `agro_mineria_y_energia` no se ofrecen en el buscador (siguen en el
   modo técnico) y no tienen rubros.
 - `rubros.csv`: 183 rubros con nombre para mostrar y sinónimos. Los
@@ -68,6 +122,8 @@ no se genera en vivo:
 - `clases.csv`: las 918 clases de DENUE de Jalisco, cada una con su
   sector, rubro, `sector_publico` y `origen` (de dónde salió la
   asignación).
+- `municipios_alias.csv`: cómo le dice la gente a municipios de nombre
+  largo ("Tlaquepaque", "Ciudad Guzmán", "Vallarta"). Por estado.
 
 La llave es el nombre exacto de la clase, porque `BuscarEntidad` de
 DENUE no trae el código SCIAN.
@@ -95,4 +151,5 @@ rubro (sectores no buscables).
 `python -m mapo_core.cli denue --estado NN` avisa al final de las clases
 que no están en `clases.csv`. Hay que agregarlas a mano con su sector y
 rubro antes de usarlas en el buscador; `tests/test_rubros.py` revisa que
-la tabla siga consistente.
+la tabla siga consistente. Los apodos de sus municipios se agregan a
+`municipios_alias.csv`.

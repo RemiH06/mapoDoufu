@@ -126,6 +126,27 @@ defmodule Mapo.MapoCore do
     })
   end
 
+  @doc """
+  Lo que llena las plantillas del modo buscador: intenciones, sectores con
+  sus rubros y grupos de edad del censo (docs/producto/buscador.md).
+  """
+  def buscador_catalogo, do: get("/buscador/catalogo", [])
+
+  @doc """
+  Pregunta en español común -> `%{"plantilla", "faltan", "avisos",
+  "reconocidos"}`. Determinista: lo que no reconoce lo dice en `avisos`.
+  """
+  def buscador_interpretar(texto, cve_ent),
+    do: post("/buscador/interpretar", %{texto: texto, cve_ent: cve_ent})
+
+  @doc """
+  Plantilla completa -> `%{"capas", "cifras", "avisos"}` con las mismas
+  consultas del modo técnico, o `%{"perfil" => %{...}}` para ir a /perfil.
+  Si le falta un hueco, `{:error, {:status, 422, %{"detail" => %{"faltan" => ...}}}}`.
+  """
+  def buscador_resolver(cve_ent, plantilla),
+    do: post("/buscador/resolver", %{cve_ent: cve_ent, plantilla: plantilla})
+
   defp maybe_put(params, _key, nil), do: params
   defp maybe_put(params, key, value), do: params ++ [{key, value}]
 
