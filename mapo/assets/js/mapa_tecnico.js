@@ -60,6 +60,7 @@ export const MapaTecnico = {
     this.capas = {coropleta: null, voronoi: null, coloreado: null, isocrona: null}
     this.datos = {coropleta: null, voronoi: null, coloreado: null, isocrona: null}
     this.modoIsocrona = false
+    this.interactivas = true
     this.origen = null
 
     this.map.on("click", e => {
@@ -78,12 +79,12 @@ export const MapaTecnico = {
     this.handleEvent("capa_isocrona", datos => this._recibir("isocrona", datos))
     this.handleEvent("modo_isocrona", ({activo}) => {
       this.modoIsocrona = activo
-      this._cursor()
+      this._cambioModo()
     })
     this.handleEvent("modo_marcas", ({activo}) => {
       this.modoMarcas = activo
       if (!activo) this.marcas.cancelar()
-      this._cursor()
+      this._cambioModo()
     })
     this.handleEvent("marcas", ({anotaciones}) => {
       this.marcas.poner(anotaciones)
@@ -105,8 +106,18 @@ export const MapaTecnico = {
     window.addEventListener("mapo:tema", this.alCambiarTema)
   },
 
-  _cursor() {
-    this.el.style.cursor = this.modoMarcas || this.modoIsocrona ? "crosshair" : ""
+  _dibujando() {
+    return this.modoMarcas || this.modoIsocrona
+  },
+
+  // Mientras se dibuja, los acetatos no toman clics: en canvas, la ficha de
+  // una celda detiene el clic y nunca llega al plano, asi que la marca o el
+  // origen de la isocrona no se ponian encima del Voronoi o la coropleta.
+  _cambioModo() {
+    this.el.style.cursor = this._dibujando() ? "crosshair" : ""
+    if (this.interactivas === !this._dibujando()) return
+    this.interactivas = !this._dibujando()
+    Object.keys(this.datos).forEach(id => this._dibujar(id))
   },
 
   _recibir(id, datos) {
@@ -148,7 +159,7 @@ export const MapaTecnico = {
     const datos = this.datos[id]
     if (!datos) return
     const color = tinta(`--f-${ENFOQUE[id]}`)
-    const opciones = {pane: `p-${id}`, renderer: this.renderers[id]}
+    const opciones = {pane: `p-${id}`, renderer: this.renderers[id], interactive: this.interactivas}
     this.capas[id] = this[`_${id}`](datos, color, opciones)
     this.capas[id].addTo(this.map)
     if (id === "voronoi") this._puntosVoronoi()

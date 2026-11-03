@@ -68,3 +68,14 @@ puesta y borrada en `/perfil`.
 - Flechas y trazo libre (el esquema ya los admite).
 - En 844×390 el encuadre de las marcas deja alguna debajo de la cinta
   (pasada final de diseño).
+
+## Arreglo: marcas encima de los acetatos (2026-11-03)
+
+Con el Voronoi (o cualquier acetato) puesto, un clic con la herramienta
+de marcas abría la ficha de la celda en vez de poner la marca. Las capas
+van en `L.canvas` y, al abrir su ficha, Leaflet detiene el clic, que ya
+no llega al plano. Ahora `mapa_tecnico.js` redibuja los acetatos como no
+interactivos mientras se dibuja una marca o se elige el origen de una
+isócrona, y los regresa a interactivos al salir. Probado en Chromium
+con el Voronoi de farmacias de Guadalajara: sin el arreglo el clic abre
+la farmacia; con él, la ficha de "Marca nueva".
