@@ -49,25 +49,64 @@ del `.env`.
 
 ## Acceso
 
-Sin dominio todavía: solo por Tailscale. En la máquina que hostea,
-`tailscale serve --bg 1865` publica `https://<máquina>.<tailnet>.ts.net`
-a la tailnet, con certificado. `PHX_HOST` es ese nombre: Phoenix
-rechaza el WebSocket de LiveView si el origen no coincide.
+Mapo responde con **un solo nombre a la vez**: el de `PHX_HOST`.
+LiveView solo acepta el WebSocket si el origen coincide con ese nombre;
+por cualquier otro, la página carga pero se queda en "sin conexión"
+(`/live/websocket` responde 403). Cambiar de nombre es cambiar
+`PHX_HOST` (y `PHX_PORT`) en el `.env` y reiniciar `mapo`.
 
-Si la máquina ya publica otro servicio en el 443 (así está Pixilate),
-`tailscale serve --bg 1865` lo reemplazaría. Ahí Mapo va en su propio
-puerto, `tailscale serve --bg --https=1865 http://127.0.0.1:1865`, y
-`PHX_PORT=1865` para que los enlaces de los correos lo lleven.
+### Con dominio: Cloudflare Tunnel
+
+Es como corre hoy. `cloudflared` vive en el mismo host pero en otro
+compose, con red del host, y abre una conexión de salida hacia
+Cloudflare: no se abre ningún puerto en el router ni en el firewall.
+El hostname público y su destino se configuran en el panel de
+Cloudflare (Zero Trust, Networks, Tunnels), no en archivos:
+
+| Hostname público | Servicio |
+|---|---|
+| `mapo.<dominio>` | `http://localhost:1865` |
+
+El token del túnel va en un archivo con `chmod 600` fuera de cualquier
+repo, y el compose lo lee con `env_file`. En `.env`:
+`PHX_HOST=mapo.<dominio>` y `PHX_PORT=443`.
+
+Cloudflare termina el TLS: ve todo lo que pasa por el túnel, incluidos
+los enlaces de acceso y las contraseñas al iniciar sesión. Para lo que
+no debe salir de casa sigue Tailscale. Apagar el acceso público es
+`docker compose down` en el compose del túnel; Mapo sigue corriendo.
+
+### Sin dominio: Tailscale
+
+`tailscale serve --bg 1865` publica `https://<máquina>.<tailnet>.ts.net`
+a la tailnet, con certificado, y `PHX_HOST` es ese nombre. Si la
+máquina ya publica otro servicio en el 443, ese comando lo
+reemplazaría: Mapo va entonces en su propio puerto
+(`tailscale serve --bg --https=1865 http://127.0.0.1:1865`) con
+`PHX_PORT=1865`. Mientras `PHX_HOST` apunte al dominio, este camino no
+sirve (ver arriba).
+
+### Comprobar
 
 Phoenix en prod redirige a HTTPS (`force_ssl`) y confía en
-`X-Forwarded-Proto` para saber que la petición ya llegó cifrada. Al
-publicar por primera vez, comprobar que no hay redirección en bucle:
-`curl -sI https://<máquina>.<tailnet>.ts.net/` debe dar `200` con
-`strict-transport-security`.
+`X-Forwarded-Proto` para saber que la petición ya llegó cifrada; tanto
+`cloudflared` como `tailscale serve` lo mandan. Al publicar:
+
+```bash
+curl -sI https://<nombre>/   # 200 con strict-transport-security, sin bucle
+curl -s -o /dev/null -w "%{http_code}\n" --max-time 5 \
+  -H "Connection: Upgrade" -H "Upgrade: websocket" \
+  -H "Sec-WebSocket-Version: 13" -H "Sec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==" \
+  -H "Origin: https://<nombre>" "https://<nombre>/live/websocket?vsn=2.0.0"   # 101
+```
+
+Con el 101 la conexión queda abierta y `curl` sale por el tiempo
+límite (código 28): es lo esperado.
 
 ## Correo
 
-No hay correo real hasta tener dominio. En prod el mailer es
+Todavía no hay correo real: ya hay dominio, pero falta un proveedor de
+envío con sus registros SPF y DKIM. En prod el mailer es
 `Swoosh.Adapters.Logger`: cada correo (enlace de acceso, invitación) se
 escribe completo en el log, y quien administra lo reenvía a mano:
 

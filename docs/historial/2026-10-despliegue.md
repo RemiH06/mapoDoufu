@@ -74,3 +74,18 @@ el origen.
   traga el resto del script. Lleva `< /dev/null`.
 - `setsid nohup ... &` dentro de `wsl -- bash -s` no sobrevive al
   cierre de la sesión: la construcción se corrió en primer plano.
+
+## Después: dominio y respaldo nocturno (noviembre 2026)
+
+- Mapo quedó público en un dominio propio por Cloudflare Tunnel
+  (`docs/despliegue.md`, sección Acceso). `PHX_HOST` pasó al dominio y,
+  con eso, entrar por el nombre de la tailnet deja a LiveView sin
+  WebSocket (403): Phoenix acepta un solo origen.
+- Cookies de sesión con `secure`; el login por el dominio funciona.
+- Primera corrida del cron de respaldo el 3 de noviembre: dump a las
+  4:00 y copia a la segunda máquina verificada con sha256 a las 4:04.
+  La noche anterior no corrió porque el servidor estaba apagado: cron
+  no recupera corridas perdidas.
+- Tras un reinicio, el arranque vuelve solo: la tarea de inicio de
+  Windows levanta el WSL antes de iniciar sesión y Docker sube los
+  contenedores.
