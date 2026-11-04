@@ -102,9 +102,11 @@ defmodule MapoWeb.TeamLive.Show do
 
           <div class="doc-seccion">
             <h2>Datos propios</h2>
+
             <p class="secundario">
               Un CSV o un Excel con coordenadas o claves de INEGI se vuelve acetato en el mapa.
             </p>
+
             <p><.link navigate={~p"/teams/#{@team}/datos"}>Ver los datos del equipo</.link></p>
           </div>
         </section>

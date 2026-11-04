@@ -17,6 +17,8 @@ defmodule MapoWeb.DatosLive.Index do
   alias Mapo.MapoCore
   alias Mapo.Teams
 
+  @partes ~w(ent mun loc ageb)
+
   # Interpretar un archivo grande cuesta CPU de la máquina: sin esto, una sola
   # cuenta podría tenerla ocupada subiendo el mismo archivo una y otra vez.
   @max_lecturas 30
@@ -28,9 +30,13 @@ defmodule MapoWeb.DatosLive.Index do
     {"Clave de AGEB (13 caracteres)", "ageb"}
   ]
 
+  # LiveView solo acepta extensiones que conoce la tabla de tipos MIME, y
+  # `.gpkg` no está: el navegador filtra con esta lista y `mapo_core` decide.
+  @aceptados ".csv,.xlsx,.geojson,.json,.zip,.gpkg,.tif,.tiff"
+
   @impl true
   def render(assigns) do
-    assigns = assign(assigns, tipos: @tipos)
+    assigns = assign(assigns, tipos: @tipos, aceptados: @aceptados)
 
     ~H"""
     <Layouts.app flash={@flash} current_scope={@current_scope} seccion="equipos" amplio?={true}>
@@ -51,9 +57,7 @@ defmodule MapoWeb.DatosLive.Index do
                 <span>
                   <b>{c.nombre}</b>
                   <span class="secundario capa-detalle">
-                    {cifra(c.num_filas)} de {cifra(c.num_filas + c.num_descartadas)} renglones · {etiqueta(
-                      c.tipo
-                    )} · {megas(c.tamano_bytes)}
+                    {detalle(c)}
                   </span>
                 </span>
                 <span class="lista-fin">
@@ -80,7 +84,7 @@ defmodule MapoWeb.DatosLive.Index do
         <section class="doc pegado" aria-labelledby="t-subir">
           <header class="doc-cab">
             <h2 id="t-subir">Subir un archivo</h2>
-            <span class="doc-tipo">CSV o XLSX · hasta 50 MB</span>
+            <span class="doc-tipo">Tabla, vectorial o ráster · hasta 50 MB</span>
           </header>
 
           <div class="doc-seccion">
@@ -89,6 +93,10 @@ defmodule MapoWeb.DatosLive.Index do
             </p>
             <p class="secundario">
               La capa la ve solo tu equipo, pero quien administra esta instalación puede llegar a leerla, y los respaldos la conservan unos días después de borrarla.
+            </p>
+
+            <p class="secundario">
+              CSV, XLSX, GeoJSON, shapefile en ZIP, GeoPackage o GeoTIFF.
             </p>
 
             <.form
@@ -101,7 +109,7 @@ defmodule MapoWeb.DatosLive.Index do
               phx-submit="leer"
               class="subida"
             >
-              <.live_file_input upload={@uploads.archivo} />
+              <.live_file_input upload={@uploads.archivo} accept={@aceptados} />
               <p :for={e <- upload_errors(@uploads.archivo)} class="nota">{error_subida(e)}</p>
               <div :for={entrada <- @uploads.archivo.entries}>
                 <p class="secundario">{entrada.client_name}: {entrada.progress}%</p>
@@ -119,12 +127,10 @@ defmodule MapoWeb.DatosLive.Index do
             </.form>
 
             <div :if={@archivo} class="subida">
-              <p>
-                <b>{@archivo.nombre}</b>: {cifra(@archivo.lectura["num_filas"])} renglones.
-              </p>
+              <p><b>{@archivo.nombre}</b>{descripcion(@archivo.lectura)}</p>
               <p :for={aviso <- @archivo.lectura["avisos"]} class="nota">{aviso}</p>
 
-              <div class="tabla-muestra">
+              <div :if={@archivo.lectura["columnas"] != []} class="tabla-muestra">
                 <table>
                   <caption class="sr-only">Primeros renglones del archivo</caption>
                   <thead>
@@ -142,38 +148,28 @@ defmodule MapoWeb.DatosLive.Index do
 
               <.form for={@form} id="capa_form" phx-change="ubicacion" phx-submit="guardar">
                 <.input field={@form[:nombre]} type="text" label="Nombre de la capa" required />
+                <.input :if={fijo?(@archivo)} field={@form[:tipo]} type="hidden" />
+                <p :if={fijo?(@archivo)} class="secundario">
+                  Trae su propia ubicación: se dibuja tal cual en el plano.
+                </p>
                 <.input
+                  :if={not fijo?(@archivo)}
                   field={@form[:tipo]}
                   type="select"
                   label="Cómo se ubica cada renglón"
                   options={@tipos}
                 />
-                <.input
-                  :if={@form[:tipo].value == "puntos"}
-                  field={@form[:lat]}
-                  type="select"
-                  label="Columna de latitud"
-                  options={@archivo.lectura["columnas"]}
-                  prompt="Elige una columna"
-                  required
+                <.columna
+                  :for={{campo, etiqueta} <- campos(@form)}
+                  campo={@form[campo]}
+                  etiqueta={etiqueta}
+                  columnas={@archivo.lectura["columnas"]}
                 />
                 <.input
-                  :if={@form[:tipo].value == "puntos"}
-                  field={@form[:lon]}
-                  type="select"
-                  label="Columna de longitud"
-                  options={@archivo.lectura["columnas"]}
-                  prompt="Elige una columna"
-                  required
-                />
-                <.input
-                  :if={@form[:tipo].value != "puntos"}
-                  field={@form[:clave]}
-                  type="select"
-                  label="Columna de la clave"
-                  options={@archivo.lectura["columnas"]}
-                  prompt="Elige una columna"
-                  required
+                  :if={zona?(@form)}
+                  field={@form[:partes]}
+                  type="checkbox"
+                  label="La clave viene en varias columnas"
                 />
                 <div class="doc-botones">
                   <.button variant="primary" phx-disable-with="Guardando...">Guardar capa</.button>
@@ -188,6 +184,23 @@ defmodule MapoWeb.DatosLive.Index do
     """
   end
 
+  attr :campo, Phoenix.HTML.FormField, required: true
+  attr :etiqueta, :string, required: true
+  attr :columnas, :list, required: true
+
+  defp columna(assigns) do
+    ~H"""
+    <.input
+      field={@campo}
+      type="select"
+      label={@etiqueta}
+      options={@columnas}
+      prompt="Elige una columna"
+      required
+    />
+    """
+  end
+
   @impl true
   def mount(%{"id" => id}, _session, socket) do
     team = Teams.get_team!(socket.assigns.current_scope, id)
@@ -197,7 +210,7 @@ defmodule MapoWeb.DatosLive.Index do
      |> assign(team: team, archivo: nil, form: to_form(%{}, as: "capa"))
      |> recargar()
      |> allow_upload(:archivo,
-       accept: ~w(.csv .xlsx),
+       accept: :any,
        max_entries: 1,
        max_file_size: Capas.max_bytes_archivo()
      )}
@@ -272,16 +285,64 @@ defmodule MapoWeb.DatosLive.Index do
   end
 
   defp valores_iniciales(nombre, sugerencia) do
-    Map.merge(
-      %{"nombre" => Path.rootname(nombre), "tipo" => "puntos"},
-      sugerencia || %{}
-    )
+    base = %{"nombre" => Path.rootname(nombre), "tipo" => "puntos"}
+
+    case sugerencia do
+      %{"partes" => partes, "tipo" => tipo} ->
+        partes = Enum.zip(@partes, partes) |> Map.new()
+        base |> Map.merge(partes) |> Map.merge(%{"tipo" => tipo, "partes" => "true"})
+
+      nil ->
+        base
+
+      sugerencia ->
+        Map.merge(base, sugerencia)
+    end
+  end
+
+  defp fijo?(%{lectura: %{"sugerencia" => %{"tipo" => tipo}}}), do: tipo in ~w(vector raster)
+  defp fijo?(_), do: false
+
+  defp zona?(form), do: form[:tipo].value in ~w(municipio ageb)
+  defp partida?(form), do: form[:partes].value in ["true", true]
+
+  defp campos(form) do
+    cond do
+      form[:tipo].value == "puntos" ->
+        [lat: "Columna de latitud", lon: "Columna de longitud"]
+
+      not zona?(form) ->
+        []
+
+      not partida?(form) ->
+        [clave: "Columna de la clave"]
+
+      form[:tipo].value == "municipio" ->
+        [ent: "Columna del estado", mun: "Columna del municipio"]
+
+      true ->
+        [
+          ent: "Columna del estado",
+          mun: "Columna del municipio",
+          loc: "Columna de la localidad",
+          ageb: "Columna del AGEB"
+        ]
+    end
   end
 
   defp ubicacion(%{"tipo" => "puntos", "lat" => lat, "lon" => lon}),
     do: [tipo: "puntos", lat: lat, lon: lon]
 
+  defp ubicacion(%{"tipo" => tipo}) when tipo in ~w(vector raster), do: [tipo: tipo]
+
+  defp ubicacion(%{"tipo" => tipo, "partes" => "true"} = params) do
+    columnas = if tipo == "municipio", do: ~w(ent mun), else: @partes
+    [{:tipo, tipo} | Enum.map(columnas, &{:clave, params[&1]})]
+  end
+
   defp ubicacion(%{"tipo" => tipo, "clave" => clave}), do: [tipo: tipo, clave: clave]
+
+  defp alguno_ubicado(%{"raster" => _}), do: :ok
 
   defp alguno_ubicado(%{"filas" => [], "descartes" => descartes}),
     do: {:error, {:nada_ubicado, descartes}}
@@ -293,7 +354,7 @@ defmodule MapoWeb.DatosLive.Index do
       nombre: String.trim(params["nombre"]),
       archivo: archivo,
       tamano_bytes: bytes,
-      tipo: params["tipo"],
+      tipo: ubicados["tipo"],
       columnas: ubicados["columnas"],
       numericas: ubicados["numericas"],
       num_filas: length(ubicados["filas"]),
@@ -305,8 +366,22 @@ defmodule MapoWeb.DatosLive.Index do
       socket.assigns.current_scope,
       socket.assigns.team.id,
       attrs,
-      ubicados["filas"]
+      ubicados["filas"],
+      imagen(ubicados["raster"])
     )
+  end
+
+  defp imagen(nil), do: nil
+
+  defp imagen(raster) do
+    %{
+      png: Base.decode64!(raster["png"]),
+      oeste: raster["oeste"],
+      sur: raster["sur"],
+      este: raster["este"],
+      norte: raster["norte"],
+      limites: raster["limites"]
+    }
   end
 
   defp recargar(socket) do
@@ -317,6 +392,8 @@ defmodule MapoWeb.DatosLive.Index do
       uso: Capas.uso_equipo(team_id)
     )
   end
+
+  defp resumen(%{tipo: "raster"}, _), do: "Capa guardada."
 
   defp resumen(capa, %{"descartes" => descartes}) do
     base = "Capa guardada: #{cifra(capa.num_filas)} renglones en el mapa."
@@ -352,13 +429,26 @@ defmodule MapoWeb.DatosLive.Index do
   defp mensaje(_), do: "mapo_core no está disponible ahorita mismo."
 
   defp error_subida(:too_large), do: "El archivo pasa de 50 MB."
-  defp error_subida(:not_accepted), do: "Sube un CSV o un XLSX."
   defp error_subida(:too_many_files), do: "Sube un archivo a la vez."
   defp error_subida(_), do: "No se pudo subir el archivo."
+
+  defp descripcion(%{"raster" => %{"ancho" => ancho, "alto" => alto}}),
+    do: ": #{cifra(ancho)} × #{cifra(alto)} píxeles."
+
+  defp descripcion(%{"num_filas" => n}), do: ": #{cifra(n)} renglones."
+
+  defp detalle(%{tipo: "raster"} = capa), do: "ráster · #{megas(capa.tamano_bytes)}"
+
+  defp detalle(capa) do
+    total = capa.num_filas + capa.num_descartadas
+
+    "#{cifra(capa.num_filas)} de #{cifra(total)} renglones · #{etiqueta(capa.tipo)} · #{megas(capa.tamano_bytes)}"
+  end
 
   defp etiqueta("puntos"), do: "puntos"
   defp etiqueta("municipio"), do: "por municipio"
   defp etiqueta("ageb"), do: "por AGEB"
+  defp etiqueta("vector"), do: "geometrías"
 
   defp megas(bytes) when bytes > 0 and bytes < 100 * 1024, do: "menos de 0.1 MB"
   defp megas(bytes), do: "#{cifra(bytes / (1024 * 1024))} MB"

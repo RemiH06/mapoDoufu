@@ -2,7 +2,7 @@ defmodule Mapo.Capas.Capa do
   use Ecto.Schema
   import Ecto.Changeset
 
-  @tipos ~w(puntos municipio ageb)
+  @tipos ~w(puntos municipio ageb vector raster)
 
   schema "capas" do
     field :nombre, :string
@@ -17,6 +17,7 @@ defmodule Mapo.Capas.Capa do
     belongs_to :team, Mapo.Teams.Team
     belongs_to :user, Mapo.Accounts.User
     has_many :filas, Mapo.Capas.CapaFila
+    has_one :raster, Mapo.Capas.CapaRaster
 
     timestamps(type: :utc_datetime)
   end

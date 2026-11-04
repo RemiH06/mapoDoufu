@@ -56,6 +56,8 @@ defmodule MapoWeb.Router do
   scope "/", MapoWeb do
     pipe_through [:browser, :require_authenticated_user]
 
+    get "/capas/:id/raster.png", CapaController, :raster
+
     live_session :require_authenticated_user,
       on_mount: [{MapoWeb.UserAuth, :require_authenticated}] do
       live "/users/settings", UserLive.Settings, :edit

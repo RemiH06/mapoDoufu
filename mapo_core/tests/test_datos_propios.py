@@ -175,6 +175,11 @@ def test_coordenada_con_coma_y_tres_decimales_no_son_miles():
     assert (r["filas"][0]["lat"], r["filas"][0]["lon"]) == (20.671, -103.35)
 
 
+def test_una_clave_no_es_numero():
+    tabla = dp.leer(b"CVEGEO,lote,ventas\n14039,007,5\n14120,008,6\n", "csv")
+    assert dp.columnas_numericas(tabla) == ["ventas"]
+
+
 def test_celda_vacia_es_none_no_cero():
     tabla = dp.leer(b"lat,lon,ventas\n20.6,-103.3,\n21,-103,4\n", "csv")
     assert dp.ubicar_puntos(tabla, "lat", "lon")["filas"][0]["datos"]["ventas"] is None
@@ -182,8 +187,8 @@ def test_celda_vacia_es_none_no_cero():
 
 def test_claves_clasifica_y_cuenta_repetidas():
     tabla = dp.leer(b"cve,v\n14120,1\n14120,2\n1001,3\n99999,4\nabc,5\n,6\n", "csv")
-    assert dp.claves_de(tabla, "cve", "municipio") == {"14120", "01001", "99999"}
-    r = dp.ubicar_claves(tabla, "cve", "municipio", {"14120", "01001"})
+    assert dp.claves_de(tabla, ["cve"], "municipio") == {"14120", "01001", "99999"}
+    r = dp.ubicar_claves(tabla, ["cve"], "municipio", {"14120", "01001"})
     assert [f["clave"] for f in r["filas"]] == ["14120", "14120", "01001"]
     assert r["repetidas"] == 1
     assert r["descartes"] == {"sin_dato": 1, "clave_invalida": 1, "clave_desconocida": 1}
@@ -192,12 +197,41 @@ def test_claves_clasifica_y_cuenta_repetidas():
 def test_tope_de_poligonos(monkeypatch):
     monkeypatch.setattr(dp, "MAX_POLIGONOS", 1)
     with pytest.raises(dp.ArchivoInvalido, match="zonas"):
-        dp.claves_de(dp.leer(b"c\n14120\n14121\n", "csv"), "c", "municipio")
+        dp.claves_de(dp.leer(b"c\n14120\n14121\n", "csv"), ["c"], "municipio")
 
 
 def test_columna_inexistente():
     with pytest.raises(dp.ArchivoInvalido, match="no tiene la columna"):
         dp.ubicar_puntos(dp.leer(b"a,b\n1,2\n", "csv"), "lat", "b")
+
+
+def test_clave_partida_como_los_tabulados_de_inegi():
+    tabla = dp.leer(b"ENTIDAD,MUN,LOC,AGEB,POBTOT\n1,1,1,18A,5\n14,120,1,1234,6\n14,120,1,,7\n", "csv")
+    sugerida = dp.sugerir(tabla)
+    assert sugerida == {"tipo": "ageb", "partes": ["ENTIDAD", "MUN", "LOC", "AGEB"]}
+
+    claves = dp.claves_de(tabla, sugerida["partes"], "ageb")
+    assert claves == {"010010001018A", "1412000011234"}
+    r = dp.ubicar_claves(tabla, sugerida["partes"], "ageb", claves)
+    assert len(r["filas"]) == 2
+    assert r["descartes"]["sin_dato"] == 1
+
+
+def test_ageb_de_tabulado_no_se_confunde_con_municipio_de_4_digitos():
+    tabla = dp.leer(b"ENTIDAD,MUN,LOC,AGEB,POBTOT\n14,39,1,0026,5\n14,39,1,0030,6\n", "csv")
+    assert dp.sugerir(tabla)["tipo"] == "ageb"
+
+
+def test_municipio_partido_y_nombres_en_lugar_de_claves():
+    tabla = dp.leer(b"ent,mun,v\n1,1,5\n", "csv")
+    assert dp.sugerir(tabla) == {"tipo": "municipio", "partes": ["ent", "mun"]}
+    assert dp.claves_de(tabla, ["ent", "mun"], "municipio") == {"01001"}
+    assert dp.sugerir(dp.leer(b"entidad,municipio\n14,Zapopan\n", "csv")) is None
+
+
+def test_clave_partida_con_columnas_de_mas():
+    with pytest.raises(dp.ArchivoInvalido, match="se arma con"):
+        dp.claves_de(dp.leer(b"a,b,c\n1,2,3\n", "csv"), ["a", "b", "c"], "municipio")
 
 
 @pytest.fixture

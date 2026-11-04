@@ -48,7 +48,7 @@ defmodule MapoWeb.Cifras do
   def escala_quintiles(%{"features" => features}) do
     valores =
       features
-      |> Enum.map(&get_in(&1, ["properties", "valor_choropleth"]))
+      |> Enum.map(&(&1["properties"]["valor_choropleth"] || &1["properties"][:valor_choropleth]))
       |> Enum.reject(&is_nil/1)
       |> Enum.sort()
 

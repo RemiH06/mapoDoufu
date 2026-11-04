@@ -1,7 +1,7 @@
 defmodule Mapo.Capas do
   @moduledoc """
-  Datos propios de un equipo: archivos tabulares ya ubicados, que se ven como
-  acetato en `/mapa` (docs/producto/datos-propios.md).
+  Datos propios de un equipo: archivos ya ubicados que se ven como acetato en
+  `/mapa` (docs/producto/datos-propios.md).
 
   El aislamiento entre equipos vive aquí: toda lectura pasa por un join contra
   la membresía del scope, igual que `Mapo.Sesiones`, así que "no existe" y "no
@@ -12,7 +12,7 @@ defmodule Mapo.Capas do
   import Ecto.Query, warn: false
 
   alias Mapo.Accounts.Scope
-  alias Mapo.Capas.{Capa, CapaFila}
+  alias Mapo.Capas.{Capa, CapaFila, CapaRaster}
   alias Mapo.Repo
   alias Mapo.Teams
   alias Mapo.Teams.Membership
@@ -21,6 +21,8 @@ defmodule Mapo.Capas do
   @max_bytes_equipo 500 * 1024 * 1024
   # insert_all manda un parámetro por campo; Postgres admite 65,535.
   @lote 1_000
+  # Unos 5 m en el plano. Lo guardado conserva todos sus vértices.
+  @tolerancia_dibujo 0.00005
 
   def max_bytes_archivo, do: @max_bytes_archivo
   def max_bytes_equipo, do: @max_bytes_equipo
@@ -31,6 +33,8 @@ defmodule Mapo.Capas do
       on: m.team_id == c.team_id,
       where: m.user_id == ^scope.user.id
   end
+
+  defp ids_del_scope(scope), do: subquery(from c in del_scope(scope), select: %{id: c.id})
 
   @doc "Capas de un equipo, la más nueva primero. Requiere ser miembro."
   def list_capas(%Scope{} = scope, team_id) do
@@ -68,11 +72,11 @@ defmodule Mapo.Capas do
   def cabe?(team_id, bytes), do: uso_equipo(team_id) + bytes <= @max_bytes_equipo
 
   @doc """
-  Guarda una capa con sus filas (`%{"lat", "lon", "clave", "datos"}`) en una
-  transacción. Toma un candado sobre el equipo para que dos subidas al mismo
-  tiempo no se brinquen la cuota.
+  Guarda una capa con sus filas (`%{"lat", "lon", "clave", "geometria",
+  "datos"}`) y, si es ráster, su imagen, en una transacción. Toma un candado
+  sobre el equipo para que dos subidas al mismo tiempo no se brinquen la cuota.
   """
-  def crear_capa(%Scope{} = scope, team_id, attrs, filas) do
+  def crear_capa(%Scope{} = scope, team_id, attrs, filas, raster \\ nil) do
     true = Teams.role_in_team(scope, team_id) != nil
 
     Repo.transaction(
@@ -95,6 +99,8 @@ defmodule Mapo.Capas do
         |> Stream.chunk_every(@lote)
         |> Enum.each(&Repo.insert_all(CapaFila, &1))
 
+        if raster, do: Repo.insert!(struct!(CapaRaster, Map.put(raster, :capa_id, capa.id)))
+
         capa
       end,
       timeout: 120_000
@@ -104,6 +110,11 @@ defmodule Mapo.Capas do
   defp fila_para_guardar(%{"lat" => lat, "lon" => lon, "datos" => datos}, capa_id)
        when is_number(lat) and is_number(lon) do
     %{capa_id: capa_id, geom: %Geo.Point{coordinates: {lon, lat}, srid: 4326}, datos: datos}
+  end
+
+  defp fila_para_guardar(%{"geometria" => geometria, "datos" => datos}, capa_id) do
+    geom = %{Geo.JSON.decode!(geometria) | srid: 4326}
+    %{capa_id: capa_id, geom: geom, datos: datos}
   end
 
   defp fila_para_guardar(%{"clave" => clave, "datos" => datos}, capa_id),
@@ -137,6 +148,64 @@ defmodule Mapo.Capas do
     )
   end
 
+  @doc """
+  FeatureCollection de una capa vectorial, simplificada para dibujar. Cada
+  feature lleva `id` y, si se pinta por `columna`, `valor_choropleth`.
+  """
+  def geojson(%Capa{id: id}, columna \\ nil) do
+    filas =
+      Repo.all(
+        from f in CapaFila,
+          where: f.capa_id == ^id,
+          order_by: f.id,
+          select:
+            {f.id, f.datos,
+             fragment(
+               "ST_AsGeoJSON(ST_SimplifyPreserveTopology(?, ?), 6)",
+               f.geom,
+               ^@tolerancia_dibujo
+             )}
+      )
+
+    features =
+      Enum.map(filas, fn {id, datos, geometria} ->
+        propiedades = if columna, do: %{id: id, valor_choropleth: datos[columna]}, else: %{id: id}
+
+        %{
+          "type" => "Feature",
+          "properties" => propiedades,
+          "geometry" => Jason.decode!(geometria)
+        }
+      end)
+
+    %{"type" => "FeatureCollection", "features" => features}
+  end
+
+  @doc "La imagen de una capa ráster, o `nil` si no es de los equipos del scope."
+  def raster(%Scope{} = scope, capa_id) do
+    Repo.one(
+      from r in CapaRaster,
+        join: c in ^ids_del_scope(scope),
+        on: c.id == r.capa_id,
+        where: r.capa_id == ^capa_id
+    )
+  end
+
+  @doc "Lo que el mapa necesita de un ráster, sin la imagen."
+  def lugar_raster(%Capa{id: id}) do
+    Repo.one(
+      from r in CapaRaster,
+        where: r.capa_id == ^id,
+        select: %{
+          oeste: r.oeste,
+          sur: r.sur,
+          este: r.este,
+          norte: r.norte,
+          limites: r.limites
+        }
+    )
+  end
+
   @doc "Claves distintas de la capa."
   def claves(%Capa{id: id}) do
     Repo.all(from f in CapaFila, where: f.capa_id == ^id, distinct: true, select: f.clave)
@@ -152,18 +221,19 @@ defmodule Mapo.Capas do
   end
 
   @doc "Se pinta por una columna si es numérica y hay una fila por zona."
-  def pintable?(%Capa{} = capa, columna),
-    do: capa.tipo != "puntos" and capa.repetidas == 0 and columna in capa.numericas
+  def pintable?(%Capa{} = capa, columna) do
+    capa.tipo in ~w(municipio ageb vector) and capa.repetidas == 0 and columna in capa.numericas
+  end
 
   @doc """
-  La fila que abre la ficha, por `id` (punto) o `clave` (zona). Pasa otra vez
-  por la membresía: el id viene del navegador y a la persona pudieron sacarla
-  del equipo con el mapa abierto. Regresa `{datos, cuantas}`.
+  La fila que abre la ficha, por `id` (punto o geometría) o `clave` (zona). Pasa
+  otra vez por la membresía: el id viene del navegador y a la persona pudieron
+  sacarla del equipo con el mapa abierto. Regresa `{datos, cuantas}`.
   """
   def ficha(%Scope{} = scope, capa_id, llave) do
     consulta =
       from f in CapaFila,
-        join: c in subquery(from c in del_scope(scope), select: %{id: c.id}),
+        join: c in ^ids_del_scope(scope),
         on: c.id == f.capa_id,
         where: f.capa_id == ^capa_id,
         order_by: f.id,

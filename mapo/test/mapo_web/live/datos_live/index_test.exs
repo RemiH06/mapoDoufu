@@ -22,6 +22,7 @@ defmodule MapoWeb.DatosLive.IndexTest do
   }
 
   @ubicados %{
+    "tipo" => "puntos",
     "filas" => [%{"lat" => 20.6, "lon" => -103.3, "clave" => nil, "datos" => %{"lat" => 20.6}}],
     "descartes" => %{"sin_dato" => 0, "no_es_numero" => 0, "fuera_de_mexico" => 1},
     "numericas" => ["lat"],
@@ -107,15 +108,112 @@ defmodule MapoWeb.DatosLive.IndexTest do
     assert Capas.list_capas(scope, team.id) == []
   end
 
-  test "un archivo que no es tabla se rechaza en el navegador", %{conn: conn, team: team} do
+  test "un formato ajeno lo rechaza mapo_core y se dice", %{conn: conn, team: team} do
+    stub(%{leer: {422, %{"detail" => "Formato no reconocido."}}})
     {:ok, lv, _} = live(conn, ~p"/teams/#{team}/datos")
 
-    archivo =
-      file_input(lv, "#subir_form", :archivo, [
-        %{name: "virus.exe", content: "MZ", type: "application/octet-stream"}
-      ])
+    assert subir(lv, "virus.exe", "MZ") =~ "Formato no reconocido."
+  end
 
-    assert {:error, [[_, :not_accepted]]} = render_upload(archivo, "virus.exe")
+  test "la clave partida en columnas viaja como varias `clave`", %{conn: conn, team: team} do
+    yo = self()
+
+    Req.Test.stub(Mapo.MapoCore, fn conn ->
+      case conn.request_path do
+        "/datos/leer" ->
+          Req.Test.json(conn, %{
+            @lectura
+            | "columnas" => ["ENTIDAD", "MUN"],
+              "muestra" => [["1", "1"]],
+              "sugerencia" => %{"tipo" => "municipio", "partes" => ["ENTIDAD", "MUN"]}
+          })
+
+        "/datos/ubicar" ->
+          send(yo, {:consulta, conn.query_string})
+
+          Req.Test.json(conn, %{
+            @ubicados
+            | "tipo" => "municipio",
+              "filas" => [%{"clave" => "01001", "datos" => %{}}],
+              "descartes" => %{}
+          })
+      end
+    end)
+
+    {:ok, lv, _} = live(conn, ~p"/teams/#{team}/datos")
+    html = subir(lv)
+    assert html =~ "Columna del estado"
+    refute html =~ "Columna de la clave"
+
+    lv |> form("#capa_form", capa: %{nombre: "x"}) |> render_submit()
+
+    assert_received {:consulta, consulta}
+    assert consulta =~ "clave=ENTIDAD&clave=MUN"
+  end
+
+  test "un vectorial guarda el tipo que dice mapo_core y su geometría", %{
+    conn: conn,
+    team: team,
+    scope: scope
+  } do
+    geometria = %{"type" => "Point", "coordinates" => [-103.3, 20.6]}
+
+    stub(%{
+      leer: %{@lectura | "sugerencia" => %{"tipo" => "vector"}},
+      ubicar: %{
+        @ubicados
+        | "tipo" => "vector",
+          "filas" => [%{"geometria" => geometria, "clave" => nil, "datos" => %{}}]
+      }
+    })
+
+    {:ok, lv, _} = live(conn, ~p"/teams/#{team}/datos")
+    html = subir(lv, "capa.geojson")
+    assert html =~ "Trae su propia ubicación"
+
+    lv |> form("#capa_form", capa: %{nombre: "x"}) |> render_submit()
+    assert [%{tipo: "vector", num_filas: 1}] = Capas.list_capas(scope, team.id)
+  end
+
+  test "un ráster se guarda sin renglones", %{conn: conn, team: team, scope: scope} do
+    stub(%{
+      leer: %{
+        "columnas" => [],
+        "muestra" => [],
+        "num_filas" => 0,
+        "avisos" => [],
+        "sugerencia" => %{"tipo" => "raster"},
+        "raster" => %{"ancho" => 100, "alto" => 50, "bandas" => 1}
+      },
+      ubicar: %{
+        "tipo" => "raster",
+        "filas" => [],
+        "descartes" => %{},
+        "numericas" => [],
+        "repetidas" => 0,
+        "columnas" => [],
+        "num_filas" => 0,
+        "avisos" => [],
+        "raster" => %{
+          "png" => Base.encode64("imagen"),
+          "oeste" => -104.0,
+          "sur" => 20.0,
+          "este" => -103.0,
+          "norte" => 21.0,
+          "limites" => [0.0, 1.0, 2.0, 3.0, 4.0, 5.0]
+        }
+      }
+    })
+
+    {:ok, lv, _} = live(conn, ~p"/teams/#{team}/datos")
+    assert subir(lv, "altura.tif") =~ "100 × 50 píxeles"
+
+    assert lv |> form("#capa_form", capa: %{nombre: "Altura"}) |> render_submit() =~
+             "Capa guardada."
+
+    [capa] = Capas.list_capas(scope, team.id)
+    assert Capas.raster(scope, capa.id).png == "imagen"
+    assert Capas.raster(user_scope_fixture(), capa.id) == nil
   end
 
   test "un miembro no borra lo que subió otro", %{conn: conn, team: team, scope: scope} do

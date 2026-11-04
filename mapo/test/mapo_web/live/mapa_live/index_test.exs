@@ -540,7 +540,7 @@ defmodule MapoWeb.MapaLive.IndexTest do
       {:ok, _lv, html} = live(conn, ~p"/mapa")
 
       assert html =~ "Tus datos"
-      assert html =~ "Sube un CSV o un Excel"
+      assert html =~ "Sube un archivo"
     end
 
     test "?capa= prende los puntos sin mandar los datos de cada renglón", %{
@@ -551,17 +551,17 @@ defmodule MapoWeb.MapaLive.IndexTest do
       stub_estados_y_municipio(fn _ -> raise "no debería llamarse" end)
       {:ok, lv, _html} = live(conn, ~p"/mapa?#{[capa: capa.id]}")
 
-      assert_push_event(lv, "capa_propios", %{activa: true, puntos: [%{lat: 20.6} = p]})
+      assert_push_event(lv, "capa_propios", %{tono: "consumo", puntos: [%{lat: 20.6} = p]})
       refute Map.has_key?(p, :datos)
     end
 
-    test "la ficha se pide al abrirla y trae los campos de la capa", %{conn: conn, scope: scope} do
+    test "la ficha se pide al abrirla, sin redondear", %{conn: conn, scope: scope} do
       capa = capa_fixture(scope, "puntos", [punto("Centro")])
       stub_estados_y_municipio(fn _ -> raise "no debería llamarse" end)
       {:ok, lv, _html} = live(conn, ~p"/mapa?#{[capa: capa.id]}")
       assert_push_event(lv, "capa_propios", %{puntos: [%{id: id}]})
 
-      render_hook(element(lv, "#mapa-tecnico"), "ver_fila", %{"id" => id})
+      render_hook(element(lv, "#mapa-tecnico"), "ver_fila", %{"capa" => capa.id, "id" => id})
       assert_reply(lv, %{campos: [["ventas", "12.345"], ["tienda", "Centro"]], otras: 0})
     end
 
@@ -571,9 +571,9 @@ defmodule MapoWeb.MapaLive.IndexTest do
       {:ok, lv, html} = live(conn, ~p"/mapa?#{[capa: ajena.id]}")
 
       assert html =~ "no es de tus equipos"
-      refute_push_event(lv, "capa_propios", %{activa: true})
+      refute_push_event(lv, "capa_propios", %{})
 
-      render_hook(element(lv, "#mapa-tecnico"), "ver_fila", %{"id" => 1})
+      render_hook(element(lv, "#mapa-tecnico"), "ver_fila", %{"capa" => ajena.id, "id" => 1})
       assert_reply(lv, %{campos: []})
     end
 
@@ -595,15 +595,15 @@ defmodule MapoWeb.MapaLive.IndexTest do
       end)
 
       {:ok, lv, _html} = live(conn, ~p"/mapa?#{[capa: capa.id]}")
-      assert_push_event(lv, "capa_propios", %{activa: true, cortes: nil})
+      assert_push_event(lv, "capa_propios", %{cortes: nil})
 
       html =
         lv
-        |> form("#capa_propia_form", propios: %{})
+        |> form("#pintar_#{capa.id}")
         |> render_change(%{"capa" => capa.id, "columna" => "ventas"})
 
       assert html =~ "sin dato: 1"
-      assert_push_event(lv, "capa_propios", %{etiqueta: "ventas", geojson: geojson})
+      assert_push_event(lv, "capa_propios", %{geojson: geojson, tono: "consumo"})
       valores = Enum.map(geojson["features"], & &1["properties"]["valor_choropleth"])
       assert valores == [10, nil]
     end
@@ -616,15 +616,96 @@ defmodule MapoWeb.MapaLive.IndexTest do
         Req.Test.json(conn, %{"features" => [feature("14039")]})
       end)
 
-      {:ok, lv, _html} = live(conn, ~p"/mapa?#{[capa: capa.id]}")
-
-      html =
-        lv
-        |> form("#capa_propia_form", propios: %{})
-        |> render_change(%{"capa" => capa.id, "columna" => "ventas"})
-
+      {:ok, lv, html} = live(conn, ~p"/mapa?#{[capa: capa.id]}")
       assert html =~ "se necesita uno por zona"
-      assert_push_event(lv, "capa_propios", %{etiqueta: nil})
+
+      render_change(lv, "pintar_capa", %{"capa" => capa.id, "columna" => "ventas"})
+      assert_push_event(lv, "capa_propios", %{cortes: nil})
+    end
+
+    test "una capa vectorial viaja con geometría y se pinta por id", %{conn: conn, scope: scope} do
+      fila = %{
+        "geometria" => %{
+          "type" => "Polygon",
+          "coordinates" => [[[-103.4, 20.6], [-103.3, 20.6], [-103.3, 20.7], [-103.4, 20.6]]]
+        },
+        "datos" => %{"ventas" => 7}
+      }
+
+      capa = capa_fixture(scope, "vector", [fila])
+      stub_estados_y_municipio(fn _ -> raise "no debería llamarse" end)
+      {:ok, lv, _html} = live(conn, ~p"/mapa?#{[capa: capa.id]}")
+      assert_push_event(lv, "capa_propios", %{geojson: %{"features" => [%{"geometry" => geom}]}})
+      assert geom["type"] == "Polygon"
+
+      html = render_change(lv, "pintar_capa", %{"capa" => capa.id, "columna" => "ventas"})
+      assert html =~ "sin dato: 0"
+    end
+
+    test "un ráster manda el lugar y la imagen se sirve por el scope", %{conn: conn, scope: scope} do
+      team = Mapo.TeamsFixtures.team_fixture(scope)
+
+      {:ok, capa} =
+        Capas.crear_capa(
+          scope,
+          team.id,
+          %{
+            nombre: "Altura",
+            archivo: "a.tif",
+            tamano_bytes: 1,
+            tipo: "raster",
+            columnas: [],
+            numericas: [],
+            num_filas: 0,
+            num_descartadas: 0,
+            repetidas: 0
+          },
+          [],
+          %{
+            png: "imagen",
+            oeste: -104.0,
+            sur: 20.0,
+            este: -103.0,
+            norte: 21.0,
+            limites: [0.0, 1.0, 2.0, 3.0, 4.0, 5.0]
+          }
+        )
+
+      stub_estados_y_municipio(fn _ -> raise "no debería llamarse" end)
+      {:ok, lv, _html} = live(conn, ~p"/mapa?#{[capa: capa.id]}")
+      assert_push_event(lv, "capa_propios", %{raster: %{url: url, oeste: -104.0}})
+
+      assert conn |> get(url) |> response(200) == "imagen"
+      assert ["image/png" <> _] = conn |> get(url) |> get_resp_header("content-type")
+
+      ajeno = Mapo.AccountsFixtures.user_fixture()
+      assert build_conn() |> log_in_user(ajeno) |> get(url) |> response(404) == ""
+      assert build_conn() |> get(url) |> redirected_to() =~ "log-in"
+    end
+
+    test "caben tres capas, cada una con su tinta, y se quitan una por una", %{
+      conn: conn,
+      scope: scope
+    } do
+      ids = for _ <- 1..4, do: capa_fixture(scope, "puntos", [punto("x")]).id
+      [a, b, c, d] = ids
+      stub_estados_y_municipio(fn _ -> raise "no debería llamarse" end)
+      {:ok, lv, _html} = live(conn, ~p"/mapa?#{[capa: a]}")
+      assert_push_event(lv, "capa_propios", %{id: ^a, tono: "consumo"})
+
+      render_change(lv, "agregar_capa", %{"capa" => b})
+      assert_push_event(lv, "capa_propios", %{id: ^b, tono: "seguridad"})
+      render_change(lv, "agregar_capa", %{"capa" => c})
+      assert_push_event(lv, "capa_propios", %{id: ^c, tono: "laboral"})
+
+      assert render_change(lv, "agregar_capa", %{"capa" => d}) =~ "Caben 3 capas"
+      refute has_element?(lv, "#capa_propia_form")
+
+      render_click(lv, "quitar_capa", %{"id" => to_string(b)})
+      assert_push_event(lv, "capa_propios_fuera", %{id: ^b})
+
+      render_change(lv, "agregar_capa", %{"capa" => d})
+      assert_push_event(lv, "capa_propios", %{id: ^d, tono: "seguridad"})
     end
   end
 end

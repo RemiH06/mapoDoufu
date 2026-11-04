@@ -21,9 +21,9 @@ defmodule MapoWeb.MapaLive.Index do
   # pone piel. Sus marcas son las de una sesión del equipo (`?sesion=ID`),
   # las mismas que se ven en /sesiones/:id y en vivo con ella.
   #
-  # "propios" muestra una capa del equipo a la vez. Usa la tinta de consumo
-  # porque ningún otro acetato de esta pantalla la ocupa, no porque sus datos
-  # sean de consumo.
+  # "propios" junta hasta tres capas del equipo en un solo acetato, cada una
+  # con una tinta que ningún otro acetato de esta pantalla ocupa: esos colores
+  # son prestados y no dicen nada de los datos.
   @capas %{
     "propios" => %{nombre: "Tus datos", fuente: "Tu equipo", enfoque: "consumo"},
     "coropleta" => %{
@@ -39,6 +39,8 @@ defmodule MapoWeb.MapaLive.Index do
       enfoque: "urbanismo"
     }
   }
+
+  @tonos ~w(consumo seguridad laboral)
 
   @pieles [
     {"Urbanismo", "urbanismo"},
@@ -130,9 +132,7 @@ defmodule MapoWeb.MapaLive.Index do
             </select>
           </label>
         </.form>
-
         <Marcas.selector :if={@sesion} herramienta={@herramienta} />
-
         <p :if={@sesiones != []} class="cinta-texto">
           <%= cond do %>
             <% is_nil(@sesion) -> %>
@@ -142,6 +142,7 @@ defmodule MapoWeb.MapaLive.Index do
             <% true -> %>
               Clic en el plano para poner una marca. {marcas(@num_marcas)}.
           <% end %>
+
           <.link :if={@sesion} navigate={~p"/sesiones/#{@sesion}"} class="enlace">
             Abrir la sesión
           </.link>
@@ -164,9 +165,7 @@ defmodule MapoWeb.MapaLive.Index do
         <.cinta_propios
           :if={id == "propios"}
           capas={@capas_propias}
-          capa={@capa_propia}
-          columna={@columna_propia}
-          escala={@propia_escala}
+          abiertas={@abiertas}
         />
         <.cinta_coropleta
           :if={id == "coropleta"}
@@ -180,8 +179,7 @@ defmodule MapoWeb.MapaLive.Index do
           form={@voronoi_form}
           activa?={@voronoi_activa?}
           resumen={@voronoi_resumen}
-        />
-        <.cinta_coloreado :if={id == "coloreado"} activa?={@coloreado_activa?} />
+        /> <.cinta_coloreado :if={id == "coloreado"} activa?={@coloreado_activa?} />
         <.cinta_isocrona :if={id == "isocrona"} form={@isocrona_form} activa?={@isocrona_activa?} />
         <div :if={activa?(assigns, id)} class="cinta-orden">
           <button
@@ -297,7 +295,6 @@ defmodule MapoWeb.MapaLive.Index do
         </.button>
       </div>
     </.form>
-
     <.escala escala={@escala} />
     """
   end
@@ -315,57 +312,87 @@ defmodule MapoWeb.MapaLive.Index do
 
       <div class="marcas num">
         <span :for={v <- Enum.take(@escala.limites, 5)}>{cifra(v)}</span>
-        <span>sin dato: {@escala.nulos}</span>
+        <span :if={@escala.nulos}>sin dato: {@escala.nulos}</span>
       </div>
     </div>
     """
   end
 
   attr :capas, :list, required: true
-  attr :capa, :any, default: nil
-  attr :columna, :string, default: nil
-  attr :escala, :map, default: nil
+  attr :abiertas, :list, required: true
 
   defp cinta_propios(assigns) do
+    abiertas = Enum.map(assigns.abiertas, & &1.capa.id)
+
+    assigns =
+      assign(assigns,
+        cerradas: Enum.reject(assigns.capas, &(&1.id in abiertas)),
+        tope: length(@tonos)
+      )
+
     ~H"""
     <p :if={@capas == []} class="cinta-texto">
-      Sube un CSV o un Excel desde la página de <.link navigate={~p"/teams"} class="enlace">tu equipo</.link>.
+      Sube un archivo desde la página de <.link navigate={~p"/teams"} class="enlace">tu equipo</.link>.
     </p>
 
+    <ul :if={@abiertas != []} class="capas-abiertas">
+      <li :for={a <- @abiertas} style={"--tinta-escala: var(--f-#{a.tono})"}>
+        <div class="capa-abierta">
+          <span class="muestra" aria-hidden="true"></span> <b>{a.capa.nombre}</b>
+          <button
+            type="button"
+            phx-click="quitar_capa"
+            phx-value-id={a.capa.id}
+            aria-label={"Quitar #{a.capa.nombre}"}
+          >
+            Quitar
+          </button>
+        </div>
+
+        <.form
+          :if={a.capa.tipo not in ~w(puntos raster) and a.capa.numericas != []}
+          for={%{}}
+          as={:pintar}
+          id={"pintar_#{a.capa.id}"}
+          phx-change="pintar_capa"
+        >
+          <input type="hidden" name="capa" value={a.capa.id} />
+          <select
+            name="columna"
+            class="cinta-control"
+            aria-label={"Pintar #{a.capa.nombre} por"}
+            disabled={a.capa.repetidas > 0}
+          >
+            <option value="">Sin pintar por columna</option>
+            {Phoenix.HTML.Form.options_for_select(a.capa.numericas, a.columna)}
+          </select>
+        </.form>
+        <.escala escala={a.escala} />
+        <p class="cinta-texto">
+          {resumen_capa(a.capa)}
+          <span :if={a.capa.repetidas > 0}>
+            Hay zonas con más de un renglón: para pintar por columna se necesita uno por zona.
+          </span>
+        </p>
+      </li>
+    </ul>
+
     <.form
-      :if={@capas != []}
+      :if={@cerradas != [] and length(@abiertas) < @tope}
       for={%{}}
       as={:propios}
       id="capa_propia_form"
-      phx-change="elegir_capa"
+      phx-change="agregar_capa"
       class="cinta-campos"
     >
       <label>
-        <span class="etiqueta">Capa</span>
+        <span class="etiqueta">Agregar capa</span>
         <select name="capa" class="cinta-control">
-          <option value="">Ninguna</option>
-          {Phoenix.HTML.Form.options_for_select(opciones_capas(@capas), @capa && @capa.id)}
-        </select>
-      </label>
-
-      <label :if={@capa && @capa.tipo != "puntos" && @capa.numericas != []}>
-        <span class="etiqueta">Pintar por</span>
-        <select name="columna" class="cinta-control" disabled={@capa.repetidas > 0}>
-          <option value="">Nada, solo la zona</option>
-          {Phoenix.HTML.Form.options_for_select(@capa.numericas, @columna)}
+          <option value="">Elige una</option>
+          {Phoenix.HTML.Form.options_for_select(opciones_capas(@cerradas), nil)}
         </select>
       </label>
     </.form>
-
-    <.escala escala={@escala} />
-
-    <p :if={@capa} class="cinta-texto">
-      {cifra(@capa.num_filas)} renglones de {@capa.archivo}.
-      <span :if={@capa.repetidas > 0}>
-        Hay zonas con más de un renglón: para pintar por columna se necesita uno por zona.
-      </span>
-      <.link navigate={~p"/teams/#{@capa.team_id}/datos"} class="enlace">Datos del equipo</.link>
-    </p>
     """
   end
 
@@ -481,9 +508,7 @@ defmodule MapoWeb.MapaLive.Index do
        isocrona_activa?: false,
        coropleta_escala: nil,
        capas_propias: Capas.list_capas_del_usuario(socket.assigns.current_scope),
-       capa_propia: nil,
-       columna_propia: nil,
-       propia_escala: nil,
+       abiertas: [],
        orden: ["propios", "isocrona", "voronoi", "coropleta", "coloreado"],
        elegida: nil,
        piel_fijada: nil,
@@ -652,13 +677,24 @@ defmodule MapoWeb.MapaLive.Index do
      |> actualizar_mesa()}
   end
 
-  def handle_event("elegir_capa", %{"capa" => id} = params, socket) do
-    {:noreply, poner_capa(socket, id, params["columna"])}
+  def handle_event("agregar_capa", %{"capa" => id}, socket) do
+    {:noreply, abrir_capa(socket, id)}
+  end
+
+  def handle_event("quitar_capa", %{"id" => id}, socket) do
+    {:noreply, cerrar_capa(socket, id)}
+  end
+
+  def handle_event("pintar_capa", %{"capa" => id, "columna" => columna}, socket) do
+    case abierta(socket, id) do
+      nil -> {:noreply, socket}
+      a -> {:noreply, mostrar_capa(socket, a.capa, columna, a.tono)}
+    end
   end
 
   # La ficha se pide al abrirla: mandar los datos de 50 mil renglones al
   # navegador pesaría megas que casi nadie va a abrir.
-  def handle_event("ver_fila", params, socket) do
+  def handle_event("ver_fila", %{"capa" => capa_id} = params, socket) do
     llave =
       case params do
         %{"id" => id} when is_integer(id) -> {:id, id}
@@ -666,12 +702,12 @@ defmodule MapoWeb.MapaLive.Index do
         _ -> nil
       end
 
-    capa = socket.assigns.capa_propia
-    ficha = capa && llave && Capas.ficha(socket.assigns.current_scope, capa.id, llave)
+    a = abierta(socket, capa_id)
+    ficha = a && llave && Capas.ficha(socket.assigns.current_scope, a.capa.id, llave)
 
     case ficha do
       {datos, cuantas} ->
-        campos = for c <- capa.columnas, not is_nil(datos[c]), do: [c, texto_celda(datos[c])]
+        campos = for c <- a.capa.columnas, not is_nil(datos[c]), do: [c, texto_celda(datos[c])]
         {:reply, %{campos: campos, otras: cuantas - 1}, socket}
 
       _ ->
@@ -806,47 +842,68 @@ defmodule MapoWeb.MapaLive.Index do
   defp abrir_capa_de_la_url(socket, id) when id in [nil, ""], do: socket
 
   defp abrir_capa_de_la_url(socket, id) do
-    abierta = socket.assigns.capa_propia
-
     # El render inicial no llega al hook: se evita traer la capa dos veces.
-    if not connected?(socket) or (abierta && to_string(abierta.id) == id) do
-      socket
+    if connected?(socket) and is_nil(abierta(socket, id)) do
+      socket |> abrir_capa(id) |> assign(elegida: "propios")
     else
-      socket |> poner_capa(id, nil) |> assign(elegida: "propios")
+      socket
     end
   end
 
-  # Prende, cambia o quita el acetato de datos propios. La capa se vuelve a
-  # traer por el scope: la lista es del mount y pudieron sacar a la persona
-  # del equipo, o el id pudo venir de la URL.
-  defp poner_capa(socket, id, _columna) when id in [nil, ""], do: quitar_capa(socket)
+  defp abierta(socket, id) do
+    Enum.find(socket.assigns.abiertas, &(to_string(&1.capa.id) == to_string(id)))
+  end
 
-  defp poner_capa(socket, id, columna) do
+  defp abrir_capa(socket, id) when id in [nil, ""], do: socket
+
+  # La capa se trae otra vez por el scope: la lista es del mount, y pudieron
+  # sacar a la persona del equipo o el id pudo venir de la URL.
+  defp abrir_capa(socket, id) do
+    usados = Enum.map(socket.assigns.abiertas, & &1.tono)
+    tono = Enum.find(@tonos, &(&1 not in usados))
+
     case entero(id) && Capas.get_capa(socket.assigns.current_scope, entero(id)) do
-      nil ->
-        socket |> quitar_capa() |> put_flash(:error, "Esa capa no es de tus equipos.")
-
-      capa ->
-        columna = if Capas.pintable?(capa, columna), do: columna
-
-        case datos_de_capa(capa, columna) do
-          {:ok, datos, escala} ->
-            socket
-            |> assign(capa_propia: capa, columna_propia: columna, propia_escala: escala)
-            |> push_event("capa_propios", Map.put(datos, :activa, true))
-            |> actualizar_mesa()
-
-          {:error, _} ->
-            put_flash(socket, :error, "mapo_core no está disponible ahorita mismo.")
-        end
+      nil -> put_flash(socket, :error, "Esa capa no es de tus equipos.")
+      _ when is_nil(tono) -> put_flash(socket, :error, "Caben #{length(@tonos)} capas a la vez.")
+      capa -> mostrar_capa(socket, capa, nil, tono)
     end
   end
 
-  defp quitar_capa(socket) do
-    socket
-    |> assign(capa_propia: nil, columna_propia: nil, propia_escala: nil)
-    |> push_event("capa_propios", %{activa: false})
-    |> actualizar_mesa()
+  defp mostrar_capa(socket, capa, columna, tono) do
+    columna = if Capas.pintable?(capa, columna), do: columna
+
+    case datos_de_capa(capa, columna) do
+      {:ok, datos, escala} ->
+        nueva = %{capa: capa, columna: columna, escala: escala, tono: tono}
+
+        abiertas =
+          if abierta(socket, capa.id) do
+            Enum.map(socket.assigns.abiertas, &if(&1.capa.id == capa.id, do: nueva, else: &1))
+          else
+            socket.assigns.abiertas ++ [nueva]
+          end
+
+        socket
+        |> assign(abiertas: abiertas)
+        |> push_event("capa_propios", Map.merge(datos, %{id: capa.id, tono: tono}))
+        |> actualizar_mesa()
+
+      {:error, _} ->
+        put_flash(socket, :error, "mapo_core no está disponible ahorita mismo.")
+    end
+  end
+
+  defp cerrar_capa(socket, id) do
+    case abierta(socket, id) do
+      nil ->
+        socket
+
+      a ->
+        socket
+        |> update(:abiertas, &List.delete(&1, a))
+        |> push_event("capa_propios_fuera", %{id: a.capa.id})
+        |> actualizar_mesa()
+    end
   end
 
   defp entero(id) do
@@ -859,13 +916,31 @@ defmodule MapoWeb.MapaLive.Index do
   defp datos_de_capa(%{tipo: "puntos"} = capa, _columna),
     do: {:ok, %{puntos: Capas.puntos(capa)}, nil}
 
+  defp datos_de_capa(%{tipo: "raster"} = capa, _columna) do
+    lugar = Capas.lugar_raster(capa)
+    url = ~p"/capas/#{capa.id}/raster.png"
+    {:ok, %{raster: Map.put(lugar, :url, url)}, %{limites: lugar.limites, nulos: nil}}
+  end
+
+  defp datos_de_capa(%{tipo: "vector"} = capa, columna) do
+    geojson = Capas.geojson(capa, columna)
+    con_escala(geojson, columna)
+  end
+
   defp datos_de_capa(capa, columna) do
     with {:ok, geojson} <- MapoCore.geo_por_clave(capa.tipo, Capas.claves(capa)) do
       geojson = if columna, do: con_valores(geojson, Capas.valores(capa, columna)), else: geojson
-      escala = columna && escala_quintiles(geojson)
-      {:ok, %{geojson: geojson, etiqueta: columna, cortes: escala && escala.cortes}, escala}
+      con_escala(geojson, columna)
     end
   end
+
+  defp con_escala(geojson, columna) do
+    escala = columna && escala_quintiles(geojson)
+    {:ok, %{geojson: geojson, cortes: escala && escala.cortes}, escala}
+  end
+
+  defp resumen_capa(%{tipo: "raster"} = capa), do: "De #{capa.archivo}."
+  defp resumen_capa(capa), do: "#{cifra(capa.num_filas)} renglones de #{capa.archivo}."
 
   defp con_valores(geojson, valores) do
     update_in(geojson["features"], fn features ->
@@ -915,7 +990,7 @@ defmodule MapoWeb.MapaLive.Index do
     end
   end
 
-  defp activa?(assigns, "propios"), do: assigns.capa_propia != nil
+  defp activa?(assigns, "propios"), do: assigns.abiertas != []
   defp activa?(assigns, "coropleta"), do: assigns.coropleta_activa?
   defp activa?(assigns, "voronoi"), do: assigns.voronoi_activa?
   defp activa?(assigns, "coloreado"), do: assigns.coloreado_activa?

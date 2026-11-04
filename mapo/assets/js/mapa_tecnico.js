@@ -28,6 +28,7 @@ const ENFOQUE = {propios: "consumo", puntos: "comercio", zonas: "comercio", coro
 const TINTA_QUINTIL = [0.12, 0.26, 0.42, 0.6, 0.8]
 const TINTA_COLOREADO = [0.14, 0.32, 0.5, 0.68]
 const ZOOM_PUNTOS = 14
+const PIXEL_VACIO = "data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw=="
 
 const raiz = document.documentElement
 const tinta = nombre => getComputedStyle(raiz).getPropertyValue(nombre).trim()
@@ -62,6 +63,7 @@ export const MapaTecnico = {
 
     this.capas = Object.fromEntries(Object.keys(ENFOQUE).map(id => [id, null]))
     this.datos = {...this.capas}
+    this.propias = []
     this.modoIsocrona = false
     this.interactivas = true
     this.origen = null
@@ -81,7 +83,14 @@ export const MapaTecnico = {
     this.handleEvent("capa_coloreado", datos => this._recibir("coloreado", datos))
     this.handleEvent("capa_isocrona", datos => this._recibir("isocrona", datos))
     this.handleEvent("capa_puntos", datos => this._recibir("puntos", datos))
-    this.handleEvent("capa_propios", datos => this._recibir("propios", datos))
+    this.handleEvent("capa_propios", capa => {
+      this.propias = [...this.propias.filter(c => c.id !== capa.id), capa]
+      this._recibirPropias()
+    })
+    this.handleEvent("capa_propios_fuera", ({id}) => {
+      this.propias = this.propias.filter(c => c.id !== id)
+      this._recibirPropias()
+    })
     this.handleEvent("capa_zonas", datos => {
       this.datos.zonas = datos.activa ? datos : null
       this._dibujar("zonas")
@@ -197,21 +206,53 @@ export const MapaTecnico = {
       : {color, weight: 0.5, opacity: 0.6, fillColor: color, fillOpacity: TINTA_QUINTIL[k] * factor}
   },
 
-  // Datos propios: los lugares viajan solos y la ficha se pide al abrirla.
-  // Lo que llega de un archivo se escapa siempre: la ficha es HTML.
-  _propios({puntos, geojson, cortes}, color, opciones) {
+  _recibirPropias() {
+    this._recibir("propios", {activa: this.propias.length > 0, capas: this.propias})
+  },
+
+  // Datos propios: hasta tres capas en el mismo acetato, cada una con su tinta.
+  // Los lugares viajan solos y la ficha se pide al abrirla. Lo que llega de un
+  // archivo se escapa siempre: la ficha es HTML.
+  _propios({capas}, _color, opciones) {
+    return L.featureGroup(capas.map(c => this._capaPropia(c, tinta(`--f-${c.tono}`), opciones)))
+  },
+
+  _capaPropia({id: capa, puntos, geojson, cortes, raster}, color, opciones) {
+    if (raster) return this._raster(raster, color, opciones)
+    const circulo = (lugar, extra) => L.circleMarker(lugar, {
+      ...opciones, ...extra, radius: 3.5, weight: 1, color: tinta("--bg"), fillColor: color, fillOpacity: 0.9,
+    })
     if (puntos) {
-      return L.featureGroup(puntos.map(p => L.circleMarker([p.lat, p.lon], {
-        ...opciones, radius: 3.5, weight: 1, color: tinta("--bg"), fillColor: color, fillOpacity: 0.9,
-      }).on("click", e => this._ficha(e.latlng, {id: p.id}))))
+      return L.featureGroup(puntos.map(p => circulo([p.lat, p.lon]).on("click", e => this._ficha(e.latlng, {capa, id: p.id}))))
     }
     return L.geoJSON(geojson, {
       ...opciones,
+      pointToLayer: (_f, lugar) => circulo(lugar),
       style: f => cortes
         ? this._estiloQuintil(f, cortes, color)
         : {color, weight: 0.8, opacity: 0.8, fillColor: color, fillOpacity: 0.3},
-      onEachFeature: (f, capa) => capa.on("click", e => this._ficha(e.latlng, {clave: f.properties.cvegeo})),
+      onEachFeature: (f, c) => c.on("click", e => this._ficha(e.latlng, f.properties.cvegeo ? {capa, clave: f.properties.cvegeo} : {capa, id: f.properties.id})),
     })
+  },
+
+  // La imagen trae solo la transparencia de cada quintil: aqui recibe la tinta,
+  // para que siga al tema. Sin ficha: se guarda la imagen, no los valores.
+  _raster({url, oeste, sur, este, norte}, color, {pane}) {
+    const capa = L.imageOverlay(PIXEL_VACIO, [[sur, oeste], [norte, este]], {pane})
+    const imagen = new Image()
+    imagen.onload = () => {
+      const lienzo = document.createElement("canvas")
+      lienzo.width = imagen.width
+      lienzo.height = imagen.height
+      const c = lienzo.getContext("2d")
+      c.drawImage(imagen, 0, 0)
+      c.globalCompositeOperation = "source-in"
+      c.fillStyle = color
+      c.fillRect(0, 0, lienzo.width, lienzo.height)
+      capa.setUrl(lienzo.toDataURL())
+    }
+    imagen.src = url
+    return capa
   },
 
   _ficha(lugar, llave) {

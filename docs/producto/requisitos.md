@@ -22,7 +22,7 @@ detalle de lo ya construido vive en `../historial/`.
 | RF7 | Motor de logística (VRP): múltiples vehículos, capacidad de carga, ventanas de tiempo de entrega, paradas comerciales con restricciones propias | Parcial: motor completo en `mapo_core` (OR-Tools, `POST /vrp/calcular`) y pantalla `/logistica` con geometría real de cada ruta. La interfaz todavía no expone ventanas de tiempo ni capacidad distinta por vehículo (el backend sí las soporta) |
 | RF8 | Vendorizar (no consumir en vivo) las fuentes de datos de Gaiarda: código de descarga/normalización propio, sin depender de un Gaiarda corriendo en ningún lado | Listo: geoestadístico, censo, DENUE, ENIGH, ENOE y SESNSP vendorizados y cargados con datos reales (ver `../fuentes/`). SESNSP se carga a mano (no hay descarga pública automatizable) |
 | RF9 | Casos de ejemplo iniciales, probados en ambos modos: floristería, call center, supermercado, consultorio/hospital, estación de policía | Listo: los cinco casos probados en los dos modos con datos reales y las mismas cifras (`../historial/2026-11-casos-rubro.md`, `tests/test_casos_rubro.py`) |
-| RF10 | Datos propios: un equipo sube archivos y los ve como capa sobre las fuentes públicas | Parcial: CSV y XLSX con coordenadas o clave de municipio/AGEB (`datos-propios.md`). Faltan vectorial, ráster y el cruce con fuentes públicas |
+| RF10 | Datos propios: un equipo sube archivos y los ve como capa sobre las fuentes públicas | Parcial: tabla, vectorial y ráster como acetatos, hasta tres a la vez (`datos-propios.md`). Falta el cruce con fuentes públicas |
 
 ## Requerimientos no funcionales
 

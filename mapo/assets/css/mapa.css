@@ -333,8 +333,42 @@
     margin-left: -1px;
     background: var(--tinta-escala, var(--f-demografia));
   }
-  #cinta-propios {
-    --tinta-escala: var(--f-consumo);
+  .capas-abiertas {
+    display: flex;
+    gap: 16px;
+    list-style: none;
+  }
+  .capas-abiertas li {
+    display: grid;
+    gap: 4px;
+    align-content: start;
+    min-width: 0;
+  }
+  .capa-abierta {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+    font-family: var(--cond);
+    font-size: 16px;
+  }
+  .capa-abierta .muestra {
+    flex: none;
+    width: 14px;
+    height: 14px;
+    background: var(--tinta-escala);
+  }
+  .capa-abierta b {
+    overflow: hidden;
+    max-width: 16ch;
+    font-weight: 600;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .capa-abierta button {
+    color: var(--text2);
+    font-size: 14px;
+    text-decoration: underline;
+    cursor: pointer;
   }
   .escala li.nula {
     opacity: 1 !important;

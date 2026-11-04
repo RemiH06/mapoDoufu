@@ -1,4 +1,5 @@
-"""Archivos tabulares que sube un equipo (CSV, XLSX) y cómo se ubican.
+"""Archivos tabulares que sube un equipo (CSV, XLSX) y cómo se ubican. Lo que
+trae geometría propia está en `datos_geo`.
 
 Este módulo no guarda nada ni sabe de equipos: recibe bytes y regresa filas.
 La autorización, la cuota y lo guardado viven en `Mapo.Capas` (Phoenix). Los
@@ -15,6 +16,7 @@ import re
 import unicodedata
 import zipfile
 from dataclasses import dataclass, field
+from typing import Any
 from datetime import date, datetime, time
 
 MAX_BYTES = 50 * 1024 * 1024
@@ -38,6 +40,7 @@ LON_MEXICO = (-118.6, -86.0)
 
 _NOMBRES_LAT = {"lat", "latitud", "latitude", "y"}
 _NOMBRES_LON = {"lon", "lng", "long", "longitud", "longitude", "x"}
+_ANCHOS = {"municipio": (2, 3), "ageb": (2, 3, 4, 4)}
 _PISTAS_CLAVE = ("cvegeo", "clave", "cve", "ageb", "municipio", "mun")
 _MILES = re.compile(r"^-?\d{1,3}(,\d{3})+(\.\d+)?$")
 _COMA_DECIMAL = re.compile(r"^-?\d+,\d+$")
@@ -52,11 +55,13 @@ class Tabla:
     columnas: list[str]
     filas: list[list[str]]
     avisos: list[str] = field(default_factory=list)
+    # Solo en archivos vectoriales: una geometría por fila, en WGS84 o `None`.
+    geometrias: list[Any] | None = None
 
 
 def leer(contenido: bytes, formato: str) -> Tabla:
     if formato not in FORMATOS:
-        raise ArchivoInvalido("Formato no reconocido: sube un CSV o un XLSX.")
+        raise ArchivoInvalido("Formato no reconocido. Sube CSV, XLSX, GeoJSON, shapefile en ZIP, GeoPackage o GeoTIFF.")
     if len(contenido) > MAX_BYTES:
         raise ArchivoInvalido("El archivo pasa de 50 MB.")
     if not contenido:
@@ -95,7 +100,7 @@ def _renglones_xlsx(contenido: bytes):
     # Se importa aquí: solo este camino lo necesita y tarda en cargar.
     from openpyxl import load_workbook
 
-    _revisar_zip(contenido)
+    revisar_zip(contenido, "XLSX")
     try:
         libro = load_workbook(io.BytesIO(contenido), read_only=True, data_only=True)
         hoja = libro.worksheets[0]
@@ -109,7 +114,7 @@ def _renglones_xlsx(contenido: bytes):
     def renglones():
         try:
             for fila in hoja.iter_rows(values_only=True):
-                yield [_celda_xlsx(v) for v in fila]
+                yield [celda(v) for v in fila]
         except ArchivoInvalido:
             raise
         except Exception as exc:
@@ -120,19 +125,21 @@ def _renglones_xlsx(contenido: bytes):
     return renglones(), avisos
 
 
-def _revisar_zip(contenido: bytes) -> None:
+def revisar_zip(contenido: bytes, nombre: str) -> None:
+    """Frena un ZIP inflado antes de abrirlo. Sirve para XLSX y shapefile."""
     try:
         with zipfile.ZipFile(io.BytesIO(contenido)) as paquete:
             piezas = paquete.infolist()
     except zipfile.BadZipFile as exc:
-        raise ArchivoInvalido("No es un XLSX válido.") from exc
+        raise ArchivoInvalido(f"No es un {nombre} válido.") from exc
     if len(piezas) > MAX_XLSX_PIEZAS:
-        raise ArchivoInvalido("El XLSX trae demasiadas piezas por dentro.")
+        raise ArchivoInvalido(f"El {nombre} trae demasiadas piezas por dentro.")
     if sum(p.file_size for p in piezas) > MAX_XLSX_DESCOMPRIMIDO:
-        raise ArchivoInvalido("El XLSX descomprimido pasa de 200 MB.")
+        raise ArchivoInvalido(f"El {nombre} descomprimido pasa de 200 MB.")
 
 
-def _celda_xlsx(valor) -> str:
+def celda(valor) -> str:
+    """Un valor tipado (XLSX, atributos de un vectorial) como texto de celda."""
     if valor is None:
         return ""
     if isinstance(valor, bool):
@@ -158,7 +165,7 @@ def _tabla(renglones, avisos: list[str]) -> Tabla:
         if columnas is None:
             if len(renglon) > MAX_COLUMNAS:
                 raise ArchivoInvalido(f"El archivo tiene {len(renglon)} columnas; el tope es {MAX_COLUMNAS}.")
-            columnas = _nombres(renglon)
+            columnas = nombres_columnas(renglon)
             continue
         if len(filas) == MAX_FILAS:
             raise ArchivoInvalido(f"El archivo pasa de {MAX_FILAS:,} renglones.")
@@ -174,7 +181,7 @@ def _tabla(renglones, avisos: list[str]) -> Tabla:
     return Tabla(columnas, filas, avisos)
 
 
-def _nombres(encabezados: list[str]) -> list[str]:
+def nombres_columnas(encabezados: list[str]) -> list[str]:
     nombres: list[str] = []
     for i, crudo in enumerate(encabezados, start=1):
         base = crudo[:80] or f"columna {i}"
@@ -224,11 +231,19 @@ def _normal(texto: str) -> str:
 def sugerir(tabla: Tabla) -> dict | None:
     """Adivina la ubicación por nombre de columna y contenido. Solo llena el
     formulario: la persona confirma antes de guardar."""
+    if tabla.geometrias is not None:
+        return {"tipo": "vector"}
     nombres = {_normal(c): c for c in tabla.columnas}
     lat = next((nombres[n] for n in _NOMBRES_LAT if n in nombres), None)
     lon = next((nombres[n] for n in _NOMBRES_LON if n in nombres), None)
     if lat and lon:
         return {"tipo": "puntos", "lat": lat, "lon": lon}
+
+    # Antes que la clave entera: la columna AGEB de un tabulado (`0026`) también
+    # tiene la forma de un municipio de 4 dígitos.
+    partes = _sugerir_partes(tabla, nombres)
+    if partes:
+        return partes
 
     muestra = tabla.filas[:200]
     for i, columna in enumerate(tabla.columnas):
@@ -241,17 +256,44 @@ def sugerir(tabla: Tabla) -> dict | None:
     return None
 
 
+def _sugerir_partes(tabla: Tabla, nombres: dict[str, str]) -> dict | None:
+    """La clave partida en columnas, como en los tabulados de INEGI."""
+
+    def buscar(*opciones: str) -> str | None:
+        return next((nombres[o] for o in opciones if o in nombres), None)
+
+    ent = buscar("entidad", "ent", "cve_ent")
+    mun = buscar("mun", "cve_mun", "municipio")
+    if not ent or not mun:
+        return None
+    # "municipio" a veces trae el nombre: las partes tienen que ser dígitos.
+    for columna in (ent, mun):
+        i = tabla.columnas.index(columna)
+        if not all(f[i].isdigit() and len(f[i]) <= 3 for f in tabla.filas[:200] if f[i]):
+            return None
+
+    loc, ageb = buscar("loc", "cve_loc"), buscar("ageb", "cve_ageb")
+    if loc and ageb:
+        return {"tipo": "ageb", "partes": [ent, mun, loc, ageb]}
+    return {"tipo": "municipio", "partes": [ent, mun]}
+
+
 def columnas_numericas(tabla: Tabla) -> list[str]:
-    """Columnas con al menos un número y nada que no lo sea."""
+    """Columnas con al menos un número y nada que no lo sea. Una clave no es
+    número: como tal perdería el cero de `01001` y saldría como `14,039`."""
     resultado = []
     for i, columna in enumerate(tabla.columnas):
+        nombre = _normal(columna)
+        if any(p in nombre for p in ("cvegeo", "clave", "cve_", "folio", "codigo", "telefono")):
+            continue
         valores = [f[i] for f in tabla.filas if f[i]]
-        if valores and all(numero(v) is not None for v in valores):
+        ceros = any(re.fullmatch(r"0\d+", v) for v in valores)
+        if valores and not ceros and all(numero(v) is not None for v in valores):
             resultado.append(columna)
     return resultado
 
 
-def _datos(tabla: Tabla, numericas: list[str]) -> list[dict]:
+def datos_de(tabla: Tabla, numericas: list[str]) -> list[dict]:
     """Cada renglón como `{columna: valor}`, con número real en las columnas
     numéricas y `None` donde la celda venía vacía (nunca un cero inventado)."""
     es_numerica = [c in numericas for c in tabla.columnas]
@@ -282,7 +324,7 @@ def ubicar_puntos(tabla: Tabla, col_lat: str, col_lon: str) -> dict:
     filas = []
     descartes = {"sin_dato": 0, "no_es_numero": 0, "fuera_de_mexico": 0}
 
-    for fila, datos in zip(tabla.filas, _datos(tabla, numericas)):
+    for fila, datos in zip(tabla.filas, datos_de(tabla, numericas)):
         crudo_lat, crudo_lon = fila[i_lat], fila[i_lon]
         if not crudo_lat or not crudo_lon:
             descartes["sin_dato"] += 1
@@ -298,27 +340,45 @@ def ubicar_puntos(tabla: Tabla, col_lat: str, col_lon: str) -> dict:
     return {"filas": filas, "descartes": descartes, "numericas": numericas, "repetidas": 0}
 
 
-def claves_de(tabla: Tabla, col_clave: str, nivel: str) -> set[str]:
+def _indices_clave(tabla: Tabla, columnas: list[str] | None, nivel: str) -> list[int]:
+    if not columnas:
+        raise ArchivoInvalido("Falta decir en qué columna está la clave.")
+    if len(columnas) > 1 and len(columnas) != len(_ANCHOS[nivel]):
+        raise ArchivoInvalido(f"La clave de {nivel} se arma con {len(_ANCHOS[nivel])} columnas.")
+    return [_indice(tabla, c) for c in columnas]
+
+
+def _clave_de_fila(fila: list[str], indices: list[int], nivel: str) -> tuple[str, str | None]:
+    """Texto crudo de la clave y la clave normalizada. Partida en columnas, cada
+    parte recupera sus ceros: `1`, `1` son el municipio `01001`."""
+    partes = [fila[i] for i in indices]
+    if len(partes) == 1:
+        return partes[0], clave(partes[0], nivel) if partes[0] else None
+    if not all(partes):
+        return "", None
+    return "".join(partes), clave("".join(p.zfill(a) for p, a in zip(partes, _ANCHOS[nivel])), nivel)
+
+
+def claves_de(tabla: Tabla, columnas: list[str] | None, nivel: str) -> set[str]:
     """Primer paso de `ubicar` por clave: las claves bien formadas, para que
     el servidor pregunte cuáles existen en el marco."""
-    i = _indice(tabla, col_clave)
-    claves = {c for f in tabla.filas if (c := clave(f[i], nivel))}
+    indices = _indices_clave(tabla, columnas, nivel)
+    claves = {c for f in tabla.filas if (c := _clave_de_fila(f, indices, nivel)[1])}
     if len(claves) > MAX_POLIGONOS:
         raise ArchivoInvalido(f"El archivo tiene {len(claves):,} zonas distintas; el tope es {MAX_POLIGONOS:,}.")
     return claves
 
 
-def ubicar_claves(tabla: Tabla, col_clave: str, nivel: str, existentes: set[str]) -> dict:
-    i = _indice(tabla, col_clave)
+def ubicar_claves(tabla: Tabla, columnas: list[str] | None, nivel: str, existentes: set[str]) -> dict:
+    indices = _indices_clave(tabla, columnas, nivel)
     numericas = columnas_numericas(tabla)
     filas = []
     vistas: set[str] = set()
     repetidas = 0
     descartes = {"sin_dato": 0, "clave_invalida": 0, "clave_desconocida": 0}
 
-    for fila, datos in zip(tabla.filas, _datos(tabla, numericas)):
-        crudo = fila[i]
-        normal = clave(crudo, nivel) if crudo else None
+    for fila, datos in zip(tabla.filas, datos_de(tabla, numericas)):
+        crudo, normal = _clave_de_fila(fila, indices, nivel)
         if not crudo:
             descartes["sin_dato"] += 1
         elif normal is None:

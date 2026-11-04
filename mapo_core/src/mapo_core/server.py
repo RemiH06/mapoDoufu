@@ -5,12 +5,12 @@ import json
 from typing import Literal
 
 import psycopg
-from fastapi import Depends, FastAPI, HTTPException, Request
+from fastapi import Depends, FastAPI, HTTPException, Query, Request
 from fastapi.responses import JSONResponse
 from psycopg_pool import AsyncConnectionPool
 from pydantic import BaseModel, Field
 
-from mapo_core import buscador, consultas, datos_propios
+from mapo_core import buscador, consultas, datos_geo, datos_propios
 from mapo_core.coloreado_mapa import PoligonoColoreable, colorear_mapa
 from mapo_core.consultas import INDICADORES_CHOROPLETH, TOLERANCIA_SIMPLIFICACION as _TOLERANCIA_SIMPLIFICACION
 from mapo_core.consultas import feature as _feature
@@ -151,10 +151,9 @@ async def _cuerpo_acotado(request: Request) -> bytes:
     return bytes(cuerpo)
 
 
-async def _tabla(request: Request, formato: str) -> datos_propios.Tabla:
-    contenido = await _cuerpo_acotado(request)
+async def _tabla(contenido: bytes, formato: str) -> datos_propios.Tabla:
     try:
-        return await asyncio.to_thread(datos_propios.leer, contenido, formato)
+        return await asyncio.to_thread(datos_geo.leer, contenido, formato)
     except datos_propios.ArchivoInvalido as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
 
@@ -162,7 +161,14 @@ async def _tabla(request: Request, formato: str) -> datos_propios.Tabla:
 @app.post("/datos/leer")
 async def datos_leer(request: Request, formato: str) -> dict:
     """Columnas, una muestra y una sugerencia de ubicación. No guarda nada."""
-    tabla = await _tabla(request, formato)
+    contenido = await _cuerpo_acotado(request)
+    if formato in datos_geo.RASTER:
+        try:
+            return await asyncio.to_thread(datos_geo.leer_raster, contenido)
+        except datos_propios.ArchivoInvalido as exc:
+            raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+    tabla = await _tabla(contenido, formato)
     return {
         "columnas": tabla.columnas,
         "muestra": tabla.filas[:5],
@@ -176,16 +182,28 @@ async def datos_leer(request: Request, formato: str) -> dict:
 async def datos_ubicar(
     request: Request,
     formato: str,
-    tipo: Literal["puntos", "municipio", "ageb"],
+    tipo: Literal["puntos", "municipio", "ageb", "vector", "raster"],
     lat: str | None = None,
     lon: str | None = None,
-    clave: str | None = None,
+    clave: list[str] | None = Query(default=None),
     pool: AsyncConnectionPool = Depends(get_pool),
 ) -> dict:
-    """Los renglones ya ubicados y por qué se descartó el resto. No guarda nada."""
-    tabla = await _tabla(request, formato)
+    """Los renglones ya ubicados y por qué se descartó el resto. No guarda nada.
+    `clave` se repite cuando viene partida en varias columnas."""
+    contenido = await _cuerpo_acotado(request)
+    if tipo == "raster":
+        try:
+            return await asyncio.to_thread(datos_geo.ubicar_raster, contenido)
+        except datos_propios.ArchivoInvalido as exc:
+            raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+    tabla = await _tabla(contenido, formato)
     try:
-        if tipo == "puntos":
+        if tipo == "vector":
+            if tabla.geometrias is None:
+                raise datos_propios.ArchivoInvalido("Ese archivo no trae geometrías.")
+            resultado = await asyncio.to_thread(datos_geo.ubicar_vector, tabla)
+        elif tipo == "puntos":
             resultado = await asyncio.to_thread(datos_propios.ubicar_puntos, tabla, lat, lon)
         else:
             claves = datos_propios.claves_de(tabla, clave, tipo)
@@ -198,7 +216,13 @@ async def datos_ubicar(
             resultado = await asyncio.to_thread(datos_propios.ubicar_claves, tabla, clave, tipo, existentes)
     except datos_propios.ArchivoInvalido as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
-    return {**resultado, "columnas": tabla.columnas, "num_filas": len(tabla.filas), "avisos": tabla.avisos}
+    return {
+        "tipo": tipo,
+        **resultado,
+        "columnas": tabla.columnas,
+        "num_filas": len(tabla.filas),
+        "avisos": tabla.avisos,
+    }
 
 
 @app.get("/censo/choropleth")
