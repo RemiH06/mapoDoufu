@@ -243,6 +243,9 @@ docker compose -p mapo-prod logs -f --tail 100 mapo  # logs
 docker compose -p mapo-prod stop mapo                # cortar el acceso
 ```
 
+No cambies el `umask` en la sesión que hace `git pull`: `mapo_core` corre sin
+privilegios y necesita leer los archivos que se copian a la imagen.
+
 Antes de desplegar una versión nueva, `git tag deploy-AAAAMMDD` en la
 que funciona; revertir es `git checkout <tag>` y el mismo `up -d --build`.
 

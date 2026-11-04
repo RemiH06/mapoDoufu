@@ -64,6 +64,11 @@ vectorial, ráster, varias capas). La especificación vigente está en
   quedan como texto.
 - **Una prueba colgaba:** `/datos/ubicar` pide el pool de Postgres aunque un
   vectorial no lo use, y la prueba abría el real. Se ve solo con tiempo límite.
+- **`umask 077` en el despliegue.** Era para el respaldo, pero también aplicó al
+  `git pull`: los archivos nuevos quedaron sin lectura para otros, y `mapo_core`
+  corre como usuario sin privilegios, así que cayó en bucle de reinicio varios
+  minutos. `mapo` seguía sirviendo, pero sin lo que depende del motor. Se reparó
+  con `chmod` sobre lo versionado. El `umask` va solo alrededor del respaldo.
 
 ## Cifras de la prueba
 
