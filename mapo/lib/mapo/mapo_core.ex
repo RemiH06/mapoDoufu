@@ -160,6 +160,39 @@ defmodule Mapo.MapoCore do
     )
   end
 
+  @doc """
+  Lee un archivo del usuario sin guardarlo: `%{"columnas", "muestra",
+  "num_filas", "avisos", "sugerencia"}`. Si el archivo no sirve, regresa
+  `{:error, {:status, 422, %{"detail" => mensaje}}}` con el motivo.
+  """
+  def datos_leer(contenido, formato), do: post_archivo("/datos/leer", contenido, formato: formato)
+
+  @doc """
+  Ubica los renglones del archivo: `%{"filas", "descartes", "numericas",
+  "repetidas", "columnas", "num_filas", "avisos"}`. `ubicacion` es `tipo` más
+  `lat` y `lon`, o `clave`.
+  """
+  def datos_ubicar(contenido, formato, ubicacion) do
+    post_archivo("/datos/ubicar", contenido, [{:formato, formato} | ubicacion])
+  end
+
+  @doc "FeatureCollection de las zonas de `claves` que existan en el marco cargado."
+  def geo_por_clave(nivel, claves), do: post("/geo/por_clave", %{nivel: nivel, claves: claves})
+
+  defp post_archivo(path, contenido, params) do
+    opts =
+      [
+        base_url: Application.fetch_env!(:mapo, :mapo_core_url),
+        url: path,
+        params: params,
+        body: contenido,
+        headers: [content_type: "application/octet-stream"],
+        receive_timeout: 120_000
+      ] ++ Application.get_env(:mapo, :mapo_core_req_options, [])
+
+    request(Req.post(opts))
+  end
+
   defp maybe_put(params, _key, nil), do: params
   defp maybe_put(params, key, value), do: params ++ [{key, value}]
 

@@ -289,6 +289,18 @@ historial en [2026-10-anti-vibecode.md](../historial/2026-10-anti-vibecode.md)):
   están en su lugar con renglones en blanco. Nunca los documentos reales
   vacíos, que dirían "no hay datos".
 
+**Datos propios** (sesión 14; especificación en
+[datos-propios.md](../producto/datos-propios.md)):
+
+- **Por etapas, y Mapo como demostración mientras tanto.** Corre en una
+  computadora de uso personal, sin cifrado ni registro de accesos verificados,
+  así que la subida avisa que no es para datos personales ni confidenciales.
+  Recibir datos reales de clientes pide otra máquina.
+- **`mapo_core` interpreta y Phoenix autoriza.** El motor no guarda capas ni
+  conoce equipos.
+- **El cruce con fuentes públicas es su propia sesión:** decidir cómo se agrega
+  por zona es una decisión de método, y conviene tomarla con datos ya cargados.
+
 Conceptos considerados y guardados para otras piezas (fondo de la home,
 animaciones, un tema futuro):
 

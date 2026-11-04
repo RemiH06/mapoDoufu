@@ -29,6 +29,11 @@ docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
 - Todo lleva `restart: unless-stopped`, logs rotados (3 × 10 MB) y
   `healthcheck` (salvo OSRM, que no trae cliente HTTP en la imagen).
 
+Los archivos que sube un equipo pasan por `mapo` y `mapo_core` en memoria: un
+archivo de 50 MB puede ocupar varias veces eso mientras se interpreta. No hay
+volumen nuevo; las capas viven en la base y entran al respaldo
+(`producto/datos-propios.md`).
+
 ## Secretos
 
 En `.env` junto al compose, con `chmod 600`. Plantilla: `.env.example`.

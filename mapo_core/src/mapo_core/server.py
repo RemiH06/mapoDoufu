@@ -10,7 +10,7 @@ from fastapi.responses import JSONResponse
 from psycopg_pool import AsyncConnectionPool
 from pydantic import BaseModel, Field
 
-from mapo_core import buscador, consultas
+from mapo_core import buscador, consultas, datos_propios
 from mapo_core.coloreado_mapa import PoligonoColoreable, colorear_mapa
 from mapo_core.consultas import INDICADORES_CHOROPLETH, TOLERANCIA_SIMPLIFICACION as _TOLERANCIA_SIMPLIFICACION
 from mapo_core.consultas import feature as _feature
@@ -116,6 +116,89 @@ async def geo_agebs(
 
     features = [_feature(cvegeo, cvegeo, geom) for cvegeo, geom in filas]
     return {"type": "FeatureCollection", "features": features}
+
+
+_TABLA_POR_NIVEL = {"municipio": "municipios", "ageb": "agebs"}
+
+
+class PeticionPorClave(BaseModel):
+    nivel: Literal["municipio", "ageb"]
+    claves: list[str] = Field(max_length=datos_propios.MAX_POLIGONOS)
+
+
+@app.post("/geo/por_clave")
+async def geo_por_clave(peticion: PeticionPorClave, pool: AsyncConnectionPool = Depends(get_pool)) -> dict:
+    """Polígonos de una lista de claves, de cualquier estado. La clave que
+    no exista en el marco cargado simplemente no regresa."""
+    async with pool.connection() as conn:
+        cursor = await conn.execute(
+            f"""SELECT cvegeo, ST_AsGeoJSON(ST_Simplify(geom, %(tolerancia)s), 5)
+               FROM {_TABLA_POR_NIVEL[peticion.nivel]} WHERE cvegeo = ANY(%(claves)s) ORDER BY cvegeo""",
+            {"claves": peticion.claves, "tolerancia": _TOLERANCIA_SIMPLIFICACION},
+        )
+        filas = await cursor.fetchall()
+    return {"type": "FeatureCollection", "features": [_feature(c, c, geom) for c, geom in filas]}
+
+
+async def _cuerpo_acotado(request: Request) -> bytes:
+    """El archivo crudo, sin creerle a `Content-Length`. Phoenix ya limita el
+    tamaño; esto cubre a quien llegue directo por la red interna."""
+    cuerpo = bytearray()
+    async for pedazo in request.stream():
+        cuerpo += pedazo
+        if len(cuerpo) > datos_propios.MAX_BYTES:
+            raise HTTPException(status_code=413, detail="El archivo pasa de 50 MB.")
+    return bytes(cuerpo)
+
+
+async def _tabla(request: Request, formato: str) -> datos_propios.Tabla:
+    contenido = await _cuerpo_acotado(request)
+    try:
+        return await asyncio.to_thread(datos_propios.leer, contenido, formato)
+    except datos_propios.ArchivoInvalido as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+
+@app.post("/datos/leer")
+async def datos_leer(request: Request, formato: str) -> dict:
+    """Columnas, una muestra y una sugerencia de ubicación. No guarda nada."""
+    tabla = await _tabla(request, formato)
+    return {
+        "columnas": tabla.columnas,
+        "muestra": tabla.filas[:5],
+        "num_filas": len(tabla.filas),
+        "avisos": tabla.avisos,
+        "sugerencia": datos_propios.sugerir(tabla),
+    }
+
+
+@app.post("/datos/ubicar")
+async def datos_ubicar(
+    request: Request,
+    formato: str,
+    tipo: Literal["puntos", "municipio", "ageb"],
+    lat: str | None = None,
+    lon: str | None = None,
+    clave: str | None = None,
+    pool: AsyncConnectionPool = Depends(get_pool),
+) -> dict:
+    """Los renglones ya ubicados y por qué se descartó el resto. No guarda nada."""
+    tabla = await _tabla(request, formato)
+    try:
+        if tipo == "puntos":
+            resultado = await asyncio.to_thread(datos_propios.ubicar_puntos, tabla, lat, lon)
+        else:
+            claves = datos_propios.claves_de(tabla, clave, tipo)
+            async with pool.connection() as conn:
+                cursor = await conn.execute(
+                    f"SELECT cvegeo FROM {_TABLA_POR_NIVEL[tipo]} WHERE cvegeo = ANY(%(claves)s)",
+                    {"claves": list(claves)},
+                )
+                existentes = {fila[0] for fila in await cursor.fetchall()}
+            resultado = await asyncio.to_thread(datos_propios.ubicar_claves, tabla, clave, tipo, existentes)
+    except datos_propios.ArchivoInvalido as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    return {**resultado, "columnas": tabla.columnas, "num_filas": len(tabla.filas), "avisos": tabla.avisos}
 
 
 @app.get("/censo/choropleth")

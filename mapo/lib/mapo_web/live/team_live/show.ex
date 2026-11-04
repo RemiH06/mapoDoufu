@@ -99,6 +99,14 @@ defmodule MapoWeb.TeamLive.Show do
               <.button variant="primary" phx-disable-with="Creando...">Crear sesión</.button>
             </.form>
           </div>
+
+          <div class="doc-seccion">
+            <h2>Datos propios</h2>
+            <p class="secundario">
+              Un CSV o un Excel con coordenadas o claves de INEGI se vuelve acetato en el mapa.
+            </p>
+            <p><.link navigate={~p"/teams/#{@team}/datos"}>Ver los datos del equipo</.link></p>
+          </div>
         </section>
       </div>
     </Layouts.app>

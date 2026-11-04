@@ -551,3 +551,52 @@
     animation: none !important;
   }
 }
+
+/* Datos propios: subida, muestra del archivo y ficha de un renglón */
+@layer components {
+  .subida {
+    display: grid;
+    gap: 12px;
+  }
+  .capa-detalle {
+    display: block;
+    color: var(--text2);
+    font-size: 15px;
+  }
+  .tabla-muestra {
+    overflow-x: auto;
+    border: 1px solid var(--line);
+  }
+  .tabla-muestra table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 15px;
+  }
+  .tabla-muestra th,
+  .tabla-muestra td {
+    padding: 4px 10px;
+    border-bottom: 1px solid var(--line);
+    max-width: 24ch;
+    overflow: hidden;
+    text-align: left;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .tabla-muestra th {
+    font-family: var(--cond);
+    font-weight: 600;
+  }
+  .ficha-datos {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 2px 10px;
+    margin: 0;
+  }
+  .ficha-datos dt {
+    color: var(--text2);
+  }
+  .ficha-datos dd {
+    margin: 0;
+    overflow-wrap: anywhere;
+  }
+}

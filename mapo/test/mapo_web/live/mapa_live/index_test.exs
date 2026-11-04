@@ -363,7 +363,7 @@ defmodule MapoWeb.MapaLive.IndexTest do
       |> render_click()
 
       assert_push_event(lv, "orden_capas", %{
-        orden: ["isocrona", "voronoi", "coloreado", "coropleta"]
+        orden: ["propios", "isocrona", "voronoi", "coloreado", "coropleta"]
       })
 
       assert_push_event(lv, "piel", %{piel: "urbanismo"})
@@ -492,6 +492,139 @@ defmodule MapoWeb.MapaLive.IndexTest do
 
       assert render_patch(lv, ~p"/mapa?sesion=#{sesion.id}") =~
                "Esa sesión no es de tus equipos."
+    end
+  end
+
+  describe "tus datos" do
+    alias Mapo.Capas
+
+    defp capa_fixture(scope, tipo, filas, extra \\ %{}) do
+      team = Mapo.TeamsFixtures.team_fixture(scope)
+
+      {:ok, capa} =
+        Capas.crear_capa(
+          scope,
+          team.id,
+          Map.merge(
+            %{
+              nombre: "Ventas",
+              archivo: "ventas.csv",
+              tamano_bytes: 1,
+              tipo: tipo,
+              columnas: ["ventas", "tienda"],
+              numericas: ["ventas"],
+              num_filas: length(filas),
+              num_descartadas: 0,
+              repetidas: 0
+            },
+            extra
+          ),
+          filas
+        )
+
+      capa
+    end
+
+    defp punto(tienda) do
+      %{"lat" => 20.6, "lon" => -103.3, "datos" => %{"tienda" => tienda, "ventas" => 12.345}}
+    end
+
+    defp zona(clave, ventas), do: %{"clave" => clave, "datos" => %{"ventas" => ventas}}
+
+    defp feature(clave) do
+      %{"type" => "Feature", "properties" => %{"cvegeo" => clave}, "geometry" => %{}}
+    end
+
+    test "sin capas la cinta manda a subir una", %{conn: conn} do
+      stub_estados_y_municipio(fn _ -> raise "no debería llamarse" end)
+      {:ok, _lv, html} = live(conn, ~p"/mapa")
+
+      assert html =~ "Tus datos"
+      assert html =~ "Sube un CSV o un Excel"
+    end
+
+    test "?capa= prende los puntos sin mandar los datos de cada renglón", %{
+      conn: conn,
+      scope: scope
+    } do
+      capa = capa_fixture(scope, "puntos", [punto("secreta")])
+      stub_estados_y_municipio(fn _ -> raise "no debería llamarse" end)
+      {:ok, lv, _html} = live(conn, ~p"/mapa?#{[capa: capa.id]}")
+
+      assert_push_event(lv, "capa_propios", %{activa: true, puntos: [%{lat: 20.6} = p]})
+      refute Map.has_key?(p, :datos)
+    end
+
+    test "la ficha se pide al abrirla y trae los campos de la capa", %{conn: conn, scope: scope} do
+      capa = capa_fixture(scope, "puntos", [punto("Centro")])
+      stub_estados_y_municipio(fn _ -> raise "no debería llamarse" end)
+      {:ok, lv, _html} = live(conn, ~p"/mapa?#{[capa: capa.id]}")
+      assert_push_event(lv, "capa_propios", %{puntos: [%{id: id}]})
+
+      render_hook(element(lv, "#mapa-tecnico"), "ver_fila", %{"id" => id})
+      assert_reply(lv, %{campos: [["ventas", "12.345"], ["tienda", "Centro"]], otras: 0})
+    end
+
+    test "una capa de otro equipo no abre por URL ni por el select", %{conn: conn} do
+      ajena = capa_fixture(Mapo.AccountsFixtures.user_scope_fixture(), "puntos", [punto("x")])
+      stub_estados_y_municipio(fn _ -> raise "no debería llamarse" end)
+      {:ok, lv, html} = live(conn, ~p"/mapa?#{[capa: ajena.id]}")
+
+      assert html =~ "no es de tus equipos"
+      refute_push_event(lv, "capa_propios", %{activa: true})
+
+      render_hook(element(lv, "#mapa-tecnico"), "ver_fila", %{"id" => 1})
+      assert_reply(lv, %{campos: []})
+    end
+
+    test "un id que no es número no tumba la vista", %{conn: conn} do
+      stub_estados_y_municipio(fn _ -> raise "no debería llamarse" end)
+      {:ok, _lv, html} = live(conn, ~p"/mapa?capa=abc")
+      assert html =~ "no es de tus equipos"
+    end
+
+    test "las zonas se pintan por columna con quintiles y sin inventar ceros", %{
+      conn: conn,
+      scope: scope
+    } do
+      capa = capa_fixture(scope, "municipio", [zona("14039", 10), zona("14120", nil)])
+
+      stub_estados_y_municipio(fn conn ->
+        assert conn.request_path == "/geo/por_clave"
+        Req.Test.json(conn, %{"features" => [feature("14039"), feature("14120")]})
+      end)
+
+      {:ok, lv, _html} = live(conn, ~p"/mapa?#{[capa: capa.id]}")
+      assert_push_event(lv, "capa_propios", %{activa: true, cortes: nil})
+
+      html =
+        lv
+        |> form("#capa_propia_form", propios: %{})
+        |> render_change(%{"capa" => capa.id, "columna" => "ventas"})
+
+      assert html =~ "sin dato: 1"
+      assert_push_event(lv, "capa_propios", %{etiqueta: "ventas", geojson: geojson})
+      valores = Enum.map(geojson["features"], & &1["properties"]["valor_choropleth"])
+      assert valores == [10, nil]
+    end
+
+    test "con zonas repetidas no se pinta, y se dice por qué", %{conn: conn, scope: scope} do
+      capa =
+        capa_fixture(scope, "municipio", [zona("14039", 1), zona("14039", 2)], %{repetidas: 1})
+
+      stub_estados_y_municipio(fn conn ->
+        Req.Test.json(conn, %{"features" => [feature("14039")]})
+      end)
+
+      {:ok, lv, _html} = live(conn, ~p"/mapa?#{[capa: capa.id]}")
+
+      html =
+        lv
+        |> form("#capa_propia_form", propios: %{})
+        |> render_change(%{"capa" => capa.id, "columna" => "ventas"})
+
+      assert html =~ "se necesita uno por zona"
+      assert_push_event(lv, "capa_propios", %{etiqueta: nil})
     end
   end
 end

@@ -23,7 +23,7 @@ import {Marcas, escapar} from "./marcas"
 
 const CENTRO_MEXICO = [23.6345, -102.5528]
 const ZOOM_MEXICO = 5
-const ENFOQUE = {puntos: "comercio", zonas: "comercio", coropleta: "demografia", voronoi: "comercio", coloreado: "urbanismo", isocrona: "movilidad"}
+const ENFOQUE = {propios: "consumo", puntos: "comercio", zonas: "comercio", coropleta: "demografia", voronoi: "comercio", coloreado: "urbanismo", isocrona: "movilidad"}
 // Opacidad de la pelicula por clase: mas valor, mas tinta.
 const TINTA_QUINTIL = [0.12, 0.26, 0.42, 0.6, 0.8]
 const TINTA_COLOREADO = [0.14, 0.32, 0.5, 0.68]
@@ -60,8 +60,8 @@ export const MapaTecnico = {
     this.marcas = new Marcas(this.map, {push: (e, p) => this.pushEvent(e, p), pane: "p-marcas"})
     this.modoMarcas = false
 
-    this.capas = {puntos: null, zonas: null, coropleta: null, voronoi: null, coloreado: null, isocrona: null}
-    this.datos = {puntos: null, zonas: null, coropleta: null, voronoi: null, coloreado: null, isocrona: null}
+    this.capas = Object.fromEntries(Object.keys(ENFOQUE).map(id => [id, null]))
+    this.datos = {...this.capas}
     this.modoIsocrona = false
     this.interactivas = true
     this.origen = null
@@ -81,6 +81,7 @@ export const MapaTecnico = {
     this.handleEvent("capa_coloreado", datos => this._recibir("coloreado", datos))
     this.handleEvent("capa_isocrona", datos => this._recibir("isocrona", datos))
     this.handleEvent("capa_puntos", datos => this._recibir("puntos", datos))
+    this.handleEvent("capa_propios", datos => this._recibir("propios", datos))
     this.handleEvent("capa_zonas", datos => {
       this.datos.zonas = datos.activa ? datos : null
       this._dibujar("zonas")
@@ -188,16 +189,43 @@ export const MapaTecnico = {
     if (id === "voronoi") this._puntosVoronoi()
   },
 
-  _coropleta({geojson, etiqueta, cortes}, color, opciones) {
+  _estiloQuintil(f, cortes, color) {
     const factor = oscuro() ? 0.85 : 1
+    const k = clase(f.properties.valor_choropleth, cortes || [])
+    return k < 0
+      ? {color: tinta("--line"), weight: 0.6, dashArray: "3 3", fillOpacity: 0}
+      : {color, weight: 0.5, opacity: 0.6, fillColor: color, fillOpacity: TINTA_QUINTIL[k] * factor}
+  },
+
+  // Datos propios: los lugares viajan solos y la ficha se pide al abrirla.
+  // Lo que llega de un archivo se escapa siempre: la ficha es HTML.
+  _propios({puntos, geojson, cortes}, color, opciones) {
+    if (puntos) {
+      return L.featureGroup(puntos.map(p => L.circleMarker([p.lat, p.lon], {
+        ...opciones, radius: 3.5, weight: 1, color: tinta("--bg"), fillColor: color, fillOpacity: 0.9,
+      }).on("click", e => this._ficha(e.latlng, {id: p.id}))))
+    }
     return L.geoJSON(geojson, {
       ...opciones,
-      style: f => {
-        const k = clase(f.properties.valor_choropleth, cortes || [])
-        return k < 0
-          ? {color: tinta("--line"), weight: 0.6, dashArray: "3 3", fillOpacity: 0}
-          : {color, weight: 0.5, opacity: 0.6, fillColor: color, fillOpacity: TINTA_QUINTIL[k] * factor}
-      },
+      style: f => cortes
+        ? this._estiloQuintil(f, cortes, color)
+        : {color, weight: 0.8, opacity: 0.8, fillColor: color, fillOpacity: 0.3},
+      onEachFeature: (f, capa) => capa.on("click", e => this._ficha(e.latlng, {clave: f.properties.cvegeo})),
+    })
+  },
+
+  _ficha(lugar, llave) {
+    this.pushEvent("ver_fila", llave, ({campos, otras}) => {
+      const filas = campos.map(([c, v]) => `<dt>${escapar(c)}</dt><dd>${escapar(v)}</dd>`).join("")
+      const mas = otras > 0 ? `<p>y ${otras} renglones más en esta zona</p>` : ""
+      L.popup({maxHeight: 260}).setLatLng(lugar).setContent(`<dl class="ficha-datos">${filas}</dl>${mas}`).openOn(this.map)
+    })
+  },
+
+  _coropleta({geojson, etiqueta, cortes}, color, opciones) {
+    return L.geoJSON(geojson, {
+      ...opciones,
+      style: f => this._estiloQuintil(f, cortes, color),
       onEachFeature: (f, capa) => {
         const valor = f.properties.valor_choropleth
         capa.bindPopup(`<strong>${etiqueta}</strong><br>${valor === null || valor === undefined ? "sin dato" : valor.toLocaleString("es-MX")}`)
