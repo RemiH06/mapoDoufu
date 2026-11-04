@@ -76,6 +76,30 @@ los enlaces de acceso y las contraseñas al iniciar sesión. Para lo que
 no debe salir de casa sigue Tailscale. Apagar el acceso público es
 `docker compose down` en el compose del túnel; Mapo sigue corriendo.
 
+### Límite de intentos del login
+
+Son dos capas, porque cada una ve cosas distintas:
+
+- **En la app (`Mapo.Limite`), la barrera real.** Por correo, exista o no
+  la cuenta: 10 intentos de contraseña cada 15 minutos y 5 enlaces por
+  hora. Cubre el enlace mágico, que va por el WebSocket, y la entrada por
+  la tailnet. Vive en memoria: un reinicio pone los contadores en cero.
+- **En Cloudflare, contra barridos desde una IP.** Regla de rate limiting
+  en el panel (Security rules, Create rule, Rate limiting rules):
+  - Campo URI Path, operador equals, valor `/users/log-in`.
+  - Misma característica: IP.
+  - Más de 10 peticiones en 10 segundos.
+  - Acción Block, duración 10 segundos.
+
+El plan gratis solo da una regla, con ventana y bloqueo de 10 s, y no
+deja filtrar por método: también cuenta los `GET` de la página, por eso
+el umbral no puede ser más bajo. Limita a unas 30 peticiones por minuto
+por IP.
+
+Un tercero que conozca un correo puede agotar sus intentos de contraseña
+y dejarlo fuera 15 minutos. Se acepta: es molesto, no da acceso, y con
+correo real queda el enlace.
+
 ### Sin dominio: Tailscale
 
 `tailscale serve --bg 1865` publica `https://<máquina>.<tailnet>.ts.net`

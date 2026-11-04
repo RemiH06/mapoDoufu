@@ -31,6 +31,21 @@ defmodule MapoWeb.UserLive.LoginTest do
                "login"
     end
 
+    test "after 5 links in an hour it stops sending, with the same message", %{conn: conn} do
+      user = user_fixture()
+      for _ <- 1..5, do: Mapo.Limite.permitir?({:enlace, user.email}, 5, 60 * 60)
+
+      {:ok, lv, _html} = live(conn, ~p"/users/log-in")
+
+      {:ok, _lv, html} =
+        form(lv, "#login_form_magic", user: %{email: String.upcase(user.email)})
+        |> render_submit()
+        |> follow_redirect(conn, ~p"/users/log-in")
+
+      assert html =~ "Si tu correo está registrado"
+      refute Mapo.Repo.get_by(Mapo.Accounts.UserToken, user_id: user.id, context: "login")
+    end
+
     test "does not disclose if user is registered", %{conn: conn} do
       {:ok, lv, _html} = live(conn, ~p"/users/log-in")
 

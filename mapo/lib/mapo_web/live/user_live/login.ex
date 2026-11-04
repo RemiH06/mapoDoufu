@@ -2,6 +2,11 @@ defmodule MapoWeb.UserLive.Login do
   use MapoWeb, :live_view
 
   alias Mapo.Accounts
+  alias Mapo.Limite
+
+  # Cada enlace saca de circulación al anterior y, con correo real, llena un buzón ajeno.
+  @max_enlaces 5
+  @ventana_enlaces 60 * 60
 
   @impl true
   def render(assigns) do
@@ -107,7 +112,14 @@ defmodule MapoWeb.UserLive.Login do
   end
 
   def handle_event("submit_magic", %{"user" => %{"email" => email}}, socket) do
-    if user = Accounts.get_user_by_email(email) do
+    # Va por el WebSocket: la regla de Cloudflare no lo ve. Se cuenta antes de
+    # buscar la cuenta y el mensaje es el mismo, para no revelar cuáles existen.
+    clave = {:enlace, email |> String.trim() |> String.downcase()}
+
+    user =
+      Limite.permitir?(clave, @max_enlaces, @ventana_enlaces) && Accounts.get_user_by_email(email)
+
+    if user do
       Accounts.deliver_login_instructions(
         user,
         &url(~p"/users/log-in/#{&1}")

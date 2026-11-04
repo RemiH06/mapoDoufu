@@ -2,7 +2,12 @@ defmodule MapoWeb.UserSessionController do
   use MapoWeb, :controller
 
   alias Mapo.Accounts
+  alias Mapo.Limite
   alias MapoWeb.UserAuth
+
+  # Por correo, exista o no la cuenta, para no revelar cuáles existen.
+  @max_contrasena 10
+  @ventana_contrasena 15 * 60
 
   def create(conn, %{"_action" => "confirmed"} = params) do
     create(conn, params, "Cuenta confirmada con éxito.")
@@ -33,16 +38,26 @@ defmodule MapoWeb.UserSessionController do
   defp create(conn, %{"user" => user_params}, info) do
     %{"email" => email, "password" => password} = user_params
 
-    if user = Accounts.get_user_by_email_and_password(email, password) do
-      conn
-      |> put_flash(:info, info)
-      |> UserAuth.log_in_user(user, user_params)
-    else
-      # In order to prevent user enumeration attacks, don't disclose whether the email is registered.
-      conn
-      |> put_flash(:error, "Correo o contraseña inválidos")
-      |> put_flash(:email, String.slice(email, 0, 160))
-      |> redirect(to: ~p"/users/log-in")
+    clave = {:contrasena, email |> String.trim() |> String.downcase()}
+
+    cond do
+      not Limite.permitir?(clave, @max_contrasena, @ventana_contrasena) ->
+        conn
+        |> put_flash(:error, "Demasiados intentos con ese correo. Espera 15 minutos.")
+        |> put_flash(:email, String.slice(email, 0, 160))
+        |> redirect(to: ~p"/users/log-in")
+
+      user = Accounts.get_user_by_email_and_password(email, password) ->
+        conn
+        |> put_flash(:info, info)
+        |> UserAuth.log_in_user(user, user_params)
+
+      true ->
+        # In order to prevent user enumeration attacks, don't disclose whether the email is registered.
+        conn
+        |> put_flash(:error, "Correo o contraseña inválidos")
+        |> put_flash(:email, String.slice(email, 0, 160))
+        |> redirect(to: ~p"/users/log-in")
     end
   end
 

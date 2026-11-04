@@ -72,6 +72,42 @@ defmodule MapoWeb.UserSessionControllerTest do
     end
   end
 
+  describe "POST /users/log-in - límite de intentos" do
+    test "tras 10 intentos con un correo, ni la contraseña correcta entra", %{
+      conn: conn,
+      user: user
+    } do
+      user = set_password(user)
+
+      for _ <- 1..10 do
+        post(conn, ~p"/users/log-in", %{
+          "user" => %{"email" => user.email, "password" => "equivocada"}
+        })
+      end
+
+      conn =
+        post(conn, ~p"/users/log-in", %{
+          "user" => %{"email" => String.upcase(user.email), "password" => valid_user_password()}
+        })
+
+      refute get_session(conn, :user_token)
+      assert Phoenix.Flash.get(conn.assigns.flash, :error) =~ "Demasiados intentos"
+      assert redirected_to(conn) == ~p"/users/log-in"
+    end
+
+    test "un correo sin cuenta recibe el mismo límite", %{conn: conn} do
+      email = unique_user_email()
+
+      for _ <- 1..10 do
+        post(conn, ~p"/users/log-in", %{"user" => %{"email" => email, "password" => "x"}})
+      end
+
+      conn = post(conn, ~p"/users/log-in", %{"user" => %{"email" => email, "password" => "x"}})
+
+      assert Phoenix.Flash.get(conn.assigns.flash, :error) =~ "Demasiados intentos"
+    end
+  end
+
   describe "POST /users/log-in - magic link" do
     test "logs the user in", %{conn: conn, user: user} do
       {token, _hashed_token} = generate_user_magic_link_token(user)
