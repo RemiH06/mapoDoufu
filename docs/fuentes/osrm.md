@@ -21,7 +21,9 @@ zonas candidatas del buscador.
   por llamada a `table` (`TooBig`) y unos 25 KB de URL. La matriz de las zonas
   candidatas y la isócrona (97 coordenadas) caben sin cambiarlos.
 - En Docker sobre una laptop de 4 núcleos da unas 90 AGEB por segundo con 10 destinos cada una
-  (Zapopan en 3 a 7 s, zona metropolitana en unos 25 s).
+  (Zapopan en 3 a 7 s, zona metropolitana en unos 25 s). En producción, con los
+  datos en el disco de WSL y no en un montaje de Windows, la zona metropolitana
+  tarda 3.3 s.
 
 Las muestras de una isócrona van en escala geométrica: suponen 90 km/h y en
 ciudad se llega a una fracción, así que con pasos iguales casi ninguna dirección

@@ -39,6 +39,10 @@ Con los datos de Jalisco y OSRM v26.7.3 en Docker (2026-11-04), en la laptop de 
 | Florería, Guadalajara, Zapopan y Tlaquepaque | 1,219 | 169 | 13 a 18 s | menos de 50 ms |
 | Farmacia, zona metropolitana (5 municipios) | 1,840 | 124 | 22 a 26 s | 20 a 40 ms |
 
+En producción, con OSRM en el disco de WSL, las candidatas son las mismas y la
+primera consulta tarda mucho menos: 2.4 s con tres municipios y 3.3 s con la zona
+metropolitana. Mover un criterio, 10 ms.
+
 La última vuelta de Florería en Zapopan pone el criterio en 5 minutos y deja 13
 AGEB; con el indicador de 60 años o más, 15. 327,602 celdas de matriz sin un solo
 tramo sin ruta.

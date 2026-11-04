@@ -44,7 +44,8 @@ VECINOS = 10
 AGEBS_POR_LOTE = 25
 LLAMADAS_A_LA_VEZ = 4
 
-# Unos 25 s en Aerilate. Cabe la zona metropolitana (1,840 AGEB), no el estado.
+# Cabe la zona metropolitana (1,840 AGEB), no el estado. Se fijó con unos 25 s
+# en dev; en producción esa consulta tarda 3.3 s.
 MAX_AGEBS = 2000
 
 MAX_FILAS = 20
