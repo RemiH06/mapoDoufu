@@ -23,6 +23,22 @@ misma regla: son filtros a la vista, no una calificación. Se descartó un
 puntaje con pesos movibles, que se parece más a "recomendar" pero sigue
 reduciendo la decisión a un número y obliga a inventar qué vale cuánto.
 
+## Licencia: BSL 1.1 (2026-11-04)
+
+Mapo nació con MIT, que deja a cualquiera vender el proyecto o cobrar por
+hospedarlo sin devolver nada. Tiene suficiente potencial comercial para que eso
+importe, y se cambió a la Business Source License 1.1.
+
+- **Uso comercial solo con licencia**; el uso no comercial en producción está
+  permitido por la excepción de `LICENSE`.
+- **Cada versión pasa a AGPL-3.0 a los cuatro años.** Por eso BSL y no una
+  licencia no comercial permanente: el código acaba siendo software libre.
+- **Se descartó AGPL desde ya** porque no impide lucrar, y **cerrar el repo**
+  porque Mapo también sirve como trabajo público.
+- BSL no es open source según la OSI: mientras dure, Mapo es "código disponible"
+  y no debe llamarse software libre.
+- El cambio no es retroactivo: lo publicado hasta `9677634` sigue bajo MIT.
+
 ## Idioma de la interfaz (decidido): español únicamente, no bilingüe
 
 Se evaluó explícitamente meter soporte bilingüe (español/inglés) y se

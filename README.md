@@ -14,7 +14,7 @@
 ```
 
 ![Maintained](https://img.shields.io/badge/Maintained%3F-yes-green.svg?style=for-the-badge)
-![MIT](https://img.shields.io/badge/License-MIT-blue.svg?style=for-the-badge)
+![BSL 1.1](https://img.shields.io/badge/License-BSL_1.1-blue.svg?style=for-the-badge)
 
 ## Qué es Mapo
 
@@ -89,4 +89,9 @@ desactivar desde configuración. Ver `design/`.
 
 ## Licencia
 
-MIT (ver [`LICENSE`](LICENSE)).
+[Business Source License 1.1](LICENSE). El código se puede leer, modificar y usar
+sin fines comerciales; venderlo u ofrecerlo como servicio de pago requiere una
+licencia comercial. Cada versión pasa a AGPL-3.0 a los cuatro años de publicarse.
+
+Las versiones hasta el commit `9677634` (2026-11-04) se publicaron con licencia MIT
+y siguen bajo ella.

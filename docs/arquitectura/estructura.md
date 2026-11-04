@@ -3,7 +3,7 @@
 ```
 .
 ├── README.md
-├── LICENSE                  MIT
+├── LICENSE                  BSL 1.1
 ├── docker-compose.yml       db (Postgres + PostGIS) + mapo_core + mapo
 ├── docs/                    esta documentación
 ├── design/                  favicon.svg (definitivo), mapo-logo.png (boceto),

@@ -35,5 +35,5 @@ detalle de lo ya construido vive en `../historial/`.
 | RNF6 | Honestidad ante datos faltantes: no inventar clasificaciones ni fuentes que no existen; declarar explícitamente cuando un enfoque no tiene fuente o dato | Vigente (`valor_choropleth: null`, secciones `null` en `/perfil_zona` cuando no hay datos de ese municipio, campo `metodo` en todo lo que depende de OSRM, 503 honesto si la base no responde) |
 | RNF7 | Estructura de datos escalable: agregar un enfoque o fuente nueva debe ser agregar un módulo, no reestructurar lo existente | Vigente (cada capacidad y cada fuente de `mapo_core` es su propio módulo) |
 | RNF8 | Comunicación entre `mapo` (Elixir) y `mapo_core` (Python) por HTTP simple; sin colas de mensajes ni RPC binario en esta primera versión | Listo |
-| RNF9 | Licencia MIT, repo público bajo el nombre "Mapo" | Listo |
+| RNF9 | Licencia BSL 1.1 (MIT hasta el 2026-11-04), repo público bajo el nombre "Mapo" | Listo |
 | RNF10 | Mensajes de commit en formato conventional commits, lo más cortos posible; sin guión largo en ningún texto, código o commit | Vigente |
