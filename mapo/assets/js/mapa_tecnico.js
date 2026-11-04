@@ -23,7 +23,7 @@ import {Marcas, escapar} from "./marcas"
 
 const CENTRO_MEXICO = [23.6345, -102.5528]
 const ZOOM_MEXICO = 5
-const ENFOQUE = {puntos: "comercio", coropleta: "demografia", voronoi: "comercio", coloreado: "urbanismo", isocrona: "movilidad"}
+const ENFOQUE = {puntos: "comercio", zonas: "comercio", coropleta: "demografia", voronoi: "comercio", coloreado: "urbanismo", isocrona: "movilidad"}
 // Opacidad de la pelicula por clase: mas valor, mas tinta.
 const TINTA_QUINTIL = [0.12, 0.26, 0.42, 0.6, 0.8]
 const TINTA_COLOREADO = [0.14, 0.32, 0.5, 0.68]
@@ -60,8 +60,8 @@ export const MapaTecnico = {
     this.marcas = new Marcas(this.map, {push: (e, p) => this.pushEvent(e, p), pane: "p-marcas"})
     this.modoMarcas = false
 
-    this.capas = {puntos: null, coropleta: null, voronoi: null, coloreado: null, isocrona: null}
-    this.datos = {puntos: null, coropleta: null, voronoi: null, coloreado: null, isocrona: null}
+    this.capas = {puntos: null, zonas: null, coropleta: null, voronoi: null, coloreado: null, isocrona: null}
+    this.datos = {puntos: null, zonas: null, coropleta: null, voronoi: null, coloreado: null, isocrona: null}
     this.modoIsocrona = false
     this.interactivas = true
     this.origen = null
@@ -81,6 +81,10 @@ export const MapaTecnico = {
     this.handleEvent("capa_coloreado", datos => this._recibir("coloreado", datos))
     this.handleEvent("capa_isocrona", datos => this._recibir("isocrona", datos))
     this.handleEvent("capa_puntos", datos => this._recibir("puntos", datos))
+    this.handleEvent("capa_zonas", datos => {
+      this.datos.zonas = datos.activa ? datos : null
+      this._dibujar("zonas")
+    })
     this.handleEvent("pedir_ubicacion", () => this._ubicacion())
     this.handleEvent("centrar", ({lat, lon, zoom}) => {
       this.map.setView([lat, lon], Math.max(this.map.getZoom(), zoom))
@@ -201,6 +205,19 @@ export const MapaTecnico = {
     })
   },
 
+  // Las zonas candidatas son AGEB que ya estan en la coropleta: viaja solo la
+  // lista de claves, y mover un criterio no reencuadra el plano.
+  _zonas({cvegeos}, _color, opciones) {
+    const elegidas = new Set(cvegeos)
+    const features = (this.datos.coropleta?.geojson.features || []).filter(f => elegidas.has(f.properties.cvegeo))
+    const trazo = style => L.geoJSON({type: "FeatureCollection", features}, {...opciones, interactive: false, style})
+    // Linea de texto con halo de papel: se lee sobre cualquier tinta y tema.
+    return L.featureGroup([
+      trazo({color: tinta("--bg"), weight: 4, opacity: 0.95, fill: false}),
+      trazo({color: tinta("--text"), weight: 1.8, opacity: 1, fill: false}),
+    ])
+  },
+
   _voronoi({geojson}, color, opciones) {
     this.datosPuntos = geojson.features
     return L.geoJSON(geojson, {
@@ -262,14 +279,15 @@ export const MapaTecnico = {
     )
   },
 
-  _isocrona({poligono, metodo}, color, opciones) {
+  _isocrona({poligono, metodo, origen: zona}, color, opciones) {
     const area = L.geoJSON({type: "Feature", properties: {}, geometry: poligono}, {
       ...opciones,
       style: {color, weight: 2, dashArray: "6 4", fillColor: color, fillOpacity: 0.2},
     }).bindPopup(metodo === "osrm_real" ? "Por carretera real" : "Círculo aproximado: OSRM no respondió")
     const partes = [area]
-    if (this.origen) {
-      [4, 9, 14].forEach(r => partes.push(L.circleMarker(this.origen, {...opciones, radius: r, color, weight: 1.3, fill: false})))
+    const origen = zona ? [zona.lat, zona.lon] : this.origen
+    if (origen) {
+      [4, 9, 14].forEach(r => partes.push(L.circleMarker(origen, {...opciones, radius: r, color, weight: 1.3, fill: false})))
     }
     const grupo = L.featureGroup(partes)
     return grupo

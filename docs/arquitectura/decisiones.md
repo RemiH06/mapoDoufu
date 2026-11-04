@@ -18,6 +18,11 @@ muestran los datos crudos lado a lado y quien usa Mapo decide. Viene
 de Gaiarda (seguridad por tipo de delito, sin puntaje) y aplica a todo
 lo nuevo: el perfil de zona junta las 5 secciones sin ponderarlas.
 
+Las recomendaciones (zonas candidatas, `../producto/buscador.md`) siguen la
+misma regla: son filtros a la vista, no una calificación. Se descartó un
+puntaje con pesos movibles, que se parece más a "recomendar" pero sigue
+reduciendo la decisión a un número y obliga a inventar qué vale cuánto.
+
 ## Idioma de la interfaz (decidido): español únicamente, no bilingüe
 
 Se evaluó explícitamente meter soporte bilingüe (español/inglés) y se

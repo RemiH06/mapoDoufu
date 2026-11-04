@@ -29,6 +29,27 @@ el puerto interno 4000.
 Correos en desarrollo: `http://localhost:1864/dev/mailbox` (no hay
 adapter de correo real todavía, ver `producto/requisitos.md`).
 
+## OSRM en dev
+
+El compose de dev no trae OSRM y `mapo_core` usa el demo público, que sirve para
+una ruta o una isócrona, pero no se probó con las matrices de las zonas
+candidatas: sin un OSRM propio, espera ver la línea recta con su aviso. Para
+probarlas de verdad, con el mapa ya preprocesado (`fuentes/osrm.md`):
+
+```bash
+docker run -d --name mapo-osrm-dev --network mapodoufu_default \
+  -v /ruta/a/osrm-data:/data:ro \
+  ghcr.io/project-osrm/osrm-backend:v26.7.3-debian \
+  osrm-routed --algorithm mld /data/mexico-latest.osrm
+```
+
+Tarda unos 5 minutos en cargar y ocupa 5 GB de RAM. Luego,
+`MAPO_OSRM_URL=http://mapo-osrm-dev:5000` en `mapo_core/.env` y
+`docker compose up -d mapo_core`.
+
+Al medir contra el servidor desde Windows, usa `127.0.0.1`: `localhost` intenta
+primero IPv6 y le suma 2 segundos a cada petición.
+
 ## Probar
 
 ```bash

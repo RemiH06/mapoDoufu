@@ -147,6 +147,19 @@ defmodule Mapo.MapoCore do
   def buscador_resolver(cve_ent, plantilla),
     do: post("/buscador/resolver", %{cve_ent: cve_ent, plantilla: plantilla})
 
+  @doc """
+  Zonas candidatas de un `donde_poner`: `%{"filas", "cvegeos", "criterios",
+  "descartes", "avisos", ...}`. La primera vez calcula los minutos con OSRM y
+  puede tardar más que el `receive_timeout` por defecto (15 s de Req).
+  """
+  def buscador_zonas(cve_ent, plantilla, criterios) do
+    post(
+      "/buscador/zonas",
+      Map.merge(criterios, %{"cve_ent" => cve_ent, "plantilla" => plantilla}),
+      receive_timeout: 60_000
+    )
+  end
+
   defp maybe_put(params, _key, nil), do: params
   defp maybe_put(params, key, value), do: params ++ [{key, value}]
 
@@ -158,10 +171,10 @@ defmodule Mapo.MapoCore do
     request(Req.get(opts))
   end
 
-  defp post(path, json) do
+  defp post(path, json, extra \\ []) do
     opts =
       [base_url: Application.fetch_env!(:mapo, :mapo_core_url), url: path, json: json] ++
-        Application.get_env(:mapo, :mapo_core_req_options, [])
+        extra ++ Application.get_env(:mapo, :mapo_core_req_options, [])
 
     request(Req.post(opts))
   end

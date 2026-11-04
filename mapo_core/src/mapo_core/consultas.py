@@ -190,6 +190,57 @@ async def censo_municipios(
     return {cve_mun: (nombre, valor) for cve_mun, nombre, valor in filas}
 
 
+async def puntos_de_agebs(
+    pool: AsyncConnectionPool, cve_ent: str, cve_muns: list[str]
+) -> list[tuple[str, str, str, float, float]]:
+    """(cvegeo, cve_ageb, municipio, lat, lon) de cada AGEB. El punto es
+    `ST_PointOnSurface`: cae siempre dentro, un centroide puede caer fuera de
+    un AGEB con forma de herradura. Con 1,840 AGEB tarda más de un segundo."""
+    async with pool.connection() as conn:
+        cursor = await conn.execute(
+            """SELECT a.cvegeo, a.cve_ageb, m.nombre, ST_Y(p.punto), ST_X(p.punto)
+               FROM agebs a
+               JOIN municipios m ON m.cve_ent = a.cve_ent AND m.cve_mun = a.cve_mun
+               CROSS JOIN LATERAL (SELECT ST_PointOnSurface(a.geom) AS punto) p
+               WHERE a.cve_ent = %(cve_ent)s AND a.cve_mun = ANY(%(cve_muns)s)
+                 AND a.geom IS NOT NULL
+               ORDER BY a.cvegeo""",
+            {"cve_ent": cve_ent, "cve_muns": cve_muns},
+        )
+        return await cursor.fetchall()
+
+
+async def valores_por_ageb(
+    pool: AsyncConnectionPool, cve_ent: str, cve_muns: list[str], indicador: str
+) -> dict[str, int | float | None]:
+    """{cvegeo: valor} del censo. Un AGEB sin censo no viene: es `None` al leer."""
+    if indicador not in INDICADORES_CHOROPLETH:
+        raise ValueError(f"indicador invalido: {indicador}")
+
+    async with pool.connection() as conn:
+        cursor = await conn.execute(
+            f"""SELECT cvegeo, {indicador} FROM fuente_censo_poblacion
+                WHERE nivel = 'ageb' AND cve_ent = %(cve_ent)s AND cve_mun = ANY(%(cve_muns)s)""",
+            {"cve_ent": cve_ent, "cve_muns": cve_muns},
+        )
+        return dict(await cursor.fetchall())
+
+
+async def ubicaciones_de_clases(
+    pool: AsyncConnectionPool, cve_ent: str, clases: list[str]
+) -> list[tuple[float, float]]:
+    """(lat, lon) de los negocios de esas clases en todo el estado, no solo en
+    los municipios de la pregunta: la competencia cruza la frontera municipal."""
+    async with pool.connection() as conn:
+        cursor = await conn.execute(
+            """SELECT lat, lon FROM fuente_denue_negocios
+               WHERE cve_ent = %(cve_ent)s AND clase_actividad = ANY(%(clases)s)
+                 AND lat IS NOT NULL AND lon IS NOT NULL""",
+            {"cve_ent": cve_ent, "clases": clases},
+        )
+        return await cursor.fetchall()
+
+
 async def municipios_de(pool: AsyncConnectionPool, cve_ent: str) -> list[tuple[str, str]]:
     """(cve_mun, nombre) de los municipios de un estado."""
     async with pool.connection() as conn:

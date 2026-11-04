@@ -21,6 +21,7 @@ from functools import cache
 from pydantic import BaseModel, Field
 
 from mapo_core import consultas, rubros
+from mapo_core import zonas as zonas_candidatas
 from mapo_core.isocronas import calcular_isocrona
 from mapo_core.voronoi import calcular_voronoi
 
@@ -128,6 +129,7 @@ def catalogo() -> dict:
             if f["buscable"] == "si"
         ],
         "edades": [{"edad": k, "nombre": v} for k, v in NOMBRES_EDAD.items()],
+        "indicadores_zonas": [{"indicador": k, "nombre": v} for k, v in zonas_candidatas.INDICADORES.items()],
     }
 
 
@@ -366,6 +368,43 @@ async def resolver(pool, osrm, cve_ent: str, p: Plantilla) -> dict:
     if p.intencion == "cuantos_cerca":
         return await _cuantos_cerca(pool, osrm, p, clases, avisos)
     return await _por_municipio(pool, cve_ent, p, clases, avisos)
+
+
+async def zonas(
+    pool,
+    osrm,
+    cve_ent: str,
+    p: Plantilla,
+    *,
+    indicador: str = "pobtot",
+    minimo: float | None = None,
+    minutos: float | None = None,
+    orden: str = "indicador",
+) -> dict:
+    """Zonas candidatas de un `donde_poner`: AGEB que cumplen criterios a la
+    vista, sin puntaje (docs/producto/buscador.md)."""
+    _validar(p)
+    if p.intencion != "donde_poner":
+        raise PlantillaInvalida("Las zonas candidatas son de la pregunta dónde poner.")
+    if indicador not in zonas_candidatas.INDICADORES:
+        raise PlantillaInvalida(f"Indicador desconocido: {indicador}.")
+
+    clases = rubros.clases_de(rubro=p.rubro, sector=p.sector, solo_publicos=p.solo_publicos)
+    try:
+        return await zonas_candidatas.calcular(
+            pool,
+            osrm,
+            cve_ent,
+            p.municipios,
+            clases,
+            indicador=indicador,
+            minimo=minimo,
+            minutos=minutos,
+            orden=orden,
+            unidad=_unidad(p)[0],
+        )
+    except zonas_candidatas.DemasiadasZonas as exc:
+        raise PlantillaInvalida(str(exc)) from None
 
 
 async def _por_municipio(pool, cve_ent: str, p: Plantilla, clases: list[str], avisos: list[str]) -> dict:

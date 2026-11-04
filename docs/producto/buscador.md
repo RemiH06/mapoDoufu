@@ -10,7 +10,7 @@ lo dice.
 
 | Intención | Ejemplo | Parámetros | Se resuelve con |
 |---|---|---|---|
-| `donde_poner` | "¿Dónde pongo una floristería en Zapopan?" | rubro, municipios | Voronoi de la competencia del rubro (`/voronoi/denue`) y coropleta de población por AGEB (`/censo/choropleth`, `pobtot`). Cifras por municipio: negocios del rubro, población y habitantes por negocio (población ÷ negocios, con la fórmula a la vista) |
+| `donde_poner` | "¿Dónde pongo una floristería en Zapopan?" | rubro, municipios | Voronoi de la competencia del rubro (`/voronoi/denue`) y coropleta de población por AGEB (`/censo/choropleth`, `pobtot`). Cifras por municipio: negocios del rubro, población y habitantes por negocio (población ÷ negocios, con la fórmula a la vista). Abajo, las zonas candidatas (ver esa sección) |
 | `cuantos` | "¿Cuántos supermercados hay en Guadalajara y Tlaquepaque?" | rubro o sector, municipios | Conteo de DENUE por municipio y los puntos en el mapa |
 | `cuantos_cerca` | "¿Cuántas farmacias hay a 10 minutos de aquí?" | rubro o sector, punto, minutos | Isócrona desde el punto (`/isocronas/calcular`, con su `metodo`) y negocios del rubro dentro de ella. Es la única consulta nueva: isócrona y negocios ya existen por separado |
 | `donde_contratar` | "¿Dónde busco gente de 18 a 24 años en Zapopan?" | rango de edad, municipios | Coropleta del censo del rango (`/censo/choropleth`) y desocupación de la ENOE, que es estatal y así se dice |
@@ -111,6 +111,67 @@ por igual el modo técnico y el buscador. Criterios:
 - **No todo es un negocio.** En gobierno y con `solo_publicos`, las cifras
   dicen "unidades" (`cifras.unidad`) y la leyenda habla de cobertura, no
   de competencia.
+
+## Zonas candidatas
+
+La respuesta de `donde_poner` termina con las AGEB que cumplen dos criterios
+a la vista. No es un puntaje (RNF5): nada se suma ni se pondera, una AGEB
+cumple los dos o no, y se dice cuántas dejó fuera cada uno.
+
+- **Indicador con mínimo:** uno a elegir del censo por AGEB (`INDICADORES` en
+  `zonas.py`), población total por defecto.
+- **Minutos:** sin negocio del rubro a menos de N minutos en auto.
+- **Orden:** por el indicador o por los minutos, a elección.
+- **Arranque:** los dos criterios empiezan en su mediana (los minutos,
+  redondeados hacia arriba). Es un punto de partida, no una recomendación, y
+  la pantalla lo dice.
+
+Al ver una zona se dibuja su isócrona con los minutos del criterio y los
+negocios que caen dentro (la consulta de `cuantos_cerca`).
+
+Va en su propia ruta, `POST /buscador/zonas`, porque la primera vez tarda
+segundos y no debe retrasar la respuesta.
+
+### Cómo se miden los minutos
+
+Con la matriz de OSRM que usa `/logistica`, desde un punto dentro de cada AGEB
+(`ST_PointOnSurface`) hasta los 10 negocios del rubro más cercanos en línea
+recta; gana el más cercano por calle. No se usa una isócrona por negocio: serían
+cientos de polígonos aproximados y solo dirían sí o no para un umbral fijo. La
+matriz da el dato exacto y cualquier umbral se resuelve filtrando.
+
+- **Cuentan los negocios de todo el estado**, no solo los de los municipios de la
+  pregunta: la competencia cruza la frontera municipal. La del estado sí la
+  ignora, porque solo Jalisco tiene DENUE cargado.
+- **Por qué 10 vecinos.** El más cercano en línea recta no suele ser el más
+  cercano por calle. Contra 20 vecinos en Zapopan, tomar 1 cambia el tiempo de
+  206 de 540 AGEB y tomar 5, de 26. Contra 30, tomar 10 cambia de 0 a 11 de 540
+  (peor caso, 3.9 minutos de más), y las candidatas casi no se mueven: 99 contra
+  99 en florería, 93 contra 92 en farmacia.
+- **Por lotes de 25 AGEB.** `osrm-routed` rechaza más de 10,000 celdas por
+  llamada, y así funciona sin cambiar su configuración.
+- **Sin OSRM** se cae a línea recta a 30 km/h y se avisa (`metodo`), como el
+  círculo de las isócronas. Si falla un lote, se descarta todo: no se mezclan
+  métodos.
+- **Tope de 2,000 AGEB.** Cabe la zona metropolitana (1,840). El estado entero
+  (4,932) tardaría cerca de un minuto, y se dice en vez de intentarlo.
+- **Se guardan en memoria** los minutos de las últimas 32 consultas, hasta
+  reiniciar `mapo_core`. Mover un criterio tarda de 20 a 40 ms. Después de una
+  carga de DENUE hay que reiniciar.
+
+### Lo que no dice
+
+- **El censo cuenta dónde vive la gente**, no dónde trabaja o pasa. Una zona de
+  oficinas sale vacía.
+- **Un solo punto por AGEB.** Si cae dentro de un coto, salir a la calle pública
+  ya le suma minutos y la zona parece más lejos de lo que está. Pasa poco, pero
+  puede hacer candidata a una zona que no lo es: la AGEB 1193 de Zapopan da 5.4
+  minutos a la florería más cercana y su isócrona de 5 minutos casi no sale del
+  coto. Por eso se puede ver cada zona antes de creerle.
+- **Son minutos en auto:** el mapa de OSRM está preparado solo para auto. Una
+  florería de barrio se decide a pie, y ahí la cifra es una aproximación.
+- **DENUE no dice cuánto vende nadie.** Sin competencia cerca no prueba que haya
+  demanda: también puede querer decir que ahí no funciona.
 
 ## Filtro "giro" del modo técnico
 

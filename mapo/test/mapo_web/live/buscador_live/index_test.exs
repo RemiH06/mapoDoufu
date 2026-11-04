@@ -27,7 +27,11 @@ defmodule MapoWeb.BuscadorLive.IndexTest do
         "rubros" => [%{"rubro" => "floreria", "nombre" => "Florería"}]
       }
     ],
-    "edades" => [%{"edad" => "p_18a24", "nombre" => "18 a 24 años"}]
+    "edades" => [%{"edad" => "p_18a24", "nombre" => "18 a 24 años"}],
+    "indicadores_zonas" => [
+      %{"indicador" => "pobtot", "nombre" => "Población total"},
+      %{"indicador" => "p_60ymas", "nombre" => "Población de 60 años o más"}
+    ]
   }
 
   @plantilla_vacia %{
@@ -93,7 +97,45 @@ defmodule MapoWeb.BuscadorLive.IndexTest do
     }
   end
 
-  # Responde por ruta; `interpretar` y `resolver` cambian por test.
+  defp zonas(cambios \\ %{}) do
+    Map.merge(
+      %{
+        "indicador" => "pobtot",
+        "etiqueta" => "Población total",
+        "metodo" => "carretera_real",
+        "criterios" => %{"minimo" => 2598, "minutos" => 2, "orden" => "indicador"},
+        "total" => 540,
+        "total_candidatas" => 1,
+        "descartes" => %{"sin_dato" => 11, "por_indicador" => 264, "por_minutos" => 273},
+        "filas" => [
+          %{
+            "cvegeo" => "1412000010001",
+            "ageb" => "0001",
+            "municipio" => "Zapopan",
+            "lat" => 20.7,
+            "lon" => -103.4,
+            "valor" => 6240,
+            "minutos" => 7.2
+          }
+        ],
+        "cvegeos" => ["1412000010001"],
+        "avisos" => []
+      },
+      cambios
+    )
+  end
+
+  defp resolver_donde_poner(conn, opts \\ []) do
+    plantilla = %{"intencion" => "donde_poner", "rubro" => "floreria", "municipios" => ["120"]}
+    stub([interpretar: interpretacion(plantilla), resolver: resultado_donde_poner()] ++ opts)
+
+    {:ok, view, _html} = live(conn, ~p"/buscador?q=florería en Zapopan")
+    view |> form("#plantilla_form") |> render_submit()
+    render_async(view)
+    view
+  end
+
+  # Responde por ruta; `interpretar`, `resolver` y `zonas` cambian por test.
   defp stub(opts \\ []) do
     Req.Test.stub(Mapo.MapoCore, fn conn ->
       case conn.request_path do
@@ -115,6 +157,20 @@ defmodule MapoWeb.BuscadorLive.IndexTest do
 
         "/buscador/interpretar" ->
           Req.Test.json(conn, opts[:interpretar] || interpretacion(%{}))
+
+        "/buscador/zonas" ->
+          {:ok, cuerpo, conn} = Plug.Conn.read_body(conn)
+          if opts[:espia], do: send(opts[:espia], {:zonas, Jason.decode!(cuerpo)})
+
+          case opts[:zonas] do
+            {:status, status, respuesta} ->
+              conn
+              |> Plug.Conn.put_resp_content_type("application/json")
+              |> Plug.Conn.send_resp(status, Jason.encode!(respuesta))
+
+            respuesta ->
+              Req.Test.json(conn, respuesta || zonas())
+          end
 
         "/buscador/resolver" ->
           {:ok, cuerpo, conn} = Plug.Conn.read_body(conn)
@@ -406,5 +462,122 @@ defmodule MapoWeb.BuscadorLive.IndexTest do
     lv |> element("#plantilla_form") |> render_submit()
 
     assert render_async(lv) =~ "sin dato"
+  end
+
+  describe "zonas candidatas" do
+    test "van con sus criterios, lo que quedó fuera y sin puntaje", %{conn: conn} do
+      view = resolver_donde_poner(conn)
+      html = render_async(view)
+
+      assert html =~ "Zonas candidatas"
+      assert html =~ "de 540 AGEB cumplen"
+      assert html =~ "Zapopan · 0001"
+      assert html =~ "264 por el indicador"
+      assert html =~ "273 por los minutos"
+      assert html =~ "11"
+      assert has_element?(view, ~s(input[name="criterios[minimo]"][value="2598"]))
+      assert has_element?(view, ~s(input[name="criterios[minutos]"][value="2"]))
+      assert_push_event(view, "capa_zonas", %{activa: true, cvegeos: ["1412000010001"]})
+      refute html =~ "puntaje"
+    end
+
+    test "mover un criterio vuelve a pedirlas con lo elegido", %{conn: conn} do
+      view = resolver_donde_poner(conn, espia: self())
+      assert_receive {:zonas, %{"minimo" => nil, "minutos" => nil}}
+      render_async(view)
+
+      view
+      |> form("#criterios_form", criterios: %{minimo: "4000", minutos: "5", orden: "minutos"})
+      |> render_change()
+
+      assert_receive {:zonas, %{"minimo" => 4000, "minutos" => 5, "orden" => "minutos"}}
+    end
+
+    test "cambiar de indicador regresa el mínimo a su mediana", %{conn: conn} do
+      view = resolver_donde_poner(conn, espia: self())
+      assert_receive {:zonas, _}
+      render_async(view)
+
+      view |> form("#criterios_form", criterios: %{indicador: "p_60ymas"}) |> render_change()
+
+      assert_receive {:zonas, %{"indicador" => "p_60ymas", "minimo" => nil, "minutos" => 2}}
+    end
+
+    test "el límite de AGEB se muestra sin tirar la respuesta", %{conn: conn} do
+      view =
+        resolver_donde_poner(conn,
+          zonas: {:status, 422, %{"detail" => %{"mensaje" => "Elige menos municipios."}}}
+        )
+
+      html = render_async(view)
+      assert html =~ "Elige menos municipios."
+      assert html =~ "Florería"
+    end
+
+    test "sin mapo_core avisa sin tirar la respuesta", %{conn: conn} do
+      view = resolver_donde_poner(conn, zonas: {:status, 502, %{}})
+
+      html = render_async(view)
+      assert html =~ "No se pudieron calcular las zonas candidatas."
+      assert html =~ "305"
+    end
+
+    test "sin negocios en el estado no pide minutos", %{conn: conn} do
+      vacia =
+        zonas(%{
+          "metodo" => "sin_negocios",
+          "criterios" => %{"minimo" => 100, "minutos" => nil, "orden" => "indicador"},
+          "avisos" => ["No hay negocios del rubro."]
+        })
+
+      view = resolver_donde_poner(conn, zonas: vacia)
+      html = render_async(view)
+
+      assert html =~ "cumplen el criterio"
+      assert html =~ "No hay negocios del rubro."
+      refute has_element?(view, ~s(input[name="criterios[minutos]"]))
+    end
+
+    test "ver una zona dibuja su isócrona con los minutos del criterio", %{conn: conn} do
+      view = resolver_donde_poner(conn)
+      render_async(view)
+      prueba = self()
+
+      Req.Test.stub(Mapo.MapoCore, fn conn ->
+        {:ok, cuerpo, conn} = Plug.Conn.read_body(conn)
+
+        if conn.request_path == "/buscador/zonas" do
+          Req.Test.json(conn, zonas())
+        else
+          send(prueba, {:cerca, Jason.decode!(cuerpo)})
+
+          Req.Test.json(conn, %{
+            "intencion" => "cuantos_cerca",
+            "capas" => %{
+              "isocrona" => %{"poligono" => %{}, "metodo" => "osrm_real"},
+              "puntos" => []
+            },
+            "cifras" => %{"total_negocios" => 0, "metodo" => "osrm_real"},
+            "avisos" => []
+          })
+        end
+      end)
+
+      view |> element("button", "Ver") |> render_click()
+      html = render_async(view)
+
+      assert_receive {:cerca, %{"plantilla" => %{"intencion" => "cuantos_cerca", "minutos" => 2}}}
+      assert html =~ "0 negocios a 2 minutos en auto de 0001"
+
+      assert_push_event(view, "capa_isocrona", %{
+        "activa" => true,
+        "origen" => %{"lat" => 20.7, "lon" => -103.4}
+      })
+
+      view |> form("#criterios_form", criterios: %{minutos: "3"}) |> render_change()
+
+      refute render(view) =~ "minutos en auto de 0001"
+      assert_push_event(view, "capa_isocrona", %{activa: false})
+    end
   end
 end

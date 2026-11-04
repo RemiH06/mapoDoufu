@@ -185,3 +185,18 @@ async def test_duraciones_desde_regresa_none_si_el_servicio_no_responde():
 
     assert resultado is None
     await cliente.aclose()
+
+
+@pytest.mark.asyncio
+async def test_duraciones_matriz_separa_origenes_de_destinos_y_conserva_los_tramos_sin_ruta():
+    capturado = {}
+    cuerpo = {"code": "Ok", "durations": [[60, None], [120, 180]]}
+    cliente = _cliente_con_respuesta(capturado, cuerpo)
+
+    resultado = await cliente.duraciones_matriz([CDMX, PUEBLA], [PUEBLA, CDMX])
+
+    assert "sources=0%3B1" in capturado["query"] or "sources=0;1" in capturado["query"]
+    assert "destinations=2%3B3" in capturado["query"] or "destinations=2;3" in capturado["query"]
+    assert resultado == [[1.0, None], [2.0, 3.0]]
+    await cliente.aclose()
+

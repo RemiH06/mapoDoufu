@@ -223,6 +223,58 @@
     color: var(--text2);
   }
 
+  .respuesta .zonas {
+    display: grid;
+    gap: 8px;
+    padding-top: 10px;
+    border-top: 1.5px solid var(--text);
+  }
+  .respuesta .zonas h3 {
+    font-family: var(--cond);
+    font-weight: 700;
+    font-size: 18px;
+    line-height: 1.1;
+  }
+  .respuesta .criterios fieldset {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px 12px;
+    border: 0;
+    padding: 0;
+    margin: 0;
+  }
+  .respuesta .criterios label {
+    display: grid;
+    gap: 2px;
+    align-content: end;
+    min-width: 0;
+  }
+  .respuesta .criterios .etiqueta {
+    font-size: 13px;
+    color: var(--text2);
+  }
+  .respuesta .criterios .campo {
+    width: 100%;
+    min-width: 0;
+    font-size: 14px;
+  }
+  .respuesta .zonas .aviso {
+    color: var(--accent);
+  }
+  .respuesta .zonas .vista td {
+    background: color-mix(in srgb, var(--accent) 10%, transparent);
+  }
+  .respuesta .zonas .enlace {
+    color: var(--accent);
+    text-decoration: underline;
+    text-underline-offset: 2px;
+    cursor: pointer;
+  }
+  .respuesta .consultando-zonas {
+    font-size: 14px;
+    color: var(--text2);
+  }
+
   .pregunta .editar-plantilla {
     display: none;
   }

@@ -36,7 +36,10 @@ defmodule MapoWeb.BuscadorLive.Index do
     "donde_contratar" => "demografia"
   }
 
-  @capas ~w(puntos coropleta voronoi isocrona)
+  @capas ~w(puntos coropleta voronoi isocrona zonas)
+
+  # Sin mínimo ni minutos, mapo_core arranca en la mediana de cada uno.
+  @criterios %{"indicador" => "pobtot", "minimo" => nil, "minutos" => nil, "orden" => "indicador"}
 
   @ejemplos [
     "¿Dónde pongo una florería en Zapopan?",
@@ -190,7 +193,16 @@ defmodule MapoWeb.BuscadorLive.Index do
         Resolviendo con las fuentes, tarda unos segundos.
       </p>
 
-      <.respuesta :if={@resultado} resultado={@resultado} escala={@escala} />
+      <.respuesta
+        :if={@resultado}
+        resultado={@resultado}
+        escala={@escala}
+        catalogo={@catalogo}
+        zonas={@zonas}
+        zonas_error={@zonas_error}
+        criterios={@criterios}
+        zona_vista={@zona_vista}
+      />
     </Layouts.app>
     """
   end
@@ -319,6 +331,11 @@ defmodule MapoWeb.BuscadorLive.Index do
 
   attr :resultado, :map, required: true
   attr :escala, :map, default: nil
+  attr :catalogo, :map, required: true
+  attr :zonas, :map, default: nil
+  attr :zonas_error, :string, default: nil
+  attr :criterios, :map, required: true
+  attr :zona_vista, :map, default: nil
 
   defp respuesta(assigns) do
     ~H"""
@@ -418,7 +435,158 @@ defmodule MapoWeb.BuscadorLive.Index do
         <li :for={aviso <- @resultado["avisos"]}>{aviso}</li>
       </ul>
 
+      <.zonas
+        :if={@resultado["intencion"] == "donde_poner"}
+        catalogo={@catalogo}
+        zonas={@zonas}
+        error={@zonas_error}
+        criterios={@criterios}
+        cifras={@resultado["cifras"]}
+        zona_vista={@zona_vista}
+      />
+
       <p class="fuente">{fuentes(@resultado["intencion"])}</p>
+    </section>
+    """
+  end
+
+  attr :catalogo, :map, required: true
+  attr :zonas, :map, default: nil
+  attr :error, :string, default: nil
+  attr :criterios, :map, required: true
+  attr :cifras, :map, required: true
+  attr :zona_vista, :map, default: nil
+
+  # Criterios a la vista, nunca un puntaje (RNF5): cada AGEB cumple los dos o
+  # no, y se dice cuántas dejó fuera cada uno.
+  defp zonas(assigns) do
+    assigns =
+      assign(
+        assigns,
+        :con_minutos,
+        is_nil(assigns.zonas) or assigns.zonas["metodo"] != "sin_negocios"
+      )
+
+    ~H"""
+    <section class="zonas" aria-labelledby="zonas-titulo">
+      <h3 id="zonas-titulo">Zonas candidatas</h3>
+
+      <.form for={%{}} as={:criterios} id="criterios_form" phx-change="criterios" class="criterios">
+        <fieldset disabled={is_nil(@zonas)}>
+          <label>
+            <span class="etiqueta">Indicador</span>
+            <select name="criterios[indicador]" class="campo">
+              {Phoenix.HTML.Form.options_for_select(
+                Enum.map(@catalogo["indicadores_zonas"], &{&1["nombre"], &1["indicador"]}),
+                @criterios["indicador"]
+              )}
+            </select>
+          </label>
+          <label>
+            <span class="etiqueta">Desde</span>
+            <input
+              type="number"
+              name="criterios[minimo]"
+              value={@criterios["minimo"]}
+              min="0"
+              phx-debounce="400"
+              class="campo num"
+            />
+          </label>
+          <label :if={@con_minutos}>
+            <span class="etiqueta">Sin {singular(@cifras)} a menos de (min)</span>
+            <input
+              type="number"
+              name="criterios[minutos]"
+              value={@criterios["minutos"]}
+              min="0"
+              step="1"
+              phx-debounce="400"
+              class="campo num"
+            />
+          </label>
+          <label :if={@con_minutos}>
+            <span class="etiqueta">Ordenar por</span>
+            <select name="criterios[orden]" class="campo">
+              {Phoenix.HTML.Form.options_for_select(
+                [{"El indicador", "indicador"}, {"Los minutos", "minutos"}],
+                @criterios["orden"]
+              )}
+            </select>
+          </label>
+        </fieldset>
+      </.form>
+
+      <p :if={@error} class="aviso">{@error}</p>
+      <p :if={is_nil(@zonas) and is_nil(@error)} class="consultando-zonas">
+        Calculando tiempos por calle, tarda unos segundos.
+      </p>
+
+      <%= if @zonas do %>
+        <p>
+          <b class="num">{cifra(@zonas["total_candidatas"])}</b>
+          de {cifra(@zonas["total"])} AGEB cumplen {if @con_minutos,
+            do: "los dos criterios",
+            else: "el criterio"}.
+        </p>
+
+        <table :if={@zonas["filas"] != []} class="cifras">
+          <thead>
+            <tr>
+              <th>Zona</th>
+              <th class="num">{@zonas["etiqueta"]}</th>
+              <th :if={@con_minutos} class="num">Min.</th>
+              <th><span class="sr-only">Ver en el plano</span></th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr
+              :for={f <- @zonas["filas"]}
+              class={[@zona_vista && @zona_vista["cvegeo"] == f["cvegeo"] && "vista"]}
+            >
+              <td>{f["municipio"]} · {f["ageb"]}</td>
+              <td class="num">{cifra(f["valor"])}</td>
+              <td :if={@con_minutos} class="num">{cifra(f["minutos"], 1)}</td>
+              <td>
+                <button
+                  type="button"
+                  class="enlace"
+                  phx-click="ver_zona"
+                  phx-value-cvegeo={f["cvegeo"]}
+                  aria-label={"Ver #{f["municipio"]} #{f["ageb"]} en el plano"}
+                >
+                  Ver
+                </button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+        <p :if={@zonas["total_candidatas"] > length(@zonas["filas"])} class="leyenda">
+          Se listan {length(@zonas["filas"])}; en el plano van todas, con borde.
+        </p>
+
+        <p :if={@zona_vista} class="zona-vista">
+          {cifra(@zona_vista["total"])} {unidad(@cifras)} a {@zona_vista["minutos"]} minutos en auto de {@zona_vista[
+            "ageb"
+          ]}, {metodo(@zona_vista["metodo"])}.
+        </p>
+
+        <p class="leyenda">
+          Fuera: {cifra(@zonas["descartes"]["por_indicador"])} por el indicador{if @con_minutos,
+            do: ", #{cifra(@zonas["descartes"]["por_minutos"])} por los minutos"}, {cifra(
+            @zonas["descartes"]["sin_dato"]
+          )} sin dato. Una AGEB puede fallar los dos.
+        </p>
+        <p class="leyenda">
+          Los criterios arrancan en la mediana. Los minutos son en auto, desde un punto dentro de la
+          AGEB, y cuentan a los de otros municipios. El censo dice dónde vive la gente, no dónde
+          trabaja o pasa.
+        </p>
+
+        <ul :if={@zonas["avisos"] != []} class="avisos">
+          <li :for={aviso <- @zonas["avisos"]}>{aviso}</li>
+        </ul>
+      <% end %>
     </section>
     """
   end
@@ -464,7 +632,12 @@ defmodule MapoWeb.BuscadorLive.Index do
        avisos: [],
        resultado: nil,
        escala: nil,
-       resolviendo: false
+       resolviendo: false,
+       resuelta: nil,
+       zonas: nil,
+       zonas_error: nil,
+       criterios: @criterios,
+       zona_vista: nil
      )}
   end
 
@@ -526,8 +699,48 @@ defmodule MapoWeb.BuscadorLive.Index do
 
     {:noreply,
      socket
-     |> assign(resolviendo: true)
+     |> assign(resolviendo: true, resuelta: plantilla)
      |> start_async(:resolver, fn -> MapoCore.buscador_resolver(cve_ent, plantilla) end)}
+  end
+
+  def handle_event("criterios", %{"criterios" => params}, socket) do
+    actual = socket.assigns.criterios
+    indicador = params["indicador"] || actual["indicador"]
+
+    criterios = %{
+      "indicador" => indicador,
+      # El mínimo de otro indicador no significa nada: regresa a su mediana.
+      "minimo" => if(indicador == actual["indicador"], do: numero(params["minimo"])),
+      "minutos" => numero(params["minutos"]),
+      "orden" => params["orden"] || actual["orden"]
+    }
+
+    {:noreply, socket |> assign(criterios: criterios) |> quitar_zona_vista() |> pedir_zonas()}
+  end
+
+  def handle_event("ver_zona", %{"cvegeo" => cvegeo}, socket) do
+    %{cve_ent: cve_ent, resuelta: plantilla, zonas: zonas} = socket.assigns
+
+    case zonas && Enum.find(zonas["filas"], &(&1["cvegeo"] == cvegeo)) do
+      nil ->
+        {:noreply, socket}
+
+      fila ->
+        minutos = max(ceil(zonas["criterios"]["minutos"] || 5), 1)
+
+        cerca =
+          Map.merge(plantilla, %{
+            "intencion" => "cuantos_cerca",
+            "minutos" => minutos,
+            "lat" => fila["lat"],
+            "lon" => fila["lon"]
+          })
+
+        {:noreply,
+         start_async(socket, :ver_zona, fn ->
+           {fila, minutos, MapoCore.buscador_resolver(cve_ent, cerca)}
+         end)}
+    end
   end
 
   @impl true
@@ -546,8 +759,17 @@ defmodule MapoWeb.BuscadorLive.Index do
 
     {:noreply,
      socket
-     |> assign(resultado: resultado, escala: escala, resolviendo: false)
-     |> push_event("piel", %{piel: piel(resultado["intencion"])})}
+     |> assign(
+       resultado: resultado,
+       escala: escala,
+       resolviendo: false,
+       zonas: nil,
+       zonas_error: nil,
+       criterios: @criterios,
+       zona_vista: nil
+     )
+     |> push_event("piel", %{piel: piel(resultado["intencion"])})
+     |> pedir_zonas()}
   end
 
   def handle_async(
@@ -563,6 +785,76 @@ defmodule MapoWeb.BuscadorLive.Index do
      socket
      |> assign(resolviendo: false)
      |> put_flash(:error, "mapo_core no está disponible ahorita mismo.")}
+  end
+
+  # Una respuesta que llega después de cambiar de pregunta ya no aplica.
+  def handle_async(:zonas, _respuesta, %{assigns: %{resultado: nil}} = socket),
+    do: {:noreply, socket}
+
+  def handle_async(:zonas, {:ok, {:ok, zonas}}, socket) do
+    {:noreply,
+     socket
+     |> assign(
+       zonas: zonas,
+       zonas_error: nil,
+       criterios: Map.merge(socket.assigns.criterios, zonas["criterios"])
+     )
+     |> push_event("capa_zonas", %{activa: true, cvegeos: zonas["cvegeos"]})}
+  end
+
+  def handle_async(
+        :zonas,
+        {:ok, {:error, {:status, 422, %{"detail" => %{"mensaje" => m}}}}},
+        socket
+      ) do
+    {:noreply, assign(socket, zonas_error: m)}
+  end
+
+  def handle_async(:zonas, _fallo, socket) do
+    {:noreply, assign(socket, zonas_error: "No se pudieron calcular las zonas candidatas.")}
+  end
+
+  def handle_async(:ver_zona, {:ok, {fila, minutos, {:ok, resultado}}}, socket) do
+    capas = resultado["capas"]
+
+    {:noreply,
+     socket
+     |> assign(
+       zona_vista: %{
+         "cvegeo" => fila["cvegeo"],
+         "ageb" => fila["ageb"],
+         "minutos" => minutos,
+         "total" => resultado["cifras"]["total_negocios"],
+         "metodo" => resultado["cifras"]["metodo"]
+       }
+     )
+     |> push_event("capa_puntos", datos_capa("puntos", capas["puntos"], nil))
+     |> push_event(
+       "capa_isocrona",
+       datos_capa("isocrona", capas["isocrona"], nil)
+       |> Map.put("origen", Map.take(fila, ~w(lat lon)))
+     )}
+  end
+
+  def handle_async(:ver_zona, _fallo, socket) do
+    {:noreply, put_flash(socket, :error, "No se pudo calcular la isócrona de esa zona.")}
+  end
+
+  defp pedir_zonas(%{assigns: %{resultado: %{"intencion" => "donde_poner"}}} = socket) do
+    %{cve_ent: cve_ent, resuelta: plantilla, criterios: criterios} = socket.assigns
+    start_async(socket, :zonas, fn -> MapoCore.buscador_zonas(cve_ent, plantilla, criterios) end)
+  end
+
+  defp pedir_zonas(socket), do: socket
+
+  # La zona vista puede dejar de ser candidata: su isócrona no se queda sola.
+  defp quitar_zona_vista(%{assigns: %{zona_vista: nil}} = socket), do: socket
+
+  defp quitar_zona_vista(socket) do
+    socket
+    |> assign(zona_vista: nil)
+    |> push_event("capa_isocrona", %{activa: false})
+    |> push_event("capa_puntos", %{activa: false})
   end
 
   defp interpretar(socket, texto) do
@@ -647,7 +939,7 @@ defmodule MapoWeb.BuscadorLive.Index do
 
   defp limpiar_resultado(socket) do
     socket = Enum.reduce(@capas, socket, &push_event(&2, "capa_#{&1}", %{activa: false}))
-    assign(socket, resultado: nil, escala: nil)
+    assign(socket, resultado: nil, escala: nil, zonas: nil, zonas_error: nil, zona_vista: nil)
   end
 
   defp datos_capa(_id, nil, _escala), do: %{activa: false}
@@ -664,6 +956,7 @@ defmodule MapoWeb.BuscadorLive.Index do
   defp datos_capa("voronoi", capa, _), do: %{activa: true, geojson: capa["celdas"]}
   defp datos_capa("isocrona", capa, _), do: Map.put(capa, "activa", true)
   defp datos_capa("puntos", puntos, _), do: %{activa: true, puntos: puntos}
+  defp datos_capa("zonas", _capa, _), do: %{activa: false}
 
   # Los huecos de la intención elegida que siguen vacíos. Cuáles lleva cada
   # intención lo dice el catálogo de mapo_core, que también lo valida al
@@ -733,13 +1026,23 @@ defmodule MapoWeb.BuscadorLive.Index do
   defp dato(nil), do: "sin dato"
   defp dato(v), do: cifra(v)
 
-  defp fuentes("donde_poner"), do: "INEGI · DENUE y Censo 2020"
+  defp fuentes("donde_poner"), do: "INEGI · DENUE y Censo 2020 · OSRM"
   defp fuentes("cuantos"), do: "INEGI · DENUE"
   defp fuentes("cuantos_cerca"), do: "INEGI · DENUE · OSRM"
   defp fuentes("donde_contratar"), do: "INEGI · Censo 2020 y ENOE"
 
   defp nombre_de(opciones, valor),
     do: Enum.find_value(opciones, valor, fn {n, v} -> if v == valor, do: n end)
+
+  # Vacío o inválido es nil: mapo_core regresa a la mediana.
+  defp numero(nil), do: nil
+
+  defp numero(texto) do
+    case Float.parse(texto) do
+      {n, ""} when n >= 0 -> if trunc(n) == n, do: trunc(n), else: n
+      _ -> nil
+    end
+  end
 
   defp vacio_para_nil(""), do: nil
   defp vacio_para_nil(valor), do: valor

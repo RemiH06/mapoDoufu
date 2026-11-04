@@ -2,7 +2,8 @@
 
 No es una fuente de datos, es un servicio que `mapo_core` consulta
 para distancias y tiempos reales por carretera. Lo usan el VRP
-(`/vrp/calcular`, `/logistica`) y las isócronas (capa de `/mapa`).
+(`/vrp/calcular`, `/logistica`), las isócronas (capa de `/mapa`) y las
+zonas candidatas del buscador.
 
 - Cliente: `mapo_core/src/mapo_core/osrm_client.py`, adaptado de
   `gaiarda/src/gaiarda/ruteo_osrm.py` (async con `httpx`).
@@ -14,8 +15,19 @@ para distancias y tiempos reales por carretera. Lo usan el VRP
 - Nunca truena: si el servicio no responde o algún par no es
   alcanzable, regresa `None` y quien llama cae a línea recta
   (haversine). El resultado siempre trae `metodo` (`carretera_real` /
-  `linea_recta_aproximada` en VRP, `osrm_real` / `circulo_aproximado`
-  en isócronas).
+  `linea_recta_aproximada` en VRP y zonas candidatas, `osrm_real` /
+  `circulo_aproximado` en isócronas).
+- Límites de `osrm-routed` sin configurar, medidos con v26.7.3: 10,000 celdas
+  por llamada a `table` (`TooBig`) y unos 25 KB de URL. La matriz de las zonas
+  candidatas y la isócrona (97 coordenadas) caben sin cambiarlos.
+- En Docker sobre una laptop de 4 núcleos da unas 90 AGEB por segundo con 10 destinos cada una
+  (Zapopan en 3 a 7 s, zona metropolitana en unos 25 s).
+
+Las muestras de una isócrona van en escala geométrica: suponen 90 km/h y en
+ciudad se llega a una fracción, así que con pasos iguales casi ninguna dirección
+alcanzaba la primera muestra en 5 minutos. Una dirección sin nada alcanzable se
+pega al origen: la isócrona de un punto dentro de un coto sale con forma de
+araña porque de verdad casi no sale de ahí.
 
 ## Servidor propio
 

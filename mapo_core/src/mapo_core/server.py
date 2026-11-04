@@ -2,6 +2,7 @@
 # dentro de un `async def` bloquearia el event loop para todas las peticiones.
 import asyncio
 import json
+from typing import Literal
 
 import psycopg
 from fastapi import Depends, FastAPI, HTTPException, Request
@@ -498,5 +499,38 @@ async def buscador_resolver(
     modo técnico. 422 con `faltan` si a la plantilla le falta un hueco."""
     try:
         return await buscador.resolver(pool, osrm, solicitud.cve_ent, solicitud.plantilla)
+    except buscador.PlantillaInvalida as exc:
+        raise HTTPException(422, {"mensaje": str(exc), "faltan": exc.faltan}) from None
+
+
+class SolicitudZonas(BaseModel):
+    cve_ent: str
+    plantilla: buscador.Plantilla
+    indicador: str = "pobtot"
+    minimo: float | None = Field(default=None, ge=0)
+    minutos: float | None = Field(default=None, ge=0)
+    orden: Literal["indicador", "minutos"] = "indicador"
+
+
+@app.post("/buscador/zonas")
+async def buscador_zonas(
+    solicitud: SolicitudZonas,
+    pool: AsyncConnectionPool = Depends(get_pool),
+    osrm: OSRMClient = Depends(get_osrm_client),
+) -> dict:
+    """Zonas candidatas de un `donde_poner`. Va aparte de `/buscador/resolver`
+    porque la primera vez tarda segundos: los minutos se calculan con OSRM y
+    luego mover un criterio solo vuelve a filtrar."""
+    try:
+        return await buscador.zonas(
+            pool,
+            osrm,
+            solicitud.cve_ent,
+            solicitud.plantilla,
+            indicador=solicitud.indicador,
+            minimo=solicitud.minimo,
+            minutos=solicitud.minutos,
+            orden=solicitud.orden,
+        )
     except buscador.PlantillaInvalida as exc:
         raise HTTPException(422, {"mensaje": str(exc), "faltan": exc.faltan}) from None

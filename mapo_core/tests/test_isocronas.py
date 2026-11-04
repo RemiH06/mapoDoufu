@@ -117,3 +117,22 @@ async def test_num_direcciones_minimo_produce_un_triangulo_cerrado():
     anillo = _extraer_anillo(resultado.poligono)
     assert len(anillo) == 4
     assert anillo[0] == anillo[-1]
+
+
+@pytest.mark.asyncio
+async def test_las_muestras_alcanzan_a_un_viaje_corto_de_ciudad():
+    """A 5 minutos en ciudad se llega a unos 2 km. Con pasos iguales la primera
+    muestra quedaba a 1.25 km y casi todo el polígono se pegaba al origen."""
+    distancias = []
+
+    class OSRMDeCiudad:
+        async def duraciones_desde(self, origen, destinos):
+            for lat, lon in destinos:
+                distancias.append(((lat - origen[0]) ** 2 + (lon - origen[1]) ** 2) ** 0.5 * 111.0)
+            return [0.0] * len(destinos)
+
+    await calcular_isocrona(OSRMDeCiudad(), 20.0, -103.0, minutos=5)
+
+    assert len(distancias) + 1 < 100  # el `table` por defecto de OSRM
+    assert sum(d < 2.0 for d in distancias) >= 2 * 16
+

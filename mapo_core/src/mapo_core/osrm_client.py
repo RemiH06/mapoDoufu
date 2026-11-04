@@ -133,6 +133,36 @@ class OSRMClient:
 
         return [round(d / 60, 2) for d in fila[1:]]
 
+    async def duraciones_matriz(
+        self, origenes: list[tuple[float, float]], destinos: list[tuple[float, float]]
+    ) -> list[list[float | None]] | None:
+        """Duracion (minutos) de cada origen a cada destino, en una llamada a
+        `table` con `sources` y `destinations`: una fila por origen.
+
+        A diferencia de `matriz_carretera`, un tramo sin ruta no tira la
+        matriz: se queda `None` en su celda, porque aqui cada fila se lee por
+        separado. `None` completo si el servicio no responde. `osrm-routed`
+        rechaza mas de 10,000 celdas por llamada (`--max-table-size`).
+        """
+        indices = range(len(origenes) + len(destinos))
+        try:
+            respuesta = await self._client.get(
+                f"/table/v1/driving/{_coords_url([*origenes, *destinos])}",
+                params={
+                    "sources": ";".join(map(str, indices[: len(origenes)])),
+                    "destinations": ";".join(map(str, indices[len(origenes) :])),
+                    "annotations": "duration",
+                },
+            )
+            respuesta.raise_for_status()
+            datos = respuesta.json()
+        except (httpx.HTTPError, ValueError):
+            return None
+
+        if datos.get("code") != "Ok" or not datos.get("durations"):
+            return None
+        return [[None if d is None else round(d / 60, 2) for d in fila] for fila in datos["durations"]]
+
     async def geometria_ruta(self, coords_en_orden: list[tuple[float, float]]) -> dict | None:
         """GeoJSON LineString de la ruta real por carretera, siguiendo
         el orden de visita ya decidido (no solo tramos rectos entre

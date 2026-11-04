@@ -26,7 +26,13 @@ from dataclasses import dataclass
 from mapo_core.osrm_client import OSRMClient
 
 _RADIO_TIERRA_KM = 6371.0
-_VELOCIDAD_FALLBACK_KMH = 30.0  # asumida solo para el circulo aproximado
+VELOCIDAD_FALLBACK_KMH = 30.0  # asumida solo para el circulo aproximado
+
+# Cada muestra de una direccion queda a este factor de la siguiente: mas
+# juntas cerca del origen. El radio supone 90 km/h, y en ciudad se llega a una
+# fraccion: con pasos iguales, 5 minutos saltan de 1.25 en 1.25 km y casi
+# ninguna direccion alcanza la primera muestra (salia un triangulo).
+_FACTOR_MUESTRAS = 0.63
 
 
 @dataclass
@@ -55,7 +61,7 @@ def _anillo_a_poligono(anillo: list[tuple[float, float]]) -> dict:
 
 
 def _circulo_aproximado(lat: float, lon: float, minutos: float, num_direcciones: int) -> dict:
-    radio_km = _VELOCIDAD_FALLBACK_KMH * minutos / 60
+    radio_km = VELOCIDAD_FALLBACK_KMH * minutos / 60
     anillo = [
         _punto_a_distancia_y_rumbo(lat, lon, radio_km, i * 360 / num_direcciones)
         for i in range(num_direcciones)
@@ -80,7 +86,7 @@ async def calcular_isocrona(
     for direccion in range(num_direcciones):
         rumbo = direccion * 360 / num_direcciones
         for muestra in range(1, muestras_por_direccion + 1):
-            distancia_km = radio_maximo_km * muestra / muestras_por_direccion
+            distancia_km = radio_maximo_km * _FACTOR_MUESTRAS ** (muestras_por_direccion - muestra)
             p_lat, p_lon = _punto_a_distancia_y_rumbo(lat, lon, distancia_km, rumbo)
             candidatos.append((direccion, distancia_km, p_lat, p_lon))
 
