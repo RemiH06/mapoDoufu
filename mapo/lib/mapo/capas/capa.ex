@@ -14,6 +14,7 @@ defmodule Mapo.Capas.Capa do
     field :num_filas, :integer
     field :num_descartadas, :integer
     field :repetidas, :integer, default: 0
+    field :metodo, :string
     belongs_to :team, Mapo.Teams.Team
     belongs_to :user, Mapo.Accounts.User
     has_many :filas, Mapo.Capas.CapaFila
@@ -35,6 +36,7 @@ defmodule Mapo.Capas.Capa do
       :num_filas,
       :num_descartadas,
       :repetidas,
+      :metodo,
       :team_id,
       :user_id
     ])

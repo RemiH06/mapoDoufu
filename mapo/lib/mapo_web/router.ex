@@ -57,6 +57,7 @@ defmodule MapoWeb.Router do
     pipe_through [:browser, :require_authenticated_user]
 
     get "/capas/:id/raster.png", CapaController, :raster
+    get "/capas/:id/cruce.csv", CapaController, :csv
 
     live_session :require_authenticated_user,
       on_mount: [{MapoWeb.UserAuth, :require_authenticated}] do
@@ -67,6 +68,7 @@ defmodule MapoWeb.Router do
       live "/teams/new", TeamLive.New, :new
       live "/teams/:id", TeamLive.Show, :show
       live "/teams/:id/datos", DatosLive.Index, :index
+      live "/teams/:id/datos/:capa_id/cruce", DatosLive.Cruce, :index
 
       live "/sesiones/:id", SesionLive.Show, :show
 

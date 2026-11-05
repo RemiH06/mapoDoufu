@@ -586,6 +586,44 @@
     font-family: var(--cond);
     font-weight: 600;
   }
+  .cruce-grupo {
+    display: grid;
+    gap: 8px;
+    margin: 12px 0;
+    padding: 0;
+    border: 0;
+  }
+  .cruce-grupo legend {
+    font-family: var(--cond);
+    font-weight: 600;
+  }
+  .cruce-censo {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 230px), 1fr));
+    gap: 4px 16px;
+  }
+  .cruce-censo label {
+    display: flex;
+    gap: 8px;
+    align-items: baseline;
+  }
+  .cruce-resultado {
+    grid-column: 1 / -1;
+    outline: none;
+  }
+  .cruce-metodo {
+    margin-top: 6px;
+    color: var(--text2);
+    font-size: 15px;
+  }
+  .cruce-metodo summary {
+    cursor: pointer;
+  }
+  .cruce-metodo ul {
+    margin: 6px 0 0;
+    padding-left: 18px;
+    overflow-wrap: anywhere;
+  }
   .ficha-datos {
     display: grid;
     grid-template-columns: auto 1fr;

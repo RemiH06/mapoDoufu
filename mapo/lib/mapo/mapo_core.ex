@@ -179,6 +179,13 @@ defmodule Mapo.MapoCore do
   @doc "FeatureCollection de las zonas de `claves` que existan en el marco cargado."
   def geo_por_clave(nivel, claves), do: post("/geo/por_clave", %{nivel: nivel, claves: claves})
 
+  @doc """
+  Cruza renglones de una capa con fuentes públicas, por zona. Con los minutos
+  por calle y 50 mil renglones puede tardar: en Aerilate, unos 30 s.
+  """
+  def cruce_calcular(solicitud),
+    do: post("/cruce/calcular", solicitud, receive_timeout: 120_000)
+
   defp post_archivo(path, contenido, params) do
     opts =
       [

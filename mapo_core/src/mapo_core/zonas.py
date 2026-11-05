@@ -96,7 +96,7 @@ async def _minutos_por_calle(
     return [t for tiempos in lotes for t in tiempos]
 
 
-async def _minutos(
+async def minutos_a_negocios(
     osrm: OSRMClient, agebs: list[tuple], negocios: list[tuple[float, float]]
 ) -> tuple[dict[str, float | None], str]:
     """{cvegeo: minutos} y el método. Sin OSRM, línea recta a velocidad asumida
@@ -162,7 +162,7 @@ async def calcular(
             avisos.append(
                 f"No hay {unidad} del rubro con ubicación en el estado: la distancia no descarta ninguna zona."
             )
-        por_ageb, metodo = await _minutos(osrm, agebs, negocios) if negocios and agebs else ({}, "sin_negocios")
+        por_ageb, metodo = await minutos_a_negocios(osrm, agebs, negocios) if negocios and agebs else ({}, "sin_negocios")
         if metodo == "carretera_real":
             _guardados[llave] = (agebs, por_ageb)
             if len(_guardados) > _MINUTOS_GUARDADOS:

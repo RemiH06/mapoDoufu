@@ -120,6 +120,80 @@ defmodule Mapo.Capas do
   defp fila_para_guardar(%{"clave" => clave, "datos" => datos}, capa_id),
     do: %{capa_id: capa_id, clave: clave, datos: datos}
 
+  @doc """
+  Se cruza lo que cae dentro de una zona. Una geometría puede repartirse entre
+  varias, y un ráster no tiene renglones.
+  """
+  def cruzable?(%Capa{tipo: tipo}), do: tipo in ~w(puntos municipio ageb)
+
+  @doc "Los renglones que `mapo_core` necesita para cruzar, con solo esas columnas."
+  def filas_para_cruce(%Capa{id: id}, columnas) do
+    Repo.all(
+      from f in CapaFila,
+        where: f.capa_id == ^id,
+        order_by: f.id,
+        select: {fragment("ST_Y(?)", f.geom), fragment("ST_X(?)", f.geom), f.clave, f.datos}
+    )
+    |> Enum.map(fn {lat, lon, clave, datos} ->
+      %{lat: lat, lon: lon, clave: clave, valores: Map.take(datos, columnas)}
+    end)
+  end
+
+  @doc """
+  Guarda el resultado de un cruce como capa por zona del equipo de `origen`. Con
+  un renglón por zona, se pinta y se abre como cualquier otra.
+  """
+  def crear_cruce(%Scope{} = scope, %Capa{} = origen, nombre, resultado) do
+    filas = resultado["filas"]
+
+    attrs = %{
+      nombre: nombre,
+      archivo: String.slice(origen.nombre, 0, 255),
+      tamano_bytes: byte_size(Jason.encode!(filas)),
+      tipo: resultado["nivel"],
+      columnas: resultado["columnas"],
+      numericas: resultado["numericas"],
+      num_filas: length(filas),
+      num_descartadas: 0,
+      repetidas: 0,
+      metodo: Enum.join(resultado["metodo"], "\n")
+    }
+
+    crear_capa(scope, origen.team_id, attrs, filas)
+  end
+
+  @doc """
+  CSV de una capa de cruce, con BOM para que Excel lea bien los acentos. Las
+  columnas se llaman como su método (`ventas_suma`), así que el archivo se
+  explica sin la pantalla.
+  """
+  def csv(%Capa{id: id, columnas: columnas}) do
+    filas =
+      Repo.all(
+        from f in CapaFila, where: f.capa_id == ^id, order_by: f.id, select: {f.clave, f.datos}
+      )
+
+    renglones =
+      Enum.map(filas, fn {clave, datos} ->
+        renglon_csv([clave | Enum.map(columnas, &datos[&1])])
+      end)
+
+    IO.iodata_to_binary(["\uFEFF", renglon_csv(["clave" | columnas]), renglones])
+  end
+
+  defp renglon_csv(celdas), do: [Enum.map_join(celdas, ",", &celda_csv/1), "\r\n"]
+
+  defp celda_csv(nil), do: ""
+  defp celda_csv(v) when is_float(v), do: :erlang.float_to_binary(v, [:compact, decimals: 6])
+  defp celda_csv(v) when is_number(v), do: to_string(v)
+
+  # Excel ejecuta como fórmula el texto que empieza con estos caracteres, y el
+  # nombre de una columna viene del archivo de alguien del equipo.
+  defp celda_csv(texto) do
+    texto = if String.starts_with?(texto, ~w(= + - @ \t \r)), do: "'" <> texto, else: texto
+    ~s("#{String.replace(texto, ~s("), ~s(""))}")
+  end
+
   @doc "¿Puede el scope borrar esta capa?"
   def puede_borrar?(%Scope{} = scope, %Capa{} = capa) do
     case Teams.role_in_team(scope, capa.team_id) do

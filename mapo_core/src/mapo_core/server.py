@@ -10,7 +10,7 @@ from fastapi.responses import JSONResponse
 from psycopg_pool import AsyncConnectionPool
 from pydantic import BaseModel, Field
 
-from mapo_core import buscador, consultas, datos_geo, datos_propios
+from mapo_core import buscador, consultas, cruce, datos_geo, datos_propios
 from mapo_core.coloreado_mapa import PoligonoColoreable, colorear_mapa
 from mapo_core.consultas import INDICADORES_CHOROPLETH, TOLERANCIA_SIMPLIFICACION as _TOLERANCIA_SIMPLIFICACION
 from mapo_core.consultas import feature as _feature
@@ -641,3 +641,45 @@ async def buscador_zonas(
         )
     except buscador.PlantillaInvalida as exc:
         raise HTTPException(422, {"mensaje": str(exc), "faltan": exc.faltan}) from None
+
+
+class FilaCruce(BaseModel):
+    lat: float | None = None
+    lon: float | None = None
+    clave: str | None = None
+    valores: dict[str, float | None] = {}
+
+
+class SolicitudCruce(BaseModel):
+    tipo: Literal["puntos", "municipio", "ageb"]
+    nivel: Literal["municipio", "ageb"]
+    filas: list[FilaCruce] = Field(min_length=1, max_length=datos_propios.MAX_FILAS)
+    agregaciones: dict[str, Literal["suma", "promedio", "mediana"]] = Field(
+        default={}, max_length=datos_propios.MAX_COLUMNAS
+    )
+    censo: list[str] = []
+    denue: str | None = None
+    minutos: bool = False
+
+
+@app.post("/cruce/calcular")
+async def cruce_calcular(
+    solicitud: SolicitudCruce,
+    pool: AsyncConnectionPool = Depends(get_pool),
+    osrm: OSRMClient = Depends(get_osrm_client),
+) -> dict:
+    """Una capa contra fuentes públicas, por zona. 422 con el motivo en texto."""
+    try:
+        return await cruce.calcular(
+            pool,
+            osrm,
+            tipo=solicitud.tipo,
+            nivel=solicitud.nivel,
+            filas=[f.model_dump() for f in solicitud.filas],
+            agregaciones=solicitud.agregaciones,
+            censo=solicitud.censo,
+            denue=solicitud.denue,
+            minutos=solicitud.minutos,
+        )
+    except cruce.CruceInvalido as exc:
+        raise HTTPException(422, str(exc)) from None

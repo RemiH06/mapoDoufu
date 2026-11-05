@@ -59,11 +59,27 @@ defmodule MapoWeb.DatosLive.Index do
                   <span class="secundario capa-detalle">
                     {detalle(c)}
                   </span>
+                  <details :if={c.metodo} class="cruce-metodo">
+                    <summary>Cómo se calculó</summary>
+                    <ul>
+                      <li :for={linea <- String.split(c.metodo, "\n")}>{linea}</li>
+                    </ul>
+                  </details>
                 </span>
                 <span class="lista-fin">
                   <.link navigate={~p"/mapa?#{[capa: c.id]}"} class="boton chico-doc">
                     Ver en el mapa
                   </.link>
+                  <.link
+                    :if={Capas.cruzable?(c)}
+                    navigate={~p"/teams/#{@team}/datos/#{c}/cruce"}
+                    class="boton chico-doc"
+                  >
+                    Cruzar
+                  </.link>
+                  <a :if={c.metodo} href={~p"/capas/#{c}/cruce.csv"} class="boton chico-doc">
+                    CSV
+                  </a>
                   <.button
                     :if={Capas.puede_borrar?(@current_scope, c)}
                     phx-click="borrar"
@@ -438,6 +454,9 @@ defmodule MapoWeb.DatosLive.Index do
   defp descripcion(%{"num_filas" => n}), do: ": #{cifra(n)} renglones."
 
   defp detalle(%{tipo: "raster"} = capa), do: "ráster · #{megas(capa.tamano_bytes)}"
+
+  defp detalle(%{metodo: metodo} = capa) when is_binary(metodo),
+    do: "cruce de #{capa.archivo} · #{cifra(capa.num_filas)} zonas · #{etiqueta(capa.tipo)}"
 
   defp detalle(capa) do
     total = capa.num_filas + capa.num_descartadas

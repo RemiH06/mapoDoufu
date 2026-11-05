@@ -6,7 +6,7 @@
 - [rubros.md](producto/rubros.md): enfoques temáticos con su fuente y los casos de ejemplo por rubro.
 - [requisitos.md](producto/requisitos.md): requerimientos funcionales y no funcionales, con su estado.
 - [buscador.md](producto/buscador.md): intenciones y parámetros del modo buscador, zonas candidatas y la tabla de rubros de DENUE.
-- [datos-propios.md](producto/datos-propios.md): archivos del equipo (tabla, vectorial, ráster) como acetato: formatos, límites, ubicación, permisos y qué se guarda.
+- [datos-propios.md](producto/datos-propios.md): archivos del equipo (tabla, vectorial, ráster) como acetato y su cruce con fuentes públicas: formatos, límites, ubicación, permisos y qué se guarda.
 
 ## Arquitectura
 
@@ -56,6 +56,7 @@ Qué se construyó en cada etapa, por qué así y qué bugs reales aparecieron.
 - [Fase 7: casos por rubro, noviembre 2026](historial/2026-11-casos-rubro.md)
 - [Recomendaciones: zonas candidatas, noviembre 2026](historial/2026-11-zonas-candidatas.md)
 - [Datos propios, noviembre 2026](historial/2026-11-datos-propios.md)
+- [Cruce de datos propios, noviembre 2026](historial/2026-11-cruce.md)
 
 ## Gaiarda
 
