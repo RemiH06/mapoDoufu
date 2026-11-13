@@ -1,0 +1,43 @@
+# carpeta	archivo	url
+# Fuentes ambientales en crudo para la sesión 22. Probadas el 2026-11-13.
+# Copias de INEGI servidas por CONABIO: la página de INEGI no da ligas fijas.
+agua	calidad_superficial_2012-2025.xlsx	https://www.gob.mx/cms/uploads/attachment/file/1084133/Calidad_del_Agua_Superficial_p_2012-2025.xlsx
+agua	calidad_superficial_2012-2025_kmz.zip	https://files.conagua.gob.mx/conagua/generico/sequia/Calidad_del_Agua_Superficial_p.zip
+agua	calidad_subterranea_2012-2025.xlsx	https://www.gob.mx/cms/uploads/attachment/file/1084131/Calidad_del_Agua_Subterr_nea_p_2012-2025.xlsx
+agua	calidad_subterranea_2012-2025_kmz.zip	https://files.conagua.gob.mx/aguasnacionales/Calidad_del_Agua_Subterranea_p.zip
+agua	calidad_generalidades_2025.pdf	https://www.gob.mx/cms/uploads/attachment/file/1084347/Generalidades_Indicadores_de_calidad_del_agua_2025.pdf
+agua	calidad_5000_sitios_datos.zip	https://datos.conagua.gob.mx/docs/DatosAbiertos/Datos_de_calidad_del_agua_de_5000_sitios_de_monitoreo.zip
+agua	calidad_5000_sitios_resultados.zip	https://datos.conagua.gob.mx/docs/DatosAbiertos/Resultados_de_calidad_del_agua_de_5000_sitios_de_monitoreo.zip
+agua	calidad_diccionario.zip	https://datos.conagua.gob.mx/docs/DatosAbiertos/Diccionario_CALIDAD_DEL_AGUA.zip
+agua	calidad_5000_sitios_diccionario.zip	https://datos.conagua.gob.mx/docs/DatosAbiertos/Diccionario_Datos_de_calidad_del_agua_de_5000_sitios_de_monitoreo.zip
+agua	plantas_tratamiento.csv	https://datos.conagua.gob.mx/docs/DatosAbiertos/Catalogo_de_Plantas_de_Tratamiento_Aguas_Residuales.csv
+agua	plantas_potabilizadoras.csv	https://datos.conagua.gob.mx/docs/DatosAbiertos/Catalogo_de_Plantas_Potabilizadoras_Municipales_en_Operacion.csv
+agua	cuerpos_de_agua.zip	https://datos.conagua.gob.mx/docs/DatosAbiertos/Mapa_que_muestra_ubicacion_de_cuerpos_de_agua.zip
+agua	estaciones_hidrometricas.csv	https://datos.conagua.gob.mx/docs/DatosAbiertos/Estaciones_hidrometricas_en_operacion.csv
+agua	distritos_de_riego.csv	https://datos.conagua.gob.mx/docs/DatosAbiertos/Distritos_de_Riego.csv
+agua	coberturas_agua_drenaje.csv	https://datos.conagua.gob.mx/docs/DatosAbiertos/Coberturas_de_Agua_Potable_Drenaje_y_Saneamiento.csv
+acuiferos	disponibilidad_2023-11-09.zip	https://datos.conagua.gob.mx/docs/DatosAbiertos/Acuiferos_Disponibilidad_09-11-2023.zip
+acuiferos	disponibilidad_por_acuifero.zip	https://datos.conagua.gob.mx/docs/DatosAbiertos/Disponibilidad_de_agua_por_acuifero.zip
+acuiferos	delimitacion_mapa_y_tablas.zip	https://datos.conagua.gob.mx/docs/DatosAbiertos/Criterio_para_delimitacion_de_acuiferos_mapa_y_Tablas.zip
+acuiferos	diccionario_agua_subterranea.csv	https://datos.conagua.gob.mx/docs/DatosAbiertos/Diccionario_agua_subterranea.csv
+acuiferos	estudios.csv	https://datos.conagua.gob.mx/docs/DatosAbiertos/Estudios_de_AcuIferos.csv
+acuiferos	vedas_y_ordenamientos.zip	https://datos.conagua.gob.mx/docs/DatosAbiertos/Relacion_acuiferos_ordenamiento_indicando_tipo_vedas.zip
+acuiferos	red_piezometrica_2023.zip	https://datos.conagua.gob.mx/docs/DatosAbiertos/Red_piezometrica_2023.zip
+acuiferos	red_piezometrica_mapas.zip	https://datos.conagua.gob.mx/docs/DatosAbiertos/Red_piezometrica_mapas.zip
+concesiones	otorgamiento_de_concesiones.zip	https://datos.conagua.gob.mx/docs/DatosAbiertos/Otorgamiento_de_Concesiones.zip
+concesiones	volumenes_declarados.zip	https://datos.conagua.gob.mx/docs/DatosAbiertos/Volumenes_declarados.zip
+clima	vientos_hora.csv	https://datos.conagua.gob.mx/docs/DatosAbiertos/VIENTOS_HORA.csv
+clima	rafaga_hora.csv	https://datos.conagua.gob.mx/docs/DatosAbiertos/RAFAGA_HORA.csv
+riesgo	sequia_municipios.xlsx	https://smn.conagua.gob.mx/tools/RESOURCES/Monitor%20de%20Sequia%20en%20Mexico/MunicipiosSequia.xlsx
+riesgo	monitor_de_sequia.zip	https://datos.conagua.gob.mx/docs/DatosAbiertos/Monitor_de_Sequia_en_Mexico.zip
+riesgo	zonas_inundables_pdf.zip	https://datos.conagua.gob.mx/docs/DatosAbiertos/Zonas_inundables_PDF.zip
+riesgo	vulnerabilidad_ambiental_municipio.zip	https://datos.conagua.gob.mx/docs/DatosAbiertos/Vulnerabilidad_ambiental_por_municipio_de_CONAGUA.zip
+riesgo	vulnerabilidad_municipios_3_mapas.zip	https://datos.conagua.gob.mx/docs/DatosAbiertos/3_Mapas_Municipios_vulnerabilidad_social_economica_y_ambiental.zip
+territorio	usv250_serie7.zip	http://www.conabio.gob.mx/informacion/gis/maps/geo/usv250s7gw.zip
+territorio	usv250_serie6.zip	http://www.conabio.gob.mx/informacion/gis/maps/geo/usv250s6gw.zip
+territorio	edafologia_1m.zip	http://www.conabio.gob.mx/informacion/gis/maps/geo/eda251mgw.zip
+territorio	anp_2020.zip	http://www.conabio.gob.mx/informacion/gis/maps/geo/anp2020gw.zip
+territorio	regiones_hidrologicas_250k.zip	http://www.conabio.gob.mx/informacion/gis/maps/geo/rh250kgw.zip
+emisiones	retc_2004-2022.zip	http://sinat.semarnat.gob.mx/retc/retc/RETC_2004-2022.zip
+poblacion	iter_14_2020.zip	https://www.inegi.org.mx/contenidos/programas/ccpv/2020/datosabiertos/iter/iter_14_cpv2020_csv.zip
+agricultura	siap_diccionario_municipal.xlsx	https://nube.agricultura.gob.mx/index.php?view=5D24F995-E734D711-1EA6F8D2-9D1387D7

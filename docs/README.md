@@ -24,6 +24,7 @@ Una por fuente: de dónde sale, cómo se carga, sus problemas conocidos y las ci
 - [enoe.md](fuentes/enoe.md): ocupación y empleo (laboral).
 - [sesnsp.md](fuentes/sesnsp.md): incidencia delictiva (seguridad), carga manual.
 - [osrm.md](fuentes/osrm.md): ruteo por carretera, demo público contra servidor propio.
+- [ambientales.md](fuentes/ambientales.md): agua, acuíferos, descargas, emisiones, uso de suelo, incendios y más, descargadas en crudo y sin cargar todavía.
 
 ## Desarrollo
 

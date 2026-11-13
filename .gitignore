@@ -42,3 +42,4 @@ mapo/.elixir_ls/
 
 # -- Claude Code (estado/config local, no de equipo) --
 .claude/
+investigation/
