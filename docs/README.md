@@ -6,6 +6,7 @@
 - [rubros.md](producto/rubros.md): enfoques temáticos con su fuente y los casos de ejemplo por rubro.
 - [requisitos.md](producto/requisitos.md): requerimientos funcionales y no funcionales, con su estado.
 - [buscador.md](producto/buscador.md): intenciones y parámetros del modo buscador, zonas candidatas y la tabla de rubros de DENUE.
+- [pipeline-datos.md](producto/pipeline-datos.md): dónde se rompe la obtención y lectura de cada fuente, cómo detectarlo sin una persona y qué hacer; base para automatizar.
 - [dataset-vivienda.md](producto/dataset-vivienda.md): tabla tipo Boston Housing por AGEB de una zona metropolitana, equivalencias, método de cada columna y el pipeline de valor catastral.
 - [datos-propios.md](producto/datos-propios.md): archivos del equipo (tabla, vectorial, ráster) como acetato y su cruce con fuentes públicas: formatos, límites, ubicación, permisos y qué se guarda.
 
