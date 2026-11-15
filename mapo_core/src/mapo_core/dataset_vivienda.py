@@ -83,15 +83,16 @@ DICCIONARIO = [
     Columna("crim", "Delitos registrados en el año base por 100 mil habitantes del municipio", "CRIM", "SESNSP, incidencia municipal; población del censo 2020", "municipio", "suma de cantidad del año base / POBTOT municipal × 100 000"),
     Columna("viv_ha", "Viviendas particulares habitadas por hectárea", "ZN (sustituto)", "Censo 2020 + área de la AGEB", "AGEB", "VIVPAR_HAB / area_ha. ZN de Boston es zonificación de lote grande: aquí la densidad, que va en sentido contrario"),
     Columna("indus", "Parte del personal ocupado en industria, mayoreo, transporte y agro", "INDUS", "DENUE (personal estimado por estrato)", "AGEB", "personal en sectores no minoristas / personal total de la AGEB; vacío si no hay negocios"),
-    Columna("chas", "Colinda con río, canal o barranca (1 o 0)", "CHAS", "OSM", "AGEB", "pendiente"),
+    Columna("chas", "Hay un río o canal a 100 m o menos de la AGEB (1 o 0)", "CHAS", "OSM, waterway=river|canal", "AGEB", "intersección de la AGEB con un búfer de 100 m de los cauces; los arroyos (stream) no cuentan"),
     Columna("nox", "NO₂ troposférico medio", "NOX", "Sentinel-5P TROPOMI", "~5 km", "pendiente"),
     Columna("rm", "Cuartos promedio por vivienda (cota inferior)", "RM", "Censo 2020, VPH_1CUART, VPH_2CUART, VPH_3YMASC", "AGEB", "(1·VPH_1CUART + 2·VPH_2CUART + 3·VPH_3YMASC) / suma; '3 y más' cuenta como 3"),
     Columna("pro_ocup_c", "Ocupantes por cuarto", "", "Censo 2020, PRO_OCUP_C", "AGEB", "directo"),
     Columna("pct_viv_3ymas_cuartos", "% de viviendas con 3 cuartos o más", "RM (complemento)", "Censo 2020, VPH_3YMASC", "AGEB", "VPH_3YMASC / VIVPARH_CV × 100. El censo no abre más allá de 3 cuartos, por eso rm casi no varía"),
     Columna("pct_viv_2ymas_dorm", "% de viviendas con 2 dormitorios o más", "RM (complemento)", "Censo 2020, VPH_2YMASD", "AGEB", "VPH_2YMASD / VIVPARH_CV × 100"),
-    Columna("age", "Parte de la superficie construida que ya existía en 1990", "AGE", "GHSL GHS-BUILT-S", "100 m", "pendiente"),
+    Columna("age", "Parte de la superficie construida en 2020 que ya existía en 1990", "AGE", "JRC GHSL GHS-BUILT-S R2023A, 100 m, CC BY 4.0", "AGEB (píxeles de 100 m)", "superficie construida 1990 / 2020 en los píxeles cuyo centro cae en la AGEB; vacío si no hay nada construido en 2020"),
+    Columna("age_1975", "Parte de la superficie construida en 2020 que ya existía en 1975", "AGE (variante)", "JRC GHSL GHS-BUILT-S R2023A", "AGEB (píxeles de 100 m)", "igual que age, con la época 1975"),
     Columna("dis_km", "Distancia promedio en línea recta a los 5 centros de empleo, ponderada por su empleo", "DIS", "DENUE (personal estimado por estrato)", "AGEB", "focos de empleo en rejilla de 1 km separados al menos 4 km; ver centros_empleo.csv"),
-    Columna("rad", "Minutos por calle a la vía rápida más cercana", "RAD", "OSM + OSRM", "AGEB", "pendiente"),
+    Columna("rad_km", "Distancia en línea recta a la vía rápida más cercana, km", "RAD", "OSM, highway=motorway|trunk", "AGEB", "desde el punto dentro de la AGEB (lon, lat); RAD de Boston es un índice de acceso, aquí la distancia"),
     Columna("tax", "Tasa de predial del municipio", "TAX", "Ley de ingresos municipal", "municipio", "pendiente"),
     Columna("ptratio", "Alumnos por docente", "PTRATIO", "SEP 911 o sustituto", "por definir", "pendiente"),
     Columna("pct_sin_secundaria", "% de 15 años o más sin secundaria completa", "LSTAT (componente)", "Censo 2020, P15YM_SE, P15PRI_IN, P15PRI_CO, P15SEC_IN, P_15YMAS", "AGEB", "(P15YM_SE + P15PRI_IN + P15PRI_CO + P15SEC_IN) / P_15YMAS × 100"),
@@ -222,6 +223,80 @@ async def _crimen(pool: AsyncConnectionPool, cve_ent: str, municipios: list[str]
         return {mun: round(tasa, 1) for mun, tasa in await cur.fetchall()}
 
 
+def _a_utm(geom, lon0: float):
+    """Geometría de grados a la UTM de su zona, para medir en metros."""
+    from rasterio.warp import transform_geom
+    from shapely.geometry import shape
+
+    zona = int((lon0 + 180) // 6) + 1
+    return shape(transform_geom("EPSG:4326", f"EPSG:{32600 + zona}", mapping(geom)))
+
+
+def _lineas_osm(ruta: Path, filtro) -> list:
+    from shapely.geometry import LineString
+
+    lineas = []
+    for el in json.loads(Path(ruta).read_text(encoding="utf-8"))["elements"]:
+        g = el.get("geometry")
+        if el.get("type") == "way" and g and len(g) > 1 and filtro(el.get("tags", {})):
+            lineas.append(LineString([(p["lon"], p["lat"]) for p in g]))
+    return lineas
+
+
+def asignar_osm(filas: list[dict], agua: Path | None, vias: Path | None) -> None:
+    """CHAS y RAD desde extractos de Overpass (docs/producto/dataset-vivienda.md)."""
+    from shapely import STRtree
+    from shapely.geometry import Point
+    from shapely.ops import unary_union
+
+    if not filas:
+        return
+    lon0 = float(np.median([f["lon"] for f in filas]))
+    if agua:
+        cauces = _lineas_osm(agua, lambda t: t.get("waterway") in ("river", "canal"))
+        bufer = _a_utm(unary_union(cauces), lon0).buffer(100) if cauces else None
+        for f in filas:
+            f["chas"] = int(bufer is not None and _a_utm(wkb.loads(f["_geom"]), lon0).intersects(bufer))
+    if vias:
+        rapidas = [_a_utm(g, lon0) for g in _lineas_osm(vias, lambda t: t.get("highway") in ("motorway", "trunk"))]
+        if rapidas:
+            arbol = STRtree(rapidas)
+            for f in filas:
+                p = _a_utm(Point(f["lon"], f["lat"]), lon0)
+                f["rad_km"] = round(p.distance(rapidas[int(arbol.nearest(p))]) / 1000, 3)
+
+
+def asignar_ghsl(filas: list[dict], rasters: dict[int, Path | None]) -> None:
+    """AGE: superficie construida de 1990 (y 1975) entre la de 2020, por AGEB."""
+    import rasterio
+    from rasterio.features import geometry_mask
+    from rasterio.warp import transform_geom
+    from rasterio.windows import from_bounds
+    from shapely.geometry import shape
+
+    abiertos = {anio: rasterio.open(r) for anio, r in rasters.items() if r and Path(r).exists()}
+    try:
+        if 2020 not in abiertos:
+            return
+        ref = abiertos[2020]
+        for f in filas:
+            g = transform_geom("EPSG:4326", ref.crs, mapping(wkb.loads(f["_geom"])))
+            ventana = from_bounds(*shape(g).bounds, transform=ref.transform).round_offsets().round_lengths()
+            alto, ancho = max(int(ventana.height), 1), max(int(ventana.width), 1)
+            ventana = ventana.__class__(ventana.col_off, ventana.row_off, ancho, alto)
+            # Píxeles cuyo centro cae en la AGEB; si es tan chica que no tiene ninguno, los que toca.
+            dentro = ~geometry_mask([g], out_shape=(alto, ancho), transform=ref.window_transform(ventana))
+            if not dentro.any():
+                dentro = ~geometry_mask([g], out_shape=(alto, ancho), transform=ref.window_transform(ventana), all_touched=True)
+            suma = {a: float(r.read(1, window=ventana, boundless=True, fill_value=0)[dentro].sum()) for a, r in abiertos.items()}
+            if suma[2020] > 0:
+                f["age"] = round(min(suma[1990] / suma[2020], 1), 4) if 1990 in suma else None
+                f["age_1975"] = round(min(suma[1975] / suma[2020], 1), 4) if 1975 in suma else None
+    finally:
+        for r in abiertos.values():
+            r.close()
+
+
 def leer_valores(rutas: list[Path]) -> list[dict]:
     """`valores.csv` de scripts/catastro/ubicar_pdf_mapa.py (o de cualquier adaptador
     con las mismas columnas: municipio, anio, valor_m2, clase, lon, lat)."""
@@ -264,7 +339,8 @@ def asignar_medv(filas: list[dict], valores: list[dict], cve_ent: str) -> None:
 
 
 async def construir(pool: AsyncConnectionPool, cve_ent: str, municipios: list[str], anio_crimen: int = 2020,
-                    valores: list[dict] | None = None) -> tuple[list[dict], list[dict]]:
+                    valores: list[dict] | None = None, agua: Path | None = None, vias: Path | None = None,
+                    ghsl: dict[int, Path | None] | None = None) -> tuple[list[dict], list[dict]]:
     """Filas del dataset y los centros de empleo usados para DIS."""
     agebs = await _agebs(pool, cve_ent, municipios)
     negocios = await _negocios(pool, cve_ent, municipios)
@@ -297,14 +373,13 @@ async def construir(pool: AsyncConnectionPool, cve_ent: str, municipios: list[st
             "crim": crimen.get(a["cve_mun"]),
             "viv_ha": round(viv_hab / a["area_ha"], 3) if viv_hab is not None and a["area_ha"] else None,
             "indus": round(no_min / total, 4) if total else None,
-            "chas": None, "nox": None,
+            "chas": None, "nox": None, "age": None, "age_1975": None, "rad_km": None,
             "rm": cuartos_promedio(d),
             "pro_ocup_c": _num(d, "PRO_OCUP_C"),
             "pct_viv_3ymas_cuartos": _porcentaje(_num(d, "VPH_3YMASC"), con_carac),
             "pct_viv_2ymas_dorm": _porcentaje(_num(d, "VPH_2YMASD"), con_carac),
-            "age": None,
             "dis_km": distancia_ponderada_km(a["lon"], a["lat"], centros),
-            "rad": None, "tax": None, "ptratio": None,
+            "tax": None, "ptratio": None,
             "pct_sin_secundaria": sin_secundaria(d),
             "pct_sin_servicios_salud": _porcentaje(_num(d, "PSINDER"), _num(d, "POBTOT")),
             "pct_piso_tierra": _porcentaje(_num(d, "VPH_PISOTI"), con_carac),
@@ -315,6 +390,9 @@ async def construir(pool: AsyncConnectionPool, cve_ent: str, municipios: list[st
             "_geom": a["geom"],
         })
     asignar_medv(filas, valores or [], cve_ent)
+    asignar_osm(filas, agua, vias)
+    if ghsl:
+        asignar_ghsl(filas, ghsl)
     return filas, centros
 
 

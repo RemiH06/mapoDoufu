@@ -97,8 +97,14 @@ async def _dataset_vivienda(args) -> None:
 
     municipios = [m.strip().zfill(3) for m in args.municipios.split(",")]
     valores = dataset_vivienda.leer_valores([Path(r) for r in args.medv.split(",")]) if args.medv else []
+    ghsl = None
+    if args.ghsl:
+        ghsl = {a: next(Path(args.ghsl).glob(f"GHS_BUILT_S_E{a}_*.tif"), None) for a in (1975, 1990, 2020)}
     filas, centros = await dataset_vivienda.construir(
-        await get_pool(), args.estado, municipios, args.anio_crimen, valores
+        await get_pool(), args.estado, municipios, args.anio_crimen, valores,
+        agua=Path(args.osm_agua) if args.osm_agua else None,
+        vias=Path(args.osm_vias) if args.osm_vias else None,
+        ghsl=ghsl,
     )
     if not filas:
         raise SystemExit("Ninguna AGEB con censo para esos municipios: revisa que el estado esté cargado.")
@@ -106,6 +112,8 @@ async def _dataset_vivienda(args) -> None:
         "estado": args.estado, "municipios": ",".join(municipios),
         "anio_base_censo": 2020, "anio_crimen": args.anio_crimen, "agebs": len(filas),
         "valores_catastrales": args.medv or "ninguno",
+        "osm_agua": args.osm_agua or "ninguno", "osm_vias": args.osm_vias or "ninguno",
+        "ghsl": args.ghsl or "ninguno",
     })
     print(f"{len(filas)} AGEB en {args.salida}. Centros de empleo: {centros}")
     for columna, (p5, p50, p95) in dataset_vivienda.resumen(filas).items():
@@ -181,6 +189,9 @@ def _construir_parser() -> argparse.ArgumentParser:
         "--medv", default=None,
         help="valores.csv de scripts/catastro/ubicar_pdf_mapa.py, separados por coma (rutas dentro del contenedor)",
     )
+    p_viv.add_argument("--osm-agua", default=None, help="JSON de Overpass con waterway (para CHAS)")
+    p_viv.add_argument("--osm-vias", default=None, help="JSON de Overpass con highway=motorway|trunk (para RAD)")
+    p_viv.add_argument("--ghsl", default=None, help="Carpeta con los GHS_BUILT_S de 1975, 1990 y 2020 (para AGE)")
     p_viv.set_defaults(fn=_dataset_vivienda)
 
     subparsers.add_parser("status", help="Cuenta filas por tabla").set_defaults(fn=_status)

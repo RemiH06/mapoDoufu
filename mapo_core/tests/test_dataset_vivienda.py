@@ -64,3 +64,29 @@ def test_medv_por_clase_y_sin_relleno():
     assert b["medv"] is None and b["medv_calle"] is None and "sin valor de zona" in b["medv_metodo"]
     # Municipio sin tabla: se dice, no se deja en cero.
     assert c["medv"] is None and c["medv_n"] is None and "sin tabla" in c["medv_metodo"]
+
+
+def test_chas_y_rad_desde_overpass(tmp_path):
+    import json
+
+    def via(tags, puntos):
+        return {"type": "way", "tags": tags, "geometry": [{"lon": x, "lat": y} for x, y in puntos]}
+
+    agua = tmp_path / "agua.json"
+    agua.write_text(json.dumps({"elements": [
+        via({"waterway": "river"}, [(-103.40, 20.600), (-103.40, 20.700)]),
+        via({"waterway": "stream"}, [(-103.30, 20.600), (-103.30, 20.700)]),
+    ]}))
+    vias = tmp_path / "vias.json"
+    vias.write_text(json.dumps({"elements": [via({"highway": "motorway"}, [(-103.50, 20.60), (-103.50, 20.70)])]}))
+    from shapely.geometry import box
+
+    def fila(x):
+        return {"lon": x + 0.005, "lat": 20.655, "_geom": box(x, 20.65, x + 0.01, 20.66).wkb}
+
+    junto_al_rio, junto_al_arroyo = fila(-103.4005), fila(-103.3005)
+    dv.asignar_osm([junto_al_rio, junto_al_arroyo], agua, vias)
+    assert junto_al_rio["chas"] == 1
+    assert junto_al_arroyo["chas"] == 0  # los arroyos no cuentan
+    # Del punto (-103.3955) a la vía (-103.50): unos 10.9 km a esa latitud.
+    assert 10.5 < junto_al_rio["rad_km"] < 11.3

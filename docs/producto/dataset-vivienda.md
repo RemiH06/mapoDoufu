@@ -51,13 +51,13 @@ predictor de precio.
 | CRIM | `crim` | Delitos del año base por 100 mil habitantes del municipio (SESNSP / censo). En Boston también era por municipio | Hecho |
 | ZN | `viv_ha` | Viviendas habitadas por hectárea. ZN es la parte del suelo zonificada para lote grande; la zonificación de los planes parciales no tiene descarga general, y la densidad mide lo mismo al revés | Sustituto |
 | INDUS | `indus` | Parte del personal ocupado en industria, mayoreo, transporte y agro (sectores de `rubros/sectores.csv`), con el personal estimado por el punto medio del estrato de DENUE | Hecho |
-| CHAS | `chas` | La AGEB toca un río, canal o barranca de OSM | Pendiente |
+| CHAS | `chas` | 1 si hay un río o canal de OSM (`waterway=river\|canal`) a 100 m o menos de la AGEB; los arroyos no cuentan | Hecho |
 | NOX | `nox` | NO₂ troposférico medio de Sentinel-5P (unos 5 km por píxel) | Pendiente |
 | RM | `rm`, `pct_viv_3ymas_cuartos`, `pct_viv_2ymas_dorm` | Cuartos promedio. El censo agrupa "3 o más", así que `rm` es una cota inferior y casi no varía (mediana 2.85): las otras dos columnas guardan la variación | Hecho |
-| AGE | `age` | Parte de la superficie construida en la AGEB que ya existía en 1990 (GHSL GHS-BUILT-S, 100 m). En Boston era vivienda anterior a 1940 | Pendiente |
+| AGE | `age`, `age_1975` | Parte de la superficie construida en 2020 dentro de la AGEB que ya existía en 1990 (y en 1975), GHSL GHS-BUILT-S, 100 m. En Boston era vivienda anterior a 1940 | Hecho |
 | DIS | `dis_km` | Distancia promedio a los 5 centros de empleo, ponderada por el empleo de cada uno. Hoy en línea recta; por calle con OSRM después | Hecho (línea recta) |
-| RAD | `rad` | Minutos por calle a la vía rápida más cercana (OSM `motorway` y `trunk`) | Pendiente |
-| TAX | `tax` | Tasa de predial del municipio, de su ley de ingresos | Pendiente |
+| RAD | `rad_km` | Distancia en línea recta a la vía rápida más cercana (OSM `motorway` y `trunk`). RAD de Boston es un índice de acceso | Hecho (línea recta) |
+| TAX | `tax` | Tasa efectiva de predial del municipio a un valor fiscal de referencia. En la ZMG el predial es una tabla progresiva por tramos, ((VF − LI) × T) + CF por bimestre, no una tasa: hay que leer la tabla de la ley de ingresos 2020 de cada municipio | Pendiente |
 | PTRATIO | `ptratio` | Alumnos por docente. La estadística 911 por escuela no tiene descarga confirmada | Pendiente |
 | LSTAT | `pct_sin_secundaria`, `pct_sin_servicios_salud`, `pct_piso_tierra`, `graproes` | Componentes separados, sin índice compuesto | Hecho |
 | (extra) | `pct_viv_deshabitadas`, `pct_viv_auto`, `pct_viv_internet` | Columnas que Boston no tiene y aquí sí hay | Hecho |
@@ -200,13 +200,37 @@ calidad de `hojas.csv`, y se ve ahí, no en el modelo.
   de `medv` contra `graproes`: 0.80; contra `pct_sin_secundaria`: −0.77 (en
   Boston, MEDV contra LSTAT da −0.74).
 
+## Insumos de CHAS, RAD y AGE
+
+Se pasan al comando como archivos; sin ellos, las columnas quedan vacías.
+
+```bash
+# Overpass, caja de la zona (sur, oeste, norte, este)
+way["waterway"~"^(river|canal|stream)$"](20.30,-103.70,20.90,-103.00); out geom;   # -> agua_zmg.json
+way["highway"~"^(motorway|trunk)$"](20.30,-103.70,20.90,-103.00); out geom;         # -> vias_rapidas_zmg.json
+```
+
+GHSL: `GHS_BUILT_S_E{1975,1990,2020}_GLOBE_R2023A_54009_100`, el mosaico que
+cubre la zona (`R7_C9` para Guadalajara; fila y columna salen de la posición en
+Mollweide, mosaicos de 1000 km desde x = −18 041 000, y = 9 000 000), en
+`https://jeodpp.jrc.ec.europa.eu/ftp/jrc-opendata/GHSL/GHS_BUILT_S_GLOBE_R2023A/`.
+
+```bash
+... dataset_vivienda ... --osm-agua /app/data/osm/agua_zmg.json   --osm-vias /app/data/osm/vias_rapidas_zmg.json --ghsl /app/data/ghsl
+```
+
+Validación en la ZMG: `age` mediana de 0.99 en Guadalajara (0.98 en el Centro),
+0.42 en Zapopan y 0.02 en Tlajomulco; `rad_km` mediana de 0.8 km en Zapotlanejo a
+6 km en Acatlán; `chas` vale 1 en 11 % de las AGEB de Guadalajara y 36 % de las de
+Tlajomulco, por sus canales.
+
 ## Pendientes de las otras columnas
 
-- `chas`, `rad`: un extracto de OSM de la zona (el `mexico-latest.osm.pbf` de
-  OSRM ya está en Pixilate) y `rad` con la matriz de OSRM.
-- `age`: GHSL GHS-BUILT-S, épocas 1975 a 2020, CC BY 4.0.
-- `nox`: Sentinel-5P L2 NO₂ por el STAC de Planetary Computer, media anual 2020.
-- `dis_km` por calle: la misma matriz de OSRM de las zonas candidatas.
-- `tax`: tasa del predial de cada municipio (ley de ingresos 2020).
+- `nox`: Sentinel-5P L2 NO₂ es por órbita (NetCDF), hay que promediarlo en
+  rejilla; o las estaciones del SIMAJ. Pendiente de elegir.
+- `dis_km` y `rad_km` por calle: la matriz de OSRM de las zonas candidatas.
+- `tax`: tablas progresivas de cada municipio (Guadalajara publica la suya en
+  `transparencia.guadalajara.gob.mx/sites/default/files/TasasTarifasImpuestoPredial20.pdf`).
 - `ptratio`: buscar la estadística por escuela de la SEP; si no existe, decir
   que falta antes que inventar un sustituto.
+- `medv` de Zapopan (2026) y de los otros ocho municipios.
