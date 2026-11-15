@@ -425,7 +425,10 @@ def escribir(filas: list[dict], centros: list[dict], salida: Path, notas: dict) 
         + "".join(f"{k}: {v}\n" for k, v in notas.items())
         + "Columnas, fuentes y métodos: diccionario.csv. 'vacios' cuenta las AGEB sin dato;\n"
         "el censo reserva con '*' los valores de AGEB con muy pocas viviendas.\n"
-        "Documentación completa: docs/producto/dataset-vivienda.md del repo de Mapo.\n",
+        "Documentación completa: docs/producto/dataset-vivienda.md del repo de Mapo.\n"
+        "Atribución: censo 2020 y DENUE, INEGI; incidencia delictiva, SESNSP; calles y cauces,\n"
+        "© colaboradores de OpenStreetMap (ODbL); superficie construida, JRC GHSL (CC BY 4.0);\n"
+        "valores catastrales, tablas de valores de cada municipio (ver medv_anio).\n",
         encoding="utf-8",
     )
 

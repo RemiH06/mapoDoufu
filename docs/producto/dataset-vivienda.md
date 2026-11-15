@@ -111,7 +111,7 @@ Cada municipio lo publica distinto y cambia de un año a otro:
 | Municipio | Lo que hay | Formato |
 |---|---|---|
 | Guadalajara 2020 | 174 hojas, una por cuadrante de la ciudad | Mapa vectorial en PDF: etiquetas `$ 2300` sobre calles, nombres de calle y claves de manzana, **sin georreferencia**. El servidor de catastro no responde (2026-11-15): la copia sale de Wayback |
-| Zapopan 2026 | `Valor Catastral Zapopan 2026.pdf`, 544 hojas, 828 MB, más 11 PDF de tablas (construcción, rústico, plazas, parques industriales) | Mapas en PDF sin georreferencia (sin diccionario `/Measure` ni `/LGIDict`), en el bucket público `s3.zapopan.gob.mx/geomatica/tablasvalor/` |
+| Zapopan 2026 | `Valor Catastral Zapopan 2026.pdf`, 544 hojas, 828 MB, más 11 PDF de tablas (construcción, rústico, plazas, parques industriales), en el bucket público `s3.zapopan.gob.mx/geomatica/tablasvalor/` | **Escaneo**: copia certificada del Periódico Oficial (18 de diciembre de 2025) con sellos encima, una imagen JPEG de 5100 × 3300 por hoja y ningún texto vectorial. Hojas por zona catastral ("ZONA CATASTRAL 34 4G5"), no por rejilla. Valores como números de 4 cifras sin `$`, más grandes que los números de manzana |
 | Los otros 8 de la ZMG | Sin revisar | Por cada uno: Periódico Oficial del estado, Congreso, o su catastro |
 
 Y en otras ciudades habrá tablas en texto por colonia, Excel, o capas en un
@@ -156,6 +156,11 @@ tocar las dependencias de `mapo_core`) y los datos en `mapo_core/data/catastro/`
      error mediano de 20 m o menos, y escala a menos de 10 % de la global.
    - `clase`: `zona` o `calle`, según el tamaño de letra del valor
      (`--zona-desde-tamano`, propio de cada atlas).
+   - Para `pdf_raster` (Zapopan 2026) falta un adaptador de extracción con OCR
+     (RapidOCR o Tesseract) que entregue las mismas `etiquetas`: números de 4
+     cifras por tamaño de letra y nombres de calle, con posición en píxeles. La
+     ubicación por Hough serviría igual, pero hay que probar si la escala es la
+     misma en todas las hojas: al ir por zona catastral, puede que no.
    - Para tablas por colonia o por tramo (sin mapa), el adaptador uniría con
      polígonos de colonias o geocodificaría el tramo contra OSM. No hecho.
 5. **Normalización:** pendiente. Hará falta al mezclar años (Zapopan es 2026):
@@ -231,6 +236,10 @@ Tlajomulco, por sus canales.
 - `dis_km` y `rad_km` por calle: la matriz de OSRM de las zonas candidatas.
 - `tax`: tablas progresivas de cada municipio (Guadalajara publica la suya en
   `transparencia.guadalajara.gob.mx/sites/default/files/TasasTarifasImpuestoPredial20.pdf`).
-- `ptratio`: buscar la estadística por escuela de la SEP; si no existe, decir
-  que falta antes que inventar un sustituto.
+- `ptratio`: no hay descarga abierta por escuela (2026-11-15): el formato 911
+  solo se captura en `f911.sep.gob.mx`, y `datos.jalisco.gob.mx`, que tenía la
+  estadística por CCT de 2016, ya no resuelve. En Boston PTRATIO era por
+  municipio, y la consulta interactiva de la SEP (`planeacion.sep.gob.mx`) da
+  alumnos y docentes por municipio y nivel: es la vía, a mano, un ciclo
+  (2019-2020) y los municipios de la zona. Sin sustitutos inventados.
 - `medv` de Zapopan (2026) y de los otros ocho municipios.
