@@ -93,8 +93,11 @@ DICCIONARIO = [
     Columna("age_1975", "Parte de la superficie construida en 2020 que ya existía en 1975", "AGE (variante)", "JRC GHSL GHS-BUILT-S R2023A", "AGEB (píxeles de 100 m)", "igual que age, con la época 1975"),
     Columna("dis_km", "Distancia promedio en línea recta a los 5 centros de empleo, ponderada por su empleo", "DIS", "DENUE (personal estimado por estrato)", "AGEB", "focos de empleo en rejilla de 1 km separados al menos 4 km; ver centros_empleo.csv"),
     Columna("rad_km", "Distancia en línea recta a la vía rápida más cercana, km", "RAD", "OSM, highway=motorway|trunk", "AGEB", "desde el punto dentro de la AGEB (lon, lat); RAD de Boston es un índice de acceso, aquí la distancia"),
-    Columna("tax", "Tasa de predial del municipio", "TAX", "Ley de ingresos municipal", "municipio", "pendiente"),
-    Columna("ptratio", "Alumnos por docente", "PTRATIO", "SEP 911 o sustituto", "por definir", "pendiente"),
+    Columna("tax", "Predial anual por cada $10,000 de valor fiscal, para una propiedad de $1,000,000", "TAX", "Leyes de ingresos municipales (predial_tablas.csv)", "municipio", "6 × ((VF − LI) × T + CF) / VF × 10 000 con VF = 1 000 000 y el tramo de la tabla del municipio; ver tax_anio"),
+    Columna("tax_anio", "Año fiscal de la tabla de predial", "", "predial_tablas.csv", "municipio", "directo"),
+    Columna("ptratio", "Alumnos por docente en educación básica pública del municipio", "PTRATIO", "SEP, DGPPyEE, Principales cifras (formato 911), vía scripts/vivienda/sep_cifras.py", "municipio", "alumnos / docentes, escolarizada, preescolar a secundaria, control público; ver ptratio_ciclo"),
+    Columna("ptratio_todas", "Alumnos por docente en educación básica, públicas y privadas", "PTRATIO (variante)", "SEP, DGPPyEE, Principales cifras", "municipio", "alumnos / docentes, control todos"),
+    Columna("ptratio_ciclo", "Ciclo escolar de ptratio", "", "SEP", "municipio", "el sitio solo abre por municipio el ciclo vigente"),
     Columna("pct_sin_secundaria", "% de 15 años o más sin secundaria completa", "LSTAT (componente)", "Censo 2020, P15YM_SE, P15PRI_IN, P15PRI_CO, P15SEC_IN, P_15YMAS", "AGEB", "(P15YM_SE + P15PRI_IN + P15PRI_CO + P15SEC_IN) / P_15YMAS × 100"),
     Columna("pct_sin_servicios_salud", "% de población sin afiliación a servicios de salud", "LSTAT (componente)", "Censo 2020, PSINDER", "AGEB", "PSINDER / POBTOT × 100"),
     Columna("pct_piso_tierra", "% de viviendas con piso de tierra", "LSTAT (componente)", "Censo 2020, VPH_PISOTI", "AGEB", "VPH_PISOTI / VIVPARH_CV × 100"),
@@ -297,6 +300,53 @@ def asignar_ghsl(filas: list[dict], rasters: dict[int, Path | None]) -> None:
             r.close()
 
 
+TABLAS_PREDIAL = Path(__file__).parent / "predial_tablas.csv"
+# Boston usa una tasa por municipio. Aquí el predial es progresivo, así que la
+# tasa depende del valor: se fija una propiedad de referencia.
+VALOR_FISCAL_REFERENCIA = 1_000_000
+
+
+def tablas_predial(ruta: Path = TABLAS_PREDIAL) -> dict[str, dict]:
+    """{clave de municipio: {"anio", "tramos": [(límite inferior, cuota fija, tasa)]}}.
+    Una tabla `millar` es un solo tramo desde 0. Fuente y notas en el CSV."""
+    tablas: dict[str, dict] = {}
+    with open(ruta, encoding="utf-8") as f:
+        for fila in csv.DictReader(f):
+            t = tablas.setdefault(fila["municipio"], {"anio": int(fila["anio"]), "tramos": []})
+            t["tramos"].append((float(fila["limite_inferior"]), float(fila["cuota_fija"]), float(fila["tasa"])))
+    for t in tablas.values():
+        t["tramos"].sort()
+    return tablas
+
+
+def predial_anual(tramos: list[tuple[float, float, float]], valor_fiscal: float) -> float:
+    """((VF − LI) × T + CF) por bimestre, seis bimestres."""
+    li, cf, tasa = max((t for t in tramos if t[0] <= valor_fiscal), key=lambda t: t[0])
+    return 6 * ((valor_fiscal - li) * tasa + cf)
+
+
+def tax_por_municipio(cve_ent: str, tablas: dict[str, dict]) -> dict[str, tuple[float, int]]:
+    """{cve_mun: (predial anual por $10,000, año)} para los municipios del estado."""
+    v = VALOR_FISCAL_REFERENCIA
+    return {clave[2:]: (round(predial_anual(t["tramos"], v) / v * 10_000, 2), t["anio"])
+            for clave, t in tablas.items() if clave.startswith(cve_ent)}
+
+
+def leer_ptratio(ruta: Path, cve_ent: str) -> dict[str, dict]:
+    """{cve_mun: {ptratio, ptratio_todas, ptratio_ciclo}} desde el CSV de sep_cifras.py."""
+    por_mun: dict[str, dict] = {}
+    with open(ruta, encoding="utf-8") as f:
+        for fila in csv.DictReader(f):
+            if not fila["municipio"].startswith(cve_ent):
+                continue
+            alumnos, docentes = float(fila["alumnos"]), float(fila["docentes"])
+            razon = round(alumnos / docentes, 2) if docentes else None
+            d = por_mun.setdefault(fila["municipio"][2:], {"ptratio": None, "ptratio_todas": None,
+                                                           "ptratio_ciclo": fila["ciclo"]})
+            d["ptratio" if fila["control"] == "publico" else "ptratio_todas"] = razon
+    return por_mun
+
+
 def leer_valores(rutas: list[Path]) -> list[dict]:
     """`valores.csv` de scripts/catastro/ubicar_pdf_mapa.py (o de cualquier adaptador
     con las mismas columnas: municipio, anio, valor_m2, clase, lon, lat)."""
@@ -340,11 +390,14 @@ def asignar_medv(filas: list[dict], valores: list[dict], cve_ent: str) -> None:
 
 async def construir(pool: AsyncConnectionPool, cve_ent: str, municipios: list[str], anio_crimen: int = 2020,
                     valores: list[dict] | None = None, agua: Path | None = None, vias: Path | None = None,
-                    ghsl: dict[int, Path | None] | None = None) -> tuple[list[dict], list[dict]]:
+                    ghsl: dict[int, Path | None] | None = None,
+                    sep: Path | None = None) -> tuple[list[dict], list[dict]]:
     """Filas del dataset y los centros de empleo usados para DIS."""
     agebs = await _agebs(pool, cve_ent, municipios)
     negocios = await _negocios(pool, cve_ent, municipios)
     crimen = await _crimen(pool, cve_ent, municipios, anio_crimen)
+    tax = tax_por_municipio(cve_ent, tablas_predial())
+    ptratio = leer_ptratio(sep, cve_ent) if sep else {}
 
     no_minoristas = {c for s in SECTORES_NO_MINORISTAS for c in rubros.clases_de(sector=s)}
     personal: dict[str, list[float]] = {}
@@ -379,7 +432,8 @@ async def construir(pool: AsyncConnectionPool, cve_ent: str, municipios: list[st
             "pct_viv_3ymas_cuartos": _porcentaje(_num(d, "VPH_3YMASC"), con_carac),
             "pct_viv_2ymas_dorm": _porcentaje(_num(d, "VPH_2YMASD"), con_carac),
             "dis_km": distancia_ponderada_km(a["lon"], a["lat"], centros),
-            "tax": None, "ptratio": None,
+            "tax": tax.get(a["cve_mun"], (None, None))[0], "tax_anio": tax.get(a["cve_mun"], (None, None))[1],
+            **ptratio.get(a["cve_mun"], {"ptratio": None, "ptratio_todas": None, "ptratio_ciclo": None}),
             "pct_sin_secundaria": sin_secundaria(d),
             "pct_sin_servicios_salud": _porcentaje(_num(d, "PSINDER"), _num(d, "POBTOT")),
             "pct_piso_tierra": _porcentaje(_num(d, "VPH_PISOTI"), con_carac),
@@ -428,7 +482,8 @@ def escribir(filas: list[dict], centros: list[dict], salida: Path, notas: dict) 
         "Documentación completa: docs/producto/dataset-vivienda.md del repo de Mapo.\n"
         "Atribución: censo 2020 y DENUE, INEGI; incidencia delictiva, SESNSP; calles y cauces,\n"
         "© colaboradores de OpenStreetMap (ODbL); superficie construida, JRC GHSL (CC BY 4.0);\n"
-        "valores catastrales, tablas de valores de cada municipio (ver medv_anio).\n",
+        "valores catastrales, tablas de valores de cada municipio (ver medv_anio); predial, leyes\n"
+        "de ingresos municipales 2026; alumnos y docentes, SEP DGPPyEE (formato 911).\n",
         encoding="utf-8",
     )
 

@@ -90,3 +90,32 @@ def test_chas_y_rad_desde_overpass(tmp_path):
     assert junto_al_arroyo["chas"] == 0  # los arroyos no cuentan
     # Del punto (-103.3955) a la vía (-103.50): unos 10.9 km a esa latitud.
     assert 10.5 < junto_al_rio["rad_km"] < 11.3
+
+
+def test_tablas_de_predial_cuadran_tramo_a_tramo():
+    # La cuota fija de cada tramo es la del anterior más su ancho por su tasa:
+    # así se comprobó la transcripción de cada ley (docs/producto/dataset-vivienda.md).
+    for clave, t in dv.tablas_predial().items():
+        for (li, cf, tasa), (li2, cf2, _) in zip(t["tramos"], t["tramos"][1:]):
+            assert abs(cf + (li2 - li) * tasa - cf2) <= max(1.5, 0.002 * cf2), (clave, li2)
+
+
+def test_tax_de_guadalajara():
+    # VF 1,000,000 cae en el tramo 776,142.91: (223,857.09 × 0.000254 + 197.15) × 6 = 1,524.06
+    tax = dv.tax_por_municipio("14", dv.tablas_predial())
+    assert tax["039"] == (15.24, 2026)
+    # Tasa al millar: 0.23 al millar más 38.40 por bimestre.
+    assert tax["124"][0] == round(6 * (1_000_000 * 0.00023 + 38.40) / 1_000_000 * 10_000, 2)
+
+
+def test_ptratio_publico_y_todas(tmp_path):
+    ruta = tmp_path / "sep.csv"
+    ruta.write_text(
+        "municipio,ciclo,nivel,control,localidades,escuelas,alumnos,docentes\n"
+        "14039,2025-2026,basica,todos,1,1436,227087,13205\n"
+        "14039,2025-2026,basica,publico,1,873,170305,9878\n"
+        "15001,2025-2026,basica,publico,1,1,10,1\n",
+        encoding="utf-8",
+    )
+    r = dv.leer_ptratio(ruta, "14")
+    assert r == {"039": {"ptratio": 17.24, "ptratio_todas": 17.2, "ptratio_ciclo": "2025-2026"}}

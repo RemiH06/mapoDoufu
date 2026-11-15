@@ -57,8 +57,8 @@ predictor de precio.
 | AGE | `age`, `age_1975` | Parte de la superficie construida en 2020 dentro de la AGEB que ya existía en 1990 (y en 1975), GHSL GHS-BUILT-S, 100 m. En Boston era vivienda anterior a 1940 | Hecho |
 | DIS | `dis_km` | Distancia promedio a los 5 centros de empleo, ponderada por el empleo de cada uno. Hoy en línea recta; por calle con OSRM después | Hecho (línea recta) |
 | RAD | `rad_km` | Distancia en línea recta a la vía rápida más cercana (OSM `motorway` y `trunk`). RAD de Boston es un índice de acceso | Hecho (línea recta) |
-| TAX | `tax` | Tasa efectiva de predial del municipio a un valor fiscal de referencia. En la ZMG el predial es una tabla progresiva por tramos, ((VF − LI) × T) + CF por bimestre, no una tasa: hay que leer la tabla de la ley de ingresos 2020 de cada municipio | Pendiente |
-| PTRATIO | `ptratio` | Alumnos por docente. La estadística 911 por escuela no tiene descarga confirmada | Pendiente |
+| TAX | `tax`, `tax_anio` | Predial anual por cada $10,000 de valor fiscal (la unidad de Boston) para una propiedad de $1,000,000, con la tabla de la ley de ingresos 2026 de cada municipio | Hecho |
+| PTRATIO | `ptratio`, `ptratio_todas`, `ptratio_ciclo` | Alumnos por docente en educación básica escolarizada del municipio: públicas (como Boston) y todas. En Boston también era por municipio | Hecho (ciclo 2025-2026) |
 | LSTAT | `pct_sin_secundaria`, `pct_sin_servicios_salud`, `pct_piso_tierra`, `graproes` | Componentes separados, sin índice compuesto | Hecho |
 | (extra) | `pct_viv_deshabitadas`, `pct_viv_auto`, `pct_viv_internet` | Columnas que Boston no tiene y aquí sí hay | Hecho |
 
@@ -229,17 +229,63 @@ Validación en la ZMG: `age` mediana de 0.99 en Guadalajara (0.98 en el Centro),
 6 km en Acatlán; `chas` vale 1 en 11 % de las AGEB de Guadalajara y 36 % de las de
 Tlajomulco, por sus canales.
 
+## TAX: predial
+
+En Boston TAX es una tasa por municipio. En la ZMG el predial es una **tarifa
+progresiva** por tramos de valor fiscal, ((VF − LI) × T) + CF por bimestre, salvo en
+Zapotlanejo, Juanacatlán y Acatlán, que cobran una tasa al millar más una cuota
+fija. Por eso la tasa depende del valor, y `tax` se calcula para una propiedad de
+referencia de $1,000,000: predial anual / VF × 10 000.
+
+- **Tablas:** [`mapo_core/src/mapo_core/predial_tablas.csv`](../../mapo_core/src/mapo_core/predial_tablas.csv),
+  versionadas en el repo, una fila por tramo (límite inferior, cuota fija, tasa)
+  con nota donde la ley tiene una errata.
+- **Fuente:** las leyes de ingresos 2026 de la Biblioteca Virtual del Congreso de
+  Jalisco (`congresoweb.congresojal.gob.mx/BibliotecaVirtual/legislacion/Ingresos/Documentos_PDF-Ingresos/`,
+  archivos "Ley de Ingresos del Municipio de <nombre>, Jalisco para el ejercicio
+  Fiscal 2026-300126.pdf"). Las de 2020 no aparecieron: el buscador del Congreso
+  da error y Wayback solo guardó la tabla de Guadalajara desde 2021, que es igual
+  a la de 2026. Por eso `tax_anio` es 2026 y no el año del censo.
+- **Transcripción verificada:** al extraer el texto las columnas se mezclan, así
+  que cada tabla se comprobó con su propia aritmética: la cuota fija de un tramo
+  es la del anterior más el ancho del tramo por su tasa. Las 7 tablas progresivas
+  cuadran tramo por tramo (`test_tablas_de_predial_cuadran_tramo_a_tramo`).
+- **Valores (2026):** de 13.49 (Juanacatlán) a 19.45 (Ixtlahuacán) pesos al año
+  por cada $10,000; Guadalajara 15.24, Zapopan 13.87. Es 0.15 %, unas 20 veces
+  menos que el 3.3 % típico del Boston de 1970.
+- **Otra zona:** agregar las filas de sus municipios al CSV. Lo que no esté queda
+  vacío.
+
+## PTRATIO: alumnos por docente
+
+No hay descarga abierta por escuela: el formato 911 solo se captura en
+`f911.sep.gob.mx`, y `datos.jalisco.gob.mx` (que tenía la estadística por CCT de
+2016) ya no resuelve. Pero la consulta "Principales cifras" de la DGPPyEE
+(`planeacion.sep.gob.mx/principalescifras/`) da alumnos, docentes y escuelas por
+municipio, y en Boston PTRATIO también era por municipio.
+
+```bash
+uv run --script scripts/vivienda/sep_cifras.py --ciclo 2025-2026 --estado 14   --municipios 002,039,044,051,070,097,098,101,120,124 --salida mapo_core/data/sep/basica_2025-2026.csv
+... dataset_vivienda ... --sep /app/data/sep/basica_2025-2026.csv
+```
+
+- Es un formulario ASP.NET: el script reenvía `__VIEWSTATE` en cada paso. El
+  orden importa porque cada lista reinicia a las de abajo: ciclo, escolaridad,
+  nivel, control, estado y municipio.
+- **Solo el ciclo vigente:** al elegir un ciclo anterior, la lista de estados
+  queda vacía (probado con 2019-2020, 2020-2021 y 2024-2025 el 2026-11-15). Por eso
+  `ptratio_ciclo` es 2025-2026.
+- El servidor no manda su certificado intermedio: el script valida contra el
+  almacén del sistema (`truststore`), sin apagar la verificación.
+- Educación básica escolarizada (preescolar, primaria y secundaria). `ptratio`
+  con escuelas públicas, `ptratio_todas` con públicas y privadas.
+- **Valores:** Guadalajara 17.24 (227,087 alumnos y 13,205 docentes en total),
+  Zapopan 20.51, Tlajomulco 25.12. Ixtlahuacán da lo mismo en públicas que en
+  todas: la SEP no le registra escuelas privadas de básica.
+
 ## Pendientes de las otras columnas
 
 - `nox`: Sentinel-5P L2 NO₂ es por órbita (NetCDF), hay que promediarlo en
   rejilla; o las estaciones del SIMAJ. Pendiente de elegir.
 - `dis_km` y `rad_km` por calle: la matriz de OSRM de las zonas candidatas.
-- `tax`: tablas progresivas de cada municipio (Guadalajara publica la suya en
-  `transparencia.guadalajara.gob.mx/sites/default/files/TasasTarifasImpuestoPredial20.pdf`).
-- `ptratio`: no hay descarga abierta por escuela (2026-11-15): el formato 911
-  solo se captura en `f911.sep.gob.mx`, y `datos.jalisco.gob.mx`, que tenía la
-  estadística por CCT de 2016, ya no resuelve. En Boston PTRATIO era por
-  municipio, y la consulta interactiva de la SEP (`planeacion.sep.gob.mx`) da
-  alumnos y docentes por municipio y nivel: es la vía, a mano, un ciclo
-  (2019-2020) y los municipios de la zona. Sin sustitutos inventados.
 - `medv` de Zapopan (2026) y de los otros ocho municipios.
