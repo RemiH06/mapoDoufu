@@ -68,20 +68,41 @@ def normalizar(nombre: str) -> str:
     return " ".join(p for p in palabras if p not in PALABRAS_VACIAS)
 
 
-def calles_osm(ruta: Path, epsg: int) -> dict[str, np.ndarray]:
+def compacto(nombre: str) -> str:
+    """Llave sin espacios ni artículos quitados, para texto de OCR, que pega las
+    palabras ("RIOLERMA"). Se quitan solo signos y acentos."""
+    t = unicodedata.normalize("NFKD", nombre).encode("ascii", "ignore").decode().upper()
+    return re.sub(r"[^A-Z0-9]", "", t)
+
+
+def llaves_ocr(nombre: str) -> list[str]:
+    """Llaves compactas de un nombre: completo y sin el tipo de vía inicial."""
+    t = unicodedata.normalize("NFKD", nombre).encode("ascii", "ignore").decode().upper()
+    palabras = re.sub(r"[^A-Z0-9 ]", " ", t).split()
+    llaves = {"".join(palabras)}
+    while palabras and palabras[0] in TIPOS_DE_VIA:
+        palabras = palabras[1:]
+        llaves.add("".join(palabras))
+    return [k for k in llaves if len(k) >= 5]
+
+
+def calles_osm(ruta: Path, epsg: int, ocr: bool = False) -> dict[str, np.ndarray]:
     a_utm = Transformer.from_crs(4326, epsg, always_xy=True)
     puntos: dict[str, list] = defaultdict(list)
     for el in json.loads(ruta.read_text(encoding="utf-8"))["elements"]:
         if el.get("type") != "way" or "geometry" not in el:
             continue
-        nombre = normalizar(el["tags"].get("name", ""))
-        if len(nombre) < 3:
+        crudo = el["tags"].get("name", "")
+        nombres = llaves_ocr(crudo) if ocr else [normalizar(crudo)]
+        nombres = [n for n in nombres if len(n) >= 3]
+        if not nombres:
             continue
         x, y = a_utm.transform([g["lon"] for g in el["geometry"]], [g["lat"] for g in el["geometry"]])
         for (x0, y0), (x1, y1) in zip(zip(x, y), zip(x[1:], y[1:])):
             n = max(1, int(math.hypot(x1 - x0, y1 - y0) // PASO_M))
             for k in range(n):
-                puntos[nombre].append((x0 + (x1 - x0) * k / n, y0 + (y1 - y0) * k / n))
+                for nombre in nombres:
+                    puntos[nombre].append((x0 + (x1 - x0) * k / n, y0 + (y1 - y0) * k / n))
     return {k: np.array(v) for k, v in puntos.items()}
 
 
@@ -144,12 +165,18 @@ def main() -> None:
     ap.add_argument("osm", type=Path)
     ap.add_argument("salida", type=Path)
     ap.add_argument("--epsg", type=int, required=True)
+    ap.add_argument("--ocr", action="store_true",
+                    help="etiquetas de extraer_pdf_raster.py: emparejar nombres sin espacios")
+    ap.add_argument("--escala-por-hoja", action="store_true",
+                    help="estimar la escala de cada hoja (atlas por zona, no por rejilla)")
+    ap.add_argument("--escalas", default="0.2,6", help="rango de escalas a probar, m por unidad de la hoja")
     ap.add_argument("--zona-desde-tamano", type=float, default=None,
                     help="tamaño de letra desde el cual un valor es de zona y no de calle (GDL 2020: 10)")
     a = ap.parse_args()
     a.salida.mkdir(parents=True, exist_ok=True)
 
-    calles = calles_osm(a.osm, a.epsg)
+    calles = calles_osm(a.osm, a.epsg, ocr=a.ocr)
+    esc_min, esc_max = (float(v) for v in a.escalas.split(","))
     print(f"{len(calles)} nombres de calle en OSM", flush=True)
 
     por_hoja: dict[str, list[dict]] = defaultdict(list)
@@ -161,9 +188,17 @@ def main() -> None:
     def de_calle(filas):
         salida = []
         for f in filas:
-            n = normalizar(f["texto"])
-            if f["tipo"] == "texto" and len(n) >= 4 and n in calles:
-                salida.append((n, np.array([float(f["x"]), float(f["y"])])))
+            if f["tipo"] != "texto":
+                continue
+            p = np.array([float(f["x"]), float(f["y"])])
+            if a.ocr:
+                n = next((k for k in llaves_ocr(f["texto"]) if k in calles), None)
+                if n:
+                    salida.append((n, p))
+            else:
+                n = normalizar(f["texto"])
+                if len(n) >= 4 and n in calles:
+                    salida.append((n, p))
         return salida
 
     calles_por_hoja = {h: de_calle(fs) for h, fs in por_hoja.items()}
@@ -173,7 +208,7 @@ def main() -> None:
     mejor = None
     for espejo in (True, False):
         for giro in range(0, 360, 90):
-            for escala in np.geomspace(0.2, 6, 40):
+            for escala in np.geomspace(esc_min, esc_max, 40):
                 m = matriz(escala, giro, espejo)
                 total = sum(hough(calles_por_hoja[h], calles, m)[1] for h in muestra)
                 if mejor is None or total > mejor[0]:
@@ -191,15 +226,22 @@ def main() -> None:
                     "m11", "m12", "m21", "m22", "tx", "ty"])
         for hoja, etiq in sorted(calles_por_hoja.items()):
             pagina = por_hoja[hoja][0]["pagina"]
-            t, votos = hough(etiq, calles, m0) if etiq else (None, 0)
+            m_hoja = m0
+            if a.escala_por_hoja and etiq:
+                # Misma orientación que la global, escala propia de la hoja.
+                candidatas = [(hough(etiq, calles, matriz(e, giro, espejo)), e) for e in np.geomspace(esc_min, esc_max, 60)]
+                (_, _), e_hoja = max(candidatas, key=lambda c: c[0][1])
+                m_hoja = matriz(e_hoja, giro, espejo)
+            t, votos = hough(etiq, calles, m_hoja) if etiq else (None, 0)
             if t is None:
                 w.writerow([hoja, pagina, len(etiq), votos, 0, "", "", False] + [""] * 6)
                 continue
-            m, t, errores, inliers = afinar(etiq, calles, m0, t)
+            m, t, errores, inliers = afinar(etiq, calles, m_hoja, t)
             error = float(np.median(errores[errores <= RADIO_INLIER_M])) if inliers else float("inf")
             esc = math.sqrt(abs(np.linalg.det(m)))
             # Una hoja vale si muchas calles caen sobre su homónima y la escala no se desbocó.
-            aceptada = inliers >= MIN_INLIERS and error <= MAX_ERROR_M and abs(esc / escala - 1) < 0.1
+            referencia = math.sqrt(abs(np.linalg.det(m_hoja)))
+            aceptada = inliers >= MIN_INLIERS and error <= MAX_ERROR_M and abs(esc / referencia - 1) < 0.1
             resultados[hoja] = (m, t, aceptada)
             w.writerow([hoja, pagina, len(etiq), votos, inliers, round(error, 1), round(esc, 4), aceptada,
                         *np.round(m.ravel(), 6), round(t[0], 2), round(t[1], 2)])

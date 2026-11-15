@@ -112,7 +112,7 @@ Cada municipio lo publica distinto y cambia de un año a otro:
 |---|---|---|
 | Guadalajara 2020 | 174 hojas, una por cuadrante de la ciudad | Mapa vectorial en PDF: etiquetas `$ 2300` sobre calles, nombres de calle y claves de manzana, **sin georreferencia**. El servidor de catastro no responde (2026-11-15): la copia sale de Wayback |
 | Zapopan 2026 | `Valor Catastral Zapopan 2026.pdf`, 544 hojas, 828 MB, más 11 PDF de tablas (construcción, rústico, plazas, parques industriales), en el bucket público `s3.zapopan.gob.mx/geomatica/tablasvalor/` | **Escaneo**: copia certificada del Periódico Oficial (18 de diciembre de 2025) con sellos encima, una imagen JPEG de 5100 × 3300 por hoja y ningún texto vectorial. Hojas por zona catastral ("ZONA CATASTRAL 34 4G5"), no por rejilla. Valores como números de 4 cifras sin `$`, más grandes que los números de manzana |
-| Los otros 8 de la ZMG | Sin revisar | Por cada uno: Periódico Oficial del estado, Congreso, o su catastro |
+| Los otros 8 de la ZMG | Tlaquepaque, Tonalá y Tlajomulco (unas 840 AGEB) no publican sus tablas en línea, y Wayback no guardó ninguna en la Biblioteca Virtual del Congreso (revisado el 2026-11-15) | Pedirlas por transparencia o buscarlas en el Periódico Oficial. Para normalizar Zapopan: no subió valores en 2020, 2021 ni 2022 (su Tesorería), y en 2025 subió 5 % |
 
 Y en otras ciudades habrá tablas en texto por colonia, Excel, o capas en un
 GeoServer. Un extractor por municipio no escala; un pipeline con etapas fijas y
@@ -156,11 +156,19 @@ tocar las dependencias de `mapo_core`) y los datos en `mapo_core/data/catastro/`
      error mediano de 20 m o menos, y escala a menos de 10 % de la global.
    - `clase`: `zona` o `calle`, según el tamaño de letra del valor
      (`--zona-desde-tamano`, propio de cada atlas).
-   - Para `pdf_raster` (Zapopan 2026) falta un adaptador de extracción con OCR
-     (RapidOCR o Tesseract) que entregue las mismas `etiquetas`: números de 4
-     cifras por tamaño de letra y nombres de calle, con posición en píxeles. La
-     ubicación por Hough serviría igual, pero hay que probar si la escala es la
-     misma en todas las hojas: al ir por zona catastral, puede que no.
+   - Para `pdf_raster` (Zapopan 2026): `extraer_pdf_raster.py` hace OCR con
+     RapidOCR y entrega las mismas `etiquetas` con posición en píxeles. Un número
+     es valor si su letra mide al menos `--valor-desde-alto` px (Zapopan: valores
+     de 85 a 100 px, manzanas de 40 a 75). Corrige las confusiones del OCR (`$` y
+     `S` por 5, `O` por 0) y toma la corrida de dígitos más larga (`22$0` → 2250,
+     `9/2100` → 2100). En la hoja 150 leyó 3750 y 2250; se le escaparon un 2800
+     escrito en diagonal y un 2100 pegado a ruido. Recorta la leyenda de colonias
+     de la derecha (`--ancho-mapa 0.80`).
+   - `ubicar_pdf_mapa.py --ocr --escala-por-hoja`: el OCR pega las palabras
+     (`RIOLERMA`), así que con `--ocr` las calles se emparejan por una llave
+     compacta (sin espacios ni signos, con y sin el tipo de vía). Y como Zapopan
+     va por zona catastral, `--escala-por-hoja` busca la escala de cada hoja con
+     la misma orientación que la global.
    - Para tablas por colonia o por tramo (sin mapa), el adaptador uniría con
      polígonos de colonias o geocodificaría el tramo contra OSM. No hecho.
 5. **Normalización:** pendiente. Hará falta al mezclar años (Zapopan es 2026):
