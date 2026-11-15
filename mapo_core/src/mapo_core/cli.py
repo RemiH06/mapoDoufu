@@ -12,6 +12,7 @@ import asyncio
 
 from mapo_core import (
     censo_downloader,
+    dataset_vivienda,
     denue_downloader,
     enigh_downloader,
     enoe_downloader,
@@ -91,6 +92,22 @@ async def _enoe(args) -> None:
     print(f"{total} entidades con tasa de desocupacion guardada/actualizada para {args.anio} {args.trimestre}.")
 
 
+async def _dataset_vivienda(args) -> None:
+    from pathlib import Path
+
+    municipios = [m.strip().zfill(3) for m in args.municipios.split(",")]
+    filas, centros = await dataset_vivienda.construir(await get_pool(), args.estado, municipios, args.anio_crimen)
+    if not filas:
+        raise SystemExit("Ninguna AGEB con censo para esos municipios: revisa que el estado esté cargado.")
+    dataset_vivienda.escribir(filas, centros, Path(args.salida), {
+        "estado": args.estado, "municipios": ",".join(municipios),
+        "anio_base_censo": 2020, "anio_crimen": args.anio_crimen, "agebs": len(filas),
+    })
+    print(f"{len(filas)} AGEB en {args.salida}. Centros de empleo: {centros}")
+    for columna, (p5, p50, p95) in dataset_vivienda.resumen(filas).items():
+        print(f"  {columna:26} p5={p5:<12} mediana={p50:<12} p95={p95}")
+
+
 async def _status(_args) -> None:
     await inicializar_esquema()
     pool = await get_pool()
@@ -148,6 +165,15 @@ def _construir_parser() -> argparse.ArgumentParser:
     p_enoe.add_argument("--anio", required=True, type=int, help="Ej. 2025 (obligatorio, solo 2023 en adelante)")
     p_enoe.add_argument("--trimestre", required=True, help="trim1, trim2, trim3 o trim4 (obligatorio)")
     p_enoe.set_defaults(fn=_enoe)
+
+    p_viv = subparsers.add_parser(
+        "dataset_vivienda", help="Arma el dataset tipo Boston Housing por AGEB de una zona metropolitana"
+    )
+    p_viv.add_argument("--estado", required=True, help="cve_ent, ej. 14")
+    p_viv.add_argument("--municipios", required=True, help="cve_mun separadas por coma, ej. 039,120")
+    p_viv.add_argument("--salida", required=True, help="Carpeta de salida (dentro del contenedor, ej. /app/data/...)")
+    p_viv.add_argument("--anio-crimen", type=int, default=2020, help="Año de SESNSP para CRIM (default: 2020, el del censo)")
+    p_viv.set_defaults(fn=_dataset_vivienda)
 
     subparsers.add_parser("status", help="Cuenta filas por tabla").set_defaults(fn=_status)
 

@@ -6,6 +6,7 @@
 - [rubros.md](producto/rubros.md): enfoques temáticos con su fuente y los casos de ejemplo por rubro.
 - [requisitos.md](producto/requisitos.md): requerimientos funcionales y no funcionales, con su estado.
 - [buscador.md](producto/buscador.md): intenciones y parámetros del modo buscador, zonas candidatas y la tabla de rubros de DENUE.
+- [dataset-vivienda.md](producto/dataset-vivienda.md): tabla tipo Boston Housing por AGEB de una zona metropolitana, equivalencias, método de cada columna y el pipeline de valor catastral.
 - [datos-propios.md](producto/datos-propios.md): archivos del equipo (tabla, vectorial, ráster) como acetato y su cruce con fuentes públicas: formatos, límites, ubicación, permisos y qué se guarda.
 
 ## Arquitectura
@@ -24,7 +25,8 @@ Una por fuente: de dónde sale, cómo se carga, sus problemas conocidos y las ci
 - [enoe.md](fuentes/enoe.md): ocupación y empleo (laboral).
 - [sesnsp.md](fuentes/sesnsp.md): incidencia delictiva (seguridad), carga manual.
 - [osrm.md](fuentes/osrm.md): ruteo por carretera, demo público contra servidor propio.
-- [ambientales.md](fuentes/ambientales.md): agua, acuíferos, descargas, emisiones, uso de suelo, incendios y más, descargadas en crudo y sin cargar todavía.
+- [ambientales.md](fuentes/ambientales.md): agua, acuíferos, descargas, emisiones, uso de suelo, incendios y más, en crudo, y cómo recortarlas a una zona como paquete para SIG.
+- [imagenes.md](fuentes/imagenes.md): compuestos de Sentinel-2 y Landsat y WorldCover por zona, desde el STAC de Planetary Computer.
 
 ## Desarrollo
 
