@@ -47,7 +47,7 @@ predictor de precio.
 
 | Boston | Columna | Cómo se calcula | Estado |
 |---|---|---|---|
-| MEDV | `medv` | Mediana del valor catastral de suelo ($/m²) de la AGEB | Pendiente, ver [MEDV](#medv-valor-catastral) |
+| MEDV | `medv`, `medv_calle` | Mediana del valor catastral de suelo ($/m²) de la AGEB: de zona y por tramo de calle, por separado | Guadalajara hecho; el resto, ver [MEDV](#medv-valor-catastral) |
 | CRIM | `crim` | Delitos del año base por 100 mil habitantes del municipio (SESNSP / censo). En Boston también era por municipio | Hecho |
 | ZN | `viv_ha` | Viviendas habitadas por hectárea. ZN es la parte del suelo zonificada para lote grande; la zonificación de los planes parciales no tiene descarga general, y la densidad mide lo mismo al revés | Sustituto |
 | INDUS | `indus` | Parte del personal ocupado en industria, mayoreo, transporte y agro (sectores de `rubros/sectores.csv`), con el personal estimado por el punto medio del estrato de DENUE | Hecho |
@@ -122,57 +122,83 @@ GeoServer. Un extractor por municipio no escala; un pipeline con etapas fijas y
 
 Cada etapa deja un archivo intermedio con columnas fijas. Así una etapa se puede
 rehacer sin repetir las anteriores, y un formato nuevo solo pide su adaptador.
+Los scripts viven en `scripts/catastro/` (se corren con `uv run --script`, sin
+tocar las dependencias de `mapo_core`) y los datos en `mapo_core/data/catastro/`
+(gitignorada).
 
-1. **Registro de fuentes** (`catastro/fuentes.csv`): municipio, año fiscal, URL,
-   formato (`pdf_mapa`, `pdf_tabla`, `xlsx`, `shp`, `wfs`), unidad, tipo de valor
-   (suelo urbano, rústico, corredor) y fecha de consulta. Es lo único que se edita
-   a mano cada año.
-2. **Descarga** al almacén de crudos con su sha256, como las fuentes ambientales
-   (`MANIFIESTO.tsv`). Detecta páginas HTML servidas en vez del archivo.
-3. **Extracción → `etiquetas`**: una fila por texto útil, con `municipio`,
-   `anio`, `hoja`, `tipo` (`valor`, `calle`, `colonia`, `clave`), `texto`,
-   `valor_m2`, y su posición en la hoja (`x_hoja`, `y_hoja`) o su geometría si ya
-   viene georreferenciado. Adaptadores:
-   - `pdf_mapa`: `pdftotext -bbox-layout` da cada palabra con su caja. Los valores
-     se reconocen por el patrón `$ 1,234`, y las calles por estar en el
-     nomenclátor de OSM del municipio.
-   - `pdf_tabla` y `xlsx`: filas de calle o colonia con su valor, sin posición.
-   - `shp` y `wfs`: ya traen geometría y saltan la etapa 4.
-4. **Ubicación → `valores`** (punto o polígono con `valor_m2`):
-   - Para `pdf_mapa`, georreferencia por hoja. Las etiquetas de calle son puntos
-     de control: cada nombre se empareja con la calle homónima de OSM (búsqueda
-     difusa, sin acentos ni abreviaturas como `AV` o `C.`) y se ajusta una
-     transformación afín de la hoja a coordenadas con RANSAC, que descarta los
-     emparejamientos falsos (calles que se repiten en otra colonia). Con la afín,
-     cada etiqueta de valor queda en el mapa. Se guarda la calidad por hoja: error
-     medio en metros e inliers. Una hoja con pocos inliers o error alto se marca
-     y no entra.
-   - Para tablas por colonia, unión con polígonos de colonias. Para tablas por
-     calle o tramo, geocodificación del tramo contra OSM.
-5. **Normalización**: pesos nominales del año fiscal llevados al año base con
-   los aumentos aprobados por el Congreso, o con el INPC si no se conocen. Las
-   etiquetas que no son suelo urbano (rústico, plazas, parques industriales) se
-   separan.
-6. **Agregación por AGEB**: mediana de los valores dentro de la AGEB, con `n` y
-   rango intercuartil. Con menos de 3 valores, `medv` queda vacío y `metodo` dice
-   por qué. Nunca se rellena con un promedio de vecinos dentro de Mapo; eso, si
-   se hace, va en el notebook.
+1. **Registro de fuentes**, [`scripts/catastro/fuentes.csv`](../../scripts/catastro/fuentes.csv):
+   municipio, año fiscal, formato, URL, archivo, EPSG de trabajo, tamaño de letra
+   que separa valores de zona de valores de calle, unidad y fecha de consulta.
+   Es lo único que se edita a mano cada año.
+2. **Descarga** a `mapo_core/data/catastro/crudos/`. Para ubicar hacen falta
+   también las calles con nombre de OSM de la zona (Overpass:
+   `way["highway"]["name"](sur,oeste,norte,este); out geom;`), ODbL.
+3. **Extracción → `etiquetas_<municipio>_<año>.csv`**, una fila por texto con
+   `pagina`, `hoja`, `tipo` (`valor`, `hoja`, `clave`, `texto`), `texto`,
+   `valor_m2`, `x`, `y` (centro en puntos de la hoja), `angulo` y `tamano`.
+   Adaptador hecho: `extraer_pdf_mapa.py` (PyMuPDF). Separa "$ 2530 PASEO DE LOS
+   LEONES" en valor y calle, y toma como clave de la hoja la etiqueta de hoja más
+   grande (las de las vecinas van chicas).
+4. **Ubicación → `valores.csv`** (`municipio`, `anio`, `pagina`, `hoja`,
+   `valor_m2`, `tamano`, `clase`, `lon`, `lat`), con `hojas.csv` (calidad por
+   hoja) y `control.csv`. Adaptador hecho: `ubicar_pdf_mapa.py`:
+   - Supone lo que cumple un atlas catastral: todas las hojas a la misma escala y
+     orientación. Escala, giro y espejo se estiman una vez, con una rejilla de
+     candidatos sobre las seis hojas con más calles.
+   - El desplazamiento de cada hoja sale por **votación de Hough**: cada etiqueta
+     de calle vota por cada punto (cada 15 m) de las calles de OSM con su nombre
+     normalizado (sin acentos, sin tipo de vía, abreviaturas expandidas, sin
+     artículos). El desplazamiento verdadero junta los votos de todas las calles
+     en una celda de 40 m; las calles homónimas de otras colonias se dispersan.
+   - Luego **ICP**: cada etiqueta contra el punto más cercano de su calle,
+     similitud por mínimos cuadrados (Umeyama), seis vueltas.
+   - Una hoja se acepta con al menos 8 calles a menos de 40 m de su homónima,
+     error mediano de 20 m o menos, y escala a menos de 10 % de la global.
+   - `clase`: `zona` o `calle`, según el tamaño de letra del valor
+     (`--zona-desde-tamano`, propio de cada atlas).
+   - Para tablas por colonia o por tramo (sin mapa), el adaptador uniría con
+     polígonos de colonias o geocodificaría el tramo contra OSM. No hecho.
+5. **Normalización:** pendiente. Hará falta al mezclar años (Zapopan es 2026):
+   llevar los pesos al año base con los aumentos aprobados por el Congreso o el
+   INPC.
+6. **Agregación por AGEB**, en `dataset_vivienda --medv valores.csv[,otro.csv]`:
+   - `medv`: mediana de los valores de **zona** dentro de la AGEB. Es el valor
+     base de la colonia, lo más parecido al valor típico de Boston.
+   - `medv_calle`: mediana de los valores por **tramo**, con 3 como mínimo. Los
+     corredores comerciales la suben.
+   - `medv_n`, `medv_calle_n`, `medv_anio` y `medv_metodo`, que dice de dónde salió
+     el valor o por qué falta ("sin tabla de valores ubicada para este municipio",
+     "sin valor de zona dentro de la AGEB"). Nunca se rellena con vecinas.
 
-**Para mantenerlo al día:** cada año se agrega una fila por municipio en
-`fuentes.csv` y se corre de nuevo. Si el municipio cambió de formato, falla la
-etapa 3 o la calidad de la etapa 4, y se ve en el reporte, no en el modelo.
+```bash
+C=mapo_core/data/catastro
+uv run --script scripts/catastro/extraer_pdf_mapa.py $C/crudos/guadalajara_2020.pdf   $C/etiquetas_14039_2020.csv --municipio 14039 --anio 2020
+uv run --script scripts/catastro/ubicar_pdf_mapa.py $C/etiquetas_14039_2020.csv   $C/crudos/osm_calles_gdl.json $C/ubicado_14039_2020 --epsg 32613 --zona-desde-tamano 10
+MSYS_NO_PATHCONV=1 docker compose exec mapo_core python -m mapo_core.cli dataset_vivienda   --estado 14 --municipios 002,039,044,051,070,097,098,101,120,124 --salida /app/data/vivienda_gdl   --medv /app/data/catastro/ubicado_14039_2020/valores.csv
+```
 
-**Validación:** puntos de control apartados (el error de ubicación en metros), y
-el orden de las zonas contra lo conocido (Providencia y Puerta de Hierro arriba,
-la periferia de Tlajomulco abajo). La tendencia por municipio se compara con el
-índice SHF.
+**Para mantenerlo al día:** cada año, una fila por municipio en `fuentes.csv` y
+las tres corridas. Si el municipio cambió de formato, falla la extracción o la
+calidad de `hojas.csv`, y se ve ahí, no en el modelo.
 
-### Estado
+### Validación: Guadalajara 2020 (2026-11-15)
 
-- Probado a mano: el texto del PDF de Guadalajara 2020 sale con `pdftotext`, con
-  valores y nombres de calle legibles (hoja 40: `$ 2300` en Huentitán el Alto,
-  `$ 2530` en Paseo de los Leones).
-- Falta: implementar las etapas 3 a 6 y medir la calidad de la georreferencia.
+- 174 páginas: 1 a 30 son tablas de construcción e índices, 144 son hojas de
+  mapa (rejilla A a H, columnas 1 a 7, cuadrantes 1 a 4). 7,270 etiquetas de
+  valor: 5,369 de tramo (7.9 y 6 puntos; 6 en el Centro, por densidad) y 1,716 de
+  zona (12 puntos, junto al nombre de la colonia).
+- Global: 1.62 m por punto (la hoja cubre unos 2 × 1.3 km), giro de 270° con
+  espejo, que es la rotación de 90° de la página.
+- 125 de 144 hojas aceptadas, con error mediano de 4.5 m contra OSM (el peor,
+  7.4 m). Las 19 rechazadas son de la orilla, con 0 a 7 calles con nombre.
+- Control independiente: 6,315 claves de manzana rotuladas en dos hojas. Sus dos
+  ubicaciones quedan a 25 m en la mediana y a 91 m en el p90; cada hoja rotula la
+  parte de la manzana que le toca, así que no se espera cero.
+- A la vista sobre OSM: Providencia de $7,000 a $9,800, Américas $12,660, el
+  Centro cerca de $20,000, el oriente de $2,000 a $4,000 y la barranca $250.
+- 415 de 442 AGEB de Guadalajara con `medv`, 432 con alguna de las dos. Spearman
+  de `medv` contra `graproes`: 0.80; contra `pct_sin_secundaria`: −0.77 (en
+  Boston, MEDV contra LSTAT da −0.74).
 
 ## Pendientes de las otras columnas
 

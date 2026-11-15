@@ -44,3 +44,23 @@ def test_diccionario_cubre_las_columnas_de_boston_salvo_b():
     boston = {c.boston.split(" ")[0] for c in dv.DICCIONARIO if c.boston}
     assert {"MEDV", "CRIM", "ZN", "INDUS", "CHAS", "NOX", "RM", "AGE", "DIS", "RAD", "TAX", "PTRATIO", "LSTAT"} <= boston
     assert "B" not in boston
+
+
+def _fila(cve_mun, x0, y0):
+    from shapely.geometry import box
+
+    return {"cve_mun": cve_mun, "_geom": box(x0, y0, x0 + 1, y0 + 1).wkb}
+
+
+def test_medv_por_clase_y_sin_relleno():
+    filas = [_fila("039", 0, 0), _fila("039", 5, 5), _fila("120", 10, 10)]
+    v = lambda clase, valor, x, y: {"municipio": "14039", "anio": 2020, "clase": clase, "valor": valor, "lon": x, "lat": y}
+    valores = [v("zona", 100, 0.5, 0.5), v("zona", 300, 0.6, 0.6), v("calle", 900, 0.2, 0.2),
+               v("calle", 1000, 0.3, 0.3), v("calle", 1100, 0.4, 0.4), v("calle", 50, 5.5, 5.5)]
+    dv.asignar_medv(filas, valores, "14")
+    a, b, c = filas
+    assert (a["medv"], a["medv_n"], a["medv_calle"], a["medv_calle_n"]) == (200.0, 2, 1000.0, 3)
+    # Una sola etiqueta de tramo no basta, y sin zona no se inventa nada.
+    assert b["medv"] is None and b["medv_calle"] is None and "sin valor de zona" in b["medv_metodo"]
+    # Municipio sin tabla: se dice, no se deja en cero.
+    assert c["medv"] is None and c["medv_n"] is None and "sin tabla" in c["medv_metodo"]

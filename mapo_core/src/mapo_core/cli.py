@@ -96,12 +96,16 @@ async def _dataset_vivienda(args) -> None:
     from pathlib import Path
 
     municipios = [m.strip().zfill(3) for m in args.municipios.split(",")]
-    filas, centros = await dataset_vivienda.construir(await get_pool(), args.estado, municipios, args.anio_crimen)
+    valores = dataset_vivienda.leer_valores([Path(r) for r in args.medv.split(",")]) if args.medv else []
+    filas, centros = await dataset_vivienda.construir(
+        await get_pool(), args.estado, municipios, args.anio_crimen, valores
+    )
     if not filas:
         raise SystemExit("Ninguna AGEB con censo para esos municipios: revisa que el estado esté cargado.")
     dataset_vivienda.escribir(filas, centros, Path(args.salida), {
         "estado": args.estado, "municipios": ",".join(municipios),
         "anio_base_censo": 2020, "anio_crimen": args.anio_crimen, "agebs": len(filas),
+        "valores_catastrales": args.medv or "ninguno",
     })
     print(f"{len(filas)} AGEB en {args.salida}. Centros de empleo: {centros}")
     for columna, (p5, p50, p95) in dataset_vivienda.resumen(filas).items():
@@ -173,6 +177,10 @@ def _construir_parser() -> argparse.ArgumentParser:
     p_viv.add_argument("--municipios", required=True, help="cve_mun separadas por coma, ej. 039,120")
     p_viv.add_argument("--salida", required=True, help="Carpeta de salida (dentro del contenedor, ej. /app/data/...)")
     p_viv.add_argument("--anio-crimen", type=int, default=2020, help="Año de SESNSP para CRIM (default: 2020, el del censo)")
+    p_viv.add_argument(
+        "--medv", default=None,
+        help="valores.csv de scripts/catastro/ubicar_pdf_mapa.py, separados por coma (rutas dentro del contenedor)",
+    )
     p_viv.set_defaults(fn=_dataset_vivienda)
 
     subparsers.add_parser("status", help="Cuenta filas por tabla").set_defaults(fn=_status)

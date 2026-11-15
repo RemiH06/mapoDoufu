@@ -50,6 +50,11 @@ CELDA_EMPLEO_M = 1000  # rejilla para encontrar los focos de empleo
 SEPARACION_CENTROS_M = 4000  # dos centros no pueden estar más cerca que esto
 
 
+# Etiquetas de tramo mínimas para dar medv_calle: con una o dos, un solo corredor
+# decidiría el valor de la AGEB.
+MIN_VALORES_CALLE = 3
+
+
 @dataclass(frozen=True)
 class Columna:
     nombre: str
@@ -69,7 +74,12 @@ DICCIONARIO = [
     Columna("area_ha", "Superficie de la AGEB en hectáreas", "", "PostGIS, sobre el elipsoide", "AGEB", "calculado"),
     Columna("pobtot", "Población total", "", "Censo 2020, POBTOT", "AGEB", "directo"),
     Columna("viv_hab", "Viviendas particulares habitadas", "", "Censo 2020, VIVPAR_HAB", "AGEB", "directo"),
-    Columna("medv", "Mediana del valor catastral de suelo, $/m²", "MEDV", "Tablas de valores municipales", "AGEB", "pendiente: ver docs/producto/dataset-vivienda.md, sección MEDV"),
+    Columna("medv", "Mediana del valor catastral de suelo de zona, $/m², pesos del año de la tabla", "MEDV", "Tablas de valores municipales (scripts/catastro/fuentes.csv)", "AGEB", "mediana de las etiquetas de valor de zona que caen en la AGEB; ver medv_metodo"),
+    Columna("medv_n", "Etiquetas de valor de zona dentro de la AGEB", "", "Tablas de valores municipales", "AGEB", "conteo; una zona rotulada en dos hojas cuenta dos veces"),
+    Columna("medv_calle", "Mediana del valor catastral por tramo de calle, $/m²", "MEDV (alternativa)", "Tablas de valores municipales", "AGEB", f"mediana de las etiquetas de tramo; vacía con menos de {MIN_VALORES_CALLE}. Los corredores comerciales la suben"),
+    Columna("medv_calle_n", "Etiquetas de valor por tramo dentro de la AGEB", "", "Tablas de valores municipales", "AGEB", "conteo"),
+    Columna("medv_anio", "Año fiscal de la tabla de valores", "", "scripts/catastro/fuentes.csv", "municipio", "directo; tablas de años distintos no son comparables sin deflactar"),
+    Columna("medv_metodo", "De dónde sale medv o por qué está vacío", "", "", "AGEB", "texto"),
     Columna("crim", "Delitos registrados en el año base por 100 mil habitantes del municipio", "CRIM", "SESNSP, incidencia municipal; población del censo 2020", "municipio", "suma de cantidad del año base / POBTOT municipal × 100 000"),
     Columna("viv_ha", "Viviendas particulares habitadas por hectárea", "ZN (sustituto)", "Censo 2020 + área de la AGEB", "AGEB", "VIVPAR_HAB / area_ha. ZN de Boston es zonificación de lote grande: aquí la densidad, que va en sentido contrario"),
     Columna("indus", "Parte del personal ocupado en industria, mayoreo, transporte y agro", "INDUS", "DENUE (personal estimado por estrato)", "AGEB", "personal en sectores no minoristas / personal total de la AGEB; vacío si no hay negocios"),
@@ -212,7 +222,49 @@ async def _crimen(pool: AsyncConnectionPool, cve_ent: str, municipios: list[str]
         return {mun: round(tasa, 1) for mun, tasa in await cur.fetchall()}
 
 
-async def construir(pool: AsyncConnectionPool, cve_ent: str, municipios: list[str], anio_crimen: int = 2020) -> tuple[list[dict], list[dict]]:
+def leer_valores(rutas: list[Path]) -> list[dict]:
+    """`valores.csv` de scripts/catastro/ubicar_pdf_mapa.py (o de cualquier adaptador
+    con las mismas columnas: municipio, anio, valor_m2, clase, lon, lat)."""
+    valores = []
+    for ruta in rutas:
+        with open(ruta, encoding="utf-8") as f:
+            for fila in csv.DictReader(f):
+                valores.append({"municipio": fila["municipio"], "anio": int(fila["anio"]), "clase": fila["clase"],
+                                "valor": float(fila["valor_m2"]), "lon": float(fila["lon"]), "lat": float(fila["lat"])})
+    return valores
+
+
+def asignar_medv(filas: list[dict], valores: list[dict], cve_ent: str) -> None:
+    """Mediana por AGEB, por clase. Nunca rellena con vecinas: lo que falta se dice."""
+    from shapely import STRtree
+    from shapely.geometry import Point
+
+    geoms = [wkb.loads(f["_geom"]) for f in filas]
+    arbol = STRtree(geoms)
+    por_ageb: dict[int, dict[str, list[float]]] = {}
+    for v in valores:
+        for i in arbol.query(Point(v["lon"], v["lat"]), predicate="intersects"):
+            por_ageb.setdefault(int(i), {"zona": [], "calle": []}).setdefault(v["clase"] or "calle", []).append(v["valor"])
+    anio_por_mun = {v["municipio"]: v["anio"] for v in valores}
+    for i, fila in enumerate(filas):
+        anio = anio_por_mun.get(cve_ent + fila["cve_mun"])
+        grupos = por_ageb.get(i, {"zona": [], "calle": []})
+        zona, calle = grupos.get("zona", []), grupos.get("calle", [])
+        fila["medv_anio"] = anio
+        fila["medv_n"], fila["medv_calle_n"] = len(zona), len(calle)
+        fila["medv"] = float(np.median(zona)) if zona else None
+        fila["medv_calle"] = float(np.median(calle)) if len(calle) >= MIN_VALORES_CALLE else None
+        if anio is None:
+            fila["medv_metodo"] = "sin tabla de valores ubicada para este municipio"
+            fila["medv_n"] = fila["medv_calle_n"] = None
+        elif zona:
+            fila["medv_metodo"] = f"mediana de {len(zona)} valores de zona, tabla {anio}"
+        else:
+            fila["medv_metodo"] = f"sin valor de zona dentro de la AGEB (tabla {anio}; {len(calle)} de tramo)"
+
+
+async def construir(pool: AsyncConnectionPool, cve_ent: str, municipios: list[str], anio_crimen: int = 2020,
+                    valores: list[dict] | None = None) -> tuple[list[dict], list[dict]]:
     """Filas del dataset y los centros de empleo usados para DIS."""
     agebs = await _agebs(pool, cve_ent, municipios)
     negocios = await _negocios(pool, cve_ent, municipios)
@@ -242,7 +294,6 @@ async def construir(pool: AsyncConnectionPool, cve_ent: str, municipios: list[st
             "cvegeo": a["cvegeo"], "cve_mun": a["cve_mun"], "municipio": a["municipio"],
             "lon": round(a["lon"], 6), "lat": round(a["lat"], 6), "area_ha": round(a["area_ha"], 3),
             "pobtot": _num(d, "POBTOT"), "viv_hab": viv_hab,
-            "medv": None,
             "crim": crimen.get(a["cve_mun"]),
             "viv_ha": round(viv_hab / a["area_ha"], 3) if viv_hab is not None and a["area_ha"] else None,
             "indus": round(no_min / total, 4) if total else None,
@@ -263,6 +314,7 @@ async def construir(pool: AsyncConnectionPool, cve_ent: str, municipios: list[st
             "pct_viv_internet": _porcentaje(_num(d, "VPH_INTER"), con_carac),
             "_geom": a["geom"],
         })
+    asignar_medv(filas, valores or [], cve_ent)
     return filas, centros
 
 

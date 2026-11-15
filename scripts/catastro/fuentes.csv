@@ -1,0 +1,3 @@
+municipio,nombre,anio,formato,url,archivo,epsg,zona_desde_tamano,unidad,consulta,nota
+14039,Guadalajara,2020,pdf_mapa,http://web.archive.org/web/20231004220610id_/https://catastro.guadalajara.gob.mx/tabladevalores/tablasdevaloresguadalajara2020.pdf,guadalajara_2020.pdf,32613,10,pesos por m2 de suelo,2026-11-15,El sitio de catastro no responde desde aquí; copia de Wayback. Páginas 1 a 30 son tablas de construcción e índices.
+14120,Zapopan,2026,pdf_mapa,https://s3.zapopan.gob.mx/geomatica/tablasvalor/2026/Valor%20Catastral%20Zapopan%202026.pdf,zapopan_2026.pdf,32613,,pesos por m2 de suelo,2026-11-15,828 MB y 544 hojas. Sin probar todavía.
