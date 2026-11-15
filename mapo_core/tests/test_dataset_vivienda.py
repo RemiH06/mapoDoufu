@@ -133,8 +133,8 @@ def test_nox_toma_la_celda_del_punto(tmp_path):
                        crs="EPSG:4326", transform=from_origin(-104, 21, 0.5, 0.5), nodata=np.nan) as r:
         r.write(media, 1)
         r.write(obs, 2)
-    # Celdas de 0.5° desde (-104, 21): la columna 2 empieza en -103.5.
-    filas = [{"lon": -103.9, "lat": 20.9}, {"lon": -103.4, "lat": 20.9}, {"lon": -103.4, "lat": 20.6}]
+    # Celdas de 0.5° desde (-104, 21): la columna 2 empieza en -103.5 y el renglón 2 en 20.5.
+    filas = [{"lon": -103.9, "lat": 20.9}, {"lon": -103.4, "lat": 20.9}, {"lon": -103.4, "lat": 20.4}]
     dv.asignar_no2(filas, ruta)
     assert (filas[0]["nox"], filas[0]["nox_obs"]) == (10.0, 5)
     assert filas[1]["nox"] is None and filas[1]["nox_obs"] is None  # celda sin observaciones
