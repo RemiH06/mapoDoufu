@@ -58,6 +58,28 @@ En Pixilate se corre como trabajo de `job.ps1`.
 - **Landsat:** temperatura con la escala de USGS (DN × 0.00341802 + 149.0, en
   kelvin), y nubes y sombras fuera con los bits 3 y 4 de `QA_PIXEL`.
 
+## NO₂ de Sentinel-5P
+
+`scripts/ambiental/no2_s5p.py`: NO₂ troposférico medio de un año en una
+rejilla fina, para cualquier caja. Es NOX del dataset de vivienda y sirve como
+capa ambiental.
+
+- **Lectura parcial:** cada órbita es un NetCDF de cientos de MB. Con `fsspec` y
+  `h5py` se leen por rangos HTTP la latitud y la longitud, y luego solo los
+  renglones que tocan la caja: unos 15 a 30 s por órbita en lugar de bajarla.
+- **Filtros:** modo de procesamiento OFFL (no mezclar con NRTI ni con
+  reprocesos de otra colección, que tienen sesgos distintos), `qa_value > 0.75`
+  (quita nubes, nieve y escenas malas) y valores de relleno (9.97e36) fuera.
+- **Rejilla:** un píxel de TROPOMI mide unos 5.5 × 3.5 km. Se suma a cada celda
+  cuyo centro cae dentro de su huella (las cuatro esquinas de
+  `SUPPORT_DATA/GEOLOCATIONS`) y se promedia. La celda de 0.01° no agrega
+  detalle: conserva la forma de la huella.
+- **Reanudable:** guarda la suma, la cuenta y las órbitas hechas cada 10 órbitas.
+- **Salida:** GeoTIFF de dos bandas en EPSG:4326: media en µmol/m² y número de
+  observaciones.
+- **Licencia:** datos de Copernicus Sentinel; al publicar, "contiene datos
+  modificados de Copernicus Sentinel [año]".
+
 ## Lo que no hace
 
 - **Quemas por zafra:** la caña se cosecha y se quema de noviembre a mayo, así

@@ -52,7 +52,7 @@ predictor de precio.
 | ZN | `viv_ha` | Viviendas habitadas por hectárea. ZN es la parte del suelo zonificada para lote grande; la zonificación de los planes parciales no tiene descarga general, y la densidad mide lo mismo al revés | Sustituto |
 | INDUS | `indus` | Parte del personal ocupado en industria, mayoreo, transporte y agro (sectores de `rubros/sectores.csv`), con el personal estimado por el punto medio del estrato de DENUE | Hecho |
 | CHAS | `chas` | 1 si hay un río o canal de OSM (`waterway=river\|canal`) a 100 m o menos de la AGEB; los arroyos no cuentan | Hecho |
-| NOX | `nox` | NO₂ troposférico medio de Sentinel-5P (unos 5 km por píxel) | Pendiente |
+| NOX | `nox`, `nox_obs` | NO₂ troposférico medio de 2020 de Sentinel-5P en µmol/m², en la celda de 0.01° del punto de la AGEB, y cuántas observaciones lo promedian. Boston medía concentración en el aire; esto es la columna total sobre el suelo, con píxeles de unos 5 km | Hecho |
 | RM | `rm`, `pct_viv_3ymas_cuartos`, `pct_viv_2ymas_dorm` | Cuartos promedio. El censo agrupa "3 o más", así que `rm` es una cota inferior y casi no varía (mediana 2.85): las otras dos columnas guardan la variación | Hecho |
 | AGE | `age`, `age_1975` | Parte de la superficie construida en 2020 dentro de la AGEB que ya existía en 1990 (y en 1975), GHSL GHS-BUILT-S, 100 m. En Boston era vivienda anterior a 1940 | Hecho |
 | DIS | `dis_km` | Distancia promedio a los 5 centros de empleo, ponderada por el empleo de cada uno. Hoy en línea recta; por calle con OSRM después | Hecho (línea recta) |
@@ -283,9 +283,26 @@ uv run --script scripts/vivienda/sep_cifras.py --ciclo 2025-2026 --estado 14   -
   Zapopan 20.51, Tlajomulco 25.12. Ixtlahuacán da lo mismo en públicas que en
   todas: la SEP no le registra escuelas privadas de básica.
 
+## NOX: NO₂ de Sentinel-5P
+
+```bash
+uv run --script scripts/ambiental/no2_s5p.py --caja=-103.70,20.30,-103.00,20.90   --anio 2020 --salida ~/srv/mapo-paquetes/zmg/no2_2020.tif
+... dataset_vivienda ... --no2 /app/data/no2/no2_2020.tif
+```
+
+- **Por qué satélite y no estaciones:** el SIMAJ solo cubre Jalisco y SINAICA no
+  tiene descarga masiva; TROPOMI cubre todo el país igual. A cambio, mide la
+  columna troposférica (todo el NO₂ sobre el suelo), no la concentración que se
+  respira, y su píxel mide unos 5.5 × 3.5 km: distingue el centro de la periferia,
+  no una calle de la de junto.
+- **Método** (detalle en `../fuentes/imagenes.md`): órbitas L2 OFFL de 2020 del
+  STAC de Planetary Computer, leídas por rangos HTTP; solo `qa_value > 0.75`;
+  cada píxel se reparte en una rejilla de 0.01° por su huella real y se promedia
+  el año. 406 órbitas tocan la ZMG en 2020.
+- **En el dataset:** el valor de la celda donde cae el punto de la AGEB, y
+  `nox_obs`, cuántas observaciones lo sostienen.
+
 ## Pendientes de las otras columnas
 
-- `nox`: Sentinel-5P L2 NO₂ es por órbita (NetCDF), hay que promediarlo en
-  rejilla; o las estaciones del SIMAJ. Pendiente de elegir.
 - `dis_km` y `rad_km` por calle: la matriz de OSRM de las zonas candidatas.
 - `medv` de Zapopan (2026) y de los otros ocho municipios.
