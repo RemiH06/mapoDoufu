@@ -40,10 +40,19 @@ En Pixilate se corre como trabajo de `job.ps1`.
 
 ## Correcciones que hace
 
-- **URL firmadas:** Planetary Computer firma cada URL con un token que caduca en
-  cerca de una hora, y una mediana larga lee mucho después de buscar. Se firma
-  al leer (`patch_url` de odc-stac), con reintentos de GDAL, y una escena que
-  falla se salta. Firmando al buscar, la primera corrida murió a los 50 minutos.
+- **Por bloques, por las URL firmadas:** Planetary Computer firma cada URL con un
+  token que caduca en cerca de una hora, y odc-stac aplica la firma (`patch_url`)
+  al **armar** el cálculo, no al leer. El primer compuesto de Autlán tardó una
+  hora: lo que se leyó al final (el 22 % sur de la caja) ya tenía el token
+  vencido, falló, y `fail_on_error=False` lo saltó sin aviso. Se vio solo al
+  mirar una vista en color. Ahora cada producto se arma en bloques de 0.25°
+  (`--bloque`): cada bloque busca, firma, calcula y se guarda en minutos; al
+  final se unen y se mide el porcentaje sin dato (avisa `¡HUECO!` arriba de 2 %).
+  Un bloque que falla se reintenta tres veces y luego el producto no se escribe;
+  relanzar retoma desde los bloques que faltan (`.bloques_<producto>/`).
+- **Esquinas fuera de la caja:** la caja en grados, proyectada a UTM, es un
+  cuadrilátero girado. Los bloques cubren la caja pero no todas las esquinas
+  de su envolvente en UTM: en Autlán queda 0.5 % sin dato, todo fuera de la caja.
 - **Menos escenas, las más despejadas:** el compuesto usa las 16 escenas con
   menos nubes (menos de 20 %) y los índices mensuales 8, repartidas por mosaico
   MGRS para que ninguna parte de la caja se quede sin datos. Con las 87 escenas
@@ -92,5 +101,10 @@ capa ambiental.
 ## Validación: Autlán y El Grullo (2026-11-15)
 
 - WorldCover 2021: 5,564 × 7,355 píxeles, clases 10 a 90 presentes, sin huecos.
+- WorldCover por bloques (6 de 0.25°): la misma rejilla de 5,564 × 7,355 que en
+  una sola lectura, mismas clases, 0.5 % sin dato en las esquinas.
+- Temperatura de secas de 2014 a 2025: 0 % sin dato cada año. Se hizo antes del
+  cambio a bloques, pero cada año tardó menos de 10 minutos, dentro de la vida
+  del token.
 - Temperatura de secas 2024: 43 escenas de Landsat. p5 26 °C, mediana 40 °C,
   p95 49 °C, razonable para suelo en mayo en un valle a 900 m.
