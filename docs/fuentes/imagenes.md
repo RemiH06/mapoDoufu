@@ -40,6 +40,15 @@ En Pixilate se corre como trabajo de `job.ps1`.
 
 ## Correcciones que hace
 
+- **URL firmadas:** Planetary Computer firma cada URL con un token que caduca en
+  cerca de una hora, y una mediana larga lee mucho después de buscar. Se firma
+  al leer (`patch_url` de odc-stac), con reintentos de GDAL, y una escena que
+  falla se salta. Firmando al buscar, la primera corrida murió a los 50 minutos.
+- **Menos escenas, las más despejadas:** el compuesto usa las 16 escenas con
+  menos nubes (menos de 20 %) y los índices mensuales 8, repartidas por mosaico
+  MGRS para que ninguna parte de la caja se quede sin datos. Con las 87 escenas
+  de secas el compuesto tardaba horas en leer decenas de GB.
+
 - **Nubes en Sentinel-2:** se conservan solo las clases 4 a 7 de la capa SCL
   (vegetación, suelo, agua, sin clasificar). Se tiran nubes, cirros, sombras y
   píxeles saturados, y luego se toma la mediana.
