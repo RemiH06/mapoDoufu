@@ -213,6 +213,40 @@ calidad de `hojas.csv`, y se ve ahí, no en el modelo.
   de `medv` contra `graproes`: 0.80; contra `pct_sin_secundaria`: −0.77 (en
   Boston, MEDV contra LSTAT da −0.74).
 
+### Validación: Zapopan 2026 (2026-11-15)
+
+- 544 hojas escaneadas: las primeras son tablas de valores de construcción, y los
+  mapas por zona catastral empiezan hacia la 28. OCR en Pixilate: unos 50 min, 80,721
+  textos.
+- Escala global de 0.41 m por píxel con la misma orientación; 196 de 539 hojas
+  aceptadas, error mediano de 5.6 m contra OSM. Las rechazadas tienen pocas calles
+  legibles o con nombre en OSM.
+- **Filtro de plausibilidad** (`--valores-validos 100,50000,50`): entre 1,000 y
+  50,000, el 91 % de los números son múltiplos de 50; entre los menores de 1,000,
+  solo el 8.5 %, lo que daría el azar con números de manzana. Quedan 1,304
+  valores ubicados y se descartan 4,180.
+- Sin control por claves: en Zapopan los números de manzana (551, 552…) se repiten
+  en cada zona y no identifican un lugar.
+- A la vista: arriba de $10,000/m² en Puerta de Hierro, Andares y Valle Real;
+  abajo en Tesistán, Santa Ana Tepetitlán y Mesa Colorada. Quedan puntos sueltos
+  fuera de lugar, que la mediana por AGEB absorbe.
+- 302 de 529 AGEB de Zapopan con `medv` (mediana $3,750). Spearman contra
+  `graproes`: 0.60; contra `pct_sin_secundaria`: −0.58. Menor que en Guadalajara
+  (0.80) por el ruido del OCR.
+- Todos los valores van como `zona`: en el escaneo no se distingue un valor de
+  zona de uno de corredor por el tamaño de letra.
+
+### Años distintos: no se normaliza
+
+Guadalajara es de 2020 y Zapopan de 2026, en pesos de su año. Los aumentos de
+Zapopan no están completos: 0 % de 2020 a 2022 (su Tesorería), "hasta 10 % en
+avenidas" en la propuesta de 2023, 5 % en 2025, y nada publicado de 2024 ni de
+2026. Un factor armado con eso sería un número plausible y falso, así que `medv`
+queda nominal y `medv_anio` dice el año. Para modelar, un **efecto fijo por
+municipio** (una variable indicadora de `cve_mun`) absorbe la diferencia de nivel
+entre tablas sin necesitar el factor; o modelar el logaritmo de `medv`, donde
+un factor común es solo un desplazamiento.
+
 ## Insumos de CHAS, RAD y AGE
 
 Se pasan al comando como archivos; sin ellos, las columnas quedan vacías.
@@ -309,8 +343,16 @@ uv run --script scripts/ambiental/no2_s5p.py --caja=-103.70,20.30,-103.00,20.90 
   el año. 406 órbitas tocan la ZMG en 2020.
 - **En el dataset:** el valor de la celda donde cae el punto de la AGEB, y
   `nox_obs`, cuántas observaciones lo sostienen.
+- **Validación (ZMG 2020):** media de 34.7 µmol/m² en la caja, máximo de unos
+  95 dentro del Periférico sobre el centro de Guadalajara, y de 360 a 388
+  observaciones por celda. Mediana por municipio: Guadalajara 84.4, Tlaquepaque
+  78.4, Zapopan 55.7, Ixtlahuacán 26.0.
+- **Cuidado al modelar:** con píxeles de 5 km, NOX casi solo mide la distancia
+  al centro. Spearman de `nox` contra `dis_km`: −0.94 (en Boston, NOX contra DIS
+  daba −0.77). Usarlas juntas en una regresión infla la varianza de ambos
+  coeficientes: revisar el VIF o quedarse con una.
 
 ## Pendientes de las otras columnas
 
 - `dis_km` y `rad_km` por calle: la matriz de OSRM de las zonas candidatas.
-- `medv` de Zapopan (2026) y de los otros ocho municipios.
+- `medv` de los otros ocho municipios de la ZMG (Tlaquepaque, Tonalá y Tlajomulco no publican sus tablas en línea).

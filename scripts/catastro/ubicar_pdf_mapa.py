@@ -170,6 +170,9 @@ def main() -> None:
     ap.add_argument("--escala-por-hoja", action="store_true",
                     help="estimar la escala de cada hoja (atlas por zona, no por rejilla)")
     ap.add_argument("--escalas", default="0.2,6", help="rango de escalas a probar, m por unidad de la hoja")
+    ap.add_argument("--valores-validos", default=None,
+                    help="mínimo,máximo,múltiplo de un valor plausible (OCR de Zapopan: 100,50000,10); "
+                         "lo que no cumple se descarta y se cuenta")
     ap.add_argument("--zona-desde-tamano", type=float, default=None,
                     help="tamaño de letra desde el cual un valor es de zona y no de calle (GDL 2020: 10)")
     a = ap.parse_args()
@@ -250,7 +253,12 @@ def main() -> None:
     print(f"{len(aceptadas)} de {len(por_hoja)} hojas aceptadas", flush=True)
 
     # 3. Valores y control.
-    n_valores = 0
+    n_valores = descartados = 0
+    if a.valores_validos:
+        vmin, vmax, mult = (float(v) for v in a.valores_validos.split(","))
+        plausible = lambda v: vmin <= v <= vmax and v % mult == 0
+    else:
+        plausible = lambda v: True
     claves = defaultdict(list)
     with open(a.salida / "valores.csv", "w", newline="", encoding="utf-8") as f:
         w = csv.writer(f)
@@ -262,7 +270,13 @@ def main() -> None:
                     continue
                 x, y = m @ np.array([float(fila["x"]), float(fila["y"])]) + t
                 if fila["tipo"] == "clave":
-                    claves[fila["texto"][:8]].append((hoja, x, y))
+                    # Solo claves con letras y cifras (D66A0784) identifican una manzana;
+                    # un número suelto (551) se repite en cada zona y no sirve de control.
+                    if re.fullmatch(r"[A-Z]\d{2}[A-Z]\d{4}.*", fila["texto"]):
+                        claves[fila["texto"][:8]].append((hoja, x, y))
+                    continue
+                if not plausible(float(fila["valor_m2"])):
+                    descartados += 1
                     continue
                 lon, lat = a_geo.transform(x, y)
                 tamano = float(fila["tamano"])
@@ -290,7 +304,10 @@ def main() -> None:
         d = np.array(list(cercanas.values()))
         print(f"control: {len(d)} claves en dos hojas, distancia mediana {np.median(d):.1f} m, "
               f"p90 {np.percentile(d, 90):.1f} m", flush=True)
-    print(f"{n_valores} valores ubicados en {a.salida / 'valores.csv'}")
+    print(f"{n_valores} valores ubicados en {a.salida / 'valores.csv'}"
+          + (f"; {descartados} descartados por implausibles" if descartados else ""))
+    if not cercanas:
+        print("control: sin claves de manzana únicas; la calidad solo se mide contra OSM (hojas.csv)")
 
 
 if __name__ == "__main__":

@@ -47,11 +47,26 @@ CONFUSIONES = str.maketrans({"$": "5", "S": "5", "s": "5", "O": "0", "o": "0", "
 
 
 def limpiar_valor(texto: str) -> int | None:
-    corridas = re.findall(r"\d+", texto.translate(CONFUSIONES))
+    t = texto.translate(CONFUSIONES)
+    # Separador de miles: "38,400" y "18.900" son un solo número. Partirlos en la
+    # coma dejaba 400 y 900 (encontrado con Zapopan 2026).
+    t = re.sub(r"(?<=\d)[,.](?=\d{3}(?:\D|$))", "", t)
+    corridas = re.findall(r"\d+", t)
     if not corridas:
         return None
     mejor = max(corridas, key=len)
     return int(mejor) if 3 <= len(mejor) <= 6 else None
+
+
+def clasificar(texto: str, alto_letra: float, valor_desde_alto: float) -> tuple[str, int | None]:
+    """(tipo, valor). Un número con cero a la izquierda ("080", "011903") es clave de
+    manzana: los valores nunca se escriben así."""
+    if not re.search(r"\d", texto) or re.search(r"[A-RT-Za-rt-z]{2,}", texto):
+        return "texto", None
+    if texto.strip().startswith("0") or alto_letra < valor_desde_alto:
+        return "clave", None
+    valor = limpiar_valor(texto)
+    return ("valor", valor) if valor else ("clave", None)
 
 
 def geometria(caja) -> tuple[float, float, float, float]:
@@ -73,7 +88,23 @@ def main() -> None:
     ap.add_argument("--valor-desde-alto", type=float, required=True, help="altura de letra en px desde la cual un número es valor")
     ap.add_argument("--ancho-mapa", type=float, default=1.0, help="fracción izquierda de la hoja que es mapa")
     ap.add_argument("--paginas", default=None, help="rango a procesar, p. ej. 6-544 (por omisión, todas)")
+    ap.add_argument("--reclasificar", action="store_true",
+                    help="no hace OCR: vuelve a clasificar el CSV de salida con las reglas actuales")
     a = ap.parse_args()
+
+    if a.reclasificar:
+        # El OCR tarda una hora; clasificar, segundos. Afinar reglas no debe pedir otro OCR.
+        with open(a.salida, encoding="utf-8") as f:
+            filas = list(csv.DictReader(f))
+        for fila in filas:
+            if fila["tipo"] != "vacia":
+                fila["tipo"], fila["valor_m2"] = clasificar(fila["texto"], float(fila["tamano"]), a.valor_desde_alto)
+        with open(a.salida, "w", newline="", encoding="utf-8") as f:
+            w = csv.DictWriter(f, fieldnames=CAMPOS)
+            w.writeheader()
+            w.writerows(filas)
+        print(f"{sum(1 for x in filas if x['tipo'] == 'valor')} valores tras reclasificar {len(filas)} textos")
+        return
 
     hechas = set()
     if a.salida.exists():
@@ -103,10 +134,7 @@ def main() -> None:
             for caja, texto, conf in resultado or []:
                 texto = " ".join(texto.split())
                 cx, cy, angulo, alto_letra = geometria(caja)
-                tipo, valor = "texto", None
-                if re.search(r"\d", texto) and not re.search(r"[A-RT-Za-rt-z]{2,}", texto):
-                    valor = limpiar_valor(texto) if alto_letra >= a.valor_desde_alto else None
-                    tipo = "valor" if valor else "clave"
+                tipo, valor = clasificar(texto, alto_letra, a.valor_desde_alto)
                 filas.append({"municipio": a.municipio, "anio": a.anio, "pagina": n, "hoja": f"p{n}",
                               "tipo": tipo, "texto": texto, "valor_m2": valor, "x": round(cx, 1),
                               "y": round(cy, 1), "angulo": round(angulo, 1), "tamano": round(alto_letra, 1)})
