@@ -48,7 +48,6 @@ En Pixilate se corre como trabajo de `job.ps1`.
   menos nubes (menos de 20 %) y los índices mensuales 8, repartidas por mosaico
   MGRS para que ninguna parte de la caja se quede sin datos. Con las 87 escenas
   de secas el compuesto tardaba horas en leer decenas de GB.
-
 - **Nubes en Sentinel-2:** se conservan solo las clases 4 a 7 de la capa SCL
   (vegetación, suelo, agua, sin clasificar). Se tiran nubes, cirros, sombras y
   píxeles saturados, y luego se toma la mediana.
