@@ -106,6 +106,7 @@ async def _dataset_vivienda(args) -> None:
         vias=Path(args.osm_vias) if args.osm_vias else None,
         ghsl=ghsl,
         sep=Path(args.sep) if args.sep else None,
+        no2=Path(args.no2) if args.no2 else None,
     )
     if not filas:
         raise SystemExit("Ninguna AGEB con censo para esos municipios: revisa que el estado esté cargado.")
@@ -114,7 +115,7 @@ async def _dataset_vivienda(args) -> None:
         "anio_base_censo": 2020, "anio_crimen": args.anio_crimen, "agebs": len(filas),
         "valores_catastrales": args.medv or "ninguno",
         "osm_agua": args.osm_agua or "ninguno", "osm_vias": args.osm_vias or "ninguno",
-        "ghsl": args.ghsl or "ninguno", "sep": args.sep or "ninguno",
+        "ghsl": args.ghsl or "ninguno", "sep": args.sep or "ninguno", "no2": args.no2 or "ninguno",
         "predial": "predial_tablas.csv (leyes de ingresos 2026)",
     })
     print(f"{len(filas)} AGEB en {args.salida}. Centros de empleo: {centros}")
@@ -195,6 +196,7 @@ def _construir_parser() -> argparse.ArgumentParser:
     p_viv.add_argument("--osm-vias", default=None, help="JSON de Overpass con highway=motorway|trunk (para RAD)")
     p_viv.add_argument("--ghsl", default=None, help="Carpeta con los GHS_BUILT_S de 1975, 1990 y 2020 (para AGE)")
     p_viv.add_argument("--sep", default=None, help="CSV de scripts/vivienda/sep_cifras.py (para PTRATIO)")
+    p_viv.add_argument("--no2", default=None, help="GeoTIFF de scripts/ambiental/no2_s5p.py (para NOX)")
     p_viv.set_defaults(fn=_dataset_vivienda)
 
     subparsers.add_parser("status", help="Cuenta filas por tabla").set_defaults(fn=_status)

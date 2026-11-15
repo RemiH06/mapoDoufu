@@ -84,7 +84,8 @@ DICCIONARIO = [
     Columna("viv_ha", "Viviendas particulares habitadas por hectárea", "ZN (sustituto)", "Censo 2020 + área de la AGEB", "AGEB", "VIVPAR_HAB / area_ha. ZN de Boston es zonificación de lote grande: aquí la densidad, que va en sentido contrario"),
     Columna("indus", "Parte del personal ocupado en industria, mayoreo, transporte y agro", "INDUS", "DENUE (personal estimado por estrato)", "AGEB", "personal en sectores no minoristas / personal total de la AGEB; vacío si no hay negocios"),
     Columna("chas", "Hay un río o canal a 100 m o menos de la AGEB (1 o 0)", "CHAS", "OSM, waterway=river|canal", "AGEB", "intersección de la AGEB con un búfer de 100 m de los cauces; los arroyos (stream) no cuentan"),
-    Columna("nox", "NO₂ troposférico medio", "NOX", "Sentinel-5P TROPOMI", "~5 km", "pendiente"),
+    Columna("nox", "NO₂ troposférico medio del año, µmol/m²", "NOX", "Copernicus Sentinel-5P TROPOMI L2 OFFL, vía scripts/ambiental/no2_s5p.py", "píxel de ~5.5 × 3.5 km, en rejilla de 0.01°", "valor de la celda donde cae el punto de la AGEB; columna total, no concentración a nivel de calle"),
+    Columna("nox_obs", "Observaciones de TROPOMI que promedian la celda de nox", "", "Sentinel-5P", "celda de 0.01°", "píxeles con qa_value > 0.75 en el año"),
     Columna("rm", "Cuartos promedio por vivienda (cota inferior)", "RM", "Censo 2020, VPH_1CUART, VPH_2CUART, VPH_3YMASC", "AGEB", "(1·VPH_1CUART + 2·VPH_2CUART + 3·VPH_3YMASC) / suma; '3 y más' cuenta como 3"),
     Columna("pro_ocup_c", "Ocupantes por cuarto", "", "Censo 2020, PRO_OCUP_C", "AGEB", "directo"),
     Columna("pct_viv_3ymas_cuartos", "% de viviendas con 3 cuartos o más", "RM (complemento)", "Censo 2020, VPH_3YMASC", "AGEB", "VPH_3YMASC / VIVPARH_CV × 100. El censo no abre más allá de 3 cuartos, por eso rm casi no varía"),
@@ -332,6 +333,17 @@ def tax_por_municipio(cve_ent: str, tablas: dict[str, dict]) -> dict[str, tuple[
             for clave, t in tablas.items() if clave.startswith(cve_ent)}
 
 
+def asignar_no2(filas: list[dict], ruta: Path) -> None:
+    """NOX: banda 1 (media) y 2 (observaciones) del GeoTIFF de no2_s5p.py en el punto de cada AGEB."""
+    import rasterio
+
+    with rasterio.open(ruta) as r:
+        for f, (media, obs) in zip(filas, r.sample([(f["lon"], f["lat"]) for f in filas], indexes=[1, 2])):
+            dentro = obs > 0 and not np.isnan(media)
+            f["nox"] = round(float(media), 2) if dentro else None
+            f["nox_obs"] = int(obs) if dentro else None
+
+
 def leer_ptratio(ruta: Path, cve_ent: str) -> dict[str, dict]:
     """{cve_mun: {ptratio, ptratio_todas, ptratio_ciclo}} desde el CSV de sep_cifras.py."""
     por_mun: dict[str, dict] = {}
@@ -391,7 +403,7 @@ def asignar_medv(filas: list[dict], valores: list[dict], cve_ent: str) -> None:
 async def construir(pool: AsyncConnectionPool, cve_ent: str, municipios: list[str], anio_crimen: int = 2020,
                     valores: list[dict] | None = None, agua: Path | None = None, vias: Path | None = None,
                     ghsl: dict[int, Path | None] | None = None,
-                    sep: Path | None = None) -> tuple[list[dict], list[dict]]:
+                    sep: Path | None = None, no2: Path | None = None) -> tuple[list[dict], list[dict]]:
     """Filas del dataset y los centros de empleo usados para DIS."""
     agebs = await _agebs(pool, cve_ent, municipios)
     negocios = await _negocios(pool, cve_ent, municipios)
@@ -426,7 +438,7 @@ async def construir(pool: AsyncConnectionPool, cve_ent: str, municipios: list[st
             "crim": crimen.get(a["cve_mun"]),
             "viv_ha": round(viv_hab / a["area_ha"], 3) if viv_hab is not None and a["area_ha"] else None,
             "indus": round(no_min / total, 4) if total else None,
-            "chas": None, "nox": None, "age": None, "age_1975": None, "rad_km": None,
+            "chas": None, "nox": None, "nox_obs": None, "age": None, "age_1975": None, "rad_km": None,
             "rm": cuartos_promedio(d),
             "pro_ocup_c": _num(d, "PRO_OCUP_C"),
             "pct_viv_3ymas_cuartos": _porcentaje(_num(d, "VPH_3YMASC"), con_carac),
@@ -447,6 +459,8 @@ async def construir(pool: AsyncConnectionPool, cve_ent: str, municipios: list[st
     asignar_osm(filas, agua, vias)
     if ghsl:
         asignar_ghsl(filas, ghsl)
+    if no2:
+        asignar_no2(filas, no2)
     return filas, centros
 
 
@@ -483,7 +497,8 @@ def escribir(filas: list[dict], centros: list[dict], salida: Path, notas: dict) 
         "Atribución: censo 2020 y DENUE, INEGI; incidencia delictiva, SESNSP; calles y cauces,\n"
         "© colaboradores de OpenStreetMap (ODbL); superficie construida, JRC GHSL (CC BY 4.0);\n"
         "valores catastrales, tablas de valores de cada municipio (ver medv_anio); predial, leyes\n"
-        "de ingresos municipales 2026; alumnos y docentes, SEP DGPPyEE (formato 911).\n",
+        "de ingresos municipales 2026; alumnos y docentes, SEP DGPPyEE (formato 911); NO2,\n"
+        "Copernicus Sentinel-5P procesado por Mapo (contiene datos modificados de Copernicus).\n",
         encoding="utf-8",
     )
 
