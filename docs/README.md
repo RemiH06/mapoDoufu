@@ -8,6 +8,7 @@
 - [buscador.md](producto/buscador.md): intenciones y parámetros del modo buscador, zonas candidatas y la tabla de rubros de DENUE.
 - [pipeline-datos.md](producto/pipeline-datos.md): dónde se rompe la obtención y lectura de cada fuente, cómo detectarlo sin una persona y qué hacer; base para automatizar.
 - [dataset-vivienda.md](producto/dataset-vivienda.md): tabla tipo Boston Housing por AGEB de una zona metropolitana, equivalencias, método de cada columna y el pipeline de valor catastral.
+- [colonias.md](producto/colonias.md): cómo armar el polígono de una colonia en cualquier municipio (oficial, OSM, votación de direcciones sobre manzanas o dibujo del equipo), con el prototipo de López Cotilla.
 - [plan-nacional.md](producto/plan-nacional.md): qué falta para tener el paquete ambiental y el dataset de vivienda en todo el país, y en qué orden.
 - [datos-propios.md](producto/datos-propios.md): archivos del equipo (tabla, vectorial, ráster) como acetato y su cruce con fuentes públicas: formatos, límites, ubicación, permisos y qué se guarda.
 

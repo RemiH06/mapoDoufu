@@ -17,6 +17,7 @@ México y en qué orden. Lo que ya está hecho y cómo replicarlo a mano está e
 | Altura de dosel a 1 m (Meta y WRI) | `dosel.py`, cualquier caja | Nada para una zona; para el país, estadística por manzana o AGEB |
 | Viento (ERA5) | API de Open-Meteo, centro de la caja | Climatología por mes y hora para cada celda de 0.25° de México (unas 3,000), desde el Climate Data Store |
 | Censo por AGEB, DENUE, SESNSP | Los estados cargados en la base | Cargar los 32 estados |
+| Colonias | No existen con polígono en ninguna fuente nacional | Pipeline de `colonias.md`: oficial, OSM, votación de direcciones sobre manzanas o dibujo del equipo |
 | Manzanas | No están en la base | Polígonos del Marco Geoestadístico y censo por manzana de INEGI, por estado (Jalisco: 102,734 manzanas con censo). INEGI oculta valores en manzanas con pocas viviendas |
 | OSM (agua, vías, parques, estaciones, amenidades) | Overpass por caja | Extracto de México de Geofabrik con fecha fija y `osmium` local: reproducible y sin depender del servidor público |
 | GHSL, NO2 (TROPOMI) | Por caja | Global: mosaicos de GHSL de México; rejilla de NO2 nacional a 0.05° |
