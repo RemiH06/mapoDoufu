@@ -236,6 +236,35 @@ calidad de `hojas.csv`, y se ve ahí, no en el modelo.
 - Todos los valores van como `zona`: en el escaneo no se distingue un valor de
   zona de uno de corredor por el tamaño de letra.
 
+### Tablas 2026 de la ZMG (2026-11-17)
+
+Expedientes de INFOLEJ (ver "Por qué es difícil"), OCR con `extraer_pdf_raster.py
+--renderizar 250` y una forma de ubicar según lo que traiga cada plano:
+
+| Municipio | Lo que traen los planos | Cómo se ubicó | Resultado |
+|---|---|---|---|
+| Guadalajara 2026 | Zonas de valor ("ZV281"), valores con "$", coordenadas UTM en los bordes, casi sin calles | `ubicar_por_marcas.py`: similitud por mínimos cuadrados con las marcas UTM, quitando las mal leídas | 116 de 179 hojas, RMS mediano 1.2 m, 2,519 valores |
+| Tonalá 2026 | Valores grandes de zona y de corredor, nombres de calle, escala 1:5,000 | `ubicar_pdf_mapa.py --ocr` (calles de OSM, escala común) | 48 de 161 hojas, 5.4 m, 941 valores; 152 de 228 AGEB |
+| Tlaquepaque 2026 | Valores grandes por zona y nombres de colonia; las calles son demasiado chicas para el OCR, aun a 400 dpi | No se pudo: ni calles ni colonias empatan (OSM tiene 1 de 7 colonias probadas; el catálogo de asentamientos de INEGI no trae coordenadas) | Pendiente |
+| Tlajomulco 2026 | Valores con "$" y la clave del cuadrante, sin nombres de calle | No se pudo por calles | Pendiente: plano índice de cuadrantes, o las corridas de valores por colonia de las páginas 82 a 86 |
+| Ixtlahuacán 2026 | Coordenadas UTM en los bordes, valores con "$" | `ubicar_por_marcas.py` | En proceso |
+
+**Validación cruzada, Guadalajara 2020 contra 2026:** dos tablas de la misma ciudad
+por dos caminos independientes (texto vectorial ubicado por calles, y escaneo con
+OCR ubicado por marcas UTM). En 270 AGEB con al menos 3 etiquetas en ambas, el
+Spearman entre sus medianas es **0.88**: el pipeline de OCR ordena las zonas
+igual que el vectorial. La razón 2026/2020 tiene mediana **1.32** (p25 1.22, p75
+1.47): en Guadalajara los valores subieron 32 % en seis años, unos 4.7 % al año.
+
+**`medv_2026`:** mediana con las tablas de 2026 de Guadalajara, Zapopan y Tonalá,
+todas del mismo año fiscal. Es la columna para comparar municipios y medir el
+error de predicción entre ellos sin mezclar años; `medv` sigue con Guadalajara
+2020 (la de mejor calidad, del año del censo).
+
+**Cautela con Tonalá:** su `medv` correlaciona solo 0.24 con `graproes` (0.81 en
+Guadalajara, 0.60 en Zapopan). Puede ser ruido del OCR o que Tonalá es más
+homogéneo; revisar antes de usarlo como municipio de prueba.
+
 ### Años distintos: no se normaliza
 
 Guadalajara es de 2020 y Zapopan de 2026, en pesos de su año. Los aumentos de

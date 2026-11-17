@@ -139,3 +139,11 @@ def test_nox_toma_la_celda_del_punto(tmp_path):
     assert (filas[0]["nox"], filas[0]["nox_obs"]) == (10.0, 5)
     assert filas[1]["nox"] is None and filas[1]["nox_obs"] is None  # celda sin observaciones
     assert (filas[2]["nox"], filas[2]["nox_obs"]) == (40.0, 8)
+
+
+def test_medv_mismo_anio_solo_ese_anio():
+    filas = [_fila("039", 0, 0), _fila("124", 5, 5)]
+    v = lambda anio, valor: {"municipio": "14039", "anio": anio, "clase": "", "valor": valor, "lon": 0.5, "lat": 0.5}
+    dv.asignar_medv_mismo_anio(filas, [v(2026, 100), v(2026, 200), v(2026, 300), v(2020, 9999)], "14", 2026)
+    assert (filas[0]["medv_2026"], filas[0]["medv_2026_n"]) == (200.0, 3)  # el de 2020 no entra
+    assert filas[1]["medv_2026"] is None and filas[1]["medv_2026_n"] is None  # municipio sin tabla 2026

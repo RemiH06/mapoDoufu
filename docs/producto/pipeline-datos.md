@@ -71,6 +71,8 @@ fallar en voz alta**, no dejar un vacío silencioso ni un número plausible y fa
 
 | Paso | Supuesto | Cómo se comprueba | Si falla |
 |---|---|---|---|
+| Planos escaneados sin calles legibles | Tlaquepaque rotula colonias pero sus calles no se leen ni a 400 dpi; Tlajomulco solo trae el cuadrante | Mediana de calles emparejadas por hoja en 0, escala global pegada al límite del rango | Otra forma de ubicar: marcas de coordenadas (`ubicar_por_marcas.py`), plano índice, o tablas por colonia. Sin eso, el municipio queda sin `medv` y se dice |
+| Marcas UTM leídas por OCR | Una marca mal leída (un dígito cambiado) mueve toda la hoja cientos de metros | Residuo de la marca contra el ajuste | Quitar la de mayor residuo mientras pase de 15 m; aceptar solo con dos marcas por eje |
 | Georreferencia de hojas (`ubicar_pdf_mapa.py`) | Todas las hojas del atlas comparten escala y orientación | Error mediano por hoja contra OSM y escala dentro de 10 % de la global (`hojas.csv`) | La hoja no se acepta; sus valores no entran |
 | Emparejar calles con OSM | Los nombres coinciden tras normalizar (sin acentos, sin tipo de vía, abreviaturas expandidas) | Inliers por hoja | Ampliar la tabla de abreviaturas; las hojas de orilla con pocas calles quedan fuera |
 | OSM | Es una foto del día de la descarga; las calles cambian | — | Guardar la fecha (`osm3s.timestamp_osm_base`) |

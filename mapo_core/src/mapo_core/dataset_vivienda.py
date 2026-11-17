@@ -80,6 +80,8 @@ DICCIONARIO = [
     Columna("medv_calle_n", "Etiquetas de valor por tramo dentro de la AGEB", "", "Tablas de valores municipales", "AGEB", "conteo"),
     Columna("medv_anio", "Año fiscal de la tabla de valores", "", "scripts/catastro/fuentes.csv", "municipio", "directo; tablas de años distintos no son comparables sin deflactar"),
     Columna("medv_metodo", "De dónde sale medv o por qué está vacío", "", "", "AGEB", "texto"),
+    Columna("medv_2026", "Mediana del valor catastral de suelo con las tablas de 2026, $/m² (zona y tramo juntos)", "MEDV (mismo año)", "Tablas de valores 2026: Guadalajara, Zapopan y Tonalá (expedientes de INFOLEJ y Zapopan)", "AGEB", "mediana de las etiquetas dentro, con 3 como mínimo; todas del mismo año fiscal, para comparar municipios"),
+    Columna("medv_2026_n", "Etiquetas de valor de 2026 dentro de la AGEB", "", "Tablas de valores 2026", "AGEB", "conteo; vacío si el municipio no tiene tabla 2026 ubicada"),
     Columna("crim", "Delitos registrados en el año base por 100 mil habitantes del municipio", "CRIM", "SESNSP, incidencia municipal; población del censo 2020", "municipio", "suma de cantidad del año base / POBTOT municipal × 100 000"),
     Columna("viv_ha", "Viviendas particulares habitadas por hectárea", "ZN (sustituto)", "Censo 2020 + área de la AGEB", "AGEB", "VIVPAR_HAB / area_ha. ZN de Boston es zonificación de lote grande: aquí la densidad, que va en sentido contrario"),
     Columna("indus", "Parte del personal ocupado en industria, mayoreo, transporte y agro", "INDUS", "DENUE (personal estimado por estrato)", "AGEB", "personal en sectores no minoristas / personal total de la AGEB; vacío si no hay negocios"),
@@ -395,6 +397,27 @@ def leer_valores(rutas: list[Path]) -> list[dict]:
     return valores
 
 
+def asignar_medv_mismo_anio(filas: list[dict], valores: list[dict], cve_ent: str, anio: int) -> None:
+    """`medv_<año>`: mediana de todas las etiquetas (zona y tramo juntas) de las tablas
+    de un mismo año fiscal, para comparar municipios sin mezclar años. Las tablas
+    escaneadas no distinguen zona de tramo, así que aquí tampoco."""
+    from shapely import STRtree
+    from shapely.geometry import Point
+
+    arbol = STRtree([wkb.loads(f["_geom"]) for f in filas])
+    por_ageb: dict[int, list[float]] = {}
+    municipios = {v["municipio"] for v in valores if v["anio"] == anio}
+    for v in valores:
+        if v["anio"] == anio:
+            for i in arbol.query(Point(v["lon"], v["lat"]), predicate="intersects"):
+                por_ageb.setdefault(int(i), []).append(v["valor"])
+    for i, f in enumerate(filas):
+        vals = por_ageb.get(i, [])
+        con_tabla = cve_ent + f["cve_mun"] in municipios
+        f[f"medv_{anio}"] = float(np.median(vals)) if len(vals) >= MIN_VALORES_CALLE else None
+        f[f"medv_{anio}_n"] = len(vals) if con_tabla else None
+
+
 def asignar_medv(filas: list[dict], valores: list[dict], cve_ent: str) -> None:
     """Mediana por AGEB, por clase. Nunca rellena con vecinas: lo que falta se dice."""
     from shapely import STRtree
@@ -426,6 +449,7 @@ def asignar_medv(filas: list[dict], valores: list[dict], cve_ent: str) -> None:
 
 async def construir(pool: AsyncConnectionPool, cve_ent: str, municipios: list[str], anio_crimen: int = 2020,
                     valores: list[dict] | None = None, agua: Path | None = None, vias: Path | None = None,
+                    valores_2026: list[dict] | None = None,
                     ghsl: dict[int, Path | None] | None = None,
                     sep: Path | None = None, no2: Path | None = None,
                     entorno: dict[str, Path | None] | None = None) -> tuple[list[dict], list[dict]]:
@@ -482,6 +506,7 @@ async def construir(pool: AsyncConnectionPool, cve_ent: str, municipios: list[st
             "_geom": a["geom"],
         })
     asignar_medv(filas, valores or [], cve_ent)
+    asignar_medv_mismo_anio(filas, valores_2026 or [], cve_ent, 2026)
     asignar_osm(filas, agua, vias)
     if ghsl:
         asignar_ghsl(filas, ghsl)

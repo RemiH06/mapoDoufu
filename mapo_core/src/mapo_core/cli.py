@@ -97,6 +97,7 @@ async def _dataset_vivienda(args) -> None:
 
     municipios = [m.strip().zfill(3) for m in args.municipios.split(",")]
     valores = dataset_vivienda.leer_valores([Path(r) for r in args.medv.split(",")]) if args.medv else []
+    valores_2026 = dataset_vivienda.leer_valores([Path(r) for r in args.medv_2026.split(",")]) if args.medv_2026 else []
     ghsl = None
     if args.ghsl:
         ghsl = {a: next(Path(args.ghsl).glob(f"GHS_BUILT_S_E{a}_*.tif"), None) for a in (1975, 1990, 2020)}
@@ -104,7 +105,7 @@ async def _dataset_vivienda(args) -> None:
         await get_pool(), args.estado, municipios, args.anio_crimen, valores,
         agua=Path(args.osm_agua) if args.osm_agua else None,
         vias=Path(args.osm_vias) if args.osm_vias else None,
-        ghsl=ghsl,
+        ghsl=ghsl, valores_2026=valores_2026,
         sep=Path(args.sep) if args.sep else None,
         no2=Path(args.no2) if args.no2 else None,
         entorno={
@@ -122,6 +123,7 @@ async def _dataset_vivienda(args) -> None:
         "estado": args.estado, "municipios": ",".join(municipios),
         "anio_base_censo": 2020, "anio_crimen": args.anio_crimen, "agebs": len(filas),
         "valores_catastrales": args.medv or "ninguno",
+        "valores_catastrales_2026": args.medv_2026 or "ninguno",
         "osm_agua": args.osm_agua or "ninguno", "osm_vias": args.osm_vias or "ninguno",
         "ghsl": args.ghsl or "ninguno", "sep": args.sep or "ninguno", "no2": args.no2 or "ninguno",
         "predial": "predial_tablas.csv (leyes de ingresos 2026)",
@@ -201,6 +203,8 @@ def _construir_parser() -> argparse.ArgumentParser:
         "--medv", default=None,
         help="valores.csv de scripts/catastro/ubicar_pdf_mapa.py, separados por coma (rutas dentro del contenedor)",
     )
+    p_viv.add_argument("--medv-2026", default=None,
+                       help="valores.csv de tablas 2026, separados por coma (columna medv_2026)")
     p_viv.add_argument("--osm-agua", default=None, help="JSON de Overpass con waterway (para CHAS)")
     p_viv.add_argument("--osm-vias", default=None, help="JSON de Overpass con highway=motorway|trunk (para RAD)")
     p_viv.add_argument("--ghsl", default=None, help="Carpeta con los GHS_BUILT_S de 1975, 1990 y 2020 (para AGE)")
