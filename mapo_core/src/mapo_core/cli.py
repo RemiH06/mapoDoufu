@@ -107,6 +107,14 @@ async def _dataset_vivienda(args) -> None:
         ghsl=ghsl,
         sep=Path(args.sep) if args.sep else None,
         no2=Path(args.no2) if args.no2 else None,
+        entorno={
+            "transporte": Path(args.transporte) if args.transporte else None,
+            "parques": Path(args.osm_parques) if args.osm_parques else None,
+            "dem": Path(args.dem) if args.dem else None,
+            "altura": next(Path(args.ghsl).glob("GHS_BUILT_H_*.tif"), None) if args.ghsl else None,
+            "ndvi": Path(args.ndvi) if args.ndvi else None,
+            "lst": Path(args.lst) if args.lst else None,
+        },
     )
     if not filas:
         raise SystemExit("Ninguna AGEB con censo para esos municipios: revisa que el estado esté cargado.")
@@ -117,6 +125,7 @@ async def _dataset_vivienda(args) -> None:
         "osm_agua": args.osm_agua or "ninguno", "osm_vias": args.osm_vias or "ninguno",
         "ghsl": args.ghsl or "ninguno", "sep": args.sep or "ninguno", "no2": args.no2 or "ninguno",
         "predial": "predial_tablas.csv (leyes de ingresos 2026)",
+        **{k: getattr(args, k) or "ninguno" for k in ("transporte", "osm_parques", "dem", "ndvi", "lst")},
     })
     print(f"{len(filas)} AGEB en {args.salida}. Centros de empleo: {centros}")
     for columna, (p5, p50, p95) in dataset_vivienda.resumen(filas).items():
@@ -197,6 +206,11 @@ def _construir_parser() -> argparse.ArgumentParser:
     p_viv.add_argument("--ghsl", default=None, help="Carpeta con los GHS_BUILT_S de 1975, 1990 y 2020 (para AGE)")
     p_viv.add_argument("--sep", default=None, help="CSV de scripts/vivienda/sep_cifras.py (para PTRATIO)")
     p_viv.add_argument("--no2", default=None, help="GeoTIFF de scripts/ambiental/no2_s5p.py (para NOX)")
+    p_viv.add_argument("--transporte", default=None, help="CSV de scripts/vivienda/transporte_masivo.py")
+    p_viv.add_argument("--osm-parques", default=None, help="JSON de Overpass con leisure=park|garden|nature_reserve")
+    p_viv.add_argument("--dem", default=None, help="DEM en grados (Copernicus GLO-30) que cubra la zona")
+    p_viv.add_argument("--ndvi", default=None, help="s2_indices_<mes>.tif de scripts/ambiental/imagenes.py")
+    p_viv.add_argument("--lst", default=None, help="lst_secas_<año>.tif de scripts/ambiental/imagenes.py")
     p_viv.set_defaults(fn=_dataset_vivienda)
 
     subparsers.add_parser("status", help="Cuenta filas por tabla").set_defaults(fn=_status)

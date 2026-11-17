@@ -57,6 +57,9 @@ fallar en voz alta**, no dejar un vacío silencioso ni un número plausible y fa
 | Defunciones | El archivo de datos cambia de carpeta según el año (2023 no usa `conjunto_de_datos/`) | — | Tomar el miembro más grande del zip |
 | PTAR de Conagua | Sin coordenadas y en cp850 | Caracteres como `¢` en vez de `ó` | Empatar por nombre de municipio normalizado |
 | RENAMECA | Cada fila resume 2012 a 2025: no es serie de tiempo | Columna `AÑO` con un rango | Decirlo en el diccionario |
+| OSM, parques | `leisure=nature_reserve` incluye reservas de miles de hectáreas (La Primavera, 30,415 ha) | Parques de 313 ha en un círculo de 314 | Separar parques urbanos de reservas |
+| OSM, transporte | Cada red etiqueta sus estaciones distinto; Mi Macro Calzada solo como andenes de su relación de ruta, y `network=Mi Macro` aparece en más de mil paradas comunes | Conteo de estaciones por red contra el número real (27 en Calzada) | Estaciones por red más andenes de relaciones de ruta (`scripts/vivienda/transporte_masivo.py`) |
+| Sentinel-2 mensual en temporal de lluvias | De junio a octubre quedan de 2 a 8 % sin dato aunque nada falle: hay días nublados sin escena limpia | Aviso de hueco solo en meses de lluvia, en manchas, no en franjas | Es nubosidad, no error: decirlo; usar compuestos de varios meses si hace falta cobertura |
 | GeoPackage | No distingue mayúsculas en nombres de campo (`LONGITUD` y `longitud` chocan) | `FieldError` al escribir | Nombres distintos (`lon_dec`) |
 | Sentinel-2 | Desde la línea base 04.00 (enero de 2022) ESA suma 1000 a la reflectancia | Saltos en NDVI en 2022 | Restar por escena según `s2:processing_baseline` |
 | TROPOMI | Valores de relleno (9.97e36) y píxeles con nubes | `qa_value` | Solo `qa_value > 0.75`; descartar el relleno |

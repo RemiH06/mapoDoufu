@@ -89,6 +89,13 @@ capa ambiental.
 - **Licencia:** datos de Copernicus Sentinel; al publicar, "contiene datos
   modificados de Copernicus Sentinel [año]".
 
+## Validación: Autlán, índices mensuales (2026-11-15)
+
+De noviembre de 2024 a mayo de 2025, de 0.5 a 1 % sin dato (las esquinas fuera
+de la caja). De junio a octubre de 2025, de 2 a 7.8 %: es el temporal, con días
+nublados sin escena limpia, no fallas de lectura. Para un mes de lluvias con
+cobertura completa, ampliar el periodo.
+
 ## Lo que no hace
 
 - **Quemas por zafra:** la caña se cosecha y se quema de noviembre a mayo, así

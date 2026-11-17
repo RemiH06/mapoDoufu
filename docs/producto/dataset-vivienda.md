@@ -352,6 +352,47 @@ uv run --script scripts/ambiental/no2_s5p.py --caja=-103.70,20.30,-103.00,20.90 
   daba −0.77). Usarlas juntas en una regresión infla la varianza de ambos
   coeficientes: revisar el VIF o quedarse con una.
 
+## Variables de entorno (más allá de Boston)
+
+`mapo_core/vivienda_entorno.py`. Todas se miden desde el punto dentro de la AGEB
+o sobre su polígono, sin índices compuestos. Comando completo:
+
+```bash
+uv run --script scripts/vivienda/transporte_masivo.py --caja=20.30,-103.70,20.90,-103.00   --redes "Mi Tren,Línea 4,Mi Macro Periférico,Mi Macro Aeropuerto,Mi Macro Calzada"   --rutas "Mi Macro Calzada Parador" --salida mapo_core/data/osm/transporte_masivo_zmg.csv
+uv run --script scripts/ambiental/imagenes.py --salida ~/srv/mapo-paquetes/zmg/imagenes   --caja=-103.70,20.30,-103.00,20.90 --epsg 32613 --lst 2020/2020 --indices 2020-04/2020-04
+... dataset_vivienda ... --transporte /app/data/osm/transporte_masivo_zmg.csv   --osm-parques /app/data/osm/parques_zmg.json   --dem /app/data/dem/Copernicus_DSM_COG_10_N20_00_W104_00_DEM.tif   --ndvi /app/data/imagenes_zmg/s2_indices_2020-04.tif --lst /app/data/imagenes_zmg/lst_secas_2020.tif
+```
+
+| Grupo | Columnas | Fuente y método |
+|---|---|---|
+| Censo | `pct_60ymas`, `razon_dependencia`, `pct_jefatura_femenina`, `pct_nacidos_otra_entidad`, `pct_con_discapacidad`, `pct_viv_uso_temporal`, `pct_viv_agua_fuera`, `pct_viv_sin_drenaje` | Las variables ya cargadas en `datos_json`; fórmulas en el diccionario |
+| Amenidades | `negocios_1km`, `escuelas_1km`, `salud_1km`, `supermercados_1km`, `restaurantes_cafes_1km`, `diversidad_giros_1km` | DENUE a 1 km en línea recta, con los sectores y rubros de `rubros/`. La diversidad es la entropía de Shannon de los sectores |
+| Transporte | `transporte_km`, `transporte_red` | Estación más cercana de Mi Tren (líneas 1 a 4), Mi Macro Calzada, Periférico y Aeropuerto; 171 puntos de OSM |
+| Parques | `parques_ha_1km`, `reserva_km` | OSM: parques y jardines a 1 km (unidos, sin doble conteo) y distancia a la reserva natural más cercana |
+| Relieve | `altitud_m`, `pendiente_grados` | Copernicus GLO-30; la pendiente con el tamaño del píxel en metros a esa latitud |
+| Construcción | `altura_edificios_m` | GHSL GHS-BUILT-H ANBH 2018, media de las celdas con edificios |
+| Imágenes | `ndvi`, `lst_c` | Sentinel-2 de abril de 2020 y Landsat de marzo a mayo de 2020, por bloques (`../fuentes/imagenes.md`) |
+
+**Lo que se encontró al armarlas:**
+
+- **Reservas no son parques:** con `leisure=nature_reserve`, La Primavera (30,415
+  ha) y Cerro Viejo (23,125 ha) llenaban el círculo de 1 km de las AGEB vecinas
+  (313 de 314 ha). Van aparte, como distancia (`reserva_km`).
+- **Transporte en OSM:** Mi Macro Calzada solo tiene 4 estaciones etiquetadas
+  como estación; las 27 están como andenes de la relación de ruta "Mi Macro
+  Calzada Parador". La etiqueta `network=Mi Macro` sola la llevan más de mil
+  paradas comunes. Centrales camioneras fuera.
+- **Supermercados:** mediana 0 a 1 km; DENUE clasifica pocos negocios como
+  supermercado (las tiendas de conveniencia son otro rubro).
+
+**Validación (ZMG, 2026-11-16):** altitud de 1,502 a 1,665 m; altura de edificios
+máxima (21 m) en Chapultepec y el Centro; el máximo de parques (94 ha) junto al
+Parque Metropolitano; NDVI mínimo en la zona comercial de Ciudad del Sol y máximo
+en el campo de Tonalá; la superficie más caliente (54 °C) en el corredor
+industrial de Tlaquepaque a El Salto. Spearman de `ndvi` contra `lst_c`: −0.39.
+Contra `medv`: `parques_ha_1km` 0.37, `restaurantes_cafes_1km` 0.37,
+`altura_edificios_m` 0.31, `ndvi` 0.16, `transporte_km` 0.00.
+
 ## Pendientes de las otras columnas
 
 - `dis_km` y `rad_km` por calle: la matriz de OSRM de las zonas candidatas.

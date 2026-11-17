@@ -26,7 +26,7 @@ from psycopg_pool import AsyncConnectionPool
 from shapely import wkb
 from shapely.geometry import mapping
 
-from mapo_core import rubros
+from mapo_core import rubros, vivienda_entorno
 
 # Personal ocupado estimado por estrato de DENUE: punto medio del rango. El
 # último estrato no tiene tope; 300 es una convención, se dice en el diccionario.
@@ -106,6 +106,30 @@ DICCIONARIO = [
     Columna("pct_viv_deshabitadas", "% de viviendas particulares deshabitadas", "", "Censo 2020, VIVPAR_DES, TVIVPAR", "AGEB", "VIVPAR_DES / TVIVPAR × 100; extra, Boston no lo tiene"),
     Columna("pct_viv_auto", "% de viviendas con automóvil", "", "Censo 2020, VPH_AUTOM", "AGEB", "VPH_AUTOM / VIVPARH_CV × 100; extra"),
     Columna("pct_viv_internet", "% de viviendas con internet", "", "Censo 2020, VPH_INTER", "AGEB", "VPH_INTER / VIVPARH_CV × 100; extra"),
+    # Entorno: Boston no las tiene (vivienda_entorno.py).
+    Columna("pct_60ymas", "% de población de 60 años o más", "", "Censo 2020, P_60YMAS", "AGEB", "P_60YMAS / POBTOT × 100"),
+    Columna("razon_dependencia", "Dependientes (0 a 14 y 65 o más) por cada 100 de 15 a 64", "", "Censo 2020, POB0_14, POB65_MAS, POB15_64", "AGEB", "(POB0_14 + POB65_MAS) / POB15_64 × 100"),
+    Columna("pct_jefatura_femenina", "% de hogares con jefatura femenina", "", "Censo 2020, HOGJEF_F, TOTHOG", "AGEB", "HOGJEF_F / TOTHOG × 100"),
+    Columna("pct_nacidos_otra_entidad", "% de población nacida en otro estado", "", "Censo 2020, PNACOE", "AGEB", "PNACOE / POBTOT × 100"),
+    Columna("pct_con_discapacidad", "% de población con discapacidad", "", "Censo 2020, PCON_DISC", "AGEB", "PCON_DISC / POBTOT × 100"),
+    Columna("pct_viv_uso_temporal", "% de viviendas de uso temporal", "", "Censo 2020, VIVPAR_UT, TVIVPAR", "AGEB", "VIVPAR_UT / TVIVPAR × 100"),
+    Columna("pct_viv_agua_fuera", "% de viviendas con agua entubada solo fuera de la vivienda", "", "Censo 2020, VPH_AGUAFV", "AGEB", "VPH_AGUAFV / VIVPARH_CV × 100"),
+    Columna("pct_viv_sin_drenaje", "% de viviendas sin drenaje", "", "Censo 2020, VPH_NODREN", "AGEB", "VPH_NODREN / VIVPARH_CV × 100"),
+    Columna("negocios_1km", "Negocios de DENUE a 1 km o menos del punto de la AGEB", "", "DENUE", "radio de 1 km", "conteo en línea recta"),
+    Columna("escuelas_1km", "Escuelas a 1 km o menos", "", "DENUE, sector educación de rubros/sectores.csv", "radio de 1 km", "conteo; públicas y privadas, todos los niveles"),
+    Columna("salud_1km", "Unidades de salud a 1 km o menos", "", "DENUE, sector salud", "radio de 1 km", "conteo; incluye consultorios y farmacias"),
+    Columna("supermercados_1km", "Supermercados a 1 km o menos", "", "DENUE, rubro supermercado", "radio de 1 km", "conteo"),
+    Columna("restaurantes_cafes_1km", "Restaurantes y cafeterías a 1 km o menos", "", "DENUE, rubros restaurante y cafetería", "radio de 1 km", "conteo"),
+    Columna("diversidad_giros_1km", "Diversidad de sectores de los negocios a 1 km", "", "DENUE", "radio de 1 km", "entropía de Shannon de los sectores, en nats; 0 si todos son de un sector"),
+    Columna("transporte_km", "Distancia en línea recta a la estación de transporte masivo más cercana, km", "", "OSM, scripts/vivienda/transporte_masivo.py", "AGEB", "Mi Tren (líneas 1 a 4), Mi Macro Calzada, Periférico y Aeropuerto; ver transporte_red"),
+    Columna("transporte_red", "Red de la estación más cercana", "", "OSM", "AGEB", "directo"),
+    Columna("parques_ha_1km", "Hectáreas de parque urbano a 1 km o menos", "", "OSM, leisure=park|garden", "radio de 1 km", "área de la unión de polígonos dentro del círculo; depende de qué tan completo esté OSM"),
+    Columna("reserva_km", "Distancia a la reserva natural más cercana, km (0 si está dentro)", "", "OSM, leisure=nature_reserve (La Primavera, Cerro Viejo, barrancas del Santiago…)", "AGEB", "desde el punto dentro de la AGEB al borde del polígono"),
+    Columna("altitud_m", "Altitud media de la AGEB, m", "", "Copernicus DEM GLO-30", "AGEB (píxeles de 30 m)", "media de los píxeles dentro"),
+    Columna("pendiente_grados", "Pendiente media del terreno, grados", "", "Copernicus DEM GLO-30", "AGEB (píxeles de 30 m)", "gradiente del DEM con el tamaño del píxel en metros a esa latitud"),
+    Columna("altura_edificios_m", "Altura media de los edificios, m", "", "JRC GHSL GHS-BUILT-H ANBH 2018, 100 m, CC BY 4.0", "AGEB (píxeles de 100 m)", "media de las celdas con edificios (las de 0 no cuentan)"),
+    Columna("ndvi", "NDVI medio de la AGEB (verde urbano)", "", "Sentinel-2 L2A, mediana de abril de 2020, scripts/ambiental/imagenes.py", "AGEB (píxeles de 10 m)", "media de los píxeles dentro; de -1 a 1, más verde más alto"),
+    Columna("lst_c", "Temperatura de superficie media de secas, °C", "", "Landsat 8 y 9 C2 L2, mediana de marzo a mayo de 2020, scripts/ambiental/imagenes.py", "AGEB (píxeles de 30 m)", "media de los píxeles dentro; temperatura del suelo y techos, no del aire"),
 ]
 COLUMNAS = [c.nombre for c in DICCIONARIO]
 
@@ -403,7 +427,8 @@ def asignar_medv(filas: list[dict], valores: list[dict], cve_ent: str) -> None:
 async def construir(pool: AsyncConnectionPool, cve_ent: str, municipios: list[str], anio_crimen: int = 2020,
                     valores: list[dict] | None = None, agua: Path | None = None, vias: Path | None = None,
                     ghsl: dict[int, Path | None] | None = None,
-                    sep: Path | None = None, no2: Path | None = None) -> tuple[list[dict], list[dict]]:
+                    sep: Path | None = None, no2: Path | None = None,
+                    entorno: dict[str, Path | None] | None = None) -> tuple[list[dict], list[dict]]:
     """Filas del dataset y los centros de empleo usados para DIS."""
     agebs = await _agebs(pool, cve_ent, municipios)
     negocios = await _negocios(pool, cve_ent, municipios)
@@ -453,6 +478,7 @@ async def construir(pool: AsyncConnectionPool, cve_ent: str, municipios: list[st
             "pct_viv_deshabitadas": _porcentaje(_num(d, "VIVPAR_DES"), _num(d, "TVIVPAR")),
             "pct_viv_auto": _porcentaje(_num(d, "VPH_AUTOM"), con_carac),
             "pct_viv_internet": _porcentaje(_num(d, "VPH_INTER"), con_carac),
+            **vivienda_entorno.censo_extra(d),
             "_geom": a["geom"],
         })
     asignar_medv(filas, valores or [], cve_ent)
@@ -461,6 +487,20 @@ async def construir(pool: AsyncConnectionPool, cve_ent: str, municipios: list[st
         asignar_ghsl(filas, ghsl)
     if no2:
         asignar_no2(filas, no2)
+    vivienda_entorno.asignar_amenidades(filas, negocios)
+    e = entorno or {}
+    if e.get("transporte"):
+        vivienda_entorno.asignar_transporte(filas, e["transporte"])
+    if e.get("parques"):
+        vivienda_entorno.asignar_parques(filas, e["parques"])
+    if e.get("dem"):
+        vivienda_entorno.asignar_relieve(filas, e["dem"])
+    if e.get("altura"):
+        vivienda_entorno.media_zonal(filas, e["altura"], "altura_edificios_m", solo_positivos=True, decimales=2)
+    if e.get("ndvi"):
+        vivienda_entorno.media_zonal(filas, e["ndvi"], "ndvi", escala=1 / 10_000, decimales=4)
+    if e.get("lst"):
+        vivienda_entorno.media_zonal(filas, e["lst"], "lst_c", escala=1 / 100, decimales=2)
     return filas, centros
 
 
