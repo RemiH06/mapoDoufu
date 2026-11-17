@@ -47,7 +47,9 @@ CONFUSIONES = str.maketrans({"$": "5", "S": "5", "s": "5", "O": "0", "o": "0", "
 
 
 def limpiar_valor(texto: str) -> int | None:
-    t = texto.translate(CONFUSIONES)
+    # Un signo de pesos al inicio ("$ 3300", "$3300") se quita antes de corregir
+    # confusiones: si no, "$3300" se leería 53300 (Tlajomulco 2026).
+    t = re.sub(r"^\s*[$sS]\s*(?=[\dlIO])", "", texto).translate(CONFUSIONES)
     # Separador de miles: "38,400" y "18.900" son un solo número. Partirlos en la
     # coma dejaba 400 y 900 (encontrado con Zapopan 2026).
     t = re.sub(r"(?<=\d)[,.](?=\d{3}(?:\D|$))", "", t)
@@ -58,11 +60,18 @@ def limpiar_valor(texto: str) -> int | None:
     return int(mejor) if 3 <= len(mejor) <= 6 else None
 
 
-def clasificar(texto: str, alto_letra: float, valor_desde_alto: float) -> tuple[str, int | None]:
+def clasificar(texto: str, alto_letra: float, valor_desde_alto: float, con_signo: bool = False) -> tuple[str, int | None]:
     """(tipo, valor). Un número con cero a la izquierda ("080", "011903") es clave de
-    manzana: los valores nunca se escriben así."""
-    if not re.search(r"\d", texto) or re.search(r"[A-RT-Za-rt-z]{2,}", texto):
+    manzana: los valores nunca se escriben así. Con `con_signo` (atlas que escriben
+    "$ 3300", como Tlajomulco), el signo decide y la altura de letra no importa."""
+    # "Tiene letras" sin contar las que el OCR confunde con cifras (I, l, O, o, S, s).
+    if not re.search(r"\d", texto) or re.search(r"[A-HJ-NP-RT-Za-km-np-rt-z]{2,}", texto):
         return "texto", None
+    if con_signo:
+        if not re.match(r"^\s*\$", texto):
+            return "clave", None
+        valor = limpiar_valor(texto)
+        return ("valor", valor) if valor else ("clave", None)
     if texto.strip().startswith("0") or alto_letra < valor_desde_alto:
         return "clave", None
     valor = limpiar_valor(texto)
@@ -85,7 +94,12 @@ def main() -> None:
     ap.add_argument("salida", type=Path)
     ap.add_argument("--municipio", required=True)
     ap.add_argument("--anio", type=int, required=True)
-    ap.add_argument("--valor-desde-alto", type=float, required=True, help="altura de letra en px desde la cual un número es valor")
+    ap.add_argument("--valor-desde-alto", type=float, default=0, help="altura de letra en px desde la cual un número es valor")
+    ap.add_argument("--valor-con-signo", action="store_true",
+                    help="un número es valor si empieza con $ (atlas como Tlajomulco 2026); ignora la altura")
+    ap.add_argument("--renderizar", type=int, default=0,
+                    help="dpi para renderizar la página completa en vez de tomar su primera imagen "
+                         "(para escaneos partidos en varias imágenes por página)")
     ap.add_argument("--ancho-mapa", type=float, default=1.0, help="fracción izquierda de la hoja que es mapa")
     ap.add_argument("--paginas", default=None, help="rango a procesar, p. ej. 6-544 (por omisión, todas)")
     ap.add_argument("--reclasificar", action="store_true",
@@ -98,7 +112,8 @@ def main() -> None:
             filas = list(csv.DictReader(f))
         for fila in filas:
             if fila["tipo"] != "vacia":
-                fila["tipo"], fila["valor_m2"] = clasificar(fila["texto"], float(fila["tamano"]), a.valor_desde_alto)
+                fila["tipo"], fila["valor_m2"] = clasificar(fila["texto"], float(fila["tamano"]), a.valor_desde_alto,
+                                                            a.valor_con_signo)
         with open(a.salida, "w", newline="", encoding="utf-8") as f:
             w = csv.DictWriter(f, fieldnames=CAMPOS)
             w.writeheader()
@@ -123,10 +138,14 @@ def main() -> None:
             if n in hechas:
                 continue
             t0 = time.time()
-            imagenes = doc[n - 1].get_images()
-            if not imagenes:
-                continue
-            img = Image.open(io.BytesIO(doc.extract_image(imagenes[0][0])["image"])).convert("RGB")
+            if a.renderizar:
+                pix = doc[n - 1].get_pixmap(dpi=a.renderizar)
+                img = Image.frombytes("RGB", (pix.width, pix.height), pix.samples)
+            else:
+                imagenes = doc[n - 1].get_images()
+                if not imagenes:
+                    continue
+                img = Image.open(io.BytesIO(doc.extract_image(imagenes[0][0])["image"])).convert("RGB")
             ancho, alto = img.size
             mapa = np.array(img.crop((0, 0, int(ancho * a.ancho_mapa), alto)))
             resultado, _ = ocr(mapa)
@@ -134,7 +153,7 @@ def main() -> None:
             for caja, texto, conf in resultado or []:
                 texto = " ".join(texto.split())
                 cx, cy, angulo, alto_letra = geometria(caja)
-                tipo, valor = clasificar(texto, alto_letra, a.valor_desde_alto)
+                tipo, valor = clasificar(texto, alto_letra, a.valor_desde_alto, a.valor_con_signo)
                 filas.append({"municipio": a.municipio, "anio": a.anio, "pagina": n, "hoja": f"p{n}",
                               "tipo": tipo, "texto": texto, "valor_m2": valor, "x": round(cx, 1),
                               "y": round(cy, 1), "angulo": round(angulo, 1), "tamano": round(alto_letra, 1)})

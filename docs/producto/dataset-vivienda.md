@@ -112,7 +112,7 @@ Cada municipio lo publica distinto y cambia de un año a otro:
 |---|---|---|
 | Guadalajara 2020 | 174 hojas, una por cuadrante de la ciudad | Mapa vectorial en PDF: etiquetas `$ 2300` sobre calles, nombres de calle y claves de manzana, **sin georreferencia**. El servidor de catastro no responde (2026-11-15): la copia sale de Wayback |
 | Zapopan 2026 | `Valor Catastral Zapopan 2026.pdf`, 544 hojas, 828 MB, más 11 PDF de tablas (construcción, rústico, plazas, parques industriales), en el bucket público `s3.zapopan.gob.mx/geomatica/tablasvalor/` | **Escaneo**: copia certificada del Periódico Oficial (18 de diciembre de 2025) con sellos encima, una imagen JPEG de 5100 × 3300 por hoja y ningún texto vectorial. Hojas por zona catastral ("ZONA CATASTRAL 34 4G5"), no por rejilla. Valores como números de 4 cifras sin `$`, más grandes que los números de manzana |
-| Los otros 8 de la ZMG | Tlaquepaque, Tonalá y Tlajomulco (unas 840 AGEB) no publican sus tablas en línea, y Wayback no guardó ninguna en la Biblioteca Virtual del Congreso (revisado el 2026-11-15) | Pedirlas por transparencia o buscarlas en el Periódico Oficial. Para normalizar Zapopan: no subió valores en 2020, 2021 ni 2022 (su Tesorería), y en 2025 subió 5 % |
+| Los otros 8 de la ZMG | **En INFOLEJ, el sistema del Congreso de Jalisco** (2026-11-17): los expedientes que cada municipio manda con su propuesta de tablas 2026 están en `infolej.congresojal.gob.mx/documentos/estados/R_<número>.pdf`, escaneados. Tlaquepaque R_59180, Tonalá R_59166, Tlajomulco R_59032, Ixtlahuacán R_58899, Acatlán R_58932, Guadalajara 2026 R_59208. El Salto, Juanacatlán y Zapotlanejo no aparecieron | Escaneos con formatos distintos; ver `scripts/catastro/fuentes.csv` |
 
 Y en otras ciudades habrá tablas en texto por colonia, Excel, o capas en un
 GeoServer. Un extractor por municipio no escala; un pipeline con etapas fijas y
@@ -246,6 +246,32 @@ queda nominal y `medv_anio` dice el año. Para modelar, un **efecto fijo por
 municipio** (una variable indicadora de `cve_mun`) absorbe la diferencia de nivel
 entre tablas sin necesitar el factor; o modelar el logaritmo de `medv`, donde
 un factor común es solo un desplazamiento.
+
+### Para modelar: predecir municipios sin tabla y medir el error
+
+Lo natural es usar los municipios con tabla para entrenar y predecir `medv` donde
+no la hay. Pero un error solo se mide donde el valor real existe, así que cada
+municipio con tabla sirve de prueba para los demás: **validación dejando fuera un
+municipio a la vez** (entrenar con todos menos uno, predecir ese y comparar).
+
+Cuidados:
+
+- **Cada municipio fija su propia escala.** El valor catastral lo decide el
+  catastro de cada municipio con su consejo técnico; Zapopan y Guadalajara no
+  cobran igual la misma colonia. Un municipio nuevo trae un desplazamiento de
+  nivel que ningún dato del censo explica. Reportar dos errores: el de orden
+  (Spearman entre predicho y real dentro del municipio) y el absoluto después de
+  calibrar el nivel con unos pocos valores reales (una sola constante por
+  municipio). Sin esa calibración, el error mezcla modelo con política fiscal.
+- **Años distintos:** trabajar en logaritmo de `medv`; un aumento parejo de la
+  tabla es solo un desplazamiento.
+- **Extrapolación:** Guadalajara y Zapopan son el centro de la ciudad;
+  Tlajomulco, Tonalá o El Salto tienen otra mezcla de vivienda (fraccionamientos,
+  periferia). Revisar si las variables del municipio de prueba caen dentro del
+  rango de entrenamiento antes de confiar en la predicción.
+- **Autocorrelación espacial:** AGEB vecinas se parecen. Una partición al azar
+  dentro de un mismo municipio da errores optimistas; dejar fuera municipios
+  completos, o bloques espaciales, no.
 
 ## Insumos de CHAS, RAD y AGE
 
