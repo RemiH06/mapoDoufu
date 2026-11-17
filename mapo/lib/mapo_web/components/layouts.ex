@@ -59,13 +59,32 @@ defmodule MapoWeb.Layouts do
 
   def app(assigns) do
     ~H"""
-    <header class={["cabecera", @full_width? && "cabecera-flotante"]}>
+    <header
+      id="cabecera"
+      class={["cabecera", @full_width? && "cabecera-flotante", @current_scope && "con-menu"]}
+    >
       <div class="membrete pegado">
         <.link navigate={~p"/"} class="marca">
           <img src={~p"/images/mapo-logo.svg"} alt="" /> <span>MAPO</span>
         </.link>
-
+        
         <div :if={@current_scope || @membrete != []} class="membrete-datos">
+          <%!-- Solo en celular: las secciones y la esquina se pliegan detrás
+               de este botón, que dice dónde está la persona. --%>
+          <button
+            :if={@current_scope}
+            type="button"
+            class="menu-boton"
+            aria-expanded="false"
+            aria-controls="cabecera"
+            phx-click={
+              JS.toggle_class("abierta", to: "#cabecera")
+              |> JS.toggle_attribute({"aria-expanded", "true", "false"})
+            }
+          >
+            {nombre_seccion(@seccion)} <span aria-hidden="true">▾</span>
+          </button>
+          
           <nav :if={@current_scope} class="secciones" aria-label="Secciones">
             <.link
               :for={{clave, texto, ruta} <- secciones()}
@@ -75,7 +94,7 @@ defmodule MapoWeb.Layouts do
               {texto}
             </.link>
           </nav>
-
+          
           <div class="membrete-fila">
             <%= if @membrete != [] do %>
               {render_slot(@membrete)}
@@ -85,7 +104,7 @@ defmodule MapoWeb.Layouts do
           </div>
         </div>
       </div>
-
+      
       <div class="esquina">
         <%!-- El texto lo pone el script de root.html.heex; ignore evita que un
              parche de LiveView lo regrese a "Modo". --%>
@@ -99,10 +118,21 @@ defmodule MapoWeb.Layouts do
         >
           Modo
         </button>
-
+        
         <%= if @current_scope do %>
-          <.link navigate={~p"/users/settings"} class="esquina-enlace">Cuenta</.link>
-          <.link href={~p"/users/log-out"} method="delete" class="esquina-enlace">Salir</.link>
+          <details
+            class="cuenta-menu"
+            phx-mounted={JS.ignore_attributes(["open"])}
+            phx-click-away={JS.remove_attribute("open")}
+          >
+            <summary class="esquina-enlace">Cuenta <span aria-hidden="true">▾</span></summary>
+            
+            <div class="cuenta-opciones pegado">
+              <span class="mano cuenta-correo">{@current_scope.user.email}</span>
+              <.link navigate={~p"/users/settings"}>Configuración</.link>
+              <.link href={~p"/users/log-out"} method="delete">Salir</.link>
+            </div>
+          </details>
         <% else %>
           <.link navigate={~p"/users/log-in"} class="esquina-enlace">Entrar</.link>
         <% end %>
@@ -123,7 +153,7 @@ defmodule MapoWeb.Layouts do
         {render_slot(@inner_block)}
       </div>
     </main>
-    <.flash_group flash={@flash} />
+     <.flash_group flash={@flash} />
     """
   end
 
@@ -135,6 +165,10 @@ defmodule MapoWeb.Layouts do
       {"logistica", "Logística", ~p"/logistica"},
       {"equipos", "Equipos", ~p"/teams"}
     ]
+  end
+
+  defp nombre_seccion(seccion) do
+    Enum.find_value(secciones(), "Menú", fn {clave, texto, _} -> clave == seccion && texto end)
   end
 
   @doc """
@@ -165,7 +199,7 @@ defmodule MapoWeb.Layouts do
         {gettext("Attempting to reconnect")}
         <.icon name="hero-arrow-path" class="ml-1 size-3 motion-safe:animate-spin" />
       </.flash>
-
+      
       <.flash
         id="server-error"
         kind={:error}

@@ -44,14 +44,14 @@ defmodule MapoWeb.DatosLive.Cruce do
         <section class="doc pegado" aria-labelledby="t-cruce">
           <header class="doc-cab">
             <h1 id="t-cruce">Cruzar {@capa.nombre}</h1>
-            <span class="doc-tipo">{cifra(@capa.num_filas)} renglones</span>
+             <span class="doc-tipo">{cifra(@capa.num_filas)} renglones</span>
           </header>
-
+          
           <div class="doc-seccion">
             <p class="secundario">
               Cada cifra queda en su propia columna: Mapo no las pondera ni las junta en un puntaje.
             </p>
-
+            
             <.form for={@form} id="cruce_form" phx-change="cambiar" phx-submit="cruzar">
               <.input
                 :if={length(@niveles) > 1}
@@ -59,14 +59,14 @@ defmodule MapoWeb.DatosLive.Cruce do
                 type="select"
                 label="Agregar por"
                 options={@niveles}
-              />
-              <.input :if={length(@niveles) == 1} field={@form[:nivel]} type="hidden" />
-
+              /> <.input :if={length(@niveles) == 1} field={@form[:nivel]} type="hidden" />
               <fieldset :if={@capa.numericas != []} class="cruce-grupo">
                 <legend>Columnas de tu capa</legend>
+                
                 <p class="secundario">
                   Sumar sirve para ventas; para precios o edades, un promedio o una mediana. Los renglones por zona siempre se cuentan.
                 </p>
+                
                 <.input
                   :for={{columna, i} <- Enum.with_index(@capa.numericas)}
                   type="select"
@@ -77,23 +77,33 @@ defmodule MapoWeb.DatosLive.Cruce do
                   options={@agregaciones}
                 />
               </fieldset>
-
+              
               <fieldset class="cruce-grupo">
                 <legend>Censo 2020</legend>
-                <input type="hidden" name="cruce[censo][]" value="" />
-                <div class="cruce-censo">
-                  <label :for={{clave, etiqueta} <- @indicadores}>
-                    <input
-                      type="checkbox"
-                      name="cruce[censo][]"
-                      value={clave}
-                      checked={clave in @censo}
-                    />
-                    {etiqueta}
-                  </label>
-                </div>
+                 <input type="hidden" name="cruce[censo][]" value="" />
+                <details
+                  :for={{{titulo, grupo}, i} <- Enum.with_index(grupos_censo(@indicadores))}
+                  class="cruce-desplegable"
+                  open={i == 0}
+                  phx-mounted={JS.ignore_attributes(["open"])}
+                >
+                  <summary>
+                    {titulo} <span class="secundario">{elegidos(grupo, @censo)}</span>
+                  </summary>
+                  
+                  <div class="cruce-censo">
+                    <label :for={{clave, etiqueta} <- grupo}>
+                      <input
+                        type="checkbox"
+                        name="cruce[censo][]"
+                        value={clave}
+                        checked={clave in @censo}
+                      /> {etiqueta}
+                    </label>
+                  </div>
+                </details>
               </fieldset>
-
+              
               <.input
                 field={@form[:denue]}
                 type="select"
@@ -106,7 +116,6 @@ defmodule MapoWeb.DatosLive.Cruce do
                 type="checkbox"
                 label="Minutos en auto al negocio más cercano del rubro"
               />
-
               <div class="doc-botones">
                 <.button variant="primary" phx-disable-with="Cruzando...">Cruzar</.button>
                 <.link navigate={~p"/teams/#{@team}/datos"} class="boton">Volver a los datos</.link>
@@ -114,7 +123,7 @@ defmodule MapoWeb.DatosLive.Cruce do
             </.form>
           </div>
         </section>
-
+        
         <section
           :if={@resultado}
           class="doc pegado cruce-resultado"
@@ -124,42 +133,49 @@ defmodule MapoWeb.DatosLive.Cruce do
         >
           <header class="doc-cab">
             <h2 id="t-resultado">Resultado</h2>
+            
             <span class="doc-tipo">
               {cifra(@resultado["zonas_con_renglones"])} de {cifra(length(@resultado["filas"]))} zonas con renglones
             </span>
           </header>
-
+          
           <div class="doc-seccion">
             <p :for={aviso <- @resultado["avisos"]} class="nota">{aviso}</p>
-
+            
             <div class="tabla-muestra">
               <table>
                 <caption class="sr-only">Primeras zonas del cruce</caption>
+                
                 <thead>
                   <tr>
                     <th scope="col">Clave</th>
+                    
                     <th :for={c <- @resultado["columnas"]} scope="col">{c}</th>
                   </tr>
                 </thead>
+                
                 <tbody>
                   <tr :for={fila <- Enum.take(@resultado["filas"], @a_la_vista)}>
                     <td>{fila["clave"]}</td>
+                    
                     <td :for={c <- @resultado["columnas"]}>{celda(fila["datos"][c])}</td>
                   </tr>
                 </tbody>
               </table>
             </div>
+            
             <p :if={length(@resultado["filas"]) > @a_la_vista} class="secundario">
               Se ven las primeras {@a_la_vista} zonas. Guarda el cruce para verlas todas en el mapa o bajarlas en CSV.
             </p>
-
+            
             <details class="cruce-metodo" open>
               <summary>Cómo se calculó</summary>
+              
               <ul>
                 <li :for={linea <- @resultado["metodo"]}>{linea}</li>
               </ul>
             </details>
-
+            
             <.form for={@guardado} id="guardar_form" phx-submit="guardar">
               <.input field={@guardado[:nombre]} type="text" label="Nombre de la capa" required />
               <div class="doc-botones">
@@ -171,6 +187,33 @@ defmodule MapoWeb.DatosLive.Cruce do
       </div>
     </Layouts.app>
     """
+  end
+
+  # 27 casillas en una sola lista no se recorrían: van por tema, cada tema
+  # plegable y con cuántas lleva marcadas.
+  defp grupos_censo(indicadores) do
+    tema = fn clave ->
+      cond do
+        clave in ~w(pobtot pobfem pobmas) -> 0
+        String.starts_with?(clave, "p_") -> 1
+        String.starts_with?(clave, ["vph_", "viv", "tviv", "tothog", "prom_ocup"]) -> 3
+        true -> 2
+      end
+    end
+
+    titulos = ["Población", "Por edad", "Escolaridad, trabajo y salud", "Hogares y vivienda"]
+
+    indicadores
+    |> Enum.group_by(fn {clave, _} -> tema.(clave) end)
+    |> Enum.sort()
+    |> Enum.map(fn {i, grupo} -> {Enum.at(titulos, i), grupo} end)
+  end
+
+  defp elegidos(grupo, censo) do
+    case Enum.count(grupo, fn {clave, _} -> clave in censo end) do
+      0 -> "#{length(grupo)} opciones"
+      n -> "#{n} de #{length(grupo)}"
+    end
   end
 
   @impl true

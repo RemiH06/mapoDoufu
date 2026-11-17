@@ -214,6 +214,21 @@
     border-bottom: 0;
     font-weight: 600;
   }
+  /* La fórmula y la leyenda se piden: las cifras y las zonas van primero */
+  .respuesta .como-se-lee {
+    display: grid;
+    gap: 6px;
+  }
+  .respuesta .como-se-lee > summary {
+    justify-self: start;
+    font-family: var(--cond);
+    font-size: 15px;
+    color: var(--text2);
+    text-decoration: underline;
+    text-decoration-color: var(--line);
+    text-underline-offset: 3px;
+    cursor: pointer;
+  }
   .respuesta .formula {
     font-family: var(--mono);
     font-size: 12px;
@@ -279,11 +294,54 @@
     display: none;
   }
 
+  /* Celular acostado: la pregunta se pliega al resolver, igual que en
+     celular, porque la plantilla completa no cabe en 390 px de alto. */
+  @media (max-height: 500px) {
+    .pregunta {
+      top: 100px;
+      width: min(480px, calc(50% - 26px));
+      max-height: calc(100dvh - 112px);
+      padding: 8px 14px 10px;
+    }
+    .pregunta h1 {
+      display: none;
+    }
+    .pregunta.resuelta:not(.abierta) :is(.plantilla, .reconocidos, .avisos) {
+      display: none;
+    }
+    .pregunta.resuelta .editar-plantilla {
+      display: block;
+      justify-self: start;
+      min-height: 32px;
+      color: var(--accent);
+      font-size: 14px;
+      text-decoration: underline;
+      text-underline-offset: 2px;
+      cursor: pointer;
+    }
+    .respuesta {
+      top: 100px;
+      bottom: 12px;
+      width: min(440px, calc(50% - 26px));
+      max-height: none;
+    }
+    /* Resuelta, la pregunta plegada se apila sobre la respuesta a la
+       derecha y deja la mitad izquierda para el plano. */
+    .pregunta.resuelta:not(.abierta) {
+      left: auto;
+      right: 20px;
+      width: min(440px, calc(50% - 26px));
+    }
+    .pregunta.resuelta:not(.abierta) ~ .respuesta {
+      top: 196px;
+    }
+  }
+
   @media (max-width: 760px) {
     /* La pregunta arriba y la respuesta abajo. Al resolver, la plantilla se
        pliega para que quede plano entre los dos papeles. */
     .pregunta {
-      top: 168px;
+      top: calc(var(--alto-cabecera) + 4px);
       left: 12px;
       width: calc(100% - 24px);
       max-height: 44dvh;

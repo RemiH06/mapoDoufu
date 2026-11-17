@@ -236,12 +236,25 @@ defmodule MapoWeb.MapaLive.Index do
         </dd>
       </dl>
 
-      <nav class="charola" aria-label="Acetatos">
+      <nav id="charola" class="charola" aria-label="Acetatos">
+        <%!-- Solo en pantallas angostas: la charola se pliega en una lista. --%>
+        <button
+          type="button"
+          class="charola-boton"
+          aria-expanded="false"
+          aria-controls="charola"
+          phx-click={
+            JS.toggle_class("abierta", to: "#charola")
+            |> JS.toggle_attribute({"aria-expanded", "true", "false"})
+          }
+        >
+          <b>Acetatos</b> <em>{encima(assigns)}</em> <span aria-hidden="true">▴</span>
+        </button>
+
         <button
           type="button"
           class="pestana"
-          phx-click="elegir"
-          phx-value-capa="marcas"
+          phx-click={elegir_js("marcas")}
           aria-pressed={to_string(@sesion != nil)}
           aria-expanded={to_string(@elegida == "marcas")}
           aria-controls="cinta-marcas"
@@ -255,8 +268,7 @@ defmodule MapoWeb.MapaLive.Index do
           :for={id <- @orden}
           type="button"
           class="pestana"
-          phx-click="elegir"
-          phx-value-capa={id}
+          phx-click={elegir_js(id)}
           aria-pressed={to_string(activa?(assigns, id))}
           aria-expanded={to_string(@elegida == id)}
           aria-controls={"cinta-#{id}"}
@@ -997,6 +1009,20 @@ defmodule MapoWeb.MapaLive.Index do
   defp activa?(assigns, "isocrona"), do: assigns.isocrona_activa?
 
   defp activas(assigns), do: Enum.filter(assigns.orden, &activa?(assigns, &1))
+
+  # Elegir una pestaña también pliega la charola en pantallas angostas.
+  defp elegir_js(capa) do
+    JS.push("elegir", value: %{capa: capa})
+    |> JS.remove_class("abierta", to: "#charola")
+    |> JS.set_attribute({"aria-expanded", "false"}, to: "#charola .charola-boton")
+  end
+
+  defp encima(assigns) do
+    case length(activas(assigns)) + if(assigns.sesion, do: 1, else: 0) do
+      0 -> "nada encima"
+      n -> "#{n} encima"
+    end
+  end
 
   defp piel_automatica(assigns) do
     case activas(assigns) do

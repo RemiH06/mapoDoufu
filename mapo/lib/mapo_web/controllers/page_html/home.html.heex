@@ -5,8 +5,14 @@
 <div class="esquina portada-esquina">
   <button id="modo" type="button" class="modo" data-modo>Modo</button>
   <%= if @current_scope do %>
-    <.link href={~p"/users/settings"} class="esquina-enlace">Cuenta</.link>
-    <.link href={~p"/users/log-out"} method="delete" class="esquina-enlace">Salir</.link>
+    <details class="cuenta-menu">
+      <summary class="esquina-enlace">Cuenta <span aria-hidden="true">▾</span></summary>
+      <div class="cuenta-opciones pegado">
+        <span class="mano cuenta-correo">{@current_scope.user.email}</span>
+        <.link href={~p"/users/settings"}>Configuración</.link>
+        <.link href={~p"/users/log-out"} method="delete">Salir</.link>
+      </div>
+    </details>
   <% else %>
     <.link href={~p"/users/log-in"} class="esquina-enlace">Entrar</.link>
   <% end %>

@@ -332,10 +332,10 @@ defmodule MapoWeb.MapaLive.IndexTest do
 
       assert html =~ ~s(id="cinta-coropleta" class="cinta pegado" hidden)
 
-      html = lv |> element(".pestana[phx-value-capa=coropleta]") |> render_click()
+      html = lv |> element(".pestana[aria-controls=cinta-coropleta]") |> render_click()
       refute html =~ ~s(id="cinta-coropleta" class="cinta pegado" hidden)
 
-      html = lv |> element(".pestana[phx-value-capa=coropleta]") |> render_click()
+      html = lv |> element(".pestana[aria-controls=cinta-coropleta]") |> render_click()
       assert html =~ ~s(id="cinta-coropleta" class="cinta pegado" hidden)
     end
 

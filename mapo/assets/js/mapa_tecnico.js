@@ -1,6 +1,7 @@
 import L from "../vendor/leaflet/leaflet"
 import {entintar} from "./plano_tinta"
 import {Marcas, escapar} from "./marcas"
+import {ESTADOS_BBOX} from "./estados_bbox"
 
 // Mapa tecnico: cada capa (coropleta, Voronoi, coloreado, isocrona) es un
 // acetato sobre el plano. El servidor las prende y apaga por push_event y
@@ -37,6 +38,12 @@ const oscuro = () => raiz.dataset.theme === "dark"
 function clase(valor, cortes) {
   if (valor === null || valor === undefined) return -1
   return cortes.filter(c => valor > c).length
+}
+
+// Caja en pantalla de un papel encima del plano, o null si no se ve.
+const caja = sel => {
+  const r = document.querySelector(sel)?.getBoundingClientRect()
+  return r && r.width > 0 ? r : null
 }
 
 export const MapaTecnico = {
@@ -96,6 +103,10 @@ export const MapaTecnico = {
       this._dibujar("zonas")
     })
     this.handleEvent("pedir_ubicacion", () => this._ubicacion())
+    this.handleEvent("encuadrar_estado", ({cve_ent}) => {
+      const bbox = ESTADOS_BBOX[cve_ent]
+      if (bbox) this.map.fitBounds(bbox, this._margen())
+    })
     this.handleEvent("centrar", ({lat, lon, zoom}) => {
       this.map.setView([lat, lon], Math.max(this.map.getZoom(), zoom))
     })
@@ -111,7 +122,7 @@ export const MapaTecnico = {
     this.handleEvent("marcas", ({anotaciones}) => {
       this.marcas.poner(anotaciones)
       const bordes = this.marcas.bordes()
-      if (bordes) this.map.fitBounds(bordes, {padding: [80, 80], maxZoom: 15})
+      if (bordes) this.map.fitBounds(bordes, {...this._margen(), maxZoom: 15})
     })
     this.handleEvent("nueva_anotacion", anotacion => this.marcas.agregar(anotacion, true))
     this.handleEvent("anotacion_actualizada", anotacion => this.marcas.actualizar(anotacion))
@@ -152,15 +163,47 @@ export const MapaTecnico = {
     if (bordes && bordes.isValid()) this.map.fitBounds(bordes, this._margen())
   },
 
-  // /buscador trae papeles fijos a los lados (data-margen, data-margen-der, en
-  // px): lo que se encuadra queda entre ellos. Si no cabe a la derecha, se
-  // queda solo el de la izquierda; en celular los papeles van arriba y abajo.
+  // /buscador (data-margen) trae papeles fijos encima del plano: la pregunta
+  // y la respuesta. Se miden al encuadrar para que lo encuadrado quede en el
+  // hueco entre ellos: a los lados en escritorio y acostado, arriba y abajo
+  // en celular. Si el hueco queda muy chico, se ignora la respuesta.
   _margen() {
-    const izq = Number(this.el.dataset.margen)
-    if (!izq || window.innerWidth <= 760) return {}
-    const der = Number(this.el.dataset.margenDer) || 0
-    const cabe = window.innerWidth - izq - der >= 360
-    return {paddingTopLeft: [izq, 20], paddingBottomRight: [cabe ? der : 20, 20]}
+    if (!("margen" in this.el.dataset)) return this._margenMesa()
+    const W = window.innerWidth, H = window.innerHeight
+    const pregunta = caja(".pregunta"), respuesta = caja(".respuesta")
+    const cabecera = caja(".membrete")
+    const arriba = (cabecera ? cabecera.bottom : 0) + 12
+    if (W <= 760) {
+      const tope = pregunta ? pregunta.bottom + 12 : arriba
+      let abajo = respuesta ? H - respuesta.top + 12 : 20
+      if (H - tope - abajo < 160) abajo = 20
+      return {paddingTopLeft: [20, tope], paddingBottomRight: [20, abajo]}
+    }
+    // Cada papel empuja el margen del lado donde está su centro.
+    let izq = 20, der = 20
+    for (const r of [pregunta, respuesta]) {
+      if (!r) continue
+      if ((r.left + r.right) / 2 < W / 2) izq = Math.max(izq, r.right + 20)
+      else der = Math.max(der, W - r.left + 20)
+    }
+    if (W - izq - der < 200) der = 20
+    return {paddingTopLeft: [izq, arriba], paddingBottomRight: [der, 20]}
+  },
+
+  // /mapa: lo encuadrado queda entre la cabecera y la cinta abierta (o la
+  // charola). Acostado, la cinta va a la izquierda y empuja ese lado.
+  _margenMesa() {
+    const W = window.innerWidth, H = window.innerHeight
+    const cabecera = caja(".membrete"), cinta = caja(".cinta:not([hidden])")
+    const charola = caja(".charola")
+    const tope = (cabecera ? cabecera.bottom : 0) + 20
+    const piso = charola ? charola.top : H
+    let izq = 20, abajo = H - piso + 20
+    if (cinta && cinta.width < W * 0.6) izq = cinta.right + 20
+    else if (cinta) abajo = H - cinta.top + 20
+    if (H - tope - abajo < 120) abajo = 20
+    if (W - izq - 60 < 200) izq = 20
+    return {paddingTopLeft: [izq, tope], paddingBottomRight: [60, abajo]}
   },
 
   // El acetato entra deslizandose sobre el plano.

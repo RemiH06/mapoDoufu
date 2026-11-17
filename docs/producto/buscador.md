@@ -76,8 +76,16 @@ Reglas del analizador (`mapo_core/src/mapo_core/buscador.py`):
 `/buscador` usa el mismo plano y el mismo hook de `/mapa` (`MapaTecnico`),
 con la piel del enfoque de la respuesta. A la izquierda va la pregunta y
 su plantilla, escrita como frase con los huecos; a la derecha, la
-respuesta con sus cifras, su fórmula, sus avisos y sus fuentes. En
-celular la plantilla se pliega al resolver para dejar ver el plano.
+respuesta con sus cifras, sus avisos y sus fuentes; la fórmula y la
+leyenda van en el desplegable "Cómo se lee", para que las zonas
+candidatas suban. En celular y acostado la plantilla se pliega al
+resolver para dejar ver el plano; acostado, además, la pregunta plegada
+se apila sobre la respuesta y deja la mitad izquierda libre.
+
+El plano abre encuadrado en el estado elegido (`estados_bbox.js`, sacado
+de `entidades`) y lo vuelve a encuadrar al cambiarlo. Todo encuadre mide
+la pregunta y la respuesta en pantalla y deja lo encuadrado en el hueco
+entre las dos.
 
 La pregunta va en la URL (`?q=`) para poder compartirla. Las ediciones a
 mano de la plantilla no viajan en la URL.

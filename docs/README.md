@@ -67,6 +67,7 @@ Qué se construyó en cada etapa, por qué así y qué bugs reales aparecieron.
 - [Recomendaciones: zonas candidatas, noviembre 2026](historial/2026-11-zonas-candidatas.md)
 - [Datos propios, noviembre 2026](historial/2026-11-datos-propios.md)
 - [Cruce de datos propios, noviembre 2026](historial/2026-11-cruce.md)
+- [Pasada final de diseño, noviembre 2026](historial/2026-11-diseno-final.md)
 
 ## Gaiarda
 

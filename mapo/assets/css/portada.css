@@ -310,7 +310,7 @@
   /* Acostado en celular: lámina y mesa lado a lado otra vez, más compactas */
   @media (max-height: 500px) and (min-width: 700px) {
     .portada {
-      grid-template-columns: minmax(300px, 380px) minmax(0, 1fr);
+      grid-template-columns: 300px minmax(0, 1fr);
       padding: 56px 20px 16px;
       align-items: start;
     }
@@ -331,28 +331,30 @@
     .lamina dl {
       display: none;
     }
-    /* Plano y rótulo lado a lado; la charola abajo */
+    /* El plano toma todo el ancho de su columna; el rótulo baja después de
+       la charola. Junto al plano lo dejaba en unos 160 px. */
     .mesa-portada {
       height: auto;
       max-width: none;
-      grid-template-columns: minmax(0, 1fr) 13rem;
-      grid-template-rows: auto auto;
+      min-height: 0;
+      grid-template-columns: minmax(0, 1fr);
+      grid-template-rows: auto;
       align-items: start;
     }
     .plano-portada {
       aspect-ratio: auto;
-      height: 64vh;
+      height: 66vh;
     }
     .rotulo-portada {
       position: relative;
-      order: 0;
+      order: 2;
       top: auto;
       right: auto;
       max-width: none;
       margin-top: 8px;
     }
     .charola-portada {
-      grid-column: 1 / -1;
+      order: 1;
     }
   }
 }

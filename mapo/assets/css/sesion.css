@@ -223,7 +223,7 @@
 
   @media (max-width: 760px) {
     #mapa-colaborativo .leaflet-top.leaflet-right {
-      top: 150px;
+      top: var(--alto-cabecera);
     }
     .hoja-sesion {
       left: 10px;

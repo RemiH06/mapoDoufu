@@ -317,7 +317,7 @@
 
   @media (max-width: 760px) {
     #logistica-map .leaflet-top.leaflet-right {
-      top: 150px;
+      top: var(--alto-cabecera);
     }
     /* La hoja baja al borde como una charola; plegada solo asoma su
        cabecera y el pie. */

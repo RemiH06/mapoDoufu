@@ -90,8 +90,15 @@ la pantalla era un dashboard genérico.
 - **Charola de acetatos:** las capas asoman como pestañas por el borde
   inferior. Tocar una la desliza sobre el plano (barrido con
   `clip-path`); su cinta muestra fuente, control, escala y orden en una
-  sola tira, que en celular se recorre de lado. El orden de la charola
-  es el orden en el mapa.
+  sola tira. El orden de la charola es el orden en el mapa. En pantallas
+  de 900 px o menos la charola se pliega en un botón ("Acetatos · 2
+  encima") que abre la lista, y la cinta se vuelve un papel vertical con
+  scroll propio; acostado, ese papel va a la mitad izquierda. Como tira de
+  lado escondía capas sin avisar (sesión 16).
+- **Membrete en celular:** un renglón con la marca y la sección actual;
+  tocar la sección despliega las demás, el modo y la cuenta. La fila de
+  la vista (estado y municipio) va debajo, a todo lo ancho. "Cuenta" es un
+  desplegable con el correo, Configuración y Salir en todos los tamaños.
 - **Impreso contra anotado:** los datos van en Barlow y Barlow
   Condensed, las cifras en IBM Plex Mono. Lo que decide el equipo va a
   mano (Architects Daughter) y en lápiz rojo: la capa "Tus marcas", el

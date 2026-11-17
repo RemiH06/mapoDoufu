@@ -222,6 +222,14 @@
     font-size: 12px;
     color: var(--text2);
   }
+  /* Solo se anota lo que está encima: "en la charola" ocupaba el ancho de
+     una pestaña más y dejaba la última fuera de la pantalla. */
+  .pestana[aria-pressed="false"]:not([aria-controls="cinta-marcas"]) em {
+    display: none;
+  }
+  .charola-boton {
+    display: none;
+  }
 
   /* Cinta de la capa elegida: controles cortos en una tira */
   .cinta {
@@ -390,28 +398,128 @@
   }
 
   @media (max-width: 900px) {
-    /* La cinta sigue siendo una tira: se desliza de lado */
+    /* La cinta se vuelve un papel vertical con su propio scroll: como tira
+       de lado escondía la segunda y tercera capa sin avisar. */
     .cinta {
+      flex-direction: column;
       flex-wrap: nowrap;
       max-width: none;
-      right: 20px;
-      bottom: 66px;
-      overflow-x: auto;
+      left: 12px;
+      right: 12px;
+      bottom: 60px;
+      max-height: 44dvh;
+      overflow-y: auto;
+      overscroll-behavior: contain;
     }
     .cinta > * {
       flex: none;
+      border-left: 0;
+      border-top: 1px solid var(--line);
+    }
+    .cinta > :first-child {
+      border-top: 0;
+    }
+    .cinta-titulo {
+      display: flex;
+      align-items: baseline;
+      gap: 4px 10px;
+      flex-wrap: wrap;
+    }
+    .cinta-campos {
+      flex-wrap: wrap;
     }
     .cinta-texto {
-      min-width: 26ch;
+      max-width: none;
+    }
+    .capas-abiertas {
+      flex-direction: column;
+      gap: 0;
+    }
+    .capas-abiertas li + li {
+      margin-top: 8px;
+      padding-top: 8px;
+      border-top: 1px dashed var(--line);
+    }
+    .capa-abierta b {
+      max-width: none;
     }
     .rotulo {
       display: none;
     }
-    .pestana em {
+
+    /* Charola plegada: un botón dice cuántos acetatos hay encima y abre la
+       lista completa hacia arriba. */
+    .charola {
+      flex-direction: column;
+      align-items: stretch;
+      gap: 0;
+      padding: 0 12px;
+      overflow: visible;
+    }
+    .charola-boton {
+      order: 99;
+      pointer-events: auto;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      min-height: 48px;
+      padding: 6px 14px 8px;
+      background: var(--bg);
+      color: var(--text);
+      border: 1.5px solid var(--text);
+      border-bottom: 0;
+      cursor: pointer;
+    }
+    .charola-boton b {
+      font-family: var(--cond);
+      font-weight: 700;
+      font-size: 17px;
+    }
+    .charola-boton em {
+      font-style: normal;
+      font-size: 13px;
+      color: var(--text2);
+    }
+    .charola-boton span {
+      margin-left: auto;
+    }
+    .charola.abierta .charola-boton span {
+      transform: rotate(180deg);
+    }
+    .charola:not(.abierta) .pestana {
       display: none;
     }
+    .charola.abierta {
+      z-index: 1001;
+    }
+    .charola.abierta .pestana {
+      margin: 0;
+      transform: none;
+      border-bottom: 0;
+      min-height: 46px;
+    }
+    .charola.abierta .pestana em {
+      margin-left: auto;
+    }
   }
-  /* Celular acostado: la cinta y la charola se adelgazan para dejar mapa */
+  /* Celular acostado: la cinta va a la izquierda y deja el resto de plano */
+  @media (max-height: 500px) and (max-width: 900px) {
+    .cinta {
+      right: auto;
+      width: min(440px, 58vw);
+      max-height: calc(100dvh - 190px);
+    }
+    .charola {
+      align-items: flex-start;
+    }
+    .charola > * {
+      width: min(440px, 58vw);
+    }
+    .charola.abierta {
+      max-height: calc(100dvh - 100px);
+      overflow-y: auto;
+    }
+  }
   @media (max-height: 500px) {
     .cinta {
       bottom: 52px;
@@ -422,7 +530,8 @@
     .cinta-titulo .fuente {
       display: none;
     }
-    .pestana {
+    .pestana,
+    .charola-boton {
       min-height: 40px;
       padding-top: 4px;
       padding-bottom: 6px;
@@ -430,10 +539,18 @@
   }
   @media (max-width: 760px) {
     #mapa-tecnico .leaflet-top.leaflet-right {
-      top: 196px;
+      top: var(--alto-cabecera);
+    }
+    /* Estado y municipio en un solo renglón, a partes iguales */
+    .ubicacion {
+      flex-wrap: nowrap;
+      width: 100%;
     }
     .membrete-select {
-      max-width: 42vw;
+      flex: 1 1 0;
+      min-width: 0;
+      width: auto;
+      max-width: none;
     }
   }
 }
