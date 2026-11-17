@@ -63,6 +63,29 @@ su propia transacción que se revierte al final. `conftest.py` fuerza
 compose monta `mapo_core/tests`, así que no hace falta reconstruir la
 imagen después de cambiar un test.
 
+## Revisar el diseño con capturas
+
+Tests verdes no bastan para pantallas con plano. `scripts/capturas/` recorre
+Mapo en dev con Playwright, en 1280×800, 390×844 y 844×390 y en los dos modos,
+y deja las capturas en `scripts/capturas/salida/<corrida>/` (gitignorada).
+
+```bash
+cd scripts/capturas
+npm install                     # Playwright; la primera vez, también
+npx playwright install chromium
+export MAPO_CORREO=... MAPO_CLAVE=...   # una cuenta de dev con equipo
+node subir.js                   # opcional: tres capas inventadas al primer equipo
+node pantallas.js antes         # todas las pantallas; reporte.json con scroll lateral y errores
+node estados.js antes           # capas propias, coropleta, charola abierta, consulta resuelta
+```
+
+`TAM=celular,acostado` y `MODO=dark` recortan la corrida; un segundo argumento
+filtra por nombre (`node pantallas.js antes buscador`). El equipo, la sesión y
+las capas se leen de los enlaces de la cuenta: no hay ids que ajustar. Dev
+compila cada página la primera vez, así que una corrida completa tarda varios
+minutos. El reporte solo mide scroll lateral y errores de consola: los
+defectos de acomodo salen de mirar las capturas.
+
 ## Cargar datos
 
 ```bash

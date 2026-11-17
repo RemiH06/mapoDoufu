@@ -43,3 +43,6 @@ mapo/.elixir_ls/
 # -- Claude Code (estado/config local, no de equipo) --
 .claude/
 investigation/
+# -- Capturas de diseño (scripts/capturas/) --
+scripts/capturas/node_modules/
+scripts/capturas/salida/

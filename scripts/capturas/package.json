@@ -1,0 +1,13 @@
+{
+  "name": "mapo-capturas",
+  "private": true,
+  "description": "Capturas de las pantallas de Mapo en dev para revisar el diseño",
+  "scripts": {
+    "pantallas": "node pantallas.js",
+    "estados": "node estados.js",
+    "subir": "node subir.js"
+  },
+  "dependencies": {
+    "playwright": "1.56.1"
+  }
+}
