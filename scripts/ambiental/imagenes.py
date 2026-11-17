@@ -173,7 +173,11 @@ def bandas_s2(args, caja) -> None:
         if not items:
             return None
         refl = s2_reflectancia(items, sub, args.epsg, 10, BANDAS_S2).median("time")
-        return (refl.to_array("banda") * 10000).round().fillna(0).astype("uint16").rio.write_crs(args.epsg)
+        # En agua la reflectancia puede quedar negativa al restar el desplazamiento de
+        # la línea base; convertida a uint16 daba la vuelta (manchas en las presas).
+        # Se recorta a 1: el 0 queda reservado para "sin dato".
+        refl = (refl.to_array("banda") * 10000).round().clip(1, 65535)
+        return refl.fillna(0).astype("uint16").rio.write_crs(args.epsg)
 
     producir(args.salida / f"s2_bandas_{args.bandas.replace('/', '_')}.tif", 0, construir, args, caja, BANDAS_S2)
 

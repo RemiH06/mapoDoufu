@@ -62,6 +62,7 @@ fallar en voz alta**, no dejar un vacío silencioso ni un número plausible y fa
 | Sentinel-2 mensual en temporal de lluvias | De junio a octubre quedan de 2 a 8 % sin dato aunque nada falle: hay días nublados sin escena limpia | Aviso de hueco solo en meses de lluvia, en manchas, no en franjas | Es nubosidad, no error: decirlo; usar compuestos de varios meses si hace falta cobertura |
 | GeoPackage | No distingue mayúsculas en nombres de campo (`LONGITUD` y `longitud` chocan) | `FieldError` al escribir | Nombres distintos (`lon_dec`) |
 | Sentinel-2 | Desde la línea base 04.00 (enero de 2022) ESA suma 1000 a la reflectancia | Saltos en NDVI en 2022 | Restar por escena según `s2:processing_baseline` |
+| Sentinel-2 en `uint16` | En agua, la reflectancia queda negativa al restar el desplazamiento de la línea base; convertida a `uint16` da la vuelta | Manchas de colores o negras en presas en la vista en color | Recortar a 1..65,535 antes de convertir (el 0 es sin dato) |
 | TROPOMI | Valores de relleno (9.97e36) y píxeles con nubes | `qa_value` | Solo `qa_value > 0.75`; descartar el relleno |
 
 ## Ubicar y calcular
