@@ -72,6 +72,30 @@ hechos con una versión anterior del script.
 - **Landsat:** temperatura con la escala de USGS (DN × 0.00341802 + 149.0, en
   kelvin), y nubes y sombras fuera con los bits 3 y 4 de `QA_PIXEL`.
 
+## Altura de dosel a 1 m
+
+`scripts/ambiental/dosel.py --salida SALIDA --caja=O,S,E,N --epsg 32613` recorta
+el mapa de altura de dosel de Meta y WRI (Tolan et al. 2024, CC BY 4.0): un modelo
+entrenado con lídar que estima la altura de los árboles en imágenes de Maxar de
+~0.5 m. Ve árboles sueltos en banquetas y patios, que Sentinel-2 (10 m) mezcla con
+el pavimento: es la capa base para arborización.
+
+- **Origen:** bucket público `dataforgood-fb-data`, índice `tiles.geojson` (56,145
+  mosaicos de nivel 9 en EPSG:3857) y un COG por mosaico (`chm/<quadkey>.tif`,
+  ~600 MB, uint8 en metros, sin nodata declarado).
+- **Lectura:** los COG están en franjas de una fila y sin vistas reducidas, así
+  que una ventana baja filas completas (unos 80 MB por mosaico para 11 km). Para
+  una zona metropolitana entera hay que partir en bloques como `imagenes.py`.
+- **Salida:** `dosel_1m.tif` en la UTM pedida a 1 m (0 sin dosel, 255 fuera de
+  cobertura), `dosel_fecha.tif` con la fecha de la imagen de origen y
+  `procedencia_dosel.csv`. El archivo de fechas viene en grados y con celdas
+  gruesas; su valor parece ser el año menos 2000 en decimales (20.33 ≈ abril de
+  2020 en Tlaquepaque). No ve lo plantado o talado después de esa fecha.
+- **Zona del CP 45615 (Tlaquepaque, 2026-11-17):** 2 mosaicos, 11,581 × 11,187 px,
+  98 % con dato y 3.6 % de la caja con dosel de 3 m o más.
+- **Límites:** subestima árboles altos y aislados y confunde algunas estructuras
+  con dosel; validar contra unas cuantas calles conocidas antes de concluir.
+
 ## NO₂ de Sentinel-5P
 
 `scripts/ambiental/no2_s5p.py`: NO₂ troposférico medio de un año en una

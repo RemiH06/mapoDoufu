@@ -29,13 +29,13 @@ copias que publica el geoportal de CONABIO.
 | `acuiferos` | Conagua | Polígonos de los 653 acuíferos con la disponibilidad del 2023-11-09, la de 2020 para comparar, vedas y ordenamientos, red piezométrica 2022 y 2023 (puntos), estudios por acuífero |
 | `concesiones` | Conagua, REPDA | Títulos, aprovechamientos superficiales y subterráneos, **descargas residuales** (33,807, con volumen, procedencia, cuerpo receptor y coordenadas en grados, minutos y segundos), zonas federales, obras. El CSV viene en UTF-8 |
 | `emisiones` | SEMARNAT, RETC | Un Excel por año, 2004 a 2022, con latitud y longitud por establecimiento, SCIAN y actividad. El encabezado no está en el primer renglón: hay que buscarlo |
-| `clima` | Conagua | Viento por estación: **solo una ventana corta de 2023 cada 10 minutos**, no hay historia. El viento histórico sigue sin fuente |
+| `clima` | Conagua | Viento por estación: **solo una ventana corta de 2023 cada 10 minutos**, no hay historia. El histórico sale de ERA5 (sección "Viento") |
 | `riesgo` | SMN, Conagua | Monitor de Sequía por municipio (histórico en `MunicipiosSequia.xlsx`), zonas inundables (PDF, sin vector), vulnerabilidad por municipio de Conagua (índices compuestos: mostrar sus componentes) |
 | `territorio` | INEGI vía CONABIO | Uso de suelo y vegetación 1:250 000 series VI y VII (para ver cambio), edafología, ANP 2020, regiones hidrológicas |
 | `agricultura` | SIAP | Cierre agrícola municipal 2003 a 2025: cultivo, ciclo, modalidad (riego o temporal), superficie sembrada, cosechada y siniestrada, volumen, valor |
 | `incendios` | NASA FIRMS | Focos de calor de México: MODIS 2000 a 2025 y VIIRS S-NPP (375 m) 2012 a 2025, con fecha, hora, confianza y potencia radiativa |
 | `salud` | INEGI | Defunciones registradas 2020 a 2023 (microdatos con municipio y causa CIE-10). Otros años usan otra ruta |
-| `poblacion` | INEGI | ITER 2020 de Jalisco: localidades, también las rurales |
+| `poblacion` | INEGI | ITER 2020 de Jalisco: localidades, también las rurales. Censo 2020 por manzana de Jalisco (`manzanas_14_2020.zip`, 102,734 manzanas urbanas, ~220 variables, latin-1) |
 | `relieve` | Copernicus DEM GLO-30 | Mosaicos de 30 m que cubren Jalisco |
 
 ## Recorte por zona
@@ -100,6 +100,50 @@ AGEB rural se le suma la población de las localidades del ITER que caen dentro
 tienen polígono y siguen como puntos en `localidades`. La guía del API con todas
 sus rutas está en `inegi.org.mx/servicios/catalogounico.html`.
 
+**Manzanas:** el mismo API da sus polígonos por municipio
+(`geo/mza/{ent}/{mun}`, con población y viviendas habitadas; Tlaquepaque: 7,637
+manzanas, 6 MB, unos 12 vértices cada una). `geo/mza/{ent}/{mun}/{loc}/{ageb}` no
+funciona: responde 404 aunque la AGEB exista. El recorte les une las ~220 variables
+del censo 2020 por manzana (`c_*`) por la clave de 16 dígitos. El censo por manzana
+solo cubre manzanas urbanas, y INEGI reserva con `*` los valores de manzanas con
+pocas viviendas: no es cero.
+
+Validación (zona del CP 45615, Tlaquepaque, 2026-11-17): 7,949 manzanas en la caja,
+7,350 con renglón del censo; las 599 sin renglón son rurales o del marco de 2025
+con clave nueva. La población del API y la del censo por manzana coinciden en el
+100 % de las manzanas. En las 230 AGEB que caben enteras en la caja, la suma por
+manzana da 552,100 contra 552,644 del censo por AGEB (99.9 %); 12 AGEB difieren
+más de 1 %.
+
+## Viento
+
+Las estaciones de Conagua solo publican días recientes, así que el histórico sale
+del reanálisis ERA5 de ECMWF, servido por el API de archivo de Open-Meteo (sin
+cuenta; datos CC BY 4.0, uso libre no comercial del API). El recorte deja
+`tablas/viento_horario.csv` (2015 a 2024, hora local, velocidad, ráfaga y
+dirección de donde viene) y `tablas/viento_climatologia.csv` (por mes y hora:
+velocidad media y p90, calma, dirección resultante, constancia y frecuencia por
+rumbo).
+
+ERA5 tiene celdas de 0.25° (~28 km): describe el régimen de la zona, no el viento
+entre edificios ni el efecto de un cerro. ERA5-Land (0.1°) no trae viento en ese
+API. Para un pipeline de producción conviene bajar ERA5 del Climate Data Store de
+Copernicus (cuenta gratuita) en vez de depender del API.
+
+**Lo que se repite en la ZMG** (celda 20.5, -103.25; 2015 a 2024, 87,672 horas):
+
+- **Secas (febrero a mayo):** viento del oeste y suroeste, constante (resultante
+  entre media de 0.7 a 0.85) y más fuerte en la tarde y la noche (2.5 m/s de 18 a
+  24 h, 5 % de calma). Es lo más estable del año.
+- **Lluvias y frío (junio a enero):** variable. Mañanas del este, tardes del
+  oeste, y de 24 % a 41 % de horas en calma (julio el más quieto).
+- **Mañanas de frío:** 39 % de calma de 6 a 12 h, cuando las inversiones térmicas
+  atrapan contaminantes.
+- **Entre años:** media de 1.54 a 1.70 m/s de 2015 a 2024; no hay tendencia.
+
+Lo útil para Mapo es la climatología por mes y hora (una tabla pequeña por celda,
+cubre todo el país), no la serie horaria.
+
 ### Validación: Autlán y El Grullo (2026-11-15)
 
 Caja -104.65, 19.55, -103.95, 20.05; municipios 14015 y 14037.
@@ -121,7 +165,8 @@ Caja -104.65, 19.55, -103.95, 20.05; municipios 14015 y 14037.
 
 - **Plaguicidas en agua:** ninguna fuente abierta los mide. Solo estudios
   académicos, que entran como datos propios de un equipo.
-- **Viento histórico:** las EMA del SMN solo publican los últimos días.
+- **Viento medido a nivel de calle:** las EMA del SMN solo publican los últimos
+  días; ERA5 cubre el régimen regional (sección "Viento").
 - **Atlas Nacional de Riesgos (CENAPRED):** se pide por correo.
 - **Frontera agrícola (SIAP):** el visualizador no da descarga directa.
 - **Red hidrográfica 1:50 000 y aguas subterráneas 1:250 000 (INEGI):** sin

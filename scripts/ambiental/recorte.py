@@ -63,6 +63,9 @@ FUENTES = {
     "localidades": ("INEGI, ITER 2020", "Censo 2020 por localidad, también rurales", "punto", "https://www.inegi.org.mx/programas/ccpv/2020/"),
     "agebs_rurales": ("INEGI, marco geoestadístico (API wscatgeo) + ITER 2020", "Marco de diciembre de 2025; población sumada del ITER 2020", "AGEB rural", "https://gaia.inegi.org.mx/wscatgeo/v2/geo/agebr/"),
     "localidades_poligonos": ("INEGI, marco geoestadístico (API wscatgeo) + ITER 2020", "Marco de diciembre de 2025; población del ITER 2020", "localidad amanzanada", "https://gaia.inegi.org.mx/wscatgeo/v2/geo/localidades/pol/"),
+    "manzanas": ("INEGI, marco geoestadístico (API wscatgeo) + censo 2020 por manzana", "Marco de diciembre de 2025; censo 2020", "manzana", "https://www.inegi.org.mx/programas/ccpv/2020/#datos_abiertos"),
+    "viento_horario": ("ECMWF ERA5 vía Open-Meteo (CC BY 4.0)", "Reanálisis horario, 10 m, celda de 0.25°", "celda ERA5", "https://open-meteo.com/en/docs/historical-weather-api"),
+    "viento_climatologia": ("ECMWF ERA5 vía Open-Meteo (CC BY 4.0)", "Resumen por mes y hora de la serie horaria", "celda ERA5", "https://open-meteo.com/en/docs/historical-weather-api"),
     "agebs": ("INEGI, marco geoestadístico y censo 2020 (vía Mapo)", "2020; censo solo en AGEB urbanas", "AGEB", "https://www.inegi.org.mx/temas/mg/"),
     "denue": ("INEGI, DENUE (vía Mapo)", "Edición cargada en Mapo, ver docs/fuentes/denue.md", "punto", "https://www.inegi.org.mx/app/mapa/denue/"),
     "siap_municipal": ("SIAP", "Cierre agrícola municipal 2003 a 2025", "municipio", "https://nube.siap.gob.mx/cierreagricola/"),
@@ -116,6 +119,9 @@ CRUDOS = {
     "localidades": ["poblacion/iter_14_2020.zip"],
     "localidades_poligonos": ["API INEGI wscatgeo v2 geo/localidades/pol", "poblacion/iter_14_2020.zip"],
     "agebs_rurales": ["API INEGI wscatgeo v2 geo/agebr", "poblacion/iter_14_2020.zip"],
+    "manzanas": ["API INEGI wscatgeo v2 geo/mza", "poblacion/manzanas_*_2020.zip"],
+    "viento_horario": ["API Open-Meteo archive (modelo era5)"],
+    "viento_climatologia": ["API Open-Meteo archive (modelo era5)"],
     "agebs": ["base de Mapo (desde_mapo.sh): agebs y fuente_censo_poblacion"],
     "denue": ["base de Mapo (desde_mapo.sh): fuente_denue_negocios"],
     "siap_municipal": ["agricultura/siap_municipal_*.csv"],
@@ -355,6 +361,85 @@ class Paquete:
             self.guardar("agebs_rurales", agebs.clip(self.poligono),
                          "(población sumada de las localidades del ITER dentro; '*' reservado cuenta como vacío)")
 
+    def manzanas(self) -> None:
+        """Polígonos de manzana del API de INEGI (un GeoJSON por municipio, con
+        población y viviendas) más las ~220 variables del censo 2020 por manzana
+        (`ageb_mza_urbana_EE_cpv2020_csv.zip`), unidas por la clave de 16 dígitos.
+        INEGI reserva los valores de manzanas con pocas viviendas: '*' queda como
+        texto, no como cero."""
+        claves = sorted(self.municipios_en_caja())
+        mza = pd.concat([self.inegi(f"geo/mza/{e}/{m}") for e, m in claves], ignore_index=True)
+        if mza.empty:
+            self.anotar("manzanas", 0, "zona.gpkg", "el API no devolvió manzanas")
+            return
+        mza = gpd.GeoDataFrame(mza, crs=CRS)
+        mza = mza[mza.intersects(self.poligono)].copy()
+        mza["geometry"] = mza.geometry.make_valid()
+        nota = "(sin censo por manzana: falta el zip en crudos/poblacion)"
+        partes = []
+        for ent in sorted({e for e, _ in claves}):
+            p = self.crudos / "poblacion" / f"manzanas_{ent}_2020.zip"
+            if not p.exists():
+                continue
+            with zipfile.ZipFile(p) as z:
+                nombre = max(z.infolist(), key=lambda i: i.file_size).filename
+                df = pd.read_csv(io.BytesIO(z.read(nombre)), dtype=str, encoding="latin1")
+            df = df[(df["MZA"] != "000") & (df["AGEB"] != "0000")]  # quita los totales
+            df["cvegeo"] = df["ENTIDAD"].str.zfill(2) + df["MUN"].str.zfill(3) + df["LOC"].str.zfill(4) + df["AGEB"] + df["MZA"].str.zfill(3)
+            partes.append(df.drop(columns=["ENTIDAD", "NOM_ENT", "MUN", "NOM_MUN", "LOC", "NOM_LOC", "AGEB", "MZA"]).add_prefix("c_").rename(columns={"c_cvegeo": "cvegeo"}))
+        if partes:
+            censo = pd.concat(partes, ignore_index=True)
+            mza = mza.merge(censo, on="cvegeo", how="left")
+            nota = f"(censo en columnas c_*: {int(mza['c_POBTOT'].notna().sum()):,} de {len(mza):,} con renglón; '*' es dato reservado)"
+        self.guardar("manzanas", mza, nota)
+
+    def viento(self) -> None:
+        """Viento horario de ERA5 (10 m) de 2015 a 2024 en el centro de la caja, y su
+        resumen por mes y hora: velocidad media, calma (< 1 m/s), dirección
+        resultante, constancia (resultante entre media: 1 es siempre del mismo lado)
+        y frecuencia por rumbo. ERA5 tiene celdas de ~28 km: da el régimen de la zona,
+        no el viento entre edificios."""
+        import math
+        o, s, e, n = self.caja
+        lat, lon = round((s + n) / 2, 4), round((o + e) / 2, 4)
+        url = ("https://archive-api.open-meteo.com/v1/archive?"
+               f"latitude={lat}&longitude={lon}&start_date=2015-01-01&end_date=2024-12-31"
+               "&hourly=wind_speed_10m,wind_direction_10m,wind_gusts_10m&models=era5"
+               "&wind_speed_unit=ms&timezone=America%2FMexico_City")
+        for espera in (0, 10, 30, 60):
+            time.sleep(espera)
+            try:
+                req = urllib.request.Request(url, headers={"User-Agent": "mapo-recorte/1.0"})
+                with urllib.request.urlopen(req, timeout=300) as r:
+                    datos = json.load(r)
+                break
+            except Exception as error:
+                ultimo = error
+        else:
+            raise RuntimeError(f"Open-Meteo no respondió: {ultimo}")
+        h = pd.DataFrame(datos["hourly"]).rename(columns={"time": "hora_local", "wind_speed_10m": "velocidad_ms",
+                                                          "wind_direction_10m": "desde_grados", "wind_gusts_10m": "rafaga_ms"})
+        h = h.dropna(subset=["velocidad_ms", "desde_grados"])
+        if h.empty:
+            raise RuntimeError("Open-Meteo devolvió la serie vacía")
+        celda = f"celda ERA5 {datos['latitude']}, {datos['longitude']}"
+        self.guardar_tabla("viento_horario", h, f"({celda}; dirección de donde viene)")
+        t = pd.to_datetime(h["hora_local"])
+        rad = h["desde_grados"].map(math.radians)
+        h = h.assign(mes=t.dt.month, hora=t.dt.hour, u=-h["velocidad_ms"] * rad.map(math.sin),
+                     v=-h["velocidad_ms"] * rad.map(math.cos), calma=h["velocidad_ms"] < 1,
+                     rumbo=((h["desde_grados"] + 22.5) % 360 // 45).astype(int).map(dict(enumerate(["N", "NE", "E", "SE", "S", "SO", "O", "NO"]))))
+        g = h.groupby(["mes", "hora"])
+        res = g.agg(horas=("velocidad_ms", "size"), velocidad_media=("velocidad_ms", "mean"),
+                    velocidad_p90=("velocidad_ms", lambda x: x.quantile(0.9)), rafaga_media=("rafaga_ms", "mean"),
+                    calma=("calma", "mean"), u=("u", "mean"), v=("v", "mean"))
+        resultante = (res["u"] ** 2 + res["v"] ** 2) ** 0.5
+        res["desde_resultante"] = ((pd.Series(map(math.atan2, -res["u"], -res["v"]), index=res.index).map(math.degrees) + 360) % 360)
+        res["constancia"] = resultante / res["velocidad_media"]
+        frec = pd.crosstab([h["mes"], h["hora"]], h["rumbo"], normalize="index").add_prefix("frec_")
+        res = res.drop(columns=["u", "v"]).join(frec).round(3).reset_index()
+        self.guardar_tabla("viento_climatologia", res, f"({celda}; 2015 a 2024, una fila por mes y hora local)")
+
     def desde_mapo(self) -> None:
         """Capas que `desde_mapo.sh` sacó de la base de Mapo a `salida/mapo/`."""
         import json
@@ -446,7 +531,8 @@ class Paquete:
     def todo(self) -> None:
         pasos = [("agua_superficial", self.renameca), ("cuerpos_de_agua", self.vectoriales),
                  ("repda_descargas", self.repda), ("retc", self.retc), ("firms_viirs", self.firms),
-                 ("localidades", self.localidades), ("agebs_rurales", self.rural), ("agebs", self.desde_mapo), ("siap_municipal", self.siap),
+                 ("localidades", self.localidades), ("agebs_rurales", self.rural), ("manzanas", self.manzanas),
+                 ("viento_horario", self.viento), ("agebs", self.desde_mapo), ("siap_municipal", self.siap),
                  ("sequia_municipal", self.sequia), ("defunciones", self.defunciones),
                  ("plantas_tratamiento", self.ptar), ("relieve", self.relieve)]
         for capa, fn in pasos:

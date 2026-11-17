@@ -27,7 +27,11 @@ cómo detectarlo, en `../producto/pipeline-datos.md`.
 | 2. Capas de la base de Mapo | `scripts/ambiental/desde_mapo.sh SALIDA O S E N [contenedor base usuario]` | `SALIDA/mapo/agebs.csv`, `denue.csv` |
 | 3. Recorte | `uv run --script scripts/ambiental/recorte.py --crudos DESTINO --salida SALIDA --caja=O,S,E,N --municipios EEMMM,...` | `procedencia.csv` (capa → archivo crudo, sha256, fecha, URL), `diccionario_capas.csv` (filas, fuente, fecha del dato, nivel, nota), `zona.txt` (caja, municipios, comando completo, sha256 del script) |
 | 4. Imágenes | `uv run --script scripts/ambiental/imagenes.py --salida SALIDA/imagenes --caja=O,S,E,N --epsg 326ZZ --worldcover --bandas INICIO/FIN --lst AAAA/AAAA --indices AAAA-MM/AAAA-MM` | `procedencia_imagenes.csv`: cada escena (ID del STAC de Planetary Computer, fecha, nubosidad, mosaico) por producto y por bloque |
+| 4b. Dosel (zona urbana) | `uv run --script scripts/ambiental/dosel.py --salida SALIDA/imagenes --caja=O,S,E,N --epsg 326ZZ` | `procedencia_dosel.csv` (mosaicos y URL), `dosel_fecha.tif` (fecha de la imagen de origen) |
 | 5. Para Mapo | `uv run --script scripts/para_mapo.py SALIDA SALIDA_MAPO` | `para_mapo.csv`: archivo, qué es, qué se recortó, tamaño, si cabe |
+
+El recorte también deja las manzanas con su censo (si `poblacion/manzanas_EE_2020.zip`
+está en los crudos) y el viento de ERA5 en `tablas/`.
 
 Notas:
 

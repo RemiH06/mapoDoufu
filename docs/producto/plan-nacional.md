@@ -14,7 +14,10 @@ México y en qué orden. Lo que ya está hecho y cómo replicarlo a mano está e
 | AGEB rurales y localidades con polígono | API de INEGI por municipio | Nada |
 | Relieve | Mosaicos de Jalisco | Leer Copernicus GLO-30 del STAC de Planetary Computer por caja, como las imágenes |
 | Imágenes (Sentinel-2, Landsat, WorldCover) | STAC, cualquier caja | Nada para una zona; para todo el país, ver abajo |
+| Altura de dosel a 1 m (Meta y WRI) | `dosel.py`, cualquier caja | Nada para una zona; para el país, estadística por manzana o AGEB |
+| Viento (ERA5) | API de Open-Meteo, centro de la caja | Climatología por mes y hora para cada celda de 0.25° de México (unas 3,000), desde el Climate Data Store |
 | Censo por AGEB, DENUE, SESNSP | Los estados cargados en la base | Cargar los 32 estados |
+| Manzanas | No están en la base | Polígonos del Marco Geoestadístico y censo por manzana de INEGI, por estado (Jalisco: 102,734 manzanas con censo). INEGI oculta valores en manzanas con pocas viviendas |
 | OSM (agua, vías, parques, estaciones, amenidades) | Overpass por caja | Extracto de México de Geofabrik con fecha fija y `osmium` local: reproducible y sin depender del servidor público |
 | GHSL, NO2 (TROPOMI) | Por caja | Global: mosaicos de GHSL de México; rejilla de NO2 nacional a 0.05° |
 | Escuelas (SEP, PTRATIO) | `sep_cifras.py` por estado | Correrlo para los 32 |
@@ -65,13 +68,33 @@ lista por colonia sin mapa) o no las publica. Lo que funciona:
 Empezar por las metrópolis más grandes: Valle de México, Monterrey, Puebla-Tlaxcala,
 Toluca, Tijuana, León, Querétaro, Juárez, La Laguna y Mérida.
 
-## Ver los datos en Mapo
+## Vistas temáticas
 
 Hoy un paquete se ve subiéndolo como datos propios de un equipo
-(`../guias/replicar.md`). Para datos nacionales eso no escala: harían falta
-**capas públicas**, las mismas para todos, servidas como teselas (vectoriales para
-AGEB y localidades, ráster para NDVI y relieve) y con su procedencia a un clic.
-Es una fase de producto aparte, con su propia revisión de rendimiento.
+(`../guias/replicar.md`). Para datos de un estado o del país eso no escala. La
+propuesta es una vista por tema (ambiental, precios de vivienda, y las que sigan),
+hecha de **capas públicas**: las mismas para todos, con su procedencia a un clic.
+
+- **Todo se cruza:** una vista es un punto de partida, no una barrera. Cualquier
+  capa del catálogo (de cualquier tema) y los datos propios del equipo se pueden
+  abrir y cruzar desde cualquier vista cuando la pregunta lo pide: el calor de una
+  manzana con su valor catastral, o el dosel con la edad de quienes viven ahí.
+- **Catálogo:** una tabla de capas con tema, fuente, fecha del dato, nivel
+  (estado, municipio, AGEB, manzana, punto, ráster), licencia, cobertura (polígono
+  de lo que ya está cargado) y procedencia. Una vista es un filtro del catálogo por
+  tema, así que agregar un tema no pide código nuevo.
+- **Vectoriales:** en PostGIS, servidas por caja visible y con umbral de zoom
+  (manzanas solo de cerca), como ya se sirven las AGEB.
+- **Rásters:** COG en disco, servidos en teselas por `mapo_core` leyendo solo la
+  ventana pedida. Así se consulta el valor de un píxel y se resume por zona, cosa
+  que la imagen de 2,048 px de los datos propios no permite.
+- **Análisis:** resumen por zona dibujada o por AGEB y manzana, con cada capa por
+  separado (nunca un puntaje único) y el cruce con los datos propios del equipo.
+- **Crecer al país:** cargar un estado es correr los mismos comandos con otra
+  clave; la cobertura del catálogo le dice a la vista qué hay y qué no en cada lugar.
+
+Primero Jalisco, con lo que ya está en crudo; es una fase de producto aparte, con
+su propia revisión de rendimiento.
 
 ## Orden
 
@@ -84,7 +107,7 @@ Es una fase de producto aparte, con su propia revisión de rendimiento.
 5. Predial por municipio, empezando por las diez metrópolis.
 6. Valor catastral municipio por municipio, con su revisión.
 7. Estadística zonal nacional de NDVI y temperatura.
-8. Capas públicas en Mapo.
+8. Vistas temáticas en Mapo, empezando por ambiental y vivienda de Jalisco.
 
 Los pasos 1 a 4 son automatizables casi por completo; 5 y 6 necesitan revisión
 humana por municipio, y son la mayor parte del trabajo.
