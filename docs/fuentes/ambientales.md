@@ -85,8 +85,15 @@ Lo que hace con cada formato, por si cambia en la siguiente descarga:
 - **Vectoriales** (Conagua, INEGI, CONABIO): la caja se transforma al CRS de cada
   capa para filtrar al leer, y luego se recorta exacto en 4326.
 
-Mapo solo tiene AGEB urbanas (`geo-censo.md`): en zona rural, la población está
-en las localidades del ITER como puntos, sin polígono.
+**Zona rural:** Mapo solo carga AGEB urbanas (`geo-censo.md`), así que el recorte
+pide al API de INEGI (`wscatgeo/v2/geo/agebr/{ent}/{mun}` y
+`geo/localidades/pol/{ent}/{mun}/R|U`, marco de diciembre de 2025) las AGEB rurales
+y los polígonos de las localidades con manzanas, para los municipios con alguna
+localidad dentro de la caja. El censo por AGEB no existe en zona rural: a cada
+AGEB rural se le suma la población de las localidades del ITER que caen dentro
+(`pobtot_iter`, `vivhab_iter`, `localidades_iter`). Las rancherías sin manzanas no
+tienen polígono y siguen como puntos en `localidades`. La guía del API con todas
+sus rutas está en `inegi.org.mx/servicios/catalogounico.html`.
 
 ### Validación: Autlán y El Grullo (2026-11-15)
 
@@ -95,6 +102,9 @@ Caja -104.65, 19.55, -103.95, 20.05; municipios 14015 y 14037.
 - Población del ITER: Autlán de Navarro 64,931 y El Grullo 25,920, las cifras
   del censo 2020.
 - 181 localidades de los dos municipios y 209 vecinas dentro de la caja.
+- Zona rural: 65 AGEB rurales y 88 localidades con polígono. Población urbana por
+  AGEB más la rural sumada del ITER: Autlán 52,019 + 12,912 = 64,931 y El Grullo
+  22,738 + 3,182 = 25,920, exacto contra el censo.
 - 653 focos VIIRS en 2024, lo mismo que la revisión a mano del 2026-11-13.
 - RETC trae al Ingenio Melchor Ocampo; REPDA, 12 descargas residuales (lavado de
   caña, granjas porcícolas, generación eléctrica).

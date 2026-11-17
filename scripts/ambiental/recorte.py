@@ -19,6 +19,9 @@ import argparse
 import csv
 import datetime as dt
 import io
+import json
+import time
+import urllib.request
 import re
 import sys
 import unicodedata
@@ -58,6 +61,8 @@ FUENTES = {
     "anp": ("CONANP vía CONABIO", "Áreas naturales protegidas federales 2020", "polígono", "http://geoportal.conabio.gob.mx"),
     "regiones_hidrologicas": ("INEGI vía CONABIO", "Regiones hidrológicas 1:250 000", "polígono", "http://geoportal.conabio.gob.mx"),
     "localidades": ("INEGI, ITER 2020", "Censo 2020 por localidad, también rurales", "punto", "https://www.inegi.org.mx/programas/ccpv/2020/"),
+    "agebs_rurales": ("INEGI, marco geoestadístico (API wscatgeo) + ITER 2020", "Marco de diciembre de 2025; población sumada del ITER 2020", "AGEB rural", "https://gaia.inegi.org.mx/wscatgeo/v2/geo/agebr/"),
+    "localidades_poligonos": ("INEGI, marco geoestadístico (API wscatgeo) + ITER 2020", "Marco de diciembre de 2025; población del ITER 2020", "localidad amanzanada", "https://gaia.inegi.org.mx/wscatgeo/v2/geo/localidades/pol/"),
     "agebs": ("INEGI, marco geoestadístico y censo 2020 (vía Mapo)", "2020; censo solo en AGEB urbanas", "AGEB", "https://www.inegi.org.mx/temas/mg/"),
     "denue": ("INEGI, DENUE (vía Mapo)", "Edición cargada en Mapo, ver docs/fuentes/denue.md", "punto", "https://www.inegi.org.mx/app/mapa/denue/"),
     "siap_municipal": ("SIAP", "Cierre agrícola municipal 2003 a 2025", "municipio", "https://nube.siap.gob.mx/cierreagricola/"),
@@ -259,6 +264,60 @@ class Paquete:
         gdf = gpd.GeoDataFrame(df, geometry=gpd.points_from_xy(df["lon_dec"], df["lat_dec"]), crs=CRS)
         self.guardar("localidades", gdf, "(municipios pedidos más las vecinas dentro de la caja; '*' es dato reservado)")
 
+    def municipios_en_caja(self) -> set[tuple[str, str]]:
+        """(entidad, municipio) con localidades del ITER dentro de la caja, más los pedidos."""
+        df = self.iter_2020()
+        df = df.assign(lon=df["LONGITUD"].map(a_grados), lat=df["LATITUD"].map(a_grados)).dropna(subset=["lon", "lat"])
+        o, s, e, n = self.caja
+        dentro = df[df["lon"].between(o, e) & df["lat"].between(s, n)]
+        claves = {(f"{int(a):02d}", f"{int(m):03d}") for a, m in zip(dentro["ENTIDAD"], dentro["MUN"])}
+        return claves | {(m[:2], m[2:]) for m in self.municipios}
+
+    def inegi(self, ruta: str) -> gpd.GeoDataFrame:
+        """GeoJSON del API de INEGI (wscatgeo v2), con reintentos."""
+        url = f"https://gaia.inegi.org.mx/wscatgeo/v2/{ruta}"
+        for espera in (0, 10, 30, 60):
+            time.sleep(espera)
+            try:
+                with urllib.request.urlopen(url, timeout=180) as r:
+                    datos = json.load(r)
+                if not datos.get("features"):
+                    return gpd.GeoDataFrame()
+                return gpd.GeoDataFrame.from_features(datos["features"], crs=CRS)
+            except Exception as error:  # red o servidor: reintentar
+                ultimo = error
+        raise RuntimeError(f"INEGI no respondió {url}: {ultimo}")
+
+    def rural(self) -> None:
+        """Polígonos de AGEB rurales y de localidades amanzanadas (rurales y urbanas)
+        del API de INEGI. Las rancherías sin manzanas no tienen polígono: siguen como
+        puntos en `localidades`. El censo por AGEB solo existe para las urbanas, así
+        que a cada AGEB rural se le suma la población de las localidades del ITER
+        que caen dentro."""
+        claves = sorted(self.municipios_en_caja())
+        agebs = pd.concat([self.inegi(f"geo/agebr/{e}/{m}") for e, m in claves], ignore_index=True)
+        locs = pd.concat([self.inegi(f"geo/localidades/pol/{e}/{m}/{amb}") for e, m in claves for amb in ("R", "U")],
+                         ignore_index=True)
+        it = self.iter_2020()
+        it = it[pd.to_numeric(it["LOC"], errors="coerce").between(1, 9997)].copy()
+        it["cvegeo"] = it["ENTIDAD"].str.zfill(2) + it["MUN"].str.zfill(3) + it["LOC"].str.zfill(4)
+        it["pobtot"] = pd.to_numeric(it["POBTOT"], errors="coerce")
+        it["vivhab"] = pd.to_numeric(it.get("TVIVHAB"), errors="coerce")
+        if not locs.empty:
+            locs = gpd.GeoDataFrame(locs, crs=CRS).merge(it[["cvegeo", "pobtot", "vivhab"]], on="cvegeo", how="left")
+            locs["geometry"] = locs.geometry.make_valid()
+            self.guardar("localidades_poligonos", locs.clip(self.poligono), "(con población del ITER 2020)")
+        if not agebs.empty:
+            agebs = gpd.GeoDataFrame(agebs, crs=CRS)
+            agebs["geometry"] = agebs.geometry.make_valid()
+            puntos = it.assign(lon=it["LONGITUD"].map(a_grados), lat=it["LATITUD"].map(a_grados)).dropna(subset=["lon", "lat"])
+            puntos = gpd.GeoDataFrame(puntos[["pobtot", "vivhab"]], geometry=gpd.points_from_xy(puntos["lon"], puntos["lat"]), crs=CRS)
+            suma = gpd.sjoin(puntos, agebs[["cvegeo", "geometry"]], predicate="within").groupby("cvegeo")[["pobtot", "vivhab"]].sum(min_count=1)
+            agebs = agebs.merge(suma.add_suffix("_iter").reset_index(), on="cvegeo", how="left")
+            agebs["localidades_iter"] = agebs["cvegeo"].map(gpd.sjoin(puntos, agebs[["cvegeo", "geometry"]], predicate="within").groupby("cvegeo").size())
+            self.guardar("agebs_rurales", agebs.clip(self.poligono),
+                         "(población sumada de las localidades del ITER dentro; '*' reservado cuenta como vacío)")
+
     def desde_mapo(self) -> None:
         """Capas que `desde_mapo.sh` sacó de la base de Mapo a `salida/mapo/`."""
         import json
@@ -350,7 +409,7 @@ class Paquete:
     def todo(self) -> None:
         pasos = [("agua_superficial", self.renameca), ("cuerpos_de_agua", self.vectoriales),
                  ("repda_descargas", self.repda), ("retc", self.retc), ("firms_viirs", self.firms),
-                 ("localidades", self.localidades), ("agebs", self.desde_mapo), ("siap_municipal", self.siap),
+                 ("localidades", self.localidades), ("agebs_rurales", self.rural), ("agebs", self.desde_mapo), ("siap_municipal", self.siap),
                  ("sequia_municipal", self.sequia), ("defunciones", self.defunciones),
                  ("plantas_tratamiento", self.ptar), ("relieve", self.relieve)]
         for capa, fn in pasos:
