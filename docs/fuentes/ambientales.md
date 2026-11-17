@@ -106,8 +106,9 @@ Caja -104.65, 19.55, -103.95, 20.05; municipios 14015 y 14037.
   AGEB más la rural sumada del ITER: Autlán 52,019 + 12,912 = 64,931 y El Grullo
   22,738 + 3,182 = 25,920, exacto contra el censo.
 - 653 focos VIIRS en 2024, lo mismo que la revisión a mano del 2026-11-13.
-- RETC trae al Ingenio Melchor Ocampo; REPDA, 12 descargas residuales (lavado de
-  caña, granjas porcícolas, generación eléctrica).
+- RETC: 15 reportes de establecimientos dentro de la caja; REPDA: 12 descargas
+  residuales. (Los nombres y giros no van aquí: `docs/` es pública y no señala
+  empresas.)
 - 0 sitios subterráneos de RENAMECA y 0 pozos piezométricos en la caja: no es
   error, la red no tiene puntos ahí.
 
