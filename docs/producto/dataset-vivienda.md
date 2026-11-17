@@ -273,8 +273,17 @@ Tlaquepaque salían con `medv` sin que Tlaquepaque tuviera tabla.
 "corrida de valores", trae una muestra de predios reales con su fraccionamiento y
 su valor unitario de 2025 y 2026 (Tlajomulco: Punto Sur, La Rioja, Senderos de
 Monteverde, Hacienda Mirage…). No cubre el municipio, pero es justo lo que hace
-falta para medir el error de predicción donde no hay tabla ubicada. Falta
-ubicarlos (localidades urbanas de INEGI con polígono, OSM).
+falta para medir el error de predicción donde no hay tabla ubicada.
+`scripts/catastro/corrida_valores.py` la extrae del OCR (columnas por encabezado,
+tabla de cada año por el número que va sobre ella) y, con `ubicar`, la ubica de
+forma aproximada con un elemento de OSM con el nombre del fraccionamiento (lugar o
+zona residencial; si no hay, la mediana de sus calles). Las localidades urbanas de
+INEGI no sirven aquí: de 11 fraccionamientos de Tlajomulco solo Real del Valle es
+localidad propia. Resultado en Tlajomulco 2026: 18 predios en la corrida, 9 son
+parques industriales (fuera), 5 ubicados, 4 dentro de una AGEB urbana
+(`validacion_tlajomulco_2026.csv` en el paquete). Muestra chica: sirve para ver si
+el modelo ordena bien y en qué magnitud se equivoca, no para un error con
+intervalo estrecho. Tlaquepaque no trae corrida en su expediente.
 
 **`medv_2026`:** mediana con las tablas de 2026 de Guadalajara, Zapopan y Tonalá,
 todas del mismo año fiscal. Es la columna para comparar municipios y medir el
