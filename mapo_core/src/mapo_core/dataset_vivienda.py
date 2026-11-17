@@ -410,7 +410,8 @@ def asignar_medv_mismo_anio(filas: list[dict], valores: list[dict], cve_ent: str
     for v in valores:
         if v["anio"] == anio:
             for i in arbol.query(Point(v["lon"], v["lat"]), predicate="intersects"):
-                por_ageb.setdefault(int(i), []).append(v["valor"])
+                if v["municipio"] == cve_ent + filas[int(i)]["cve_mun"]:  # solo en su municipio
+                    por_ageb.setdefault(int(i), []).append(v["valor"])
     for i, f in enumerate(filas):
         vals = por_ageb.get(i, [])
         con_tabla = cve_ent + f["cve_mun"] in municipios
@@ -428,6 +429,10 @@ def asignar_medv(filas: list[dict], valores: list[dict], cve_ent: str) -> None:
     por_ageb: dict[int, dict[str, list[float]]] = {}
     for v in valores:
         for i in arbol.query(Point(v["lon"], v["lat"]), predicate="intersects"):
+            # Una tabla solo vale en su municipio: la etiqueta de Guadalajara que cae del
+            # otro lado del límite no es valor de Tlaquepaque.
+            if v["municipio"] != cve_ent + filas[int(i)]["cve_mun"]:
+                continue
             por_ageb.setdefault(int(i), {"zona": [], "calle": []}).setdefault(v["clase"] or "calle", []).append(v["valor"])
     anio_por_mun = {v["municipio"]: v["anio"] for v in valores}
     for i, fila in enumerate(filas):

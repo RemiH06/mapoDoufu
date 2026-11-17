@@ -39,7 +39,9 @@ def ajustar(marcas: list[tuple[str, float, float, float]], tolerancia: float):
     """marcas: (eje 'E' o 'N', x, y, valor). Devuelve (a, b, tE, tN, rms, usadas) o None."""
     marcas = list(marcas)
     while True:
-        if sum(1 for m in marcas if m[0] == "E") < 2 or sum(1 for m in marcas if m[0] == "N") < 2:
+        # Dos valores distintos por eje: la misma marca leída arriba y abajo no
+        # fija la escala, y el ajuste sale degenerado (escala 0, residuo 0).
+        if len({m[3] for m in marcas if m[0] == "E"}) < 2 or len({m[3] for m in marcas if m[0] == "N"}) < 2:
             return None
         filas, obj = [], []
         for eje, x, y, v in marcas:
@@ -53,6 +55,21 @@ def ajustar(marcas: list[tuple[str, float, float, float]], tolerancia: float):
             continue
         a, b, te, tn = sol
         return a, b, te, tn, float(np.sqrt(np.mean(residuos ** 2))), len(marcas)
+
+
+def solo_traslacion(marcas, ca: float, cb: float, tolerancia: float):
+    """Con la escala y el giro del atlas ya conocidos, una marca de cada eje fija la
+    traslación de la hoja (planos recortados con una sola marca distinta por eje).
+    Si hay marcas repetidas, su dispersión mide la calidad."""
+    te = [v - (ca * x + cb * y) for e, x, y, v in marcas if e == "E"]
+    tn = [v - (cb * x - ca * y) for e, x, y, v in marcas if e == "N"]
+    if not te or not tn:
+        return None
+    t_e, t_n = float(np.median(te)), float(np.median(tn))
+    residuos = [abs(t - t_e) for t in te] + [abs(t - t_n) for t in tn]
+    if max(residuos) > tolerancia:
+        return None
+    return ca, cb, t_e, t_n, float(np.sqrt(np.mean(np.square(residuos)))), len(marcas)
 
 
 def main() -> None:
@@ -80,27 +97,49 @@ def main() -> None:
         plausible = lambda v: True
 
     a_geo = Transformer.from_crs(a.epsg, 4326, always_xy=True)
+    ajustes = {}
+    for hoja, filas in por_hoja.items():
+        marcas = []
+        for f in filas:
+            t = f["texto"].strip().replace(" ", "")
+            eje = "E" if re.fullmatch(a.este, t) else "N" if re.fullmatch(a.norte, t) else None
+            if eje:
+                marcas.append((eje, float(f["x"]), float(f["y"]), float(t)))
+        ajustes[hoja] = (marcas, ajustar(marcas, a.tolerancia))
+    # Un atlas se dibuja a una escala: una hoja que se aleja mucho de la mediana tiene
+    # marcas mal leídas que el ajuste no detectó.
+    escalas = [math.hypot(r[0], r[1]) for _, r in ajustes.values() if r]
+    mediana = float(np.median(escalas)) if escalas else 0
+    completas = [r for _, r in ajustes.values() if r and abs(math.hypot(r[0], r[1]) / mediana - 1) <= 0.10]
+    if completas:
+        a_atlas = float(np.median([r[0] for r in completas]))
+        b_atlas = float(np.median([r[1] for r in completas]))
+        respaldo = 0
+        for hoja, (marcas, r) in list(ajustes.items()):
+            if r is None:
+                r2 = solo_traslacion(marcas, a_atlas, b_atlas, a.tolerancia)
+                if r2:
+                    ajustes[hoja] = (marcas, r2)
+                    respaldo += 1
+        print(f"{len(completas)} hojas con ajuste completo; {respaldo} más con la escala del atlas y una marca por eje")
+
     aceptadas = n_valores = descartados = 0
-    with open(a.salida / "hojas.csv", "w", newline="", encoding="utf-8") as fh, \
-         open(a.salida / "valores.csv", "w", newline="", encoding="utf-8") as fv:
+    with open(a.salida / "hojas.csv", "w", newline="", encoding="utf-8") as fh,          open(a.salida / "valores.csv", "w", newline="", encoding="utf-8") as fv:
         wh, wv = csv.writer(fh), csv.writer(fv)
         wh.writerow(["hoja", "pagina", "marcas_este", "marcas_norte", "marcas_usadas", "error_rms_m", "escala", "aceptada"])
         wv.writerow(["municipio", "anio", "pagina", "hoja", "valor_m2", "tamano", "clase", "lon", "lat"])
         for hoja, filas in sorted(por_hoja.items(), key=lambda kv: int(kv[1][0]["pagina"])):
-            marcas = []
-            for f in filas:
-                t = f["texto"].strip().replace(" ", "")
-                eje = "E" if re.fullmatch(a.este, t) else "N" if re.fullmatch(a.norte, t) else None
-                if eje:
-                    marcas.append((eje, float(f["x"]), float(f["y"]), float(t)))
+            marcas, ajuste = ajustes[hoja]
             ne, nn = sum(1 for m in marcas if m[0] == "E"), sum(1 for m in marcas if m[0] == "N")
-            ajuste = ajustar(marcas, a.tolerancia)
             if ajuste is None:
                 wh.writerow([hoja, filas[0]["pagina"], ne, nn, 0, "", "", False])
                 continue
             ca, cb, te, tn, rms, usadas = ajuste
             escala = math.hypot(ca, cb)
-            wh.writerow([hoja, filas[0]["pagina"], ne, nn, usadas, round(rms, 2), round(escala, 4), True])
+            ok = mediana > 0 and abs(escala / mediana - 1) <= 0.10
+            wh.writerow([hoja, filas[0]["pagina"], ne, nn, usadas, round(rms, 2), round(escala, 4), ok])
+            if not ok:
+                continue
             aceptadas += 1
             for f in filas:
                 if f["tipo"] != "valor":

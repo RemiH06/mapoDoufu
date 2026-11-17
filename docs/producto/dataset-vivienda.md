@@ -243,11 +243,11 @@ Expedientes de INFOLEJ (ver "Por qué es difícil"), OCR con `extraer_pdf_raster
 
 | Municipio | Lo que traen los planos | Cómo se ubicó | Resultado |
 |---|---|---|---|
-| Guadalajara 2026 | Zonas de valor ("ZV281"), valores con "$", coordenadas UTM en los bordes, casi sin calles | `ubicar_por_marcas.py`: similitud por mínimos cuadrados con las marcas UTM, quitando las mal leídas | 116 de 179 hojas, RMS mediano 1.2 m, 2,519 valores |
+| Guadalajara 2026 | Zonas de valor ("ZV281"), valores con "$", coordenadas UTM en los bordes, casi sin calles | `ubicar_por_marcas.py`: similitud por mínimos cuadrados con las marcas UTM, quitando las mal leídas | 132 de 179 hojas (107 con ajuste completo, RMS mediano 1.2 m, y 25 con la escala del atlas), 2,689 valores |
 | Tonalá 2026 | Valores grandes de zona y de corredor, nombres de calle, escala 1:5,000 | `ubicar_pdf_mapa.py --ocr` (calles de OSM, escala común) | 48 de 161 hojas, 5.4 m, 941 valores; 152 de 228 AGEB |
 | Tlaquepaque 2026 | Valores grandes por zona y nombres de colonia; las calles son demasiado chicas para el OCR, aun a 400 dpi | No se pudo: ni calles ni colonias empatan (OSM tiene 1 de 7 colonias probadas; el catálogo de asentamientos de INEGI no trae coordenadas) | Pendiente |
 | Tlajomulco 2026 | Valores con "$" y la clave del cuadrante, sin nombres de calle | No se pudo por calles | Pendiente: plano índice de cuadrantes, o las corridas de valores por colonia de las páginas 82 a 86 |
-| Ixtlahuacán 2026 | Coordenadas UTM en los bordes, valores con "$" | `ubicar_por_marcas.py` | En proceso |
+| Ixtlahuacán 2026 | Coordenadas UTM en los bordes, pero hojas tan recortadas que casi todas muestran una sola marca distinta por eje; valores con "$" | `ubicar_por_marcas.py` con la escala y el giro del atlas (de las 3 hojas completas) | 160 de 341 hojas, 219 valores; 23 AGEB con `medv` |
 
 **Validación cruzada, Guadalajara 2020 contra 2026:** dos tablas de la misma ciudad
 por dos caminos independientes (texto vectorial ubicado por calles, y escaneo con
@@ -255,6 +255,26 @@ OCR ubicado por marcas UTM). En 270 AGEB con al menos 3 etiquetas en ambas, el
 Spearman entre sus medianas es **0.88**: el pipeline de OCR ordena las zonas
 igual que el vectorial. La razón 2026/2020 tiene mediana **1.32** (p25 1.22, p75
 1.47): en Guadalajara los valores subieron 32 % en seis años, unos 4.7 % al año.
+
+**Respaldo con la escala del atlas:** una hoja con dos marcas iguales por eje (la
+misma "689000" arriba y abajo) da un ajuste degenerado (escala 0, residuo 0). Se
+exigen dos valores distintos por eje, se descarta la hoja cuya escala se aleje más
+de 10 % de la mediana del atlas, y a las que solo tienen una marca distinta por
+eje se les aplica la escala y el giro medianos de las hojas completas, con lo que
+una marca de cada eje basta para la traslación. Validado en Guadalajara 2026: las
+44 AGEB que dependen solo de hojas de respaldo dan Spearman 0.864 contra 2020
+(todas, 0.886).
+
+**Cada tabla solo vale en su municipio:** una etiqueta de Guadalajara que cae del
+otro lado del límite no es valor de Tlaquepaque. Antes de esta regla, 3 AGEB de
+Tlaquepaque salían con `medv` sin que Tlaquepaque tuviera tabla.
+
+**Muestras de validación (pendiente):** el Formato 06 de cada expediente, la
+"corrida de valores", trae una muestra de predios reales con su fraccionamiento y
+su valor unitario de 2025 y 2026 (Tlajomulco: Punto Sur, La Rioja, Senderos de
+Monteverde, Hacienda Mirage…). No cubre el municipio, pero es justo lo que hace
+falta para medir el error de predicción donde no hay tabla ubicada. Falta
+ubicarlos (localidades urbanas de INEGI con polígono, OSM).
 
 **`medv_2026`:** mediana con las tablas de 2026 de Guadalajara, Zapopan y Tonalá,
 todas del mismo año fiscal. Es la columna para comparar municipios y medir el

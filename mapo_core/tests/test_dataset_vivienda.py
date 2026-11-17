@@ -147,3 +147,13 @@ def test_medv_mismo_anio_solo_ese_anio():
     dv.asignar_medv_mismo_anio(filas, [v(2026, 100), v(2026, 200), v(2026, 300), v(2020, 9999)], "14", 2026)
     assert (filas[0]["medv_2026"], filas[0]["medv_2026_n"]) == (200.0, 3)  # el de 2020 no entra
     assert filas[1]["medv_2026"] is None and filas[1]["medv_2026_n"] is None  # municipio sin tabla 2026
+
+
+def test_medv_no_cruza_limites_municipales():
+    # Etiqueta de la tabla de Guadalajara que cae en una AGEB de Tlaquepaque.
+    filas = [_fila("098", 0, 0)]
+    v = {"municipio": "14039", "anio": 2020, "clase": "zona", "valor": 5000, "lon": 0.5, "lat": 0.5}
+    dv.asignar_medv(filas, [v], "14")
+    assert filas[0]["medv"] is None and "sin tabla" in filas[0]["medv_metodo"]
+    dv.asignar_medv_mismo_anio(filas, [{**v, "anio": 2026}] * 3, "14", 2026)
+    assert filas[0]["medv_2026"] is None
