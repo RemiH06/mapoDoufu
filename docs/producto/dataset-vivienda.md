@@ -36,6 +36,9 @@ Salida, en la carpeta indicada (dentro del contenedor, `/app/data` es
 | `centros_empleo.csv` | Los 5 focos de empleo con que se calculó `dis_km` |
 | `LEEME.txt` | Estado, municipios, año base y fecha |
 
+Para verlo en Mapo como datos propios de un equipo, `scripts/para_mapo.py` deja
+la tabla dentro de los límites de subida (`../guias/replicar.md`).
+
 Año base: el censo 2020. Todo lo que no es del censo se toma del año más cercano
 a 2020 que exista, y el diccionario dice cuál.
 

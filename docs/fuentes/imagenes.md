@@ -31,6 +31,11 @@ renombrar, así que un corte se reanuda relanzando el mismo comando. `--hilos`
 (3 por omisión) limita la RAM: la mediana carga todas las fechas de un bloque.
 En Pixilate se corre como trabajo de `job.ps1`.
 
+Cada corrida anota en `procedencia_imagenes.csv` las escenas que usó (producto,
+bloque, colección, ID de la escena en el STAC, fecha, nubosidad y mosaico).
+`--solo-procedencia` repite las búsquedas sin bajar nada, para anotar productos
+hechos con una versión anterior del script.
+
 | Archivo | Contenido | Valores |
 |---|---|---|
 | `s2_bandas_<periodo>.tif` | 10 bandas de Sentinel-2 (B02 a B12 sin B01, B09 ni B10), mediana sin nubes | Reflectancia × 10 000, `uint16`, 0 sin dato |

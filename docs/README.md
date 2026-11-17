@@ -8,6 +8,7 @@
 - [buscador.md](producto/buscador.md): intenciones y parámetros del modo buscador, zonas candidatas y la tabla de rubros de DENUE.
 - [pipeline-datos.md](producto/pipeline-datos.md): dónde se rompe la obtención y lectura de cada fuente, cómo detectarlo sin una persona y qué hacer; base para automatizar.
 - [dataset-vivienda.md](producto/dataset-vivienda.md): tabla tipo Boston Housing por AGEB de una zona metropolitana, equivalencias, método de cada columna y el pipeline de valor catastral.
+- [plan-nacional.md](producto/plan-nacional.md): qué falta para tener el paquete ambiental y el dataset de vivienda en todo el país, y en qué orden.
 - [datos-propios.md](producto/datos-propios.md): archivos del equipo (tabla, vectorial, ráster) como acetato y su cruce con fuentes públicas: formatos, límites, ubicación, permisos y qué se guarda.
 
 ## Arquitectura
@@ -28,6 +29,10 @@ Una por fuente: de dónde sale, cómo se carga, sus problemas conocidos y las ci
 - [osrm.md](fuentes/osrm.md): ruteo por carretera, demo público contra servidor propio.
 - [ambientales.md](fuentes/ambientales.md): agua, acuíferos, descargas, emisiones, uso de suelo, incendios y más, en crudo, y cómo recortarlas a una zona como paquete para SIG.
 - [imagenes.md](fuentes/imagenes.md): compuestos de Sentinel-2 y Landsat y WorldCover por zona, desde el STAC de Planetary Computer.
+
+## Guías
+
+- [replicar.md](guias/replicar.md): rehacer el paquete ambiental o el dataset de vivienda para otra zona, con la procedencia de cada dato, y subirlos a Mapo.
 
 ## Desarrollo
 

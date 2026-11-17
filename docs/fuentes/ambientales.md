@@ -64,7 +64,12 @@ Salida:
 | `tablas/*.csv` | SIAP, sequía, defunciones y PTAR de los municipios pedidos |
 | `relieve.tif` | Copernicus GLO-30 recortado (mosaico de los cuadros que toca la caja) |
 | `diccionario_capas.csv` | Por capa: archivo, filas, fuente, fecha del dato, nivel geográfico, URL y nota |
-| `zona.txt` | Caja, municipios, CRS y fecha |
+| `zona.txt` | Caja, municipios, CRS, fecha, comando completo y sha256 del script |
+| `procedencia.csv` | Por capa: archivo crudo, su sha256, fecha de descarga y URL (de `MANIFIESTO.tsv`) |
+
+Las imágenes (`../fuentes/imagenes.md`) dejan su propio
+`procedencia_imagenes.csv`. Cómo rehacer todo para otra zona y subirlo a Mapo:
+`../guias/replicar.md`.
 
 Lo que hace con cada formato, por si cambia en la siguiente descarga:
 
