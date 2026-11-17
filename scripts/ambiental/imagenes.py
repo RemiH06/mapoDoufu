@@ -29,6 +29,7 @@ Ver `docs/fuentes/imagenes.md`.
 from __future__ import annotations
 
 import argparse
+import csv
 import datetime as dt
 import os
 import shutil
@@ -72,7 +73,10 @@ def buscar(coleccion: str, caja, fechas: str, nubes: int | None = None, extra: d
     de una docena de escenas limpias sale igual y se lee una fracción de los datos."""
     consulta = {"eo:cloud_cover": {"lt": nubes}} if nubes is not None else {}
     consulta |= extra or {}
-    items = list(catalogo().search(collections=[coleccion], bbox=caja, datetime=fechas, query=consulta).items())
+    # Una consulta vacía hace que el API responda "The and operator requires an array
+    # of args" (2026-11-17): solo se manda si filtra algo.
+    filtro = {"query": consulta} if consulta else {}
+    items = list(catalogo().search(collections=[coleccion], bbox=caja, datetime=fechas, **filtro).items())
     total = len(items)
     if maximo is not None and total > maximo:
         # Por mosaico (MGRS): si la caja cae en dos, las más despejadas de uno solo
@@ -85,7 +89,43 @@ def buscar(coleccion: str, caja, fechas: str, nubes: int | None = None, extra: d
                  for i in sorted(grupo, key=lambda i: i.properties.get("eo:cloud_cover", 100))[:cuota]]
     if decir:
         print(f"    {coleccion} {fechas}: {len(items)} de {total} escenas", flush=True)
+    for it in items:  # procedencia: qué escena exacta entra en qué bloque de qué producto
+        PROCEDENCIA.append({**CONTEXTO, "coleccion": coleccion, "escena": it.id,
+                            "fecha": it.datetime.isoformat() if it.datetime else "",
+                            "nubes": it.properties.get("eo:cloud_cover", ""),
+                            "mosaico": it.properties.get("s2:mgrs_tile") or it.properties.get("landsat:wrs_path", "")})
+    if SOLO_PROCEDENCIA:
+        raise SoloBuscar
     return items
+
+
+# Procedencia de las imágenes: cada producto anota las escenas que usó cada bloque
+# en `procedencia_imagenes.csv`, para que otra persona pueda rehacerlo exacto.
+PROCEDENCIA: list[dict] = []
+CONTEXTO: dict = {"producto": "", "bloque": ""}
+SOLO_PROCEDENCIA = False
+
+
+class SoloBuscar(Exception):
+    """Con --solo-procedencia se busca y se anota, pero no se baja nada."""
+
+
+def guardar_procedencia(salida: Path) -> None:
+    ruta = salida / "procedencia_imagenes.csv"
+    campos = ["producto", "bloque", "coleccion", "escena", "fecha", "nubes", "mosaico"]
+    previas = list(csv.DictReader(open(ruta, encoding="utf-8"))) if ruta.exists() else []
+    hechos = {r["producto"] for r in PROCEDENCIA}
+    vistas, filas = set(), [r for r in previas if r["producto"] not in hechos]
+    for r in PROCEDENCIA:  # un reintento repite la búsqueda: sin duplicados
+        llave = (r["producto"], str(r["bloque"]), r["escena"])
+        if llave not in vistas:
+            vistas.add(llave)
+            filas.append(r)
+    with open(ruta, "w", newline="", encoding="utf-8") as f:
+        w = csv.DictWriter(f, fieldnames=campos)
+        w.writeheader()
+        w.writerows(filas)
+    PROCEDENCIA.clear()
 
 
 def bloques(caja, paso: float) -> list[list[float]]:
@@ -98,6 +138,16 @@ def bloques(caja, paso: float) -> list[list[float]]:
 def producir(ruta: Path, nodata, construir: Callable[[list[float]], xr.DataArray | None], args, caja,
              descripciones: list[str]) -> None:
     """Arma `ruta` bloque por bloque, une los bloques y revisa que no queden huecos."""
+    if SOLO_PROCEDENCIA:
+        for i, sub in enumerate(bloques(caja, args.bloque)):
+            CONTEXTO.update(producto=ruta.name, bloque=i)
+            try:
+                construir(sub)
+            except SoloBuscar:
+                pass
+        guardar_procedencia(ruta.parent)
+        print(f"  procedencia de {ruta.name} anotada", flush=True)
+        return
     if ruta.exists():
         return
     import rasterio
@@ -111,6 +161,7 @@ def producir(ruta: Path, nodata, construir: Callable[[list[float]], xr.DataArray
         destino = carpeta / f"{i:03d}.tif"
         if destino.exists():
             continue
+        CONTEXTO.update(producto=ruta.name, bloque=i)
         for intento in range(1, 4):
             try:
                 arr = construir(sub)
@@ -147,6 +198,9 @@ def producir(ruta: Path, nodata, construir: Callable[[list[float]], xr.DataArray
             dst.set_band_description(b, d)
     tmp.rename(ruta)
     shutil.rmtree(carpeta)
+    # Si se reanudó, los bloques de corridas anteriores no quedaron anotados aquí:
+    # --solo-procedencia lo completa sin bajar nada.
+    guardar_procedencia(ruta.parent)
     aviso = f"  ¡HUECO! {sin_dato:.1%} sin dato" if sin_dato > MAX_SIN_DATO else f"{sin_dato:.1%} sin dato"
     print(f"  listo {ruta.name}: {aviso}", flush=True)
 
@@ -245,7 +299,11 @@ def main() -> None:
     ap.add_argument("--worldcover", action="store_true")
     ap.add_argument("--bloque", type=float, default=0.25, help="lado del bloque en grados (0.25 ≈ 27 km)")
     ap.add_argument("--hilos", type=int, default=3)
+    ap.add_argument("--solo-procedencia", action="store_true",
+                    help="no baja nada: repite las búsquedas y escribe procedencia_imagenes.csv de productos ya hechos")
     args = ap.parse_args()
+    global SOLO_PROCEDENCIA
+    SOLO_PROCEDENCIA = args.solo_procedencia
     args.salida = args.salida.expanduser()
     args.salida.mkdir(parents=True, exist_ok=True)
     caja = [float(v) for v in args.caja.split(",")]

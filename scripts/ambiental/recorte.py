@@ -89,6 +89,43 @@ def a_grados(valor) -> float | None:
     return -g if texto.endswith(("W", "O", "S")) or texto.startswith("-") else g
 
 
+# De qué archivo crudo (relativo a --crudos) sale cada capa; con su sha256 y su
+# fecha del MANIFIESTO.tsv queda la procedencia exacta (procedencia.csv).
+CRUDOS = {
+    "agua_superficial": ["agua/calidad_superficial_2012-2025.xlsx"],
+    "agua_subterranea": ["agua/calidad_subterranea_2012-2025.xlsx"],
+    "cuerpos_de_agua": ["agua/cuerpos_de_agua.zip"],
+    "acuiferos": ["acuiferos/disponibilidad_2023-11-09.zip"],
+    "acuiferos_vedas": ["acuiferos/vedas_y_ordenamientos.zip"],
+    "acuiferos_suspension": ["acuiferos/vedas_y_ordenamientos.zip"],
+    "acuiferos_reglamentos": ["acuiferos/vedas_y_ordenamientos.zip"],
+    "piezometria": ["acuiferos/red_piezometrica_2023.zip"],
+    "repda_descargas": ["concesiones/otorgamiento_de_concesiones.zip"],
+    "repda_subterraneos": ["concesiones/otorgamiento_de_concesiones.zip"],
+    "repda_superficiales": ["concesiones/otorgamiento_de_concesiones.zip"],
+    "repda_zonas_federales": ["concesiones/otorgamiento_de_concesiones.zip"],
+    "repda_materiales": ["concesiones/otorgamiento_de_concesiones.zip"],
+    "retc": ["emisiones/retc_2004-2022.zip"],
+    "firms_viirs": ["incendios/firms_viirs_snpp_*.csv"],
+    "firms_modis": ["incendios/firms_modis_*.csv"],
+    "uso_suelo_s7": ["territorio/usv250_serie7.zip"],
+    "uso_suelo_s6": ["territorio/usv250_serie6.zip"],
+    "edafologia": ["territorio/edafologia_1m.zip"],
+    "anp": ["territorio/anp_2020.zip"],
+    "regiones_hidrologicas": ["territorio/regiones_hidrologicas_250k.zip"],
+    "localidades": ["poblacion/iter_14_2020.zip"],
+    "localidades_poligonos": ["API INEGI wscatgeo v2 geo/localidades/pol", "poblacion/iter_14_2020.zip"],
+    "agebs_rurales": ["API INEGI wscatgeo v2 geo/agebr", "poblacion/iter_14_2020.zip"],
+    "agebs": ["base de Mapo (desde_mapo.sh): agebs y fuente_censo_poblacion"],
+    "denue": ["base de Mapo (desde_mapo.sh): fuente_denue_negocios"],
+    "siap_municipal": ["agricultura/siap_municipal_*.csv"],
+    "sequia_municipal": ["riesgo/sequia_municipios.xlsx"],
+    "defunciones": ["salud/defunciones_*.zip"],
+    "plantas_tratamiento": ["agua/plantas_tratamiento.csv"],
+    "relieve": ["relieve/Copernicus_DSM_COG_10_*_DEM.tif"],
+}
+
+
 def normalizar(texto: str) -> str:
     sin_acentos = unicodedata.normalize("NFKD", str(texto)).encode("ascii", "ignore").decode()
     return " ".join(sin_acentos.upper().split())
@@ -419,10 +456,39 @@ class Paquete:
             w = csv.DictWriter(f, fieldnames=list(self.registro[0]))
             w.writeheader()
             w.writerows(self.registro)
+        self.escribir_procedencia()
+        import hashlib
+        huella = hashlib.sha256(Path(__file__).read_bytes()).hexdigest()
         (self.salida / "zona.txt").write_text(
             f"caja (oeste,sur,este,norte): {','.join(map(str, self.caja))}\n"
             f"municipios: {','.join(self.municipios)}\nCRS: {CRS}\n"
-            f"generado: {dt.datetime.now().isoformat(timespec='seconds')}\n", encoding="utf-8")
+            f"generado: {dt.datetime.now().isoformat(timespec='seconds')}\n"
+            f"comando: {' '.join(sys.argv)}\n"
+            f"script recorte.py sha256: {huella}\n", encoding="utf-8")
+
+    def escribir_procedencia(self) -> None:
+        """Una fila por capa y archivo crudo, con sha256, fecha y URL del MANIFIESTO."""
+        import fnmatch
+        manifiesto = {}
+        ruta = self.crudos / "MANIFIESTO.tsv"
+        if ruta.exists():
+            with open(ruta, encoding="utf-8") as f:
+                for r in csv.DictReader(f, delimiter="\t"):
+                    manifiesto[r["archivo"]] = r
+        filas = []
+        for capa in [r["capa"] for r in self.registro]:
+            for patron in CRUDOS.get(capa, []):
+                coincide = sorted(k for k in manifiesto if fnmatch.fnmatch(k, patron))
+                if not coincide:
+                    filas.append({"capa": capa, "archivo_crudo": patron, "sha256": "", "fecha_descarga": "", "url": ""})
+                for k in coincide:
+                    m = manifiesto[k]
+                    filas.append({"capa": capa, "archivo_crudo": k, "sha256": m.get("sha256", ""),
+                                  "fecha_descarga": m.get("fecha", ""), "url": m.get("url", "")})
+        with open(self.salida / "procedencia.csv", "w", newline="", encoding="utf-8") as f:
+            w = csv.DictWriter(f, fieldnames=["capa", "archivo_crudo", "sha256", "fecha_descarga", "url"])
+            w.writeheader()
+            w.writerows(filas)
 
 
 def main() -> None:
