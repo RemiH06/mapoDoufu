@@ -30,6 +30,7 @@ Una por fuente: de dónde sale, cómo se carga, sus problemas conocidos y las ci
 - [sesnsp.md](fuentes/sesnsp.md): incidencia delictiva (seguridad), carga manual.
 - [osrm.md](fuentes/osrm.md): ruteo por carretera, demo público contra servidor propio.
 - [ambientales.md](fuentes/ambientales.md): agua, acuíferos, descargas, emisiones, uso de suelo, incendios y más, en crudo, y cómo recortarlas a una zona como paquete para SIG.
+- [edificios.md](fuentes/edificios.md): huellas de edificios de Overture Maps (OSM, Microsoft y Google) recortadas a una caja, con su validación contra el censo por manzana.
 - [imagenes.md](fuentes/imagenes.md): compuestos de Sentinel-2 y Landsat y WorldCover por zona, desde el STAC de Planetary Computer.
 
 ## Guías
