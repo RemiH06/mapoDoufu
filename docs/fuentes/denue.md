@@ -56,9 +56,8 @@ de las clases que todavía no están en la tabla.
 
 ## Descarga masiva en vez de la API (2026-11-17, sesión 18)
 
-La carga dejó de paginar `BuscarEntidad`: **su paginación no es estable.** La
-misma página pedida dos veces trae otro orden, y en una de tres pruebas, 5 de
-1,000 negocios distintos. Al recargar Jalisco por la API llegaron 401,813
+La carga dejó de paginar `BuscarEntidad`: **su paginación no es estable** (ver
+la sección siguiente). Al recargar Jalisco por la API llegaron 401,813
 registros pero solo 395,704 ids distintos: 6,109 repetidos y 6,109 que nunca
 llegaron. La carga de agosto había salido completa (401,813 distintos), así que
 el problema no siempre se nota.
@@ -85,6 +84,53 @@ tarda unos 5 minutos en vez de media hora. `--archivo` usa un ZIP ya bajado.
   y `fecha_alta` (año y mes). La fecha sirve al estudio de sobrevivencia.
 - `/buscador/zonas` y `/buscador/patron` guardan resultados en memoria: después
   de una carga, reiniciar `mapo_core`.
+
+## Paginación inestable de la API (medida el 2026-11-17)
+
+`BuscarEntidad/{condicion}/{entidad}/{inicio}/{fin}/{token}` regresa una
+"página" de negocios por posición. La API no dice con qué orden numera las
+posiciones, y ese orden cambia entre una llamada y otra. Cada página es entonces
+un corte distinto del mismo conjunto: lo que se pide en partes no suma el
+conjunto completo, aunque el número de registros cuadre.
+
+**Medición.** `scripts/denue/paginacion.py` pide 20 páginas de 1,000 de Jalisco
+(diez pares contiguos repartidos de punta a punta del estado), espera un minuto
+y las pide otra vez:
+
+| Qué | Resultado |
+|---|---|
+| Páginas con otro orden en la segunda vuelta | 20 de 20 |
+| Páginas con negocios distintos en la segunda vuelta | 11 de 20, 1,688 negocios en total |
+| Peor página (posiciones 355,001 a 356,000) | 695 de 1,000 negocios cambiaron |
+| Pares contiguos con negocios repetidos entre sí, en una misma vuelta | 2 de 10, 68 negocios |
+| Repetidos dentro de una misma página | 0 |
+
+Una prueba anterior, con tres páginas pedidas dos veces seguidas sin pausa, dio
+5 de 1,000 distintos en una sola: la inestabilidad crece con el tiempo entre
+llamadas y varía por zona del listado. Una carga completa tarda media hora, así
+que sus primeras y últimas páginas salen de órdenes distintos.
+
+**Consecuencias.**
+
+- Una carga paginada repite unos negocios y se salta otros sin ningún error. El
+  total de registros recibidos coincide con el del estado; solo el conteo de
+  ids distintos lo delata.
+- No sirve para saber qué negocios cerraron: "no vino en esta carga" no quiere
+  decir "ya no existe". La recarga del 2026-11-17 borró así 6,109 negocios
+  vigentes en la base de dev (se recuperaron con la descarga masiva).
+- Repetir la carga y unir resultados reduce el hueco pero no lo cierra, y cuesta
+  otra media hora por pasada.
+
+**Qué hacer.** Para un estado completo, la descarga masiva (abajo). La API queda
+para consultas chicas que caben en una respuesta (`Buscar` por radio), donde no
+hay páginas. Si alguna vez hay que paginarla, contar ids distintos contra
+registros recibidos y nunca borrar con base en lo que faltó.
+
+Repetir la medición (token gratuito de INEGI):
+
+```bash
+GAIARDA_DENUE_TOKEN=... uv run --script scripts/denue/paginacion.py --estado 14 --paginas 20 --salida paginacion.csv
+```
 
 ## CLEE y plaza o mercado (2026-11-17, sesión 18)
 
