@@ -1,0 +1,39 @@
+{
+ "estado": "25",
+ "negocios": 121418,
+ "sigue": 65.99,
+ "sigue_o_reregistrado": 66.99,
+ "persistencia": {
+  "2019_11": 63.3,
+  "2023_11": 94.5,
+  "2024_11": 69.9
+ },
+ "vecinos_mismo": {
+  "puntos": 0.525,
+  "desde": -0.137,
+  "hasta": 1.187
+ },
+ "vecinos_todos": {
+  "puntos": -0.455,
+  "desde": -1.369,
+  "hasta": 0.459
+ },
+ "en_plaza": {
+  "puntos": -1.765,
+  "desde": -3.619,
+  "hasta": 0.088
+ },
+ "vecinos_mismo_rereg": {
+  "puntos": 0.574,
+  "desde": -0.118,
+  "hasta": 1.267
+ },
+ "interaccion": {
+  "puntos": 3.177,
+  "desde": 1.665,
+  "hasta": 4.69
+ },
+ "giros_se_agrupan": 118,
+ "auc_arboles": 0.688,
+ "auc_giro": 0.624
+}

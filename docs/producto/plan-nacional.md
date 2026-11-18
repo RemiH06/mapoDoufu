@@ -25,6 +25,29 @@ México y en qué orden. Lo que ya está hecho y cómo replicarlo a mano está e
 | Predial (TAX) | Tablas de 10 municipios de la ZMG | Una tabla por municipio desde su ley de ingresos (congreso de cada estado) |
 | Valor catastral (MEDV) | GDL, Zapopan, Tonalá, Ixtlahuacán | El cuello de botella: ver abajo |
 
+## Cuánto pesa el país (medido el 2026-11-17)
+
+Tamaños en la base de dev (con índices) y lo que daría el país completo. Las
+estimaciones escalan lo medido en Jalisco por la proporción que Jalisco es del
+total de esa fuente.
+
+| Fuente | Hoy | País completo | ¿De un jalón? |
+|---|---|---|---|
+| SESNSP, delitos por municipio (2015 a 2025) | Ya nacional: 12 GB (5.7 de datos y 6.4 de índices), 30.7 millones de filas | Lo mismo | Ya está, y es lo que más pesa de la base. Si estorba, guardarlo por año en vez de por mes, o quitar índices que no se usan |
+| OSRM (rutas en auto) | Ya nacional: 8 GB en disco, 5.1 GB de RAM sirviendo | Lo mismo | Ya está. Lo caro es rehacerlo: el preproceso llega a 14.8 GB de RAM (`../fuentes/osrm.md`) |
+| DENUE | Jalisco: 484 MB, 401,813 negocios | Unos 6.4 GB, 5.3 millones de negocios (los ZIP de los 32 estados suman 521 MB) | Sí. Por estado con `cli denue`, unos 5 minutos por cada 400 mil: alrededor de hora y media en total |
+| Censo 2020 por AGEB, localidad y municipio | Jalisco: 14 MB | Unos 200 MB | Sí, sin problema |
+| Polígonos de AGEB urbanas | Jalisco: 5 MB | Unos 75 MB | Sí |
+| Polígonos de municipios | Jalisco: 5.4 MB (125) | Unos 100 a 150 MB (2,469) | Sí |
+| Estados | Ya nacional: 16 MB | Lo mismo | Ya está |
+| ENIGH | Ya nacional: 14 MB | Lo mismo | Ya está |
+| Imágenes (Sentinel-2, Landsat) | Por caja, fuera de la base | Cientos de GB por fecha | **No, y Mapo no las hospeda** (ver abajo) |
+| Ediciones viejas de DENUE (estudio de sobrevivencia) | Fuera de la base | Unos 2 GB de ZIP por las cuatro ediciones del estudio | Sí, en disco; no van a la base |
+
+Con todo lo que sí cabe, la base pasaría de 12 GB a unos 19 GB, y el respaldo
+nocturno (`pg_dump` comprimido, hoy 244 MB) crecería en proporción. Lo único que
+no tiene sentido tener completo son las imágenes.
+
 ## Unidades
 
 - **Vivienda urbana:** las metrópolis de la delimitación de SEDATU, CONAPO e INEGI
@@ -39,13 +62,20 @@ México y en qué orden. Lo que ya está hecho y cómo replicarlo a mano está e
 ## Imágenes para todo el país
 
 Un compuesto de Sentinel-2 de 10 bandas a 10 m para México pesa cientos de GB por
-fecha. No se precalcula. Dos niveles:
+fecha. **Decisión de Remi (2026-11-17): Mapo no hospeda rásteres públicos.** De
+la data pública, los rásteres son lo único que pone cada equipo: los sube como
+capa propia (`datos-propios.md`), con la procedencia que indica
+`../guias/replicar.md`. Mapo sí da las herramientas para producirlos:
 
-1. **Nacional, por AGEB o localidad:** NDVI y temperatura de superficie como
-   estadística zonal, de MODIS (250 m y 1 km) o Landsat agregado. Cabe en una
-   tabla y entra a la base de Mapo como cualquier fuente.
-2. **Zona de estudio:** el compuesto de 10 m con `imagenes.py`, a pedido, como
-   en Autlán.
+1. **Zona de estudio:** el compuesto de 10 m, NDVI, temperatura de superficie y
+   WorldCover con `imagenes.py`, a pedido, como en Autlán y López Cotilla. El
+   archivo se le entrega al equipo; no se queda en el servidor.
+2. **Estadística zonal por AGEB o localidad** (NDVI o temperatura promedio de
+   MODIS o Landsat agregado): es una tabla, no un ráster, y sí podría entrar a la
+   base como cualquier fuente. Pendiente de decidir si vale la pena.
+
+Por eso la sesión 19 trae "ráster con valor por píxel": si los rásteres vienen
+del equipo, la capa propia tiene que poder consultarse, no solo verse.
 
 ## Valor catastral
 

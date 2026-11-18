@@ -87,6 +87,46 @@ del giro da AUC 0.61 y Brier 0.211 (en muestra, con ventaja). Otra razón para n
 llevar una probabilidad a Mapo: casi todo lo que decide si un negocio sigue no
 está en DENUE.
 
+## Los 32 estados
+
+`estado.ipynb` repite el estudio para un estado completo y `por_estado.py` lo
+corre para los 32 (`estados/NN.ipynb`, `resultados/NN.json`);
+`resumen_estados.ipynb` los junta. Diferencias con el de la ZMG: el estado
+entero, sin contexto por AGEB (el dataset de vivienda solo existe para la ZMG),
+coordenadas fuera del estado quitadas con una caja robusta (0.1 a 99.9 % más
+medio grado) y "el giro se agrupa" medido en cada estado con 19 sorteos. Los
+estados grandes vienen en partes en las ediciones viejas (Estado de México:
+`denue_15_1_...` y `denue_15_2_...`).
+
+```bash
+cd estudios/sobrevivencia
+uv run python por_estado.py          # los que falten; --todo para rehacer
+uv run jupyter nbconvert --to notebook --execute --inplace resumen_estados.ipynb
+```
+
+En Pixilate (6 núcleos) los 32 tardaron 59 minutos y 1.9 GB de ediciones.
+
+**Resultado** (5,447,246 negocios):
+
+- **Los cortes censales se ven en los 32.** De 2018_11 a 2019_11 sigue entre
+  54 y 64 %; de 2023_11 a 2024_11, entre 63 y 71 %; en los cuatro años sin censo
+  de en medio, entre 88 y 98 %. El diseño de la etiqueta vale en todo el país.
+- **Sigue el 66 %** de 2019 a 2024 (ponderado por negocios), de 60 % en Quintana
+  Roo a 69 % en Jalisco.
+- **Los vecinos del mismo giro suman en 20 estados y no restan en ninguno**; en
+  12 el intervalo cruza el 0 (entre ellos la Ciudad de México, 0.1, y Baja
+  California Sur, 0.3). Ponderado por negocios, 1.1 puntos por cada vez que se
+  multiplican por e. Contando re-registros: 21 positivos, ninguno negativo.
+- **En los giros que se agrupan suman más** en 21 estados (en uno, menos).
+  Ponderado, 1.6 puntos extra.
+- **Los vecinos de cualquier giro**, sin contexto por AGEB, restan en 11 estados
+  y suman en 1. En la ZMG, con contexto, sumaban 1.7. Ese coeficiente depende de
+  los controles: la densidad comercial va junto con escolaridad, autos y
+  centralidad, y sin ellos se mezcla. No sostener una lectura de él.
+- **Plazas y mercados**: restan en 8 estados, suman en 4. Sin patrón nacional.
+- **Predecir sigue siendo difícil en todos**: AUC de 0.66 a 0.70 con los árboles,
+  contra 0.60 a 0.64 de la tasa del giro.
+
 ## Lo que no dice
 
 - **Desaparecer de DENUE no es lo mismo que cerrar.** Un negocio que cambió de
@@ -103,7 +143,9 @@ está en DENUE.
 
 ## Siguiente
 
-- Otras zonas: la misma tubería con otros municipios y otra taxonomía.
+- Contexto por AGEB para todos los estados (escolaridad y autos del censo por
+  AGEB, que trae el ZIP de `censo_downloader`), para ver si el signo de "vecinos
+  de cualquier giro" se estabiliza.
 - Ventana 2019 → 2024 contra 2014 → 2019 (Censos 2014), si las ediciones de
   2014 y 2015 se pueden bajar: usan otro patrón de nombre de archivo.
 - Censos Económicos 2024 por AGEB (ingresos y personal agregados): otra señal

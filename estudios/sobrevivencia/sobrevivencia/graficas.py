@@ -63,3 +63,19 @@ def calibracion(y: pd.Series, p: pd.Series, titulo: str, grupos: int = 10) -> go
     fig.update_layout(title=titulo, xaxis_title="Probabilidad predicha (fuera de muestra)",
                       yaxis_title="Parte que siguió", xaxis_range=[0, 1], yaxis_range=[0, 1])
     return fig
+
+
+def bosque(r: pd.DataFrame, clave: str, titulo: str) -> go.Figure:
+    """Estimación e intervalo por estado, ordenados; en tinta los que no cruzan 0."""
+    r = r.sort_values(f"{clave}_puntos")
+    claro = (r[f"{clave}_desde"] > 0) | (r[f"{clave}_hasta"] < 0)
+    fig = go.Figure(go.Scatter(
+        x=r[f"{clave}_puntos"], y=r["nombre"], mode="markers",
+        marker=dict(color=[DEMOGRAFIA if c else "#9AA5B4" for c in claro], size=8),
+        error_x=dict(type="data", symmetric=False, array=r[f"{clave}_hasta"] - r[f"{clave}_puntos"],
+                     arrayminus=r[f"{clave}_puntos"] - r[f"{clave}_desde"], color="#9AA5B4"),
+    ))
+    fig.add_vline(x=0, line_color=TINTA, line_width=1)
+    fig.update_layout(title=titulo, xaxis_title="Puntos porcentuales (IC 95 %); en gris, los que cruzan 0",
+                      yaxis_title="", height=140 + 22 * len(r))
+    return fig

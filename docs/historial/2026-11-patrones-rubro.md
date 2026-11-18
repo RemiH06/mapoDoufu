@@ -98,7 +98,18 @@ test), `test_denue_downloader.py` (8, ZIP armado en el test), un caso de
   agrupan. Se descubrió que `clee` no sirve de llave entre ediciones y que las
   bajas solo aparecen con los Censos Económicos.
 
+- **Sobrevivencia en los 32 estados** (2026-11-18, en Pixilate, 59 min):
+  5.4 millones de negocios. Los cortes censales se repiten en todos; los vecinos
+  del mismo giro suman en 20 estados y no restan en ninguno. Bugs: el Estado de
+  México viene en dos archivos por edición, e INEGI contesta 200 con HTML cuando
+  el archivo no existe (se revisa que empiece con `PK`).
+- **Pesos del país** (`../producto/plan-nacional.md`): todo lo tabular y
+  vectorial cabe en unos 19 GB. Remi decidió que los rásteres públicos no se
+  hospedan: los sube cada equipo (`../arquitectura/decisiones.md`).
+- **Menú de rubros:** los sectores se quedan; la navegación del desplegable va a
+  la sesión 24.
+
 ## Pendiente
 
-- Sobrevivencia en otras zonas y contra la ventana 2014 a 2019
-  (`../producto/sobrevivencia.md`, "Siguiente").
+- Sobrevivencia con contexto por AGEB en todos los estados y contra la ventana
+  2014 a 2019 (`../producto/sobrevivencia.md`, "Siguiente").

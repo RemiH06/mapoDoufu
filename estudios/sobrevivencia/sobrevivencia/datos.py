@@ -213,3 +213,31 @@ def persistencia(rutas: dict[str, list[Path]]) -> pd.DataFrame:
                           "siguen": round(100 * len(previos & actual) / len(previos), 1)})
         anterior = (edicion, actual)
     return pd.DataFrame(filas)
+
+
+ENTIDADES = {
+    "01": "Aguascalientes", "02": "Baja California", "03": "Baja California Sur", "04": "Campeche",
+    "05": "Coahuila", "06": "Colima", "07": "Chiapas", "08": "Chihuahua", "09": "Ciudad de México",
+    "10": "Durango", "11": "Guanajuato", "12": "Guerrero", "13": "Hidalgo", "14": "Jalisco",
+    "15": "Estado de México", "16": "Michoacán", "17": "Morelos", "18": "Nayarit", "19": "Nuevo León",
+    "20": "Oaxaca", "21": "Puebla", "22": "Querétaro", "23": "Quintana Roo", "24": "San Luis Potosí",
+    "25": "Sinaloa", "26": "Sonora", "27": "Tabasco", "28": "Tamaulipas", "29": "Tlaxcala",
+    "30": "Veracruz", "31": "Yucatán", "32": "Zacatecas",
+}
+
+
+def resultados(carpeta: Path) -> pd.DataFrame:
+    """Una fila por estado con las cifras que dejó `estado.ipynb`."""
+    import json
+
+    filas = []
+    for ruta in sorted(carpeta.glob("*.json")):
+        r = json.loads(ruta.read_text(encoding="utf-8"))
+        fila = {"estado": r["estado"], "nombre": ENTIDADES[r["estado"]], "negocios": r["negocios"],
+                "sigue": r["sigue"], "corte_2019": r["persistencia"].get("2019_11"),
+                "corte_2024": r["persistencia"].get("2024_11"), "entre_cortes": r["persistencia"].get("2023_11"),
+                "giros_se_agrupan": r["giros_se_agrupan"], "auc_arboles": r["auc_arboles"], "auc_giro": r["auc_giro"]}
+        for clave in ("vecinos_mismo", "vecinos_todos", "en_plaza", "vecinos_mismo_rereg", "interaccion"):
+            fila |= {f"{clave}_{k}": v for k, v in r[clave].items()}
+        filas.append(fila)
+    return pd.DataFrame(filas)

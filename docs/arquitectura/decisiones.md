@@ -319,3 +319,14 @@ animaciones, un tema futuro):
 - **Mapo doufu:** el nombre del repo literal (aceite de chile, tofu en
   cubos como AGEB). Demasiado juguetón para decisiones de negocio y
   gobierno, pero sirve para un detalle oculto.
+
+## Rásteres públicos: los pone el equipo (2026-11-17)
+
+Mapo carga a su base las fuentes públicas tabulares y vectoriales (censo,
+DENUE, SESNSP, ENIGH, marco geoestadístico, OSRM), y para todo el país caben
+en unos 19 GB (`../producto/plan-nacional.md`). Los rásteres públicos
+(Sentinel-2, Landsat, WorldCover) no: un compuesto nacional pesa cientos de GB
+por fecha. Remi decidió que Mapo no los hospeda. Cada equipo sube los que usa
+como capa propia; `imagenes.py` y la guía de replicar sirven para producirlos
+por zona con su procedencia.
+
