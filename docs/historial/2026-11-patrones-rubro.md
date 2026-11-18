@@ -65,6 +65,14 @@ API a la descarga masiva, porque la paginación de la API pierde negocios.
   consola): la sección se lee, los focos se ven punteados sobre la coropleta, el
   botón centra el foco y "cerca" deja 179 de 442 AGEB a 2 minutos o menos.
 
+## Despliegue
+
+En Pixilate el 2026-11-17 (`c3b22d2`; para revertir, `deploy-20261117b`). Hay
+que correr `cli denue --estado 14` después del `up`: crea las columnas nuevas y
+sin ellas `/buscador/patron` falla. En producción tardó 53 s y dejó 401,813
+negocios (29,785 con plaza); la tabla de antes quedó respaldada. El patrón de
+florerías en Guadalajara da lo mismo que en dev, en 0.8 s.
+
 ## Pruebas
 
 `test_patrones.py` (11, con datos hechos a mano y DBSCAN contra la base de
@@ -74,8 +82,6 @@ test), `test_denue_downloader.py` (8, ZIP armado en el test), un caso de
 
 ## Pendiente
 
-- **Producción:** recargar DENUE con la descarga masiva (crea las columnas
-  nuevas; sin eso, `/buscador/patron` falla porque consulta `tipo_plaza`).
 - **Sobrevivencia** (notebook, aparte): el CSV masivo trae `fecha_alta` y
   `clee`; falta bajar ediciones viejas y ver si `clee` es estable.
 - **Taxonomía de rubros** con k-means sobre rasgos de rubro (agrupación, parte
