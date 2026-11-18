@@ -166,6 +166,10 @@ cercano en grados no siempre lo es en metros: el índice da un candidato, su
 distancia en metros acota una caja, y dentro de la caja gana el de menos
 metros. Si dos empatan, gana uno de ellos.
 
+**Localidades del censo.** Además de las capas del equipo, el destino puede ser
+"Localidades del censo 2020": las 189,432 del país (todas, rurales o urbanas), con
+la población a cierto radio. Ver `../fuentes/localidades.md`.
+
 **Filtros.** Hasta dos condiciones por capa, que se cumplen las dos: la columna
 contiene el texto, sin importar mayúsculas ni acentos. Si la capa tiene fechas,
 además un rango (por ejemplo, focos de calor de una zafra: del 2024-11-01 al

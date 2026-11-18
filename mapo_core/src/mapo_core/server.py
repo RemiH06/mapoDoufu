@@ -11,7 +11,7 @@ from fastapi.responses import JSONResponse, Response
 from psycopg_pool import AsyncConnectionPool
 from pydantic import BaseModel, Field
 
-from mapo_core import buscador, consultas, cruce, datos_geo, datos_propios
+from mapo_core import buscador, consultas, cruce, datos_geo, datos_propios, localidades
 from mapo_core.coloreado_mapa import PoligonoColoreable, colorear_mapa
 from mapo_core.consultas import INDICADORES_CHOROPLETH, TOLERANCIA_SIMPLIFICACION as _TOLERANCIA_SIMPLIFICACION
 from mapo_core.consultas import feature as _feature
@@ -699,6 +699,34 @@ class SolicitudCruce(BaseModel):
     censo: list[str] = []
     denue: str | None = None
     minutos: bool = False
+
+
+class FilaGeometria(BaseModel):
+    id: int
+    geometria: dict
+
+
+class SolicitudLocalidades(BaseModel):
+    filas: list[FilaGeometria] = Field(min_length=1, max_length=datos_propios.MAX_FILAS)
+    radio: float | None = Field(default=None, gt=0, le=100_000)
+    ambito: Literal["rural", "urbana"] | None = None
+
+
+@app.post("/localidades/distancia")
+async def localidades_distancia(
+    solicitud: SolicitudLocalidades, pool: AsyncConnectionPool = Depends(get_pool)
+) -> dict:
+    """De cada renglón a la localidad del censo más cercana, en metros, y con
+    `radio`, cuántas hay y cuánta gente vive en ellas a esa distancia o menos."""
+    from shapely.geometry import shape
+
+    filas = [f.model_dump() for f in solicitud.filas]
+    try:
+        for f in filas:
+            shape(f["geometria"])
+    except Exception as exc:  # shapely lanza de todo con un GeoJSON roto
+        raise HTTPException(status_code=422, detail="Alguna geometría no se pudo leer.") from exc
+    return await localidades.distancia(pool, filas, solicitud.radio, solicitud.ambito)
 
 
 @app.post("/cruce/calcular")

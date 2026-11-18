@@ -12,6 +12,7 @@ defmodule MapoWeb.DatosLive.Distancia do
 
   alias Mapo.Capas
   alias Mapo.Capas.Distancias
+  alias Mapo.Capas.Localidades
   alias Mapo.Limite
   alias Mapo.Teams
 
@@ -68,12 +69,29 @@ defmodule MapoWeb.DatosLive.Distancia do
                 <legend>Hasta</legend>
                 <.input field={@form[:destino]} type="select" label="Capa" options={@destinos} />
                 <.input
+                  :if={publica?(@destino)}
+                  field={@form[:ambito]}
+                  type="select"
+                  label="Cuáles"
+                  options={[
+                    {"Todas", ""},
+                    {"Solo rurales (menos de 2,500 habitantes)", "rural"},
+                    {"Solo urbanas", "urbana"}
+                  ]}
+                />
+                <p :if={publica?(@destino)} class="secundario">
+                  Las 189,432 localidades del país, de INEGI, cada una como un punto. Además de la más cercana, con radio dice cuántas hay y cuánta gente vive en ellas.
+                </p>
+
+                <.input
+                  :if={!publica?(@destino)}
                   field={@form[:etiqueta_destino]}
                   type="select"
                   label="Columna que nombra al más cercano"
                   options={@destino.columnas}
                 />
                 <.condiciones
+                  :if={!publica?(@destino)}
                   form={@form}
                   lado="destino"
                   columnas={@destino.columnas}
@@ -193,6 +211,7 @@ defmodule MapoWeb.DatosLive.Distancia do
       socket.assigns.current_scope
       |> Capas.list_capas(team.id)
       |> Enum.filter(&(Distancias.medible?(&1) and &1.id != capa.id))
+      |> Kernel.++([Localidades.destino()])
 
     destino = List.first(candidatas)
 
@@ -259,7 +278,12 @@ defmodule MapoWeb.DatosLive.Distancia do
     %{capa: capa, team: team, resultado: resultado, opciones: opciones, current_scope: scope} =
       socket.assigns
 
-    case resultado && Distancias.guardar(scope, capa, opciones, String.trim(nombre), resultado) do
+    guardar =
+      if opciones && opciones[:publica],
+        do: fn -> Localidades.guardar(scope, capa, String.trim(nombre), resultado) end,
+        else: fn -> Distancias.guardar(scope, capa, opciones, String.trim(nombre), resultado) end
+
+    case resultado && guardar.() do
       {:ok, _} ->
         {:noreply,
          socket
@@ -289,7 +313,19 @@ defmodule MapoWeb.DatosLive.Distancia do
         radio: radio
       }
 
-      case Distancias.calcular(capa, opciones) do
+      {calculo, opciones} =
+        if publica?(destino) do
+          ambito = if params["ambito"] in ["rural", "urbana"], do: params["ambito"]
+
+          opciones =
+            Map.merge(opciones, %{publica: true, ambito: ambito, etiqueta_destino: "localidad"})
+
+          {Localidades.calcular(capa, opciones), opciones}
+        else
+          {Distancias.calcular(capa, opciones), opciones}
+        end
+
+      case calculo do
         {:ok, resultado} ->
           socket
           |> clear_flash()
@@ -306,6 +342,9 @@ defmodule MapoWeb.DatosLive.Distancia do
       {:error, mensaje} -> put_flash(socket, :error, mensaje)
     end
   end
+
+  # Las localidades del censo no son una capa del equipo: viven en mapo_core.
+  defp publica?(destino), do: Map.get(destino, :publica, false)
 
   defp nombre_sugerido(capa, destino),
     do: String.slice("#{capa.nombre} a #{destino.nombre}", 0, 120)

@@ -59,6 +59,26 @@ CREATE TABLE IF NOT EXISTS agebs (
 CREATE INDEX IF NOT EXISTS idx_agebs_mun  ON agebs (cve_ent, cve_mun);
 CREATE INDEX IF NOT EXISTS idx_agebs_geom ON agebs USING GIST (geom);
 
+-- Localidades del ITER 2020, urbanas y rurales, con su punto (iter_downloader.py).
+CREATE TABLE IF NOT EXISTS localidades (
+    id           BIGINT GENERATED ALWAYS AS IDENTITY UNIQUE,
+    cvegeo       TEXT PRIMARY KEY,
+    cve_ent      TEXT NOT NULL,
+    cve_mun      TEXT NOT NULL,
+    cve_loc      TEXT NOT NULL,
+    nombre       TEXT NOT NULL,
+    nom_mun      TEXT,
+    tamloc       SMALLINT,
+    ambito       TEXT,
+    altitud      INTEGER,
+    pobtot       INTEGER,
+    datos        JSONB NOT NULL,
+    geom         geometry(Point, 4326) NOT NULL,
+    actualizado  TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS idx_localidades_geom ON localidades USING GIST (geom);
+CREATE INDEX IF NOT EXISTS idx_localidades_mun  ON localidades (cve_ent, cve_mun);
+
 CREATE TABLE IF NOT EXISTS fuente_censo_poblacion (
     cvegeo       TEXT PRIMARY KEY,
     nivel        TEXT NOT NULL,

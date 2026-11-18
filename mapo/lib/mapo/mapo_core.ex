@@ -208,6 +208,13 @@ defmodule Mapo.MapoCore do
   def geo_por_clave(nivel, claves), do: post("/geo/por_clave", %{nivel: nivel, claves: claves})
 
   @doc """
+  Distancia de renglones (`%{filas: [%{id, geometria}], radio, ambito}`) a las
+  localidades del censo 2020. Ver `/localidades/distancia` en mapo_core.
+  """
+  def localidades_distancia(solicitud),
+    do: post("/localidades/distancia", solicitud, receive_timeout: 120_000)
+
+  @doc """
   Cruza renglones de una capa con fuentes públicas, por zona. Con los minutos
   por calle y 50 mil renglones puede tardar: en Aerilate, unos 30 s.
   """

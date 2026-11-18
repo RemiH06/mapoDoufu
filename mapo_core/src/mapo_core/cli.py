@@ -17,6 +17,7 @@ from mapo_core import (
     enigh_downloader,
     enoe_downloader,
     geo_downloader,
+    iter_downloader,
     rubros,
     sesnsp_ingesta,
     taxonomia,
@@ -48,6 +49,19 @@ async def _censo_poblacion(args) -> None:
     await inicializar_esquema()
     total = await censo_downloader.descargar_estado(args.estado)
     print(f"{total} filas de censo guardadas/actualizadas para el estado {args.estado}.")
+
+
+async def _localidades(args) -> None:
+    from pathlib import Path
+
+    await inicializar_esquema()
+    archivo = Path(args.archivo).read_bytes() if args.archivo else None
+    try:
+        total, cuadres = await iter_downloader.descargar(archivo)
+    except iter_downloader.ArchivoInvalido as exc:
+        raise SystemExit(f"No se cargó nada: {exc}") from None
+    poblacion = sum(t for _, t in cuadres.values())
+    print(f"{total:,} localidades de {len(cuadres)} estados; población {poblacion:,}, cuadra con los totales.")
 
 
 async def _denue(args) -> None:
@@ -160,7 +174,7 @@ async def _status(_args) -> None:
     await inicializar_esquema()
     pool = await get_pool()
     tablas = [
-        "entidades", "municipios", "agebs", "fuente_censo_poblacion",
+        "entidades", "municipios", "agebs", "localidades", "fuente_censo_poblacion",
         "fuente_denue_negocios", "fuente_enigh_concentradohogar", "fuente_sesnsp_delitos_municipal",
         "fuente_enoe_tasa_desocupacion",
     ]
@@ -188,6 +202,12 @@ def _construir_parser() -> argparse.ArgumentParser:
     p_censo = subparsers.add_parser("censo_poblacion", help="Descarga el censo de poblacion de un estado")
     p_censo.add_argument("--estado", required=True, help="cve_ent, ej. 14 (obligatorio)")
     p_censo.set_defaults(fn=_censo_poblacion)
+
+    p_loc = subparsers.add_parser(
+        "localidades", help="Carga las localidades del ITER 2020 de todo el país (reemplaza las de antes)"
+    )
+    p_loc.add_argument("--archivo", default=None, help="ZIP ya bajado (iter_00_cpv2020_csv.zip)")
+    p_loc.set_defaults(fn=_localidades)
 
     p_denue = subparsers.add_parser(
         "denue", help="Carga los negocios de DENUE de un estado desde la descarga masiva (reemplaza los de antes)"
