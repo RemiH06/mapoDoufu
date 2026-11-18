@@ -80,9 +80,25 @@ test), `test_denue_downloader.py` (8, ZIP armado en el test), un caso de
 `sentido` en `test_zonas.py` y 6 en el buscador de Phoenix. `pytest` 336 y
 `mix precommit` 347.
 
+## Después, el mismo día
+
+- **Paginación de la API medida** (`scripts/denue/paginacion.py`): 20 de 20
+  páginas cambian de orden en un minuto, 11 cambian de negocios, hasta 695 de
+  1,000 (`../fuentes/denue.md`).
+- **Taxonomía de rubros** (`taxonomia.py`, `rubros/taxonomia.csv`): k-means
+  sobre tres rasgos del patrón de 177 rubros de la zona metropolitana. La
+  silueta no pasa de 0.34: los rubros forman un continuo, no tipos. No va a la
+  pantalla; la usa el estudio de sobrevivencia (`../producto/buscador.md`).
+  Bug: la columna del rubro vecino y el rasgo se llamaban igual (`junto_a`) y
+  el rasgo pisaba al nombre; ahora es `junto_a_rubro`.
+- **Sobrevivencia** (`../producto/sobrevivencia.md`, notebook en
+  `estudios/sobrevivencia/`): de 2019 a 2024 sigue el 67.7 % de los negocios de
+  la zona metropolitana; dentro del mismo giro, tener más vecinos del giro suma
+  1.6 puntos por cada vez que se multiplican por e, y 2.1 en los giros que se
+  agrupan. Se descubrió que `clee` no sirve de llave entre ediciones y que las
+  bajas solo aparecen con los Censos Económicos.
+
 ## Pendiente
 
-- **Sobrevivencia** (notebook, aparte): el CSV masivo trae `fecha_alta` y
-  `clee`; falta bajar ediciones viejas y ver si `clee` es estable.
-- **Taxonomía de rubros** con k-means sobre rasgos de rubro (agrupación, parte
-  en plazas, colocación): opcional, no se hizo.
+- Sobrevivencia en otras zonas y contra la ventana 2014 a 2019
+  (`../producto/sobrevivencia.md`, "Siguiente").

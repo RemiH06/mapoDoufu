@@ -235,6 +235,34 @@ más cercano es, más de lo esperado, primaria (1.8) y papelería (1.7).
   la pregunta: un rubro puede agruparse en la ciudad y no en un municipio
   rural. La frontera corta vecinos, pero igual en lo observado y en los sorteos.
 
+## Taxonomía de rubros
+
+¿Hay tipos de rubro según su patrón? Se probó con k-means sobre rubros, no
+sobre negocios (`taxonomia.py`, `cli taxonomia`), como pedía el plan. Cada rubro
+con al menos 30 negocios en la zona es un punto con tres rasgos de su patrón:
+
+- **agrupacion:** log de la distancia media al vecino del rubro entre la de
+  los sorteos (negativo, se agrupa).
+- **plazas:** log de su parte en plaza o mercado entre la de todos.
+- **junto_a:** log del mayor cociente de colocación con otro rubro.
+
+Los rasgos se estandarizan, k va de 2 a 6, se queda el de mejor silueta, y cada
+k se corre con 20 semillas (gana la de menor inercia).
+
+**Resultado en la zona metropolitana de Guadalajara** (177 rubros, DENUE
+05/2026, unos 15 minutos): la silueta no pasa de 0.34 con ningún k de 2 a 8
+(0.34 con 2, 0.30 con 3, 0.33 con 4). Con menos de 0.5 la estructura es débil:
+los rubros forman un continuo, no tipos. k-means los parte en dos ("se agrupa,
+más en plazas y junto a otros", 74; "ni se agrupa ni se reparte, poco en
+plazas", 103), pero un rubro concreto puede no parecerse al nombre de su grupo.
+
+Por eso **no se muestra en el buscador.** Se probó listar los rubros con
+rasgos más parecidos, y salían pares como florería con caja de ahorro: cerca en
+los tres números, sin nada que decirle a quien pregunta. La tabla queda en
+`mapo_core/src/mapo_core/rubros/taxonomia.csv` (una zona por estado; recalcular
+reescribe solo ese estado) para análisis: el estudio de sobrevivencia la usa
+para separar los giros que se agrupan.
+
 ## Filtro "giro" del modo técnico
 
 El campo "Giro" de `/mapa` entiende las mismas palabras que el buscador

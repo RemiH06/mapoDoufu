@@ -46,3 +46,6 @@ investigation/
 # -- Capturas de diseño (scripts/capturas/) --
 scripts/capturas/node_modules/
 scripts/capturas/salida/
+
+# Notebooks
+.ipynb_checkpoints/

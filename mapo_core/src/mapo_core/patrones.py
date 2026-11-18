@@ -24,6 +24,7 @@ rubro. La semilla es fija: la misma pregunta da siempre la misma respuesta.
 from __future__ import annotations
 
 from collections import Counter, OrderedDict
+from dataclasses import dataclass
 
 import numpy as np
 from psycopg_pool import AsyncConnectionPool
@@ -74,7 +75,7 @@ class DemasiadosNegocios(Exception):
     pass
 
 
-async def _negocios(pool: AsyncConnectionPool, cve_ent: str, cve_muns: list[str]) -> list[tuple]:
+async def negocios_del_recorte(pool: AsyncConnectionPool, cve_ent: str, cve_muns: list[str]) -> list[tuple]:
     async with pool.connection() as conn:
         cursor = await conn.execute(
             """SELECT lat, lon, clase_actividad, tipo_plaza FROM fuente_denue_negocios
@@ -114,16 +115,43 @@ def _patron(observado: float, sorteos: np.ndarray, bajo: str, alto: str) -> str:
     return "como_los_demas"
 
 
-def analizar(negocios: list[tuple], clases_a: list[str]) -> dict:
-    """Agrupación, plazas y colocación del rubro (las clases `clases_a`)
-    contra todos los `negocios` (lat, lon, clase, tipo_plaza). Sin base: se
-    prueba con datos hechos a mano."""
+@dataclass(frozen=True)
+class Recorte:
+    """Lo que no depende del rubro: ubicaciones, clases y vecinos de todos los
+    negocios. La taxonomía analiza cientos de rubros sobre el mismo recorte."""
+
+    xy: np.ndarray
+    nombres_clase: list[str]
+    etiquetas: np.ndarray
+    en_plaza: np.ndarray
+    indices: np.ndarray
+    pesos: np.ndarray
+
+
+def preparar(negocios: list[tuple]) -> Recorte:
     lat = np.array([n[0] for n in negocios], dtype=float)
     lon = np.array([n[1] for n in negocios], dtype=float)
     nombres_clase = sorted({n[2] or "" for n in negocios})
     indice_clase = {c: i for i, c in enumerate(nombres_clase)}
-    etiquetas = np.array([indice_clase[n[2] or ""] for n in negocios])
-    en_plaza = np.array([n[3] is not None for n in negocios])
+    xy = plano(lat, lon, float(lat.mean()))
+    indices, pesos = _vecinos_con_empate(xy)
+    return Recorte(
+        xy=xy,
+        nombres_clase=nombres_clase,
+        etiquetas=np.array([indice_clase[n[2] or ""] for n in negocios]),
+        en_plaza=np.array([n[3] is not None for n in negocios]),
+        indices=indices,
+        pesos=pesos,
+    )
+
+
+def analizar(negocios: list[tuple], clases_a: list[str], recorte: Recorte | None = None) -> dict:
+    """Agrupación, plazas y colocación del rubro (las clases `clases_a`)
+    contra todos los `negocios` (lat, lon, clase, tipo_plaza). Sin base: se
+    prueba con datos hechos a mano. `recorte` ahorra rehacer los vecinos."""
+    r = recorte or preparar(negocios)
+    xy, nombres_clase, etiquetas, en_plaza = r.xy, r.nombres_clase, r.etiquetas, r.en_plaza
+    indices, pesos = r.indices, r.pesos
 
     a = set(clases_a)
     es_a = np.array([c in a for c in nombres_clase])
@@ -134,7 +162,6 @@ def analizar(negocios: list[tuple], clases_a: list[str]) -> dict:
         return {**base, "agrupacion": None, "plazas": None, "junto_a": [],
                 "nota": f"Con menos de {MIN_NEGOCIOS} negocios del rubro con ubicación no hay patrón que medir."}
 
-    xy = plano(lat, lon, float(lat.mean()))
     rng = np.random.default_rng(SEMILLA)
 
     # Rubros vecinos: los que no comparten clases con el que se pregunta.
@@ -145,7 +172,6 @@ def analizar(negocios: list[tuple], clases_a: list[str]) -> dict:
         indice_rubro.get(catalogo[c].rubro, -1) if c in catalogo and catalogo[c].rubro else -1
         for c in nombres_clase
     ])
-    indices, pesos = _vecinos_con_empate(xy)
 
     def casos(filas: np.ndarray, etiq: np.ndarray) -> np.ndarray:
         vecino = rubro_de[etiq[indices[filas]]]
@@ -238,7 +264,7 @@ async def calcular(pool: AsyncConnectionPool, cve_ent: str, cve_muns: list[str],
         _guardados.move_to_end(llave)
         return _guardados[llave]
 
-    negocios = await _negocios(pool, cve_ent, cve_muns)
+    negocios = await negocios_del_recorte(pool, cve_ent, cve_muns)
     if len(negocios) > MAX_NEGOCIOS:
         raise DemasiadosNegocios(
             f"Son {len(negocios):,} negocios: el patrón llega a {MAX_NEGOCIOS:,}. Elige menos municipios."

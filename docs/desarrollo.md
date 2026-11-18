@@ -104,6 +104,21 @@ Detalle y particularidades de cada fuente en `fuentes/`. Los archivos
 que se descargan a mano (SESNSP) van en `mapo_core/data/`, gitignorado
 y montado en el contenedor.
 
+## Estudios en notebook
+
+`estudios/` tiene análisis que no son parte de la app, cada uno con su propio
+entorno de `uv` (no comparten dependencias con `mapo_core`):
+
+```bash
+cd estudios/sobrevivencia && uv sync && uv run jupyter lab   # docs/producto/sobrevivencia.md
+```
+
+La taxonomía de rubros que usa sale de `mapo_core`:
+
+```bash
+docker compose exec mapo_core python -m mapo_core.cli taxonomia --estado 14   --municipios 039,120,098,101,097,070,051,044,124,002 --zona "Zona metropolitana de Guadalajara"   # ~12 min
+```
+
 ## Troubleshooting ya resuelto
 
 **Notas reales de troubleshooting en `mapo/Dockerfile`** (imagen base

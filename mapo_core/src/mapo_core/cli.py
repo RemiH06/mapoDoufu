@@ -19,6 +19,7 @@ from mapo_core import (
     geo_downloader,
     rubros,
     sesnsp_ingesta,
+    taxonomia,
 )
 from mapo_core.db import cerrar_pool, get_pool, inicializar_esquema
 
@@ -142,6 +143,19 @@ async def _dataset_vivienda(args) -> None:
         print(f"  {columna:26} p5={p5:<12} mediana={p50:<12} p95={p95}")
 
 
+async def _taxonomia(args) -> None:
+    municipios = [m.strip().zfill(3) for m in args.municipios.split(",")]
+    filas, silueta = await taxonomia.calcular(await get_pool(), args.estado, municipios, args.zona)
+    taxonomia.escribir(filas)
+    print(f"{len(filas)} rubros en {taxonomia.ARCHIVO.name}, silueta {silueta:.2f}.")
+    grupos: dict[int, list[str]] = {}
+    for f in filas:
+        grupos.setdefault(f["grupo"], []).append(f["rubro"])
+    for g, claves in sorted(grupos.items()):
+        descripcion = next(f["descripcion"] for f in filas if f["grupo"] == g)
+        print(f"  {g}. {descripcion} ({len(claves)}): {', '.join(claves[:12])}{' ...' if len(claves) > 12 else ''}")
+
+
 async def _status(_args) -> None:
     await inicializar_esquema()
     pool = await get_pool()
@@ -183,6 +197,14 @@ def _construir_parser() -> argparse.ArgumentParser:
         "--archivo", default=None, help="ZIP ya bajado (denue_NN_csv.zip); sin esto se baja de INEGI"
     )
     p_denue.set_defaults(fn=_denue)
+
+    p_tax = subparsers.add_parser(
+        "taxonomia", help="Agrupa rubros por su patrón en una zona y escribe rubros/taxonomia.csv"
+    )
+    p_tax.add_argument("--estado", required=True)
+    p_tax.add_argument("--municipios", required=True, help="cve_mun separados por coma")
+    p_tax.add_argument("--zona", required=True, help="Nombre de la zona, como se muestra en pantalla")
+    p_tax.set_defaults(fn=_taxonomia)
 
     subparsers.add_parser(
         "enigh", help="Descarga concentradohogar de ENIGH (consumo, tabla nacional unica)"
