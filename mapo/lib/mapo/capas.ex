@@ -106,12 +106,48 @@ defmodule Mapo.Capas do
         |> Stream.chunk_every(@lote)
         |> Enum.each(&Repo.insert_all(CapaFila, &1))
 
-        if raster, do: Repo.insert!(struct!(CapaRaster, Map.put(raster, :capa_id, capa.id)))
-
-        capa
+        if raster, do: ocupa_raster(guardar_raster(capa, raster), attrs.tamano_bytes), else: capa
       end,
       timeout: 120_000
     )
+  end
+
+  # Unos 8 MB por consulta: 64 teselas de 256 x 256 en 16 bits.
+  @teselas_por_lote 64
+
+  # Los valores cuentan contra la cuota por lo que ocupan ya guardados (Postgres
+  # comprime las teselas: un ráster de clases baja a la octava parte) o por el
+  # archivo, si pesa más. Se vuelve a revisar la cuota con esa cifra.
+  defp ocupa_raster(capa, bytes_archivo) do
+    %{rows: [[guardado]]} =
+      Repo.query!(
+        "SELECT coalesce(sum(pg_column_size(rast)), 0)::bigint FROM capa_raster_teselas WHERE capa_id = $1",
+        [capa.id]
+      )
+
+    bytes = max(bytes_archivo, guardado)
+
+    if uso_equipo(capa.team_id) - capa.tamano_bytes + bytes > @max_bytes_equipo,
+      do: Repo.rollback(:cuota)
+
+    capa |> Ecto.Changeset.change(tamano_bytes: bytes) |> Repo.update!()
+  end
+
+  defp guardar_raster(%Capa{id: capa_id} = capa, raster) do
+    {teselas, imagen} = Map.pop(raster, :teselas, [])
+    Repo.insert!(struct!(CapaRaster, Map.put(imagen, :capa_id, capa_id)))
+
+    teselas
+    |> Enum.chunk_every(@teselas_por_lote)
+    |> Enum.each(fn lote ->
+      Repo.query!(
+        "INSERT INTO capa_raster_teselas (capa_id, rast) SELECT $1, ST_RastFromWKB(t) FROM unnest($2::bytea[]) t",
+        [capa_id, lote],
+        timeout: 120_000
+      )
+    end)
+
+    capa
   end
 
   defp fila_para_guardar(%{"lat" => lat, "lon" => lon, "datos" => datos}, capa_id)
@@ -287,6 +323,51 @@ defmodule Mapo.Capas do
         where: r.capa_id == ^capa_id
     )
   end
+
+  @doc """
+  Valor del ráster en un punto, con lo que hace falta para leerlo:
+  `%{valor, banda, metros_pixel}`, con `valor` en `nil` si ahí no hay dato.
+  `:sin_valores` si la capa se subió antes de que Mapo guardara los valores, y
+  `nil` si no es de los equipos del scope.
+  """
+  def valor_raster(%Scope{} = scope, capa_id, lon, lat) do
+    meta =
+      Repo.one(
+        from r in CapaRaster,
+          join: c in ^ids_del_scope(scope),
+          on: c.id == r.capa_id,
+          where: r.capa_id == ^capa_id,
+          select: %{banda: r.banda, metros_pixel: r.metros_pixel}
+      )
+
+    cond do
+      meta == nil ->
+        nil
+
+      is_nil(meta.metros_pixel) ->
+        :sin_valores
+
+      true ->
+        %{rows: filas} =
+          Repo.query!(
+            """
+            SELECT ST_Value(rast, 1, p) FROM capa_raster_teselas,
+              ST_SetSRID(ST_MakePoint($2::float8, $3::float8), 4326) AS p
+            WHERE capa_id = $1 AND ST_ConvexHull(rast) && p
+            """,
+            [capa_id, lon, lat]
+          )
+
+        Map.put(meta, :valor, filas |> List.flatten() |> Enum.find(&(&1 != nil)))
+    end
+  end
+
+  @doc "¿Guarda la capa los valores de su ráster? Las de antes de noviembre de 2026, no."
+  def raster_con_valores?(%Capa{id: id, tipo: "raster"}) do
+    Repo.exists?(from r in CapaRaster, where: r.capa_id == ^id and not is_nil(r.metros_pixel))
+  end
+
+  def raster_con_valores?(_), do: false
 
   @doc "Lo que el mapa necesita de un ráster, sin la imagen."
   def lugar_raster(%Capa{id: id}) do

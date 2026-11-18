@@ -11,7 +11,7 @@
 - [sobrevivencia.md](producto/sobrevivencia.md): qué negocios de DENUE 2019 siguen en 2024 y si les va mejor juntos, en la ZMG y en los 32 estados; estudio en notebook, aparte de Mapo.
 - [colonias.md](producto/colonias.md): cómo armar el polígono de una colonia en cualquier municipio (oficial, OSM, votación de direcciones sobre manzanas o dibujo del equipo), con el prototipo de López Cotilla.
 - [plan-nacional.md](producto/plan-nacional.md): qué falta para tener el paquete ambiental y el dataset de vivienda en todo el país, y en qué orden.
-- [datos-propios.md](producto/datos-propios.md): archivos del equipo (tabla, vectorial, ráster) como acetato, su cruce con fuentes públicas y la distancia entre capas: formatos, límites, ubicación, procedencia, permisos y qué se guarda.
+- [datos-propios.md](producto/datos-propios.md): archivos del equipo (tabla, vectorial, ráster) como acetato, su cruce con fuentes públicas, la distancia entre capas y el valor de un ráster: formatos, límites, ubicación, procedencia, permisos y qué se guarda.
 
 ## Arquitectura
 
@@ -72,6 +72,7 @@ Qué se construyó en cada etapa, por qué así y qué bugs reales aparecieron.
 - [Pasada de seguridad, noviembre 2026](historial/2026-11-seguridad.md)
 - [Patrones por rubro, noviembre 2026](historial/2026-11-patrones-rubro.md)
 - [Distancia entre capas, noviembre 2026](historial/2026-11-distancia-capas.md)
+- [Frontera agrícola y ráster con valor por píxel, noviembre 2026](historial/2026-11-raster-valores.md)
 
 ## Gaiarda
 

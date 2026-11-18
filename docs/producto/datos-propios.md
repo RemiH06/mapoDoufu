@@ -9,11 +9,12 @@ láminas que las fuentes públicas, y puede cruzarlo con esas fuentes por zona.
 |---|---|---|
 | Formato | Ver la lista de abajo | Se rechaza |
 | Archivo | 50 MB | Se rechaza |
-| Equipo | 500 MB, sumando el tamaño de los archivos | Se rechaza; hay que borrar una capa |
+| Equipo | 500 MB, sumando el tamaño de los archivos (de un ráster, lo que ocupen sus valores guardados si pesan más) | Se rechaza; hay que borrar una capa |
 | Renglones | 50,000 por archivo | Se rechaza, no se recorta |
 | Zonas o geometrías que no sean punto | 10,000 por capa | Se rechaza |
 | Vértices | 2,000,000 por archivo | Se rechaza |
 | Ráster | 200 millones de píxeles y 50 bandas | Se rechaza antes de decodificarlo |
+| Valores de un ráster | 16 millones de píxeles | Se reduce por vecino más cercano y se dice |
 | Columnas | 100 | Se rechaza |
 | Celda | 500 caracteres | Se recorta y se avisa |
 | Lecturas | 30 por hora por cuenta | Hay que esperar |
@@ -81,8 +82,21 @@ Los datos de cada renglón no viajan con la capa: se piden al abrir su ficha. Pa
 dibujar, las geometrías se simplifican unos 5 m; lo guardado conserva todos sus
 vértices.
 
-Un ráster se reproyecta, se reduce a 2,048 px por lado y se guarda como imagen
-pintada por quintiles. Se ve, pero no se puede consultar el valor de un píxel.
+Un ráster se guarda dos veces. Para verlo, reproyectado, reducido a 2,048 px por
+lado y pintado por quintiles. Para consultarlo, los valores de su primera banda
+en grados (EPSG:4326), en teselas de 256 x 256 de PostGIS raster, hasta 16
+millones de píxeles: unos 18 m por píxel en una caja de 70 km. Si el archivo
+trae más, se reduce por vecino más cercano, que no inventa valores, y el método
+dice cuánto. Un clic sobre el ráster en `/mapa` da el valor del píxel, la
+descripción de la banda si el GeoTIFF la trae (ahí va la escala: "LST °C × 100")
+y el lado del píxel. Un ráster subido antes del 2026-11-18 solo tiene la imagen,
+y la ficha pide subirlo otra vez.
+
+Las teselas las arma `mapo_core` con el formato binario de PostGIS (WKB), que ya
+abre el GeoTIFF con el driver fijo. Postgres no abre con GDAL ningún archivo que
+haya subido alguien. Sin nodata declarado, o con uno que no cabe en el tipo de la
+banda (un -9999 en 8 bits), los valores pasan a un tipo más ancho y su mínimo
+marca el hueco, para que ningún valor real, ni el 0, se pierda.
 
 ## Cruce con fuentes públicas
 
@@ -162,6 +176,31 @@ como el de uso de suelo de INEGI, puede desviarse cientos de metros en sus
 bordes, así que no sirve para afirmar 300 m. Cercanía no dice causa: el texto
 dice "a 240 m de", nunca "expuesto a".
 
+## Valor de un ráster
+
+Desde "Ráster" en una capa de puntos o geometrías, si el equipo tiene algún
+ráster con valores. Con los mismos filtros que la distancia.
+
+| Desde | Sin radio | Con radio |
+|---|---|---|
+| Puntos | `<ráster>_valor`: el píxel donde cae el punto | Resumen de los píxeles a esa distancia o menos |
+| Polígonos | Resumen de los píxeles adentro | Resumen de los píxeles a esa distancia del borde o adentro |
+
+El resumen es `<ráster>_promedio`, `_min`, `_max` y `_pixeles` (cuántos
+entraron). Un píxel entra si su centro cae en la zona; el sin dato no entra, y si
+no entra ninguno, todo queda vacío. Para un ráster de clases, como WorldCover, el
+promedio no dice nada: se piden valores ("40", o "10|20") y sale
+`<ráster>_parte_40`, la parte de los píxeles con esos valores, de 0 a 1.
+
+Los valores salen con la escala del archivo: si la banda es NDVI × 10000, el
+promedio también. El resultado se guarda como capa, igual que la distancia, y
+comparte con ella el tope de 60 cálculos por hora.
+
+Las teselas se eligen por su caja (`ST_ConvexHull(rast) && zona`, con índice) y no
+con `ST_Intersects`, que revisa cada tesela píxel por píxel: con 266 teselas eso
+costaba 100 ms por renglón. Así, 113 círculos de 300 m sobre píxeles de 17 m
+tardan 4 s.
+
 ## Procedencia
 
 Seis columnas reservadas dicen de dónde sale cada renglón: `fuente`, `url`,
@@ -182,7 +221,7 @@ y la ficha vuelven a preguntar).
 ## Qué se guarda
 
 Solo los renglones ubicados, en `capas` y `capa_filas`, la imagen de un ráster
-en `capa_rasters`, y el nombre del archivo.
+en `capa_rasters` y sus valores en `capa_raster_teselas`, y el nombre del archivo.
 El archivo original vive en la memoria de la vista entre "Leer" y "Guardar" y no
 se escribe en disco. Las capas entran al respaldo nocturno como el resto de la
 base. `mapo_core` recibe los renglones de un cruce en la petición y no los guarda.

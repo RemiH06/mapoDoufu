@@ -14,8 +14,8 @@ defmodule Mapo.Capas.Distancias do
   import Ecto.Query, warn: false
 
   alias Mapo.Accounts.Scope
-  alias Mapo.Capas
   alias Mapo.Capas.Capa
+  alias Mapo.Capas.Derivadas
   alias Mapo.Repo
 
   # Metros por grado, cota baja dentro de México (latitud de 35° o menos): una
@@ -102,65 +102,36 @@ defmodule Mapo.Capas.Distancias do
 
     attrs = %{
       nombre: nombre,
-      archivo: String.slice(origen.nombre, 0, 255),
-      tamano_bytes: 0,
-      tipo: origen.tipo,
       columnas: origen.columnas ++ Enum.map(pares, &elem(&1, 0)),
       numericas: origen.numericas ++ Enum.reject([distancia, cuantos], &is_nil/1),
       num_filas: resultado.total,
-      num_descartadas: 0,
-      repetidas: 0,
       metodo: Enum.join(resultado.metodo, "\n")
     }
 
-    Repo.transaction(
-      fn ->
-        Repo.query!("SELECT pg_advisory_xact_lock(hashtext('capas'), $1)", [origen.team_id])
-
-        capa =
-          %Capa{}
-          |> Capa.changeset(Map.merge(attrs, %{team_id: origen.team_id, user_id: scope.user.id}))
-          |> Repo.insert()
-          |> case do
-            {:ok, capa} -> capa
-            {:error, changeset} -> Repo.rollback(changeset)
-          end
-
-        Repo.query!(
-          """
-          INSERT INTO capa_filas (capa_id, geom, datos)
-          SELECT $#{n + 1}::bigint, a.geom, a.datos || #{objeto}
-          #{desde}
-          ORDER BY a.id
-          """,
-          params ++ [capa.id | extra],
-          timeout: @timeout
-        )
-
-        %{rows: [[bytes]]} =
-          Repo.query!(
-            """
-            SELECT coalesce(sum(octet_length(datos::text) + ST_MemSize(geom)), 0)::bigint
-            FROM capa_filas WHERE capa_id = $1
-            """,
-            [capa.id]
-          )
-
-        if Capas.uso_equipo(origen.team_id) + bytes > Capas.max_bytes_equipo(),
-          do: Repo.rollback(:cuota)
-
-        capa |> Ecto.Changeset.change(tamano_bytes: bytes) |> Repo.update!()
-      end,
-      timeout: @timeout
-    )
+    Derivadas.guardar(scope, origen, attrs, fn capa_id ->
+      Repo.query!(
+        """
+        INSERT INTO capa_filas (capa_id, geom, datos)
+        SELECT $#{n + 1}::bigint, a.geom, a.datos || #{objeto}
+        #{desde}
+        ORDER BY a.id
+        """,
+        params ++ [capa_id | extra],
+        timeout: @timeout
+      )
+    end)
   end
 
   # El FROM del cálculo y sus parámetros: $1 origen, $2 destino, $3 radio y
   # luego los filtros, dos parámetros cada uno.
   defp consulta(origen, opciones) do
     radio = opciones[:radio] && opciones[:radio] * 1.0
-    {en_a, params_a, n} = filtros_sql("a", filtros(opciones[:filtro_origen]), 4)
-    {en_b, params_b, _} = filtros_sql("b", filtros(opciones[:filtro_destino]), n)
+
+    {en_a, params_a, n} =
+      Derivadas.filtros_sql("a", Derivadas.filtros(opciones[:filtro_origen]), 4)
+
+    {en_b, params_b, _} =
+      Derivadas.filtros_sql("b", Derivadas.filtros(opciones[:filtro_destino]), n)
 
     sql = """
     FROM capa_filas a
@@ -191,36 +162,6 @@ defmodule Mapo.Capas.Distancias do
 
     {sql, [origen.id, opciones[:destino].id, radio] ++ params_a ++ params_b}
   end
-
-  defp filtros_sql(alias, filtros, n) do
-    {partes, {params, n}} =
-      Enum.map_reduce(filtros, {[], n}, fn {columna, patrones}, {params, n} ->
-        sql =
-          "unaccent(#{alias}.datos->>$#{n}::text) ILIKE ANY " <>
-            "(SELECT unaccent(p) FROM unnest($#{n + 1}::text[]) p)"
-
-        {sql, {params ++ [columna, patrones], n + 2}}
-      end)
-
-    {if(partes == [], do: "true", else: "(" <> Enum.join(partes, " AND ") <> ")"), params, n}
-  end
-
-  # `[{columna, ["%texto%", ...]}]`, sin los filtros vacíos.
-  defp filtros(nil), do: []
-  defp filtros({_, _} = filtro), do: filtros([filtro])
-
-  defp filtros(lista) do
-    for {columna, texto} <- lista,
-        is_binary(columna) and is_binary(texto),
-        patrones = alternativas(texto),
-        patrones != [],
-        do: {columna, Enum.map(patrones, &("%" <> escapar(&1) <> "%"))}
-  end
-
-  defp alternativas(texto),
-    do: texto |> String.split("|") |> Enum.map(&String.trim/1) |> Enum.reject(&(&1 == ""))
-
-  defp escapar(texto), do: String.replace(texto, ["\\", "%", "_"], &("\\" <> &1))
 
   # Nombres de columna vienen de un archivo: van como parámetros, nunca en el SQL.
   defp objeto_json(pares, desde) do
@@ -258,7 +199,8 @@ defmodule Mapo.Capas.Distancias do
   end
 
   defp contar_destino(opciones) do
-    {en_b, params, _} = filtros_sql("b", filtros(opciones[:filtro_destino]), 2)
+    {en_b, params, _} =
+      Derivadas.filtros_sql("b", Derivadas.filtros(opciones[:filtro_destino]), 2)
 
     %{rows: [[n]]} =
       Repo.query!(
@@ -283,40 +225,18 @@ defmodule Mapo.Capas.Distancias do
 
   @doc false
   def columnas_nuevas(origen, opciones) do
-    s = slug(opciones[:destino].nombre)
-    {distancia, usadas} = unica("distancia_m_#{s}", origen.columnas)
+    s = Derivadas.slug(opciones[:destino].nombre)
+    {distancia, usadas} = Derivadas.unica("distancia_m_#{s}", origen.columnas)
 
     {lleva, usadas} =
       Enum.map_reduce(lleva(opciones), usadas, fn col, usadas ->
-        unica("#{s}_#{col}", usadas)
+        Derivadas.unica("#{s}_#{col}", usadas)
       end)
 
     cuantos =
-      if r = opciones[:radio], do: elem(unica("#{s}_a_#{r}m", usadas), 0)
+      if r = opciones[:radio], do: elem(Derivadas.unica("#{s}_a_#{r}m", usadas), 0)
 
     %{distancia: distancia, lleva: lleva, cuantos: cuantos}
-  end
-
-  defp unica(nombre, usadas, n \\ 1) do
-    candidato = if n == 1, do: nombre, else: "#{nombre}_#{n}"
-
-    if candidato in usadas,
-      do: unica(nombre, usadas, n + 1),
-      else: {candidato, [candidato | usadas]}
-  end
-
-  defp slug(nombre) do
-    nombre
-    |> String.normalize(:nfd)
-    |> String.replace(~r/\p{Mn}/u, "")
-    |> String.downcase()
-    |> String.replace(~r/[^a-z0-9]+/, "_")
-    |> String.trim("_")
-    |> String.slice(0, 30)
-    |> case do
-      "" -> "destino"
-      s -> s
-    end
   end
 
   defp metodo(origen, opciones, total, destino_filas) do
@@ -324,8 +244,8 @@ defmodule Mapo.Capas.Distancias do
     %{distancia: distancia, lleva: llevadas, cuantos: cuantos} = columnas_nuevas(origen, opciones)
 
     [
-      "Origen: #{origen.nombre}, #{total} renglones#{filtro_texto(opciones[:filtro_origen])}.",
-      "Destino: #{destino.nombre}, #{destino_filas} renglones#{filtro_texto(opciones[:filtro_destino])}.",
+      "Origen: #{origen.nombre}, #{total} renglones#{Derivadas.filtro_texto(opciones[:filtro_origen])}.",
+      "Destino: #{destino.nombre}, #{destino_filas} renglones#{Derivadas.filtro_texto(opciones[:filtro_destino])}.",
       "#{distancia}: metros en línea recta sobre el elipsoide WGS84, de borde a borde, " <>
         "al renglón más cercano del destino. 0 si se tocan o uno contiene al otro."
     ] ++
@@ -342,21 +262,6 @@ defmodule Mapo.Capas.Distancias do
         "Calculado el #{Date.utc_today()}."
       ]
   end
-
-  defp filtro_texto(filtro) do
-    condiciones =
-      for {col, patrones} <- filtros(filtro) do
-        textos =
-          Enum.map_join(patrones, " o ", &"«#{&1 |> String.slice(1..-2//1) |> sin_escape()}»")
-
-        "#{col} contiene #{textos}"
-      end
-
-    if condiciones == [], do: "", else: ", solo donde " <> Enum.join(condiciones, " y ")
-  end
-
-  defp sin_escape(patron),
-    do: String.replace(patron, ["\\\\", "\\%", "\\_"], &String.slice(&1, 1..1))
 
   defp redondear(nil), do: nil
   defp redondear(metros), do: round(metros)

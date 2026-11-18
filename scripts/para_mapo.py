@@ -130,6 +130,9 @@ def raster(origen: Path, destino: Path) -> str:
                       "transform": perfil["transform"] * perfil["transform"].scale(factor, factor)}
         with rasterio.open(destino, "w", **p) as dst:
             dst.write(a, 1)
+            # Mapo muestra esta descripción junto al valor: la escala viaja con el
+            # archivo y no solo en para_mapo.csv.
+            dst.set_band_description(1, que)
         if destino.stat().st_size <= LIMITE_MB * 1024 * 1024:
             break
         factor *= 2

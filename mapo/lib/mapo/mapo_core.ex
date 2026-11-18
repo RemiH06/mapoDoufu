@@ -185,6 +185,25 @@ defmodule Mapo.MapoCore do
     post_archivo("/datos/ubicar", contenido, [{:formato, formato} | ubicacion])
   end
 
+  @doc """
+  Los valores de la primera banda de un GeoTIFF en teselas WKB de PostGIS:
+  `{:ok, info, teselas}`. Ver `/datos/raster_valores` en mapo_core.
+  """
+  def raster_valores(contenido) do
+    with {:ok, cuerpo} <- post_archivo("/datos/raster_valores", contenido, []),
+         <<largo::32, info::binary-size(largo), resto::binary>> <- cuerpo do
+      {:ok, Jason.decode!(info), teselas(resto, [])}
+    else
+      {:error, _} = error -> error
+      _ -> {:error, :respuesta_rara}
+    end
+  end
+
+  defp teselas(<<>>, acc), do: Enum.reverse(acc)
+
+  defp teselas(<<largo::32, tesela::binary-size(largo), resto::binary>>, acc),
+    do: teselas(resto, [tesela | acc])
+
   @doc "FeatureCollection de las zonas de `claves` que existan en el marco cargado."
   def geo_por_clave(nivel, claves), do: post("/geo/por_clave", %{nivel: nivel, claves: claves})
 

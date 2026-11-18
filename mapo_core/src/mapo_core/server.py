@@ -7,7 +7,7 @@ from typing import Literal
 
 import psycopg
 from fastapi import Depends, FastAPI, HTTPException, Query, Request
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, Response
 from psycopg_pool import AsyncConnectionPool
 from pydantic import BaseModel, Field
 
@@ -182,6 +182,24 @@ async def datos_leer(request: Request, formato: str) -> dict:
         "avisos": tabla.avisos,
         "sugerencia": datos_propios.sugerir(tabla),
     }
+
+
+@app.post("/datos/raster_valores")
+async def datos_raster_valores(request: Request) -> Response:
+    """Los valores de la primera banda en teselas WKB de PostGIS raster, para que
+    Mapo los guarde y los consulte. Binario: 4 bytes con el largo de un JSON de
+    información, ese JSON, y luego cada tesela con su largo en 4 bytes delante
+    (todo en big endian). No guarda nada."""
+    contenido = await _cuerpo_acotado(request)
+    try:
+        info, teselas = await asyncio.to_thread(datos_geo.valores_raster, contenido)
+    except datos_propios.ArchivoInvalido as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    cabeza = json.dumps(info).encode()
+    partes = [len(cabeza).to_bytes(4, "big"), cabeza]
+    for t in teselas:
+        partes += [len(t).to_bytes(4, "big"), t]
+    return Response(content=b"".join(partes), media_type="application/octet-stream")
 
 
 @app.post("/datos/ubicar")

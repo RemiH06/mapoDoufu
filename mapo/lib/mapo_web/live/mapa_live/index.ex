@@ -709,6 +709,14 @@ defmodule MapoWeb.MapaLive.Index do
 
   # La ficha se pide al abrirla: mandar los datos de 50 mil renglones al
   # navegador pesaría megas que casi nadie va a abrir.
+  # En un ráster, la ficha es el valor del píxel donde se hizo clic.
+  def handle_event("ver_fila", %{"capa" => capa_id, "lat" => lat, "lon" => lon}, socket)
+      when is_number(lat) and is_number(lon) do
+    a = abierta(socket, capa_id)
+    respuesta = a && Capas.valor_raster(socket.assigns.current_scope, a.capa.id, lon, lat)
+    {:reply, ficha_raster(respuesta), socket}
+  end
+
   def handle_event("ver_fila", %{"capa" => capa_id} = params, socket) do
     llave =
       case params do
@@ -977,6 +985,22 @@ defmodule MapoWeb.MapaLive.Index do
     |> Enum.sort_by(&elem(&1, 0))
     |> Enum.map(fn {equipo, lista} -> {equipo, Enum.map(lista, &{&1.nombre, &1.id})} end)
   end
+
+  defp ficha_raster(%{valor: valor, banda: banda, metros_pixel: metros}) do
+    campos = [
+      [banda || "valor", if(valor == nil, do: "sin dato", else: texto_celda(valor))],
+      ["píxel", "unos #{texto_celda(round(metros))} m de lado"]
+    ]
+
+    %{campos: campos, procedencia: [], otras: 0}
+  end
+
+  defp ficha_raster(:sin_valores) do
+    aviso = "se subió antes de que Mapo guardara los valores: súbela otra vez para consultarlos"
+    %{campos: [["valor", aviso]], procedencia: [], otras: 0}
+  end
+
+  defp ficha_raster(_), do: %{campos: [], procedencia: [], otras: 0}
 
   # Sin redondear: la ficha muestra el dato de la persona, no una cifra de lectura.
   defp texto_celda(v) when is_integer(v), do: cifra(v)

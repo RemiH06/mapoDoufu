@@ -29,10 +29,11 @@ import zipfile
 from pathlib import Path
 
 import geopandas as gpd
+import numpy as np
 import pandas as pd
 import pyogrio
 from pyproj import Transformer
-from shapely.geometry import box
+from shapely.geometry import MultiPolygon, Polygon, box
 
 CRS = "EPSG:4326"
 
@@ -58,6 +59,7 @@ FUENTES = {
     "uso_suelo_s7": ("INEGI vía CONABIO", "Uso de suelo y vegetación 1:250 000, serie VII (2018)", "polígono", "https://www.inegi.org.mx/temas/usosuelo/"),
     "uso_suelo_s6": ("INEGI vía CONABIO", "Uso de suelo y vegetación 1:250 000, serie VI (2014)", "polígono", "https://www.inegi.org.mx/temas/usosuelo/"),
     "edafologia": ("INEGI vía CONABIO", "Edafología 1:1 000 000", "polígono", "http://geoportal.conabio.gob.mx"),
+    "frontera_agricola": ("SIAP, frontera agrícola serie II (copia del Internet Archive)", "2011", "polígono", "http://infosiap.siap.gob.mx/gobmx/datosAbiertos/frontera-agricola/"),
     "anp": ("CONANP vía CONABIO", "Áreas naturales protegidas federales 2020", "polígono", "http://geoportal.conabio.gob.mx"),
     "regiones_hidrologicas": ("INEGI vía CONABIO", "Regiones hidrológicas 1:250 000", "polígono", "http://geoportal.conabio.gob.mx"),
     "localidades": ("INEGI, ITER 2020", "Censo 2020 por localidad, también rurales", "punto", "https://www.inegi.org.mx/programas/ccpv/2020/"),
@@ -112,6 +114,7 @@ CRUDOS = {
     "firms_viirs": ["incendios/firms_viirs_snpp_*.csv"],
     "firms_modis": ["incendios/firms_modis_*.csv"],
     "uso_suelo_s7": ["territorio/usv250_serie7.zip"],
+    "frontera_agricola": ["agricultura/frontera_agricola_s2_*.kmz"],
     "uso_suelo_s6": ["territorio/usv250_serie6.zip"],
     "edafologia": ["territorio/edafologia_1m.zip"],
     "anp": ["territorio/anp_2020.zip"],
@@ -243,6 +246,47 @@ class Paquete:
         for capa, rel, contiene in capas:
             self.intentar(capa, lambda rel=rel, contiene=contiene, capa=capa:
                           self.guardar(capa, self.vector(self.zip_vsi(rel, contiene))))
+
+    def frontera_agricola(self) -> None:
+        """Serie II del SIAP: 1:10 000 sobre SPOT 5 de 2010 y 2011. Viene como KMZ de
+        ArcGIS con los atributos en una tabla HTML dentro de `description`, que GDAL
+        no separa en campos: se leen con expresiones regulares."""
+        celda = re.compile(r"<td>([^<]*)</td>\s*<td>([^<]*)</td>")
+        poligono = re.compile(r"<Polygon>(.*?)</Polygon>", re.S)
+        anillo = re.compile(r"<(outer|inner)BoundaryIs>.*?<coordinates>([^<]*)</coordinates>", re.S)
+        o, s_, e, n = self.caja
+        filas, geoms = [], []
+        for kmz in sorted((self.crudos / "agricultura").glob("frontera_agricola_s2_*.kmz")):
+            with zipfile.ZipFile(kmz) as z:
+                texto = z.read([m for m in z.namelist() if m.endswith(".kml")][0]).decode("utf-8")
+            for bloque in texto.split("<Placemark")[1:]:
+                partes = []
+                for p in poligono.findall(bloque):
+                    exterior, interiores = None, []
+                    for tipo, coords in anillo.findall(p):
+                        xy = np.array([c.split(",")[:2] for c in coords.split()], dtype=float)
+                        if tipo == "outer":
+                            exterior = xy
+                        else:
+                            interiores.append(xy)
+                    if exterior is not None and len(exterior) >= 4:
+                        x, y = exterior[:, 0], exterior[:, 1]
+                        if x.max() >= o and x.min() <= e and y.max() >= s_ and y.min() <= n:
+                            partes.append(Polygon(exterior, [i for i in interiores if len(i) >= 4]))
+                if partes:
+                    atributos = dict(celda.findall(bloque.split("</description>")[0]))
+                    atributos.pop("FID", None)
+                    filas.append(atributos)
+                    geoms.append(MultiPolygon(partes) if len(partes) > 1 else partes[0])
+        if not filas:
+            self.anotar("frontera_agricola", 0, "zona.gpkg", "sin datos en la zona (¿falta el KMZ de la región?)")
+            return
+        gdf = gpd.GeoDataFrame(filas, geometry=geoms, crs=CRS)
+        gdf["SUP_HA_7mo"] = pd.to_numeric(gdf["SUP_HA_7mo"], errors="coerce")
+        gdf["geometry"] = gdf.geometry.make_valid()
+        self.guardar("frontera_agricola", gdf.clip(self.poligono),
+                     "(1:10 000, SPOT 5 2010-2011; MOD_USO A agricultura o P pastos; MOD_AGR R riego o T temporal; "
+                     "SUP_HA_7mo es el polígono completo, no lo recortado)")
 
     def repda(self) -> None:
         archivos = {
@@ -551,6 +595,7 @@ class Paquete:
 
     def todo(self) -> None:
         pasos = [("agua_superficial", self.renameca), ("cuerpos_de_agua", self.vectoriales),
+                 ("frontera_agricola", self.frontera_agricola),
                  ("repda_descargas", self.repda), ("retc", self.retc), ("firms_viirs", self.firms),
                  ("localidades", self.localidades), ("agebs_rurales", self.rural), ("manzanas", self.manzanas),
                  ("viento_horario", self.viento), ("agebs", self.desde_mapo), ("siap_municipal", self.siap),

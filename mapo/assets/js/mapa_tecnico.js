@@ -272,7 +272,7 @@ export const MapaTecnico = {
   },
 
   _capaPropia({id: capa, puntos, geojson, cortes, raster}, color, opciones) {
-    if (raster) return this._raster(raster, color, opciones)
+    if (raster) return this._raster(raster, color, opciones, capa)
     const circulo = (lugar, extra) => L.circleMarker(lugar, {
       ...opciones, ...extra, radius: 3.5, weight: 1, color: tinta("--bg"), fillColor: color, fillOpacity: 0.9,
     })
@@ -290,9 +290,10 @@ export const MapaTecnico = {
   },
 
   // La imagen trae solo la transparencia de cada quintil: aqui recibe la tinta,
-  // para que siga al tema. Sin ficha: se guarda la imagen, no los valores.
-  _raster({url, oeste, sur, este, norte}, color, {pane}) {
-    const capa = L.imageOverlay(PIXEL_VACIO, [[sur, oeste], [norte, este]], {pane})
+  // para que siga al tema. El clic pide el valor del pixel al servidor.
+  _raster({url, oeste, sur, este, norte}, color, {pane}, id) {
+    const capa = L.imageOverlay(PIXEL_VACIO, [[sur, oeste], [norte, este]], {pane, interactive: id !== undefined})
+    if (id !== undefined) capa.on("click", e => this._ficha(e.latlng, {capa: id, lat: e.latlng.lat, lon: e.latlng.lng}))
     const imagen = new Image()
     imagen.onload = () => {
       const lienzo = document.createElement("canvas")

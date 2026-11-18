@@ -713,6 +713,15 @@ defmodule MapoWeb.MapaLive.IndexTest do
       {:ok, lv, _html} = live(conn, ~p"/mapa?#{[capa: capa.id]}")
       assert_push_event(lv, "capa_propios", %{raster: %{url: url, oeste: -104.0}})
 
+      # Una capa de antes de guardar valores lo dice en vez de inventar uno.
+      render_hook(element(lv, "#mapa-tecnico"), "ver_fila", %{
+        "capa" => capa.id,
+        "lat" => 20.5,
+        "lon" => -103.5
+      })
+
+      assert_reply(lv, %{campos: [["valor", "se subió antes" <> _]]})
+
       assert conn |> get(url) |> response(200) == "imagen"
       assert ["image/png" <> _] = conn |> get(url) |> get_resp_header("content-type")
 

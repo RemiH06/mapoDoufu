@@ -37,6 +37,7 @@ defmodule MapoWeb.DatosLive.IndexTest do
       case conn.request_path do
         "/datos/leer" -> responder(conn, respuestas[:leer] || @lectura)
         "/datos/ubicar" -> responder(conn, respuestas[:ubicar] || @ubicados)
+        "/datos/raster_valores" -> Plug.Conn.send_resp(conn, 200, respuestas[:valores])
       end
     end)
   end
@@ -175,8 +176,28 @@ defmodule MapoWeb.DatosLive.IndexTest do
     assert [%{tipo: "vector", num_filas: 1}] = Capas.list_capas(scope, team.id)
   end
 
+  # Una tesela de 2 x 2 en 16 bits con signo, en el formato WKB de PostGIS
+  # raster, con su esquina noroeste en (lon, lat) y nodata -32768.
+  defp tesela(valores, lon, lat, paso) do
+    cabeza =
+      <<1, 0::little-16, 1::little-16, paso::little-float-64, -paso::little-float-64,
+        lon::little-float-64, lat::little-float-64, 0.0::little-float-64, 0.0::little-float-64,
+        4326::little-32, 2::little-16, 2::little-16, 0x45, -32768::little-signed-16>>
+
+    for v <- valores, into: cabeza, do: <<v::little-signed-16>>
+  end
+
+  defp respuesta_valores(info, teselas) do
+    info = Jason.encode!(info)
+    partes = for t <- teselas, do: <<byte_size(t)::32, t::binary>>
+    IO.iodata_to_binary([<<byte_size(info)::32>>, info | partes])
+  end
+
   test "un ráster se guarda sin renglones", %{conn: conn, team: team, scope: scope} do
+    info = %{"descripcion" => "NDVI", "metros_pixel" => 1105.7, "reducido" => nil}
+
     stub(%{
+      valores: respuesta_valores(info, [tesela([10, 20, -32768, 40], -104.0, 21.0, 0.01)]),
       leer: %{
         "columnas" => [],
         "muestra" => [],
@@ -214,6 +235,13 @@ defmodule MapoWeb.DatosLive.IndexTest do
     [capa] = Capas.list_capas(scope, team.id)
     assert Capas.raster(scope, capa.id).png == "imagen"
     assert Capas.raster(user_scope_fixture(), capa.id) == nil
+
+    # Fila 0: 10 y 20; fila 1: sin dato y 40.
+    assert %{valor: 20.0, banda: "NDVI"} = Capas.valor_raster(scope, capa.id, -103.985, 20.995)
+    assert %{valor: nil} = Capas.valor_raster(scope, capa.id, -103.995, 20.985)
+    assert %{valor: 40.0} = Capas.valor_raster(scope, capa.id, -103.985, 20.985)
+    assert %{valor: nil} = Capas.valor_raster(scope, capa.id, -90.0, 20.0)
+    assert Capas.valor_raster(user_scope_fixture(), capa.id, -103.985, 20.995) == nil
   end
 
   test "un miembro no borra lo que subió otro", %{conn: conn, team: team, scope: scope} do

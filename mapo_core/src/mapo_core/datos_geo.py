@@ -15,8 +15,10 @@ from __future__ import annotations
 import base64
 import io
 import json
+import math
 import re
 import sqlite3
+import struct
 import time
 import zipfile
 
@@ -35,6 +37,25 @@ MAX_VERTICES = 2_000_000
 MAX_LADO_IMAGEN = 2048
 MAX_PIXELES = 200_000_000
 MAX_BANDAS = 50
+# Píxeles con valor que se guardan: unos 18 m por píxel en una caja de 70 km.
+MAX_PIXELES_VALORES = 16_000_000
+TESELA = 256
+# dtype -> (tipo de píxel de PostGIS, formato de struct). Ver el formato WKB de
+# PostGIS raster: https://postgis.net/docs/RT_reference.html
+_PIXEL_POSTGIS = {
+    "int8": (3, "b"),
+    "uint8": (4, "B"),
+    "int16": (5, "h"),
+    "uint16": (6, "H"),
+    "int32": (7, "i"),
+    "uint32": (8, "I"),
+    "float32": (10, "f"),
+    "float64": (11, "d"),
+}
+# Sin nodata declarado hace falta uno que no choque con ningún valor: un tipo
+# más ancho y su mínimo.
+_MAS_ANCHO = {"int8": "int16", "uint8": "int16", "int16": "int32", "uint16": "int32",
+              "int32": "float64", "uint32": "float64", "float32": "float32", "float64": "float64"}
 _SEGUNDOS_GPKG = 30
 # Misma opacidad por quintil que TINTA_QUINTIL en mapa_tecnico.js.
 _TINTA_QUINTIL = (0.12, 0.26, 0.42, 0.6, 0.8)
@@ -432,6 +453,80 @@ def ubicar_raster(contenido: bytes) -> dict:
         "columnas": [],
         "num_filas": 0,
     }
+
+
+def valores_raster(contenido: bytes) -> tuple[dict, list[bytes]]:
+    """La primera banda en grados (EPSG:4326), en teselas WKB de PostGIS raster,
+    para consultar el valor de cada píxel. Se reproyecta por vecino más cercano,
+    que no inventa valores, y si pasa de `MAX_PIXELES_VALORES` se reduce igual.
+    Las teselas que no traen ningún valor no se mandan."""
+    from rasterio.enums import Resampling
+    from rasterio.vrt import WarpedVRT
+    from rasterio.warp import calculate_default_transform
+
+    with _abrir_tiff(contenido) as (_, fuente):
+        origen = fuente.dtypes[0]
+        if origen not in _PIXEL_POSTGIS:
+            raise ArchivoInvalido(f"Un ráster de tipo {origen} no se puede consultar.")
+        destino, ancho, alto = calculate_default_transform(
+            fuente.crs, "EPSG:4326", fuente.width, fuente.height, *fuente.bounds
+        )
+        factor = max(1.0, math.sqrt(ancho * alto / MAX_PIXELES_VALORES))
+        if factor > 1:
+            ancho, alto = math.ceil(ancho / factor), math.ceil(alto / factor)
+            destino = destino @ destino.scale(factor)
+
+        nodata = fuente.nodata
+        if _cabe(nodata, origen):
+            tipo = origen
+        else:
+            tipo = _MAS_ANCHO[origen]
+            nodata = (np.iinfo if tipo.startswith("int") else np.finfo)(tipo).min
+        with WarpedVRT(
+            fuente, crs="EPSG:4326", transform=destino, width=ancho, height=alto,
+            resampling=Resampling.nearest, add_alpha=fuente.nodata is None,
+        ) as vrt:
+            banda = np.ma.masked_invalid(vrt.read(1, masked=True).astype(tipo, copy=False))
+        descripcion = (fuente.descriptions[0] or "").strip()
+
+    datos = banda.filled(nodata).astype(np.dtype(tipo).newbyteorder("<"), copy=False)
+    vacio = np.ma.getmaskarray(banda)
+    if vacio.all():
+        raise ArchivoInvalido("El ráster no trae ningún valor.")
+    pixel, formato = _PIXEL_POSTGIS[tipo]
+    sx, sy = destino.a, destino.e
+    teselas = []
+    for fila in range(0, alto, TESELA):
+        for col in range(0, ancho, TESELA):
+            if vacio[fila : fila + TESELA, col : col + TESELA].all():
+                continue
+            bloque = datos[fila : fila + TESELA, col : col + TESELA]
+            x0, y0 = destino @ (col, fila)
+            teselas.append(
+                struct.pack("<BHHddddddiHH", 1, 0, 1, sx, sy, x0, y0, 0.0, 0.0, 4326, bloque.shape[1], bloque.shape[0])
+                + struct.pack("<B" + formato, pixel | 0x40, nodata if tipo.startswith("float") else int(nodata))
+                + bloque.tobytes()
+            )
+
+    info = {
+        "ancho": ancho,
+        "alto": alto,
+        "tipo": tipo,
+        "nodata": float(nodata),
+        "descripcion": descripcion,
+        # Lado del píxel en metros, medido en latitud: en longitud es un poco menos.
+        "metros_pixel": round(abs(sy) * 110_574, 1),
+        "reducido": round(factor, 2) if factor > 1 else None,
+    }
+    return info, teselas
+
+
+def _cabe(nodata, tipo: str) -> bool:
+    """¿Es el nodata declarado un valor del tipo de la banda? A veces no (un -9999
+    en una banda de 8 bits) y entonces no sirve para marcar huecos."""
+    if nodata is None or not math.isfinite(nodata):
+        return False
+    return bool(np.array(nodata).astype(tipo) == nodata)
 
 
 def _avisos_raster(fuente) -> list[str]:

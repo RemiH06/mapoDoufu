@@ -45,14 +45,14 @@ defmodule MapoWeb.DatosLive.Index do
         <section class="doc pegado" aria-labelledby="t-datos">
           <header class="doc-cab">
             <h1 id="t-datos">Datos de {@team.name}</h1>
-            <span class="doc-tipo">{megas(@uso)} de {megas(Capas.max_bytes_equipo())}</span>
+             <span class="doc-tipo">{megas(@uso)} de {megas(Capas.max_bytes_equipo())}</span>
           </header>
-
+          
           <div class="doc-seccion">
             <p :if={@capas == []} class="nota">
               Todavía no hay capas. Sube un archivo y aparece como acetato en el mapa.
             </p>
-
+            
             <ul :if={@capas != []} class="lista-doc">
               <li :for={c <- @capas} class="lista-fila capa-fila">
                 <span>
@@ -60,21 +60,21 @@ defmodule MapoWeb.DatosLive.Index do
                   <span class="secundario capa-detalle">
                     {detalle(c)}
                   </span>
-
+                  
                   <details :if={c.metodo} class="cruce-metodo">
                     <summary>Cómo se calculó</summary>
-
+                    
                     <ul>
                       <li :for={linea <- String.split(c.metodo, "\n")}>{linea}</li>
                     </ul>
                   </details>
                 </span>
-
+                
                 <span class="lista-fin">
                   <.link navigate={~p"/mapa?#{[capa: c.id]}"} class="boton chico-doc">
                     Ver en el mapa
                   </.link>
-
+                  
                   <.link
                     :if={Capas.cruzable?(c)}
                     navigate={~p"/teams/#{@team}/datos/#{c}/cruce"}
@@ -82,7 +82,7 @@ defmodule MapoWeb.DatosLive.Index do
                   >
                     Cruzar
                   </.link>
-
+                  
                   <.link
                     :if={Distancias.medible?(c)}
                     navigate={~p"/teams/#{@team}/datos/#{c}/distancia"}
@@ -90,11 +90,19 @@ defmodule MapoWeb.DatosLive.Index do
                   >
                     Distancia
                   </.link>
-
+                  
+                  <.link
+                    :if={Distancias.medible?(c) and @hay_rasters}
+                    navigate={~p"/teams/#{@team}/datos/#{c}/raster"}
+                    class="boton chico-doc"
+                  >
+                    Ráster
+                  </.link>
+                  
                   <a :if={c.metodo} href={~p"/capas/#{c}/cruce.csv"} class="boton chico-doc">
                     CSV
                   </a>
-
+                  
                   <.button
                     :if={Capas.puede_borrar?(@current_scope, c)}
                     phx-click="borrar"
@@ -107,30 +115,30 @@ defmodule MapoWeb.DatosLive.Index do
                 </span>
               </li>
             </ul>
-
+            
             <p><.link navigate={~p"/teams/#{@team}"}>Volver al equipo</.link></p>
           </div>
         </section>
-
+        
         <section class="doc pegado" aria-labelledby="t-subir">
           <header class="doc-cab">
             <h2 id="t-subir">Subir un archivo</h2>
-            <span class="doc-tipo">Tabla, vectorial o ráster · hasta 50 MB</span>
+             <span class="doc-tipo">Tabla, vectorial o ráster · hasta 50 MB</span>
           </header>
-
+          
           <div class="doc-seccion">
             <p class="nota">
               Mapo todavía es una demostración. No subas datos personales ni confidenciales, como nombres, teléfonos o datos de clientes.
             </p>
-
+            
             <p class="secundario">
               La capa la ve solo tu equipo, pero quien administra esta instalación puede llegar a leerla, y los respaldos la conservan unos días después de borrarla.
             </p>
-
+            
             <p class="secundario">
               CSV, XLSX, GeoJSON, shapefile en ZIP, GeoPackage o GeoTIFF.
             </p>
-
+            
             <.form
               :if={is_nil(@archivo)}
               for={%{}}
@@ -145,17 +153,17 @@ defmodule MapoWeb.DatosLive.Index do
                 <.live_file_input upload={@uploads.archivo} accept={@aceptados} class="sr-only" />
                 <b>Arrastra un archivo aquí</b> <span>o haz clic para elegirlo</span>
               </label>
-
+              
               <p :for={e <- upload_errors(@uploads.archivo)} class="nota">{error_subida(e)}</p>
-
+              
               <div :for={entrada <- @uploads.archivo.entries}>
                 <p class="secundario">{entrada.client_name}: {entrada.progress}%</p>
-
+                
                 <p :for={e <- upload_errors(@uploads.archivo, entrada)} class="nota">
                   {error_subida(e)}
                 </p>
               </div>
-
+              
               <.button
                 variant="primary"
                 phx-disable-with="Leyendo..."
@@ -164,22 +172,22 @@ defmodule MapoWeb.DatosLive.Index do
                 Leer archivo
               </.button>
             </.form>
-
+            
             <div :if={@archivo} class="subida">
               <p><b>{@archivo.nombre}</b>{descripcion(@archivo.lectura)}</p>
-
+              
               <p :for={aviso <- @archivo.lectura["avisos"]} class="nota">{aviso}</p>
-
+              
               <div :if={@archivo.lectura["columnas"] != []} class="tabla-muestra">
                 <table>
                   <caption class="sr-only">Primeros renglones del archivo</caption>
-
+                  
                   <thead>
                     <tr>
                       <th :for={c <- @archivo.lectura["columnas"]} scope="col">{c}</th>
                     </tr>
                   </thead>
-
+                  
                   <tbody>
                     <tr :for={fila <- @archivo.lectura["muestra"]}>
                       <td :for={celda <- fila}>{celda}</td>
@@ -187,14 +195,14 @@ defmodule MapoWeb.DatosLive.Index do
                   </tbody>
                 </table>
               </div>
-
+              
               <.form for={@form} id="capa_form" phx-change="ubicacion" phx-submit="guardar">
                 <.input field={@form[:nombre]} type="text" label="Nombre de la capa" required />
                 <.input :if={fijo?(@archivo)} field={@form[:tipo]} type="hidden" />
                 <p :if={fijo?(@archivo)} class="secundario">
                   Trae su propia ubicación: se dibuja tal cual en el plano.
                 </p>
-
+                
                 <.input
                   :if={not fijo?(@archivo)}
                   field={@form[:tipo]}
@@ -284,6 +292,7 @@ defmodule MapoWeb.DatosLive.Index do
     socket =
       with {:ok, ubicados} <- MapoCore.datos_ubicar(contenido, formato, ubicacion(params)),
            :ok <- alguno_ubicado(ubicados),
+           {:ok, ubicados} <- valores(ubicados, contenido),
            {:ok, capa} <- guardar(socket, params, nombre, byte_size(contenido), ubicados) do
         socket
         |> assign(archivo: nil, form: to_form(%{}, as: "capa"))
@@ -392,6 +401,16 @@ defmodule MapoWeb.DatosLive.Index do
 
   defp alguno_ubicado(_), do: :ok
 
+  # Un ráster guarda también sus valores, para consultar el píxel.
+  defp valores(%{"raster" => raster} = ubicados, contenido) do
+    with {:ok, info, teselas} <- MapoCore.raster_valores(contenido) do
+      {:ok,
+       %{ubicados | "raster" => Map.merge(raster, %{"valores" => info, "teselas" => teselas})}}
+    end
+  end
+
+  defp valores(ubicados, _contenido), do: {:ok, ubicados}
+
   defp guardar(socket, params, archivo, bytes, ubicados) do
     attrs = %{
       nombre: String.trim(params["nombre"]),
@@ -423,15 +442,26 @@ defmodule MapoWeb.DatosLive.Index do
       sur: raster["sur"],
       este: raster["este"],
       norte: raster["norte"],
-      limites: raster["limites"]
+      limites: raster["limites"],
+      banda: blanco_a_nil(raster["valores"]["descripcion"]),
+      metros_pixel: raster["valores"]["metros_pixel"],
+      reducido: raster["valores"]["reducido"],
+      teselas: raster["teselas"]
     }
   end
+
+  defp blanco_a_nil(""), do: nil
+  defp blanco_a_nil(texto), do: texto
 
   defp recargar(socket) do
     team_id = socket.assigns.team.id
 
+    capas = Capas.list_capas(socket.assigns.current_scope, team_id)
+
     assign(socket,
-      capas: Capas.list_capas(socket.assigns.current_scope, team_id),
+      capas: capas,
+      # "Ráster" solo tiene sentido si hay alguno con valores que leer.
+      hay_rasters: Enum.any?(capas, &Capas.raster_con_valores?/1),
       uso: Capas.uso_equipo(team_id)
     )
   end

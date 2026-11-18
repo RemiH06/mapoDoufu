@@ -42,3 +42,7 @@ emisiones	retc_2004-2022.zip	http://sinat.semarnat.gob.mx/retc/retc/RETC_2004-20
 poblacion	iter_14_2020.zip	https://www.inegi.org.mx/contenidos/programas/ccpv/2020/datosabiertos/iter/iter_14_cpv2020_csv.zip
 poblacion	manzanas_14_2020.zip	https://www.inegi.org.mx/contenidos/programas/ccpv/2020/datosabiertos/ageb_manzana/ageb_mza_urbana_14_cpv2020_csv.zip
 agricultura	siap_diccionario_municipal.xlsx	https://nube.agricultura.gob.mx/index.php?view=5D24F995-E734D711-1EA6F8D2-9D1387D7
+# Frontera agrícola serie II del SIAP. infosiap.siap.gob.mx ya no resuelve (2026-11-18):
+# copia del Internet Archive del archivo original (mismo digest en 2022-06 y 2022-10).
+agricultura	frontera_agricola_s2_centro_oeste.kmz	https://web.archive.org/web/20221021011427id_/http://infosiap.siap.gob.mx/gobmx/datosAbiertos/frontera-agricola/FASII_CW_Col_Jal_Ags_Gto_Mich.kmz
+agricultura	frontera_agricola_s2_diccionario.xlsx	https://web.archive.org/web/20221027004712id_/http://infosiap.siap.gob.mx/gobmx/datosAbiertos/frontera-agricola/Descripci%C3%B3n_capas_FA_II.xlsx

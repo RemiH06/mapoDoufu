@@ -151,6 +151,55 @@ defmodule Mapo.CapasTest do
     assert {:ok, _} = Capas.crear_capa(scope, otro.id, attrs(%{tamano_bytes: 11}), [punto()])
   end
 
+  test "un ráster cuenta lo que ocupan sus valores si pesan más que el archivo", %{
+    scope: scope,
+    team: team
+  } do
+    # 100 x 100 en 16 bits: unos 20 KB guardados, con un "archivo" de 1 byte.
+    filas = for f <- 0..99, do: for(c <- 0..99, do: f * 100 + c)
+    tesela = Mapo.RasterFixtures.tesela(filas, -104.0, 20.0, 0.001)
+    capa = Mapo.RasterFixtures.capa_raster(scope, team.id, "Calor", [tesela])
+
+    assert capa.tamano_bytes > 10_000
+    assert Capas.uso_equipo(team.id) == capa.tamano_bytes
+
+    {:ok, _} =
+      Capas.crear_capa(
+        scope,
+        team.id,
+        attrs(%{tamano_bytes: Capas.max_bytes_equipo() - capa.tamano_bytes - 5_000}),
+        [punto()]
+      )
+
+    # El archivo cabe (1 byte), pero sus valores ya no.
+    assert {:error, :cuota} =
+             Capas.crear_capa(
+               scope,
+               team.id,
+               %{
+                 nombre: "Otro",
+                 archivo: "o.tif",
+                 tamano_bytes: 1,
+                 tipo: "raster",
+                 columnas: [],
+                 numericas: [],
+                 num_filas: 0,
+                 num_descartadas: 0
+               },
+               [],
+               %{
+                 png: "x",
+                 oeste: -104.0,
+                 sur: 19.0,
+                 este: -103.0,
+                 norte: 20.0,
+                 limites: [0.0, 1.0, 2.0, 3.0, 4.0, 5.0],
+                 metros_pixel: 100.0,
+                 teselas: [tesela]
+               }
+             )
+  end
+
   test "una capa inválida no deja rastro", %{scope: scope, team: team} do
     assert {:error, %Ecto.Changeset{}} =
              Capas.crear_capa(scope, team.id, attrs(%{tipo: "otro"}), [punto()])

@@ -360,3 +360,69 @@ def test_endpoints(cliente):
     assert cliente.post("/datos/ubicar?formato=tif&tipo=raster", content=tif).json()["tipo"] == "raster"
 
     assert cliente.post("/datos/ubicar?formato=csv&tipo=vector", content=b"a\n1\n").status_code == 422
+
+
+async def _valor(conn, teselas, lon, lat):
+    """Lo que PostGIS lee en ese punto de las teselas, como lo leería Mapo."""
+    await conn.execute("CREATE EXTENSION IF NOT EXISTS postgis_raster")
+    for t in teselas:
+        cursor = await conn.execute(
+            "SELECT ST_Value(ST_RastFromWKB(%s), ST_SetSRID(ST_MakePoint(%s, %s), 4326))", (t, lon, lat)
+        )
+        valor = (await cursor.fetchone())[0]
+        if valor is not None:
+            return valor
+    return None
+
+
+async def test_valores_raster_postgis_lee_cada_pixel(conn):
+    datos = np.arange(90_000, dtype="float32").reshape(300, 300)
+    datos[0, :] = -9999
+    info, teselas = dg.valores_raster(_tiff(datos, nodata=-9999))
+
+    assert info["tipo"] == "float32" and info["nodata"] == -9999
+    assert info["reducido"] is None and info["metros_pixel"] == pytest.approx(1105.7, abs=1)
+    # 300 x 300 en teselas de 256: cuatro.
+    assert len(teselas) == 4
+    # Fila 5, columna 7, y una que cae en la segunda tesela de abajo.
+    assert await _valor(conn, teselas, -104 + 0.075, 21 - 0.055) == 5 * 300 + 7
+    assert await _valor(conn, teselas, -104 + 0.0105 * 100 + 0.0005, 21 - 0.01 * 280 - 0.005) == 280 * 300 + 105
+    # El nodata no es valor.
+    assert await _valor(conn, teselas, -104 + 0.075, 21 - 0.005) is None
+
+
+async def test_valores_raster_sin_nodata_conserva_el_cero(conn):
+    info, teselas = dg.valores_raster(_tiff(np.zeros((10, 10), "uint8")))
+    assert info["tipo"] == "int16" and info["nodata"] == -32768
+    assert await _valor(conn, teselas, -103.995, 20.995) == 0
+
+
+def test_nodata_que_no_cabe_en_la_banda_no_sirve():
+    assert not dg._cabe(-9999, "uint8")
+    assert not dg._cabe(float("nan"), "float32")
+    assert dg._cabe(0, "uint8") and dg._cabe(-9999, "int16")
+
+
+def test_valores_raster_grande_se_reduce(monkeypatch):
+    monkeypatch.setattr(dg, "MAX_PIXELES_VALORES", 2_500)
+    info, teselas = dg.valores_raster(_tiff(np.ones((100, 100), "uint8")))
+    assert info["reducido"] == 2.0 and info["ancho"] * info["alto"] <= 2_500
+    assert len(teselas) == 1
+
+
+def test_valores_raster_en_lambert_quedan_en_grados():
+    info, _ = dg.valores_raster(_tiff(np.ones((50, 50), "uint8"), crs="EPSG:6372", oeste=X_6372, norte=Y_6372, paso=100))
+    assert info["metros_pixel"] == pytest.approx(100, rel=0.2)
+
+
+def test_endpoint_raster_valores(cliente):
+    r = cliente.post("/datos/raster_valores", content=_tiff(np.ones((5, 5), "uint8")))
+    cuerpo = r.content
+    largo = int.from_bytes(cuerpo[:4], "big")
+    info = json.loads(cuerpo[4 : 4 + largo])
+    resto = cuerpo[4 + largo :]
+    tesela = int.from_bytes(resto[:4], "big")
+    assert info["ancho"] == 5 and len(resto) == 4 + tesela
+
+    malo = cliente.post("/datos/raster_valores", content=b"no es tiff")
+    assert malo.status_code == 422

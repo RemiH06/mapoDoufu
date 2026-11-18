@@ -33,6 +33,7 @@ copias que publica el geoportal de CONABIO.
 | `riesgo` | SMN, Conagua | Monitor de Sequía por municipio (histórico en `MunicipiosSequia.xlsx`), zonas inundables (PDF, sin vector), vulnerabilidad por municipio de Conagua (índices compuestos: mostrar sus componentes) |
 | `territorio` | INEGI vía CONABIO | Uso de suelo y vegetación 1:250 000 series VI y VII (para ver cambio), edafología, ANP 2020, regiones hidrológicas |
 | `agricultura` | SIAP | Cierre agrícola municipal 2003 a 2025: cultivo, ciclo, modalidad (riego o temporal), superficie sembrada, cosechada y siniestrada, volumen, valor |
+| `agricultura` | SIAP, frontera agrícola serie II | Polígonos de superficie agrícola a escala 1:10 000, sobre imágenes SPOT 5 de 2010 y 2011 (publicada 2013-2014), con riego o temporal y su CADER. Ver "Frontera agrícola" |
 | `incendios` | NASA FIRMS | Focos de calor de México: MODIS 2000 a 2025 y VIIRS S-NPP (375 m) 2012 a 2025, con fecha, hora, confianza y potencia radiativa |
 | `salud` | INEGI | Defunciones registradas 2020 a 2023 (microdatos con municipio y causa CIE-10). Otros años usan otra ruta |
 | `poblacion` | INEGI | ITER 2020 de Jalisco: localidades, también las rurales. Censo 2020 por manzana de Jalisco (`manzanas_14_2020.zip`, 102,734 manzanas urbanas, ~220 variables, latin-1) |
@@ -161,6 +162,43 @@ Caja -104.65, 19.55, -103.95, 20.05; municipios 14015 y 14037.
 - 0 sitios subterráneos de RENAMECA y 0 pozos piezométricos en la caja: no es
   error, la red no tiene puntos ahí.
 
+## Frontera agrícola
+
+La serie II del SIAP delimita la superficie agrícola a escala 1:10 000, 25 veces
+más fina que uso de suelo (1:250 000). A esa escala, uso de suelo generaliza la
+orilla de los pueblos y deja escuelas urbanas "dentro" de polígonos agrícolas;
+para distancias de cientos de metros, esta es la capa.
+
+**De dónde.** `infosiap.siap.gob.mx`, donde se publicaba, ya no resuelve
+(2026-11-18), y las ligas de datos.gob.mx apuntan ahí. Se baja la copia del
+Internet Archive del archivo original, que tiene el mismo digest en sus tres
+capturas de 2022. Hay un KMZ por región; el de Centro-Oeste trae Colima,
+Jalisco, Aguascalientes, Guanajuato y Michoacán (77 MB, 46,557 polígonos).
+Otra región se agrega a `crudos-ambientales.tsv` con el mismo patrón.
+
+**Cómo se lee.** Es un KMZ exportado de ArcGIS: los atributos vienen en una
+tabla HTML dentro de `description`, que GDAL no separa en campos, así que
+`recorte.py` los saca con expresiones regulares.
+
+| Campo | Qué es |
+|---|---|
+| `CVE_EDO`, `NOMEDO` | Estado |
+| `CVE_DDR`, `NOMDDR`, `CVE_CADER`, `NOMCADER` | Distrito de Desarrollo Rural y CADER |
+| `SUP_HA_7mo` | Hectáreas del polígono completo (aunque el recorte lo corte) |
+| `MOD_USO` | A, agricultura; P, pastos |
+| `MOD_AGR` | R, riego; T, temporal |
+
+No dice cultivo: para eso está el cierre agrícola municipal.
+
+**Validación (2026-11-18).** El área de cada polígono leído, calculada en
+EPSG:6372, coincide con `SUP_HA_7mo`: el cociente es 1.0000 del percentil 1 al
+99. Jalisco suma 1,646,976 ha en 15,706 polígonos (1,515,987 de temporal y
+130,988 de riego). Una nota del SIAP sobre Jalisco da 1,684,374 ha, 2 % más,
+sin decir de qué serie.
+
+**Límite.** Son 15 años: lo que se abrió al cultivo después no está, y lo que
+se urbanizó sigue como agrícola.
+
 ## Lo que falta
 
 - **Plaguicidas en agua:** ninguna fuente abierta los mide. Solo estudios
@@ -168,7 +206,8 @@ Caja -104.65, 19.55, -103.95, 20.05; municipios 14015 y 14037.
 - **Viento medido a nivel de calle:** las EMA del SMN solo publican los últimos
   días; ERA5 cubre el régimen regional (sección "Viento").
 - **Atlas Nacional de Riesgos (CENAPRED):** se pide por correo.
-- **Frontera agrícola (SIAP):** el visualizador no da descarga directa.
+- **Frontera agrícola más reciente (SIAP, series III y IV):** el visualizador no
+  da descarga; la serie II sí está (sección "Frontera agrícola").
 - **Red hidrográfica 1:50 000 y aguas subterráneas 1:250 000 (INEGI):** sin
   liga fija. La red de OSM que ya usa OSRM puede servir para los ríos.
 - **Calidad del aire (SINAICA):** sin descarga masiva encontrada.
