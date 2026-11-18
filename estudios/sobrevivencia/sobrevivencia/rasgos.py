@@ -63,3 +63,28 @@ def bloques(df: pd.DataFrame, km: float = 2.0) -> pd.Series:
     xy = _km(df)
     celda = np.floor(xy / km).astype(int)
     return pd.Series([f"{a}_{b}" for a, b in celda], index=df.index)
+
+
+def agrupacion_por_giro(df: pd.DataFrame, sorteos: int = 19, minimo: int = 30, semilla: int = 18) -> pd.Series:
+    """Distancia media al vecino del mismo giro entre la misma medida con las
+    etiquetas sorteadas, por giro (menos de 1, se agrupa). Es el rasgo
+    `agrupacion` de la taxonomía de Mapo (`mapo_core/taxonomia.py`), sin log
+    y con menos sorteos: aquí solo separa giros, no prueba nada."""
+    xy = _km(df)
+    giros = df["grupo_giro"].to_numpy()
+    cuenta = pd.Series(giros).value_counts()
+    validos = cuenta[cuenta >= minimo].index
+
+    def medias(etiquetas: np.ndarray) -> dict:
+        indices = pd.Series(etiquetas).groupby(etiquetas).indices
+        salida = {}
+        for g in validos:
+            puntos = xy[indices[g]]
+            d, _ = cKDTree(puntos).query(puntos, k=2)
+            salida[g] = d[:, 1].mean()
+        return salida
+
+    observada = pd.Series(medias(giros))
+    rng = np.random.default_rng(semilla)
+    azar = pd.DataFrame([medias(rng.permutation(giros)) for _ in range(sorteos)]).mean()
+    return (observada / azar).rename("razon_agrupacion")

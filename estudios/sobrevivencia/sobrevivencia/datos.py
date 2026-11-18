@@ -14,7 +14,6 @@ Hallazgos que fijan el diseño (docs/producto/sobrevivencia.md):
 
 from __future__ import annotations
 
-import csv
 import io
 import re
 import unicodedata
@@ -52,32 +51,57 @@ MESES = {m: i + 1 for i, m in enumerate(
      "SEPTIEMBRE", "OCTUBRE", "NOVIEMBRE", "DICIEMBRE"])}
 
 
-def bajar(edicion: str, destino: Path, ent: str = "14") -> Path:
-    """Baja una edición (`AAAA_MM`) si no está. El servidor de INEGI contesta
-    200 con una página HTML cuando el archivo no existe: se revisa que sea ZIP."""
-    ruta = destino / f"denue_{ent}_{edicion}.zip"
-    if ruta.exists():
-        return ruta
+def _url(edicion: str, ent: str, parte: str = "") -> str:
     aaaa, mm = edicion.split("_")
-    r = requests.get(URL.format(aaaa=aaaa, mm=mm, aa=aaaa[2:], ent=ent), timeout=600)
+    return URL.format(aaaa=aaaa, mm=mm, aa=aaaa[2:], ent=f"{ent}{parte}")
+
+
+def _guardar(url: str, ruta: Path) -> bool:
+    """El servidor de INEGI contesta 200 con una página HTML cuando el archivo
+    no existe: solo cuenta si empieza como ZIP."""
+    r = requests.get(url, timeout=600)
     r.raise_for_status()
     if not r.content.startswith(b"PK"):
-        raise ValueError(f"INEGI no tiene la edición {edicion} del estado {ent}.")
-    destino.mkdir(parents=True, exist_ok=True)
+        return False
     ruta.write_bytes(r.content)
-    return ruta
+    return True
 
 
-def leer(ruta: Path) -> pd.DataFrame:
+def bajar(edicion: str, destino: Path, ent: str = "14") -> list[Path]:
+    """Archivos de una edición (`AAAA_MM`) de un estado, bajados si faltan. Los
+    estados grandes vienen en partes (`denue_15_1_...`, `denue_15_2_...`)."""
+    destino.mkdir(parents=True, exist_ok=True)
+    entero = destino / f"denue_{ent}_{edicion}.zip"
+    if entero.exists():
+        return [entero]
+    partes = sorted(destino.glob(f"denue_{ent}_{edicion}_parte*.zip"))
+    if partes:
+        return partes
+    if _guardar(_url(edicion, ent), entero):
+        return [entero]
+    for n in range(1, 10):
+        ruta = destino / f"denue_{ent}_{edicion}_parte{n}.zip"
+        if not _guardar(_url(edicion, ent, f"_{n}"), ruta):
+            break
+        partes.append(ruta)
+    if not partes:
+        raise ValueError(f"INEGI no tiene la edición {edicion} del estado {ent}.")
+    return partes
+
+
+def _csv(ruta: Path, **kwargs) -> pd.DataFrame:
     with zipfile.ZipFile(ruta) as z:
         nombre = next(n for n in z.namelist() if "conjunto_de_datos/" in n and n.endswith(".csv"))
         with z.open(nombre) as f:
-            codificacion = "utf-8-sig" if f.read(3) == b"\xef\xbb\xbf" else "latin-1"
+            codificacion = "utf-8-sig" if f.read(3) == bytes([0xEF, 0xBB, 0xBF]) else "latin-1"
         with z.open(nombre) as f:
-            df = pd.read_csv(
-                io.TextIOWrapper(f, encoding=codificacion, newline=""),
-                usecols=list(COLUMNAS), dtype=str, keep_default_na=False,
-            )
+            return pd.read_csv(io.TextIOWrapper(f, encoding=codificacion, newline=""), dtype=str,
+                               keep_default_na=False, **kwargs)
+
+
+def leer(rutas: Path | list[Path]) -> pd.DataFrame:
+    rutas = [rutas] if isinstance(rutas, Path) else rutas
+    df = pd.concat([_csv(r, usecols=list(COLUMNAS)) for r in rutas], ignore_index=True)
     df = df.rename(columns=COLUMNAS)
     for c in df.columns:
         df[c] = df[c].str.strip()
@@ -140,7 +164,16 @@ def reregistrados(base: pd.DataFrame, fin: pd.DataFrame, metros: float = 30) -> 
     return base["id"].isin(marcados)
 
 
-def tabla_base(base: pd.DataFrame, fin: pd.DataFrame, municipios: list[str], catalogo: pd.DataFrame,
+def caja_robusta(df: pd.DataFrame, margen: float = 0.5) -> tuple[float, float, float, float]:
+    """Caja del 0.1 al 99.9 % de las coordenadas, más `margen` grados: deja
+    fuera los negocios con coordenadas de otro estado sin tener que cargar el
+    polígono de cada uno."""
+    lat, lon = df["lat"].dropna(), df["lon"].dropna()
+    return (lat.quantile(0.001) - margen, lat.quantile(0.999) + margen,
+            lon.quantile(0.001) - margen, lon.quantile(0.999) + margen)
+
+
+def tabla_base(base: pd.DataFrame, fin: pd.DataFrame, municipios: list[str] | None, catalogo: pd.DataFrame,
                caja: tuple[float, float, float, float]) -> pd.DataFrame:
     """Una fila por negocio de la edición base en los municipios, con coordenadas
     dentro de `caja` (lat mín, lat máx, lon mín, lon máx) y la etiqueta: `sigue`
@@ -148,7 +181,7 @@ def tabla_base(base: pd.DataFrame, fin: pd.DataFrame, municipios: list[str], cat
     zona metropolitana traen coordenadas de Ensenada, Monterrey o Tabasco."""
     lat_min, lat_max, lon_min, lon_max = caja
     df = base[
-        base["cve_mun"].isin(municipios)
+        (base["cve_mun"].isin(municipios) if municipios is not None else True)
         & base["lat"].between(lat_min, lat_max)
         & base["lon"].between(lon_min, lon_max)
     ].copy()
@@ -164,16 +197,11 @@ def tabla_base(base: pd.DataFrame, fin: pd.DataFrame, municipios: list[str], cat
     return df.reset_index(drop=True)
 
 
-def ids(ruta: Path) -> pd.Series:
-    with zipfile.ZipFile(ruta) as z:
-        nombre = next(n for n in z.namelist() if "conjunto_de_datos/" in n and n.endswith(".csv"))
-        with z.open(nombre) as f:
-            codificacion = "utf-8-sig" if f.read(3) == b"\xef\xbb\xbf" else "latin-1"
-        with z.open(nombre) as f:
-            return pd.read_csv(io.TextIOWrapper(f, encoding=codificacion, newline=""), usecols=["id"], dtype=str)["id"].str.strip()
+def ids(rutas: list[Path]) -> pd.Series:
+    return pd.concat([_csv(r, usecols=["id"])["id"] for r in rutas]).str.strip()
 
 
-def persistencia(rutas: dict[str, Path]) -> pd.DataFrame:
+def persistencia(rutas: dict[str, list[Path]]) -> pd.DataFrame:
     """Parte de los negocios de cada edición que sigue en la siguiente. Los
     desplomes marcan los cortes censales."""
     filas, anterior = [], None
