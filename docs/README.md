@@ -74,6 +74,7 @@ Qué se construyó en cada etapa, por qué así y qué bugs reales aparecieron.
 - [Patrones por rubro, noviembre 2026](historial/2026-11-patrones-rubro.md)
 - [Distancia entre capas, noviembre 2026](historial/2026-11-distancia-capas.md)
 - [Frontera agrícola y ráster con valor por píxel, noviembre 2026](historial/2026-11-raster-valores.md)
+- [Fechas, marginación y colonias, noviembre 2026](historial/2026-11-fechas.md)
 
 ## Gaiarda
 

@@ -277,3 +277,45 @@ async def test_geo_por_clave_solo_lo_que_existe(cliente, conn):
     await _municipio(conn, "14120")
     r = cliente.post("/geo/por_clave", json={"nivel": "municipio", "claves": ["14120", "01001"]})
     assert [f["properties"]["cvegeo"] for f in r.json()["features"]] == ["14120"]
+
+
+def _fechas(columnas, filas):
+    return dp.columnas_fecha(dp.Tabla(columnas, filas, []))
+
+
+def test_fechas_iso_con_hora_y_sin_ella():
+    formas, avisos = _fechas(["acq_date", "texto"], [["2024-03-15", "a"], ["2024-11-02T10:30:00", "b"], ["", "c"]])
+    assert formas == {"acq_date": "iso"} and avisos == []
+    assert dp.a_iso("2024-11-02T10:30:00", "iso") == "2024-11-02T10:30:00"
+    assert dp.a_iso("2024-11-02 00:00:00", "iso") == "2024-11-02"
+
+
+def test_fechas_dia_mes_se_distingue_o_se_avisa():
+    formas, avisos = _fechas(["f"], [["15/03/2024"], ["2/11/2024"]])
+    assert formas == {"f": "dma"} and avisos == []
+    assert dp.a_iso("2/11/2024", "dma") == "2024-11-02"
+
+    formas, _ = _fechas(["f"], [["03/15/2024"], ["11/2/2024"]])
+    assert formas == {"f": "mda"}
+    assert dp.a_iso("03/15/2024", "mda") == "2024-03-15"
+
+    formas, avisos = _fechas(["f"], [["03/04/2024"]])
+    assert formas == {"f": "dma"} and "también podría ser mes/día" in avisos[0]
+
+
+def test_no_son_fechas():
+    # Un mes 13, un número suelto o un año sin nombre que lo diga.
+    formas, _ = _fechas(["a", "b", "ventas", "anio"], [["2024-13-01", "15/03", "2018", "2018"]])
+    assert formas == {"anio": "parcial"}
+
+
+def test_fecha_dato_acepta_fechas_parciales():
+    formas, _ = _fechas(["fecha_dato"], [["2018"], ["2023-11"], ["2023-11-09"]])
+    assert formas == {"fecha_dato": "parcial"}
+
+
+async def test_endpoint_ubicar_dice_y_normaliza_fechas(cliente):
+    csv = b"lat,lon,fecha\n20.6,-103.3,15/03/2024\n20.7,-103.4,\n"
+    r = cliente.post("/datos/ubicar?formato=csv&tipo=puntos&lat=lat&lon=lon", content=csv).json()
+    assert r["fechas"] == ["fecha"]
+    assert [f["datos"]["fecha"] for f in r["filas"]] == ["2024-03-15", None]

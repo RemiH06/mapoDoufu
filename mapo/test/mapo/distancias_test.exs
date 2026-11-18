@@ -222,4 +222,40 @@ defmodule Mapo.Capas.DistanciasTest do
 
     assert Enum.at(r.metodo, 1) =~ "solo donde mun contiene «037» o «015»"
   end
+
+  test "un rango de fechas en el destino, con fechas parciales que se traslapan", ctx do
+    focos =
+      capa(ctx.scope, ctx.team, "Focos", "puntos", ["acq_date"], [
+        punto(@lat, @lon + 0.001, %{"acq_date" => "2024-10-31"}),
+        punto(@lat, @lon + 0.002, %{"acq_date" => "2024-12-05T21:10"}),
+        punto(@lat, @lon + 0.003, %{"acq_date" => "2025-03"}),
+        punto(@lat, @lon + 0.004, %{"acq_date" => "2025"}),
+        punto(@lat, @lon + 0.005, %{"acq_date" => "2025-06-01"}),
+        punto(@lat, @lon + 0.0055, %{})
+      ])
+
+    zafra = {:fecha, "acq_date", "2024-11-01", "2025-05-31"}
+
+    {:ok, r} =
+      Distancias.calcular(ctx.escuelas, %{
+        destino: focos,
+        filtro_origen: {"clase", "Escuelas"},
+        filtro_destino: [zafra],
+        radio: 1_000
+      })
+
+    # Entran diciembre, marzo y el año 2025 completo; octubre, junio y el vacío no.
+    assert r.destino_filas == 3
+    assert [%{cuantos: 3, metros: m}] = r.filas
+    assert_in_delta m, 209, 2
+    assert Enum.at(r.metodo, 1) =~ "acq_date del 2024-11-01 al 2025-05-31"
+
+    {:ok, r} =
+      Distancias.calcular(ctx.escuelas, %{
+        destino: focos,
+        filtro_destino: [{:fecha, "acq_date", nil, "2024-12-31"}]
+      })
+
+    assert r.destino_filas == 2
+  end
 end

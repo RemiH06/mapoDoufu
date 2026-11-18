@@ -1,6 +1,6 @@
 # /// script
 # requires-python = ">=3.11"
-# dependencies = ["geopandas>=1.0", "pyogrio", "pandas", "openpyxl", "rasterio", "shapely>=2", "pyproj"]
+# dependencies = ["geopandas>=1.0", "pyogrio", "pandas", "openpyxl", "xlrd", "rasterio", "shapely>=2", "pyproj"]
 # ///
 """Recorta las fuentes ambientales en crudo a una zona y deja un paquete listo
 para SIG: un GeoPackage, tablas CSV, el relieve en GeoTIFF y un diccionario.
@@ -71,10 +71,28 @@ FUENTES = {
     "agebs": ("INEGI, marco geoestadístico y censo 2020 (vía Mapo)", "2020; censo solo en AGEB urbanas", "AGEB", "https://www.inegi.org.mx/temas/mg/"),
     "denue": ("INEGI, DENUE (vía Mapo)", "Edición cargada en Mapo, ver docs/fuentes/denue.md", "punto", "https://www.inegi.org.mx/app/mapa/denue/"),
     "siap_municipal": ("SIAP", "Cierre agrícola municipal 2003 a 2025", "municipio", "https://nube.siap.gob.mx/cierreagricola/"),
+    "colonias_marginacion": ("CONAPO, índice de marginación urbana por colonia", "2020", "colonia", "https://www.gob.mx/conapo/documentos/indices-de-marginacion-2020-284372"),
+    "agebs_marginacion": ("CONAPO, índice de marginación urbana por AGEB", "2020", "AGEB", "https://www.gob.mx/conapo/documentos/indices-de-marginacion-2020-284372"),
     "sequia_municipal": ("Conagua, SMN, Monitor de Sequía", "Categoría D0 a D4 por fecha de corte", "municipio", "https://smn.conagua.gob.mx/es/climatologia/monitor-de-sequia/monitor-de-sequia-en-mexico"),
     "defunciones": ("INEGI, defunciones registradas", "2020 a 2023, por municipio y localidad de residencia", "localidad", "https://www.inegi.org.mx/programas/edr/"),
     "plantas_tratamiento": ("Conagua", "Inventario de PTAR 2023, sin coordenadas", "localidad (por nombre)", "https://www.gob.mx/conagua"),
     "relieve": ("Copernicus DEM GLO-30", "Modelo digital de superficie, 30 m", "ráster", "https://spacedata.copernicus.eu/collections/copernicus-digital-elevation-model"),
+}
+
+
+# Fecha del dato como fecha (AAAA, AAAA-MM o AAAA-MM-DD), para que Mapo la reconozca y
+# se pueda filtrar por rango. Si la capa cubre un periodo, el final. Vacía si no se
+# sabe: mejor nada que una fecha inventada (el REPDA es "vigente a la descarga", y esa
+# fecha va en fecha_consulta). El texto de FUENTES se queda como `fecha_texto`.
+FECHAS = {
+    "agua_superficial": "2025", "agua_subterranea": "2025",
+    "acuiferos": "2023-11-09", "acuiferos_vedas": "2021-11-25", "acuiferos_suspension": "2021-11-25",
+    "piezometria": "2023", "retc": "2022", "firms_viirs": "2025", "firms_modis": "2025",
+    "uso_suelo_s7": "2018", "uso_suelo_s6": "2014", "frontera_agricola": "2011", "anp": "2020-08",
+    "localidades": "2020", "agebs_rurales": "2020", "localidades_poligonos": "2020", "manzanas": "2020",
+    "viento_horario": "2024", "viento_climatologia": "2024", "agebs": "2020",
+    "siap_municipal": "2025", "colonias_marginacion": "2020", "agebs_marginacion": "2020",
+    "defunciones": "2023", "plantas_tratamiento": "2023", "relieve": "2015",
 }
 
 
@@ -115,6 +133,8 @@ CRUDOS = {
     "firms_modis": ["incendios/firms_modis_*.csv"],
     "uso_suelo_s7": ["territorio/usv250_serie7.zip"],
     "frontera_agricola": ["agricultura/frontera_agricola_s2_*.kmz"],
+    "colonias_marginacion": ["marginacion/imc_2020_colonias_shp.zip"],
+    "agebs_marginacion": ["marginacion/imu_2020_ageb.zip"],
     "uso_suelo_s6": ["territorio/usv250_serie6.zip"],
     "edafologia": ["territorio/edafologia_1m.zip"],
     "anp": ["territorio/anp_2020.zip"],
@@ -176,7 +196,8 @@ class Paquete:
     def anotar(self, capa: str, filas: int | None, archivo: str, nota: str = "") -> None:
         fuente, fecha, nivel, url = FUENTES[capa]
         self.registro.append({"capa": capa, "archivo": archivo, "filas": filas, "fuente": fuente,
-                              "fecha_dato": fecha, "nivel": nivel, "url": url, "nota": nota})
+                              "fecha_dato": FECHAS.get(capa, ""), "fecha_texto": fecha,
+                              "nivel": nivel, "url": url, "nota": nota})
         print(f"  {capa}: {filas if filas is not None else '-'} filas {nota}", flush=True)
 
     def guardar(self, capa: str, gdf: gpd.GeoDataFrame, nota: str = "") -> None:
@@ -523,6 +544,20 @@ class Paquete:
             self.guardar(capa, gdf, "(censo en columnas c_*, nombres de INEGI)" if capa == "agebs" else "")
 
     # --- fuentes por municipio ------------------------------------------
+    def marginacion(self) -> None:
+        """Índices de marginación urbana 2020 de CONAPO. Son índices compuestos: van
+        con sus once componentes (porcentajes del censo) para leerlos por separado,
+        y el índice tal como lo publica CONAPO, nunca como puntaje propio. Las
+        colonias son la única cartografía pública de colonias con nombre; su
+        población es estimada (por eso trae decimales)."""
+        nota = ("(componentes en %: P6A14NAE, SBASC, PSDSS, OVSDE, OVSEE, OVSAE, OVPT, OVHAC, OVSREF, "
+                "OVSINT, OVSCEL; IM_2020 y GM_2020 son de CONAPO, no un puntaje de Mapo)")
+        self.guardar("colonias_marginacion", self.vector(self.zip_vsi("marginacion/imc_2020_colonias_shp.zip")), nota)
+        with zipfile.ZipFile(self.crudos / "marginacion" / "imu_2020_ageb.zip") as z:
+            df = pd.read_excel(io.BytesIO(z.read("IMU_2020.xls")), sheet_name="IMU_2020", dtype={"CVE_AGEB": str, "ENT": str, "MUN": str, "LOC": str, "AGEB": str})
+        df = df[(df["ENT"] + df["MUN"]).isin(self.municipios)]
+        self.guardar_tabla("agebs_marginacion", df.rename(columns={"CVE_AGEB": "cvegeo"}), nota + " (se une con agebs por cvegeo)")
+
     def siap(self) -> None:
         claves, partes = self.mun_claves(), []
         for p in sorted((self.crudos / "agricultura").glob("siap_municipal_*.csv")):
@@ -599,6 +634,7 @@ class Paquete:
                  ("repda_descargas", self.repda), ("retc", self.retc), ("firms_viirs", self.firms),
                  ("localidades", self.localidades), ("agebs_rurales", self.rural), ("manzanas", self.manzanas),
                  ("viento_horario", self.viento), ("agebs", self.desde_mapo), ("siap_municipal", self.siap),
+                 ("colonias_marginacion", self.marginacion),
                  ("sequia_municipal", self.sequia), ("defunciones", self.defunciones),
                  ("plantas_tratamiento", self.ptar), ("relieve", self.relieve)]
         for capa, fn in pasos:

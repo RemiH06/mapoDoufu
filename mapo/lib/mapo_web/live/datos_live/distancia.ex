@@ -59,6 +59,7 @@ defmodule MapoWeb.DatosLive.Distancia do
                   form={@form}
                   lado="origen"
                   columnas={@capa.columnas}
+                  fechas={@capa.fechas}
                   ejemplo="educación"
                 />
               </fieldset>
@@ -76,6 +77,7 @@ defmodule MapoWeb.DatosLive.Distancia do
                   form={@form}
                   lado="destino"
                   columnas={@destino.columnas}
+                  fechas={@destino.fechas}
                   ejemplo="AGRICULTURA"
                 />
               </fieldset>
@@ -275,13 +277,15 @@ defmodule MapoWeb.DatosLive.Distancia do
   defp medir(socket, params) do
     %{capa: capa, destino: destino} = socket.assigns
 
-    with {:ok, radio} <- radio(params["radio"]) do
+    with {:ok, radio} <- radio(params["radio"]),
+         {:ok, filtro_origen} <- condiciones_de(params, "origen", capa),
+         {:ok, filtro_destino} <- condiciones_de(params, "destino", destino) do
       opciones = %{
         destino: destino,
         etiqueta_origen: columna(params["etiqueta_origen"], capa),
         etiqueta_destino: columna(params["etiqueta_destino"], destino),
-        filtro_origen: filtros(params["filtro_origen"], capa),
-        filtro_destino: filtros(params["filtro_destino"], destino),
+        filtro_origen: filtro_origen,
+        filtro_destino: filtro_destino,
         radio: radio
       }
 

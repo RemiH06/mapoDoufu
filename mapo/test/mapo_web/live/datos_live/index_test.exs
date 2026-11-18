@@ -95,6 +95,22 @@ defmodule MapoWeb.DatosLive.IndexTest do
     assert has_element?(lv, "#subir_form")
   end
 
+  test "las columnas de fecha que reconoce mapo_core quedan en la capa", %{
+    conn: conn,
+    team: team,
+    scope: scope
+  } do
+    stub(%{ubicar: Map.put(@ubicados, "fechas", ["fecha"])})
+    {:ok, lv, _} = live(conn, ~p"/teams/#{team}/datos")
+    subir(lv)
+
+    lv
+    |> form("#capa_form", capa: %{nombre: "Focos", tipo: "puntos", lat: "lat", lon: "lon"})
+    |> render_submit()
+
+    assert [%{fechas: ["fecha"]}] = Capas.list_capas(scope, team.id)
+  end
+
   test "si no se ubicó ningún renglón no se guarda nada", %{conn: conn, team: team, scope: scope} do
     stub(%{ubicar: %{@ubicados | "filas" => []}})
     {:ok, lv, _} = live(conn, ~p"/teams/#{team}/datos")

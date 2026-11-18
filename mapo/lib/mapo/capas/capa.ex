@@ -11,6 +11,8 @@ defmodule Mapo.Capas.Capa do
     field :tipo, :string
     field :columnas, {:array, :string}
     field :numericas, {:array, :string}, default: []
+    # Columnas de fecha, ya en ISO (las reconoce mapo_core al subir).
+    field :fechas, {:array, :string}, default: []
     field :num_filas, :integer
     field :num_descartadas, :integer
     field :repetidas, :integer, default: 0
@@ -33,6 +35,7 @@ defmodule Mapo.Capas.Capa do
       :tipo,
       :columnas,
       :numericas,
+      :fechas,
       :num_filas,
       :num_descartadas,
       :repetidas,

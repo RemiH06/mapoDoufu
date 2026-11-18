@@ -293,6 +293,99 @@ def columnas_numericas(tabla: Tabla) -> list[str]:
     return resultado
 
 
+# Fechas. Se guardan en ISO (AAAA-MM-DD, con hora si la traían) para que filtrar
+# por rango sea comparar texto. Una fecha parcial (AAAA o AAAA-MM) se queda así y
+# cuenta como su periodo completo.
+_ISO = re.compile(r"(\d{4})-(\d{2})-(\d{2})(?:[T ](\d{2}):(\d{2})(?::(\d{2}))?(?:\.\d+)?)?")
+_DMA = re.compile(r"(\d{1,2})[/-](\d{1,2})[/-](\d{4})")
+_AM = re.compile(r"(\d{4})-(\d{2})")
+_A = re.compile(r"(\d{4})")
+# Una columna de puros años es número también; solo es fecha si el nombre lo dice.
+_NOMBRE_FECHA = ("fecha", "anio", "ano", "year", "date", "periodo")
+COLUMNAS_FECHA_RESERVADAS = ("fecha_dato", "fecha_consulta")
+
+
+def _valida(a: int, m: int, d: int = 1) -> bool:
+    try:
+        return 1900 <= a <= 2100 and date(a, m, d) is not None
+    except ValueError:
+        return False
+
+
+def _forma(valores: list[str], nombre: str) -> tuple[str | None, str | None]:
+    """La forma de una columna de fechas y un aviso, o `(None, None)`."""
+    if all((m := _ISO.fullmatch(v)) and _valida(*map(int, m.groups()[:3])) for v in valores):
+        return "iso", None
+    partes = [_DMA.fullmatch(v) for v in valores]
+    if all(partes):
+        primeros = [int(m.group(1)) for m in partes]
+        segundos = [int(m.group(2)) for m in partes]
+        if any(p > 12 for p in primeros) or not any(s > 12 for s in segundos):
+            forma = "dma"
+        else:
+            forma = "mda"
+        dia, mes = (1, 2) if forma == "dma" else (2, 1)
+        if not all(_valida(int(m[3]), int(m[mes]), int(m[dia])) for m in partes):
+            return None, None
+        ambigua = all(p <= 12 for p in primeros) and all(s <= 12 for s in segundos)
+        aviso = (f'"{nombre}" se leyó como fecha día/mes/año: con estos valores también podría ser mes/día.'
+                 if ambigua else None)
+        return forma, aviso
+    parcial = all(
+        ((m := _ISO.fullmatch(v)) and _valida(*map(int, m.groups()[:3])))
+        or ((m := _AM.fullmatch(v)) and _valida(int(m[1]), int(m[2])))
+        or ((m := _A.fullmatch(v)) and _valida(int(m[1]), 1))
+        for v in valores
+    )
+    sugiere = any(p in _normal(nombre) for p in _NOMBRE_FECHA)
+    if parcial and (sugiere or nombre in COLUMNAS_FECHA_RESERVADAS):
+        return "parcial", None
+    return None, None
+
+
+def columnas_fecha(tabla: Tabla) -> tuple[dict[str, str], list[str]]:
+    """`{columna: forma}` de las columnas cuyos valores son todos fechas, y los
+    avisos. Una columna vacía no es de fechas."""
+    formas, avisos = {}, []
+    for i, columna in enumerate(tabla.columnas):
+        valores = [f[i].strip() for f in tabla.filas if f[i] and f[i].strip()]
+        if not valores:
+            continue
+        forma, aviso = _forma(valores, columna)
+        if forma:
+            formas[columna] = forma
+        if aviso:
+            avisos.append(aviso)
+    return formas, avisos
+
+
+def a_iso(valor, forma: str):
+    """El valor en ISO. Un número (un año en una columna numérica) se queda igual."""
+    if not isinstance(valor, str):
+        return valor
+    v = valor.strip()
+    if forma in ("dma", "mda"):
+        m = _DMA.fullmatch(v)
+        d, mes = (m[1], m[2]) if forma == "dma" else (m[2], m[1])
+        return f"{m[3]}-{int(mes):02d}-{int(d):02d}"
+    m = _ISO.fullmatch(v)
+    if m:
+        fecha = f"{m[1]}-{m[2]}-{m[3]}"
+        if m[4] is None or (m[4], m[5], m[6] or "00") == ("00", "00", "00"):
+            return fecha
+        return f"{fecha}T{m[4]}:{m[5]}" + (f":{m[6]}" if m[6] else "")
+    return v
+
+
+def normalizar_fechas(filas: list[dict], formas: dict[str, str]) -> None:
+    """Pasa a ISO, en su lugar, las columnas de fecha de los renglones ubicados."""
+    for fila in filas:
+        datos = fila["datos"]
+        for columna, forma in formas.items():
+            if datos.get(columna) is not None:
+                datos[columna] = a_iso(datos[columna], forma)
+
+
 def datos_de(tabla: Tabla, numericas: list[str]) -> list[dict]:
     """Cada renglón como `{columna: valor}`, con número real en las columnas
     numéricas y `None` donde la celda venía vacía (nunca un cero inventado)."""

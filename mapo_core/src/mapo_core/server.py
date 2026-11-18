@@ -240,12 +240,15 @@ async def datos_ubicar(
             resultado = await asyncio.to_thread(datos_propios.ubicar_claves, tabla, clave, tipo, existentes)
     except datos_propios.ArchivoInvalido as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
+    fechas, avisos_fechas = datos_propios.columnas_fecha(tabla)
+    datos_propios.normalizar_fechas(resultado["filas"], fechas)
     return {
         "tipo": tipo,
         **resultado,
+        "fechas": list(fechas),
         "columnas": tabla.columnas,
         "num_filas": len(tabla.filas),
-        "avisos": tabla.avisos,
+        "avisos": tabla.avisos + avisos_fechas,
     }
 
 

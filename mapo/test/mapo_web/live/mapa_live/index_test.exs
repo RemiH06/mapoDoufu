@@ -565,6 +565,42 @@ defmodule MapoWeb.MapaLive.IndexTest do
       assert_reply(lv, %{campos: [["ventas", "12.345"], ["tienda", "Centro"]], otras: 0})
     end
 
+    test "un rango de fechas deja solo esos renglones en el plano", %{conn: conn, scope: scope} do
+      fila = fn fecha ->
+        %{"lat" => 20.6, "lon" => -103.3, "datos" => %{"tienda" => "x", "fecha" => fecha}}
+      end
+
+      capa =
+        capa_fixture(
+          scope,
+          "puntos",
+          [fila.("2024-03-15"), fila.("2025-01-02"), fila.("2025")],
+          %{
+            columnas: ["tienda", "fecha"],
+            fechas: ["fecha"]
+          }
+        )
+
+      stub_estados_y_municipio(fn _ -> raise "no debería llamarse" end)
+      {:ok, lv, _html} = live(conn, ~p"/mapa?#{[capa: capa.id]}")
+      assert_push_event(lv, "capa_propios", %{puntos: [_, _, _]})
+
+      html =
+        lv
+        |> form("#fechas_#{capa.id}", %{columna: "fecha", desde: "2025-01-01", hasta: ""})
+        |> render_change()
+
+      assert_push_event(lv, "capa_propios", %{puntos: [_, _]})
+      assert html =~ "2 en el rango"
+
+      # Al revés no hace nada: sigue lo de antes.
+      lv
+      |> form("#fechas_#{capa.id}", %{columna: "fecha", desde: "2025-02-01", hasta: "2025-01-01"})
+      |> render_change()
+
+      refute_push_event(lv, "capa_propios", %{})
+    end
+
     test "la procedencia va aparte en la ficha, en su orden", %{conn: conn, scope: scope} do
       fila = %{
         "lat" => 20.6,

@@ -1,11 +1,16 @@
 # Colonias: polígonos para cualquier parte del país
 
-La gente piensa su ciudad por colonias, pero ninguna fuente nacional abierta las
-publica con polígono: INEGI llega a AGEB y manzana, el catálogo de asentamientos
-de INEGI y el de SEPOMEX dan nombres y códigos postales sin coordenadas, y OSM
-tiene pocas. Este pipeline arma el polígono de una colonia en cualquier municipio
-y dice de dónde salió y qué tan seguro es. Estado: diseño y prototipo
-(2026-11-17), sin implementar.
+La gente piensa su ciudad por colonias. INEGI llega a AGEB y manzana, el catálogo
+de asentamientos de INEGI y el de SEPOMEX dan nombres y códigos postales sin
+coordenadas, y OSM tiene pocas. **Sí hay una fuente nacional con polígono:** la
+cartografía del índice de marginación urbana 2020 de CONAPO, con 74,226 colonias
+(4,397 en Jalisco, 252 en Tlaquepaque), nombre, CP y población estimada
+(encontrada el 2026-11-18; ver `../fuentes/ambientales.md`, "Marginación").
+
+Con eso, el pipeline de abajo pasa a segundo plano: sirve para colonias que
+CONAPO no tenga (localidades fuera del Sistema Urbano Nacional, colonias nuevas
+después de 2020) y para medir qué tan bien la ubica un equipo. Estado: diseño y
+prototipo (2026-11-17), sin implementar.
 
 ## Niveles
 
@@ -13,6 +18,7 @@ Se usa el mejor nivel disponible; la columna `metodo` dice cuál fue.
 
 | Nivel | Fuente | Cobertura | Confianza |
 |---|---|---|---|
+| `conapo` | Cartografía de colonias del índice de marginación urbana 2020 | Nacional, zonas urbanas | La de CONAPO; de 2020 |
 | `oficial` | Plano de colonias del municipio o del instituto de planeación, cuando lo publica | Algunos municipios | La del municipio; puede estar desactualizado |
 | `osm` | Límites de OpenStreetMap (`place=neighbourhood` o `suburb` con polígono) | Escasa en México | Variable; revisar |
 | `direcciones` | Votación de direcciones con coordenadas sobre las manzanas de INEGI | Nacional | Medida por colonia (ver abajo) |
@@ -68,6 +74,13 @@ Lo que el prototipo enseñó:
   desviaciones del grupo antes de votar.
 - **Dos nombres para lo mismo:** "López Cotilla" y "Manuel López Cotilla" en el
   mismo CP; el umbral de parecido no los unió. El catálogo de SEPOMEX lo resuelve.
+
+### Contra CONAPO (2026-11-18)
+
+La colonia López Cotilla de CONAPO (`14098_0135`) mide 63.5 ha; el prototipo,
+55.1. Solo comparten 26.2 ha: intersección sobre unión de 0.28. La votación por
+DENUE se fue a manzanas vecinas. Un método que falla así en la primera colonia
+que se prueba no sirve sin más trabajo; CONAPO queda como nivel por omisión.
 
 ## Cómo saber si sirve
 

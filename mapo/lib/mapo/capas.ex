@@ -268,10 +268,13 @@ defmodule Mapo.Capas do
     Repo.delete(capa)
   end
 
-  @doc "Puntos de la capa, solo id y lugar: los datos se piden al abrir la ficha."
-  def puntos(%Capa{id: id}) do
+  @doc """
+  Puntos de la capa, solo id y lugar: los datos se piden al abrir la ficha.
+  `fecha` es `{columna, desde, hasta}` (ISO o `nil`) para ver solo ese rango.
+  """
+  def puntos(%Capa{id: id}, fecha \\ nil) do
     Repo.all(
-      from f in CapaFila,
+      from f in en_rango(CapaFila, fecha),
         where: f.capa_id == ^id,
         select: %{
           id: f.id,
@@ -285,10 +288,10 @@ defmodule Mapo.Capas do
   FeatureCollection de una capa vectorial, simplificada para dibujar. Cada
   feature lleva `id` y, si se pinta por `columna`, `valor_choropleth`.
   """
-  def geojson(%Capa{id: id}, columna \\ nil) do
+  def geojson(%Capa{id: id}, columna \\ nil, fecha \\ nil) do
     filas =
       Repo.all(
-        from f in CapaFila,
+        from f in en_rango(CapaFila, fecha),
           where: f.capa_id == ^id,
           order_by: f.id,
           select:
@@ -312,6 +315,44 @@ defmodule Mapo.Capas do
       end)
 
     %{"type" => "FeatureCollection", "features" => features}
+  end
+
+  # El mismo rango que `Mapo.Capas.Derivadas`: fechas ISO comparadas como texto, y
+  # una parcial ("2018", "2018-03") cuenta como su periodo completo.
+  defp en_rango(consulta, nil), do: consulta
+
+  defp en_rango(consulta, {columna, desde, hasta}) do
+    consulta = where(consulta, [f], not is_nil(fragment("?->>?", f.datos, ^columna)))
+
+    consulta =
+      if desde,
+        do:
+          where(
+            consulta,
+            [f],
+            fragment(
+              "CASE length(?->>?) WHEN 4 THEN (?->>?) || '-12-31' WHEN 7 THEN (?->>?) || '-31' ELSE left(?->>?, 10) END >= ?",
+              f.datos,
+              ^columna,
+              f.datos,
+              ^columna,
+              f.datos,
+              ^columna,
+              f.datos,
+              ^columna,
+              ^desde
+            )
+          ),
+        else: consulta
+
+    if hasta,
+      do:
+        where(
+          consulta,
+          [f],
+          fragment("left((?->>?) || '-01-01', 10) <= ?", f.datos, ^columna, ^hasta)
+        ),
+      else: consulta
   end
 
   @doc "La imagen de una capa ráster, o `nil` si no es de los equipos del scope."

@@ -48,6 +48,7 @@ defmodule MapoWeb.DatosLive.Raster do
             >
               <fieldset class="cruce-grupo">
                 <legend>Desde {@capa.nombre}</legend>
+
                 <.input
                   field={@form[:etiqueta_origen]}
                   type="select"
@@ -58,6 +59,7 @@ defmodule MapoWeb.DatosLive.Raster do
                   form={@form}
                   lado="origen"
                   columnas={@capa.columnas}
+                  fechas={@capa.fechas}
                   ejemplo="educación"
                 />
               </fieldset>
@@ -100,6 +102,7 @@ defmodule MapoWeb.DatosLive.Raster do
         >
           <header class="doc-cab">
             <h2 id="t-resultado">Resultado</h2>
+
             <span class="doc-tipo">
               {cifra(@resultado.total - @resultado.sin_dato)} de {cifra(@resultado.total)} con valor
             </span>
@@ -109,15 +112,19 @@ defmodule MapoWeb.DatosLive.Raster do
             <div class="tabla-muestra">
               <table>
                 <caption class="sr-only">Los renglones con valor más alto</caption>
+
                 <thead>
                   <tr>
                     <th scope="col">{@opciones.etiqueta_origen}</th>
+
                     <th :for={c <- @resultado.columnas} scope="col">{c}</th>
                   </tr>
                 </thead>
+
                 <tbody>
                   <tr :for={fila <- @resultado.filas}>
                     <td>{fila.nombre || "sin dato"}</td>
+
                     <td :for={v <- fila.valores}>{celda(v)}</td>
                   </tr>
                 </tbody>
@@ -130,6 +137,7 @@ defmodule MapoWeb.DatosLive.Raster do
 
             <details class="cruce-metodo" open>
               <summary>Cómo se calculó</summary>
+
               <ul>
                 <li :for={linea <- @resultado.metodo}>{linea}</li>
               </ul>
@@ -241,13 +249,14 @@ defmodule MapoWeb.DatosLive.Raster do
     %{capa: capa, candidatas: candidatas} = socket.assigns
     raster = Enum.find(candidatas, &(to_string(&1.id) == params["raster"]))
 
-    with {:ok, radio} <- radio(params["radio"]) do
+    with {:ok, radio} <- radio(params["radio"]),
+         {:ok, filtro_origen} <- condiciones_de(params, "origen", capa) do
       opciones = %{
         raster: raster,
         radio: radio,
         valores: params["valores"],
         etiqueta_origen: columna(params["etiqueta_origen"], capa),
-        filtro_origen: filtros(params["filtro_origen"], capa)
+        filtro_origen: filtro_origen
       }
 
       case Muestreo.calcular(capa, opciones) do

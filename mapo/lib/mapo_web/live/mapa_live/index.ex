@@ -379,9 +379,54 @@ defmodule MapoWeb.MapaLive.Index do
             {Phoenix.HTML.Form.options_for_select(a.capa.numericas, a.columna)}
           </select>
         </.form>
+
+        <.form
+          :if={a.capa.tipo in ~w(puntos vector) and a.capa.fechas != []}
+          for={%{}}
+          as={:fechas}
+          id={"fechas_#{a.capa.id}"}
+          phx-change="fechar_capa"
+          class="capa-fechas"
+        >
+          <input type="hidden" name="capa" value={a.capa.id} />
+          <select
+            :if={length(a.capa.fechas) > 1}
+            name="columna"
+            class="cinta-control"
+            aria-label={"Columna de fecha de #{a.capa.nombre}"}
+          >
+            {Phoenix.HTML.Form.options_for_select(a.capa.fechas, a.fecha && elem(a.fecha, 0))}
+          </select>
+
+          <input
+            :if={length(a.capa.fechas) == 1}
+            type="hidden"
+            name="columna"
+            value={hd(a.capa.fechas)}
+          />
+          <label>
+            Desde
+            <input
+              type="date"
+              name="desde"
+              class="cinta-control"
+              value={a.fecha && elem(a.fecha, 1)}
+            />
+          </label>
+
+          <label>
+            hasta
+            <input
+              type="date"
+              name="hasta"
+              class="cinta-control"
+              value={a.fecha && elem(a.fecha, 2)}
+            />
+          </label>
+        </.form>
         <.escala escala={a.escala} />
         <p class="cinta-texto">
-          {resumen_capa(a.capa)}
+          <span :if={a.fecha}>{cifra(a.visibles)} en el rango, de</span> {resumen_capa(a.capa)}
           <span :if={a.capa.repetidas > 0}>
             Hay zonas con más de un renglón: para pintar por columna se necesita uno por zona.
           </span>
@@ -703,7 +748,21 @@ defmodule MapoWeb.MapaLive.Index do
 
     case a && Capas.get_capa(socket.assigns.current_scope, a.capa.id) do
       nil -> {:noreply, socket}
-      capa -> {:noreply, mostrar_capa(socket, capa, columna, a.tono)}
+      capa -> {:noreply, mostrar_capa(socket, capa, columna, a.tono, a.fecha)}
+    end
+  end
+
+  # Solo los renglones de un rango de fechas. Una fecha que no se entiende o un
+  # rango al revés se ignora: el mapo sigue mostrando lo de antes.
+  def handle_event("fechar_capa", %{"capa" => id} = params, socket) do
+    a = abierta(socket, id)
+
+    with %{} <- a,
+         capa when not is_nil(capa) <- Capas.get_capa(socket.assigns.current_scope, a.capa.id),
+         {:ok, fecha} <- rango_fechas(capa, params) do
+      {:noreply, mostrar_capa(socket, capa, a.columna, a.tono, fecha)}
+    else
+      _ -> {:noreply, socket}
     end
   end
 
@@ -898,12 +957,37 @@ defmodule MapoWeb.MapaLive.Index do
     end
   end
 
-  defp mostrar_capa(socket, capa, columna, tono) do
+  defp rango_fechas(capa, params) do
+    dia = fn
+      v when v in [nil, ""] -> {:ok, nil}
+      v -> with {:ok, d} <- Date.from_iso8601(v), do: {:ok, Date.to_iso8601(d)}
+    end
+
+    with true <- params["columna"] in capa.fechas,
+         {:ok, desde} <- dia.(params["desde"]),
+         {:ok, hasta} <- dia.(params["hasta"]),
+         true <- is_nil(desde) or is_nil(hasta) or desde <= hasta do
+      {:ok, if(desde || hasta, do: {params["columna"], desde, hasta})}
+    else
+      _ -> :error
+    end
+  end
+
+  defp mostrar_capa(socket, capa, columna, tono, fecha \\ nil) do
     columna = if Capas.pintable?(capa, columna), do: columna
 
-    case datos_de_capa(capa, columna) do
+    case datos_de_capa(capa, columna, fecha) do
       {:ok, datos, escala} ->
-        nueva = %{capa: capa, columna: columna, escala: escala, tono: tono}
+        visibles = if fecha, do: length(datos[:puntos] || datos[:geojson]["features"])
+
+        nueva = %{
+          capa: capa,
+          columna: columna,
+          escala: escala,
+          tono: tono,
+          fecha: fecha,
+          visibles: visibles
+        }
 
         abiertas =
           if abierta(socket, capa.id) do
@@ -942,21 +1026,21 @@ defmodule MapoWeb.MapaLive.Index do
     end
   end
 
-  defp datos_de_capa(%{tipo: "puntos"} = capa, _columna),
-    do: {:ok, %{puntos: Capas.puntos(capa)}, nil}
+  defp datos_de_capa(%{tipo: "puntos"} = capa, _columna, fecha),
+    do: {:ok, %{puntos: Capas.puntos(capa, fecha)}, nil}
 
-  defp datos_de_capa(%{tipo: "raster"} = capa, _columna) do
+  defp datos_de_capa(%{tipo: "raster"} = capa, _columna, _fecha) do
     lugar = Capas.lugar_raster(capa)
     url = ~p"/capas/#{capa.id}/raster.png"
     {:ok, %{raster: Map.put(lugar, :url, url)}, %{limites: lugar.limites, nulos: nil}}
   end
 
-  defp datos_de_capa(%{tipo: "vector"} = capa, columna) do
-    geojson = Capas.geojson(capa, columna)
+  defp datos_de_capa(%{tipo: "vector"} = capa, columna, fecha) do
+    geojson = Capas.geojson(capa, columna, fecha)
     con_escala(geojson, columna)
   end
 
-  defp datos_de_capa(capa, columna) do
+  defp datos_de_capa(capa, columna, _fecha) do
     with {:ok, geojson} <- MapoCore.geo_por_clave(capa.tipo, Capas.claves(capa)) do
       geojson = if columna, do: con_valores(geojson, Capas.valores(capa, columna)), else: geojson
       con_escala(geojson, columna)

@@ -46,3 +46,8 @@ agricultura	siap_diccionario_municipal.xlsx	https://nube.agricultura.gob.mx/inde
 # copia del Internet Archive del archivo original (mismo digest en 2022-06 y 2022-10).
 agricultura	frontera_agricola_s2_centro_oeste.kmz	https://web.archive.org/web/20221021011427id_/http://infosiap.siap.gob.mx/gobmx/datosAbiertos/frontera-agricola/FASII_CW_Col_Jal_Ags_Gto_Mich.kmz
 agricultura	frontera_agricola_s2_diccionario.xlsx	https://web.archive.org/web/20221027004712id_/http://infosiap.siap.gob.mx/gobmx/datosAbiertos/frontera-agricola/Descripci%C3%B3n_capas_FA_II.xlsx
+# Índices de marginación 2020 de CONAPO (https://www.gob.mx/conapo/documentos/indices-de-marginacion-2020-284372).
+# Índice compuesto: se usan sus componentes, nunca el índice como puntaje de Mapo.
+marginacion	imc_2020_colonias_shp.zip	https://conapo.segob.gob.mx/work/models/CONAPO/Datos_Abiertos/Colonia/imc2020_shp.zip
+marginacion	imc_2020_colonias.zip	https://conapo.segob.gob.mx/work/models/CONAPO/Datos_Abiertos/Colonia/IMC_2020.zip
+marginacion	imu_2020_ageb.zip	https://conapo.segob.gob.mx/work/models/CONAPO/Datos_Abiertos/Marginacion/IMU_2020.zip

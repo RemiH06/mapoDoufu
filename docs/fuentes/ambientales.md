@@ -64,7 +64,7 @@ Salida:
 | `zona.gpkg` | Una capa por fuente, en EPSG:4326 |
 | `tablas/*.csv` | SIAP, sequía, defunciones y PTAR de los municipios pedidos |
 | `relieve.tif` | Copernicus GLO-30 recortado (mosaico de los cuadros que toca la caja) |
-| `diccionario_capas.csv` | Por capa: archivo, filas, fuente, fecha del dato, nivel geográfico, URL y nota |
+| `diccionario_capas.csv` | Por capa: archivo, filas, fuente, `fecha_dato` (AAAA, AAAA-MM o AAAA-MM-DD; el final si es un periodo; vacía si no se sabe), `fecha_texto` con el detalle, nivel geográfico, URL y nota |
 | `zona.txt` | Caja, municipios, CRS, fecha, comando completo y sha256 del script |
 | `procedencia.csv` | Por capa: archivo crudo, su sha256, fecha de descarga y URL (de `MANIFIESTO.tsv`) |
 
@@ -161,6 +161,38 @@ Caja -104.65, 19.55, -103.95, 20.05; municipios 14015 y 14037.
   empresas.)
 - 0 sitios subterráneos de RENAMECA y 0 pozos piezométricos en la caja: no es
   error, la red no tiene puntos ahí.
+
+## Marginación (CONAPO)
+
+Índices de marginación 2020 de CONAPO, bajados de
+https://www.gob.mx/conapo/documentos/indices-de-marginacion-2020-284372:
+
+| Archivo | Qué es |
+|---|---|
+| `marginacion/imc_2020_colonias_shp.zip` | 74,226 colonias con polígono (Lambert ITRF 2008), nombre, CP, población estimada, componentes, índice y grado |
+| `marginacion/imc_2020_colonias.zip` | La misma tabla en Excel |
+| `marginacion/imu_2020_ageb.zip` | Por AGEB urbana, con la CVEGEO de 13 caracteres |
+
+Es un índice compuesto, y en Mapo nunca hay puntaje único: el recorte lo entrega
+con sus once componentes, porcentajes del censo 2020 que se leen por separado
+(`P6A14NAE` de 6 a 14 años que no va a la escuela, `SBASC` sin educación básica,
+`PSDSS` sin servicios de salud, `OVSDE` sin drenaje, `OVSEE` sin electricidad,
+`OVSAE` sin agua entubada, `OVPT` con piso de tierra, `OVHAC` con hacinamiento,
+`OVSREF` sin refrigerador, `OVSINT` sin internet, `OVSCEL` sin celular). El índice
+(`IM_2020`) y el grado (`GM_2020`) quedan como los publica CONAPO, con su nombre.
+
+La población por colonia es estimada (trae decimales): CONAPO reparte la de las
+manzanas que la colonia cubre. `CLASIF` dice si es colonia, fraccionamiento,
+pueblo, residencial o zona militar.
+
+En el recorte salen la capa `colonias_marginacion` (las que tocan la caja) y la
+tabla `tablas/agebs_marginacion.csv` (los AGEB de los municipios pedidos, para
+unir con `agebs` por `cvegeo`).
+
+**Validación (2026-11-18).** En la caja del CP 45615, los 206 AGEB de Tlaquepaque y
+Tlajomulco que trae CONAPO tienen la misma población que el censo por AGEB de
+Mapo, sin una sola diferencia. Los 97 de la caja que no aparecen son de otros
+municipios o no tienen población. La colonia López Cotilla (`14098_0135`) está.
 
 ## Frontera agrícola
 

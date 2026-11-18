@@ -68,6 +68,15 @@ archivo use coma decimal, porque en México la coma separa miles; en coordenadas
 la coma siempre es decimal. Una celda vacía queda sin dato, nunca en cero. Las
 claves y los valores con ceros a la izquierda se quedan como texto.
 
+**Fechas.** Una columna es de fecha si todo lo que trae es fecha: AAAA-MM-DD (con
+hora o sin ella), DD/MM/AAAA, o AAAA-MM. Una de puros años solo si su nombre lo
+dice (fecha, año, anio, year, periodo); `fecha_dato` y `fecha_consulta` aceptan
+fechas parciales siempre. Se guardan en ISO (AAAA-MM-DD, con la hora si la
+traían). Si todos los valores caben como día/mes y como mes/día, se toma
+día/mes, como se escribe en México, y se avisa; si alguno solo cabe de una forma,
+manda esa. Una fecha parcial ("2018", "2018-03") cuenta como su periodo completo:
+entra en un rango si se traslapa con él.
+
 ## En el mapa
 
 La pestaña "Tus datos" abre hasta tres capas de los equipos de la persona, cada
@@ -77,6 +86,11 @@ numérica, con los mismos quintiles de la coropleta del censo, y lo que no trae
 dato se ve como "sin dato". Si una zona tiene más de un renglón no se pinta:
 sumar o promediar dependería de qué mide la columna, y Mapo no lo sabe. Para eso
 está el cruce, donde la persona lo decide.
+
+Una capa de puntos o geometrías con columnas de fecha trae un rango (desde,
+hasta) para ver solo esos renglones; si el rango está al revés, no cambia nada.
+En una capa por zona no hay rango: filtrar renglones cambiaría lo que se pinta
+por zona sin decirlo.
 
 Los datos de cada renglón no viajan con la capa: se piden al abrir su ficha. Para
 dibujar, las geometrías se simplifican unos 5 m; lo guardado conserva todos sus
@@ -153,7 +167,9 @@ distancia en metros acota una caja, y dentro de la caja gana el de menos
 metros. Si dos empatan, gana uno de ellos.
 
 **Filtros.** Hasta dos condiciones por capa, que se cumplen las dos: la columna
-contiene el texto, sin importar mayúsculas ni acentos. Una barra separa
+contiene el texto, sin importar mayúsculas ni acentos. Si la capa tiene fechas,
+además un rango (por ejemplo, focos de calor de una zafra: del 2024-11-01 al
+2025-05-31). Una barra separa
 alternativas dentro de una condición (`039|120`). Así, "clase contiene
 educación y municipio contiene 039|120" deja las escuelas de Guadalajara y
 Zapopan.
