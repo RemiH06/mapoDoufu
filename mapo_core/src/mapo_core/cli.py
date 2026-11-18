@@ -50,12 +50,20 @@ async def _censo_poblacion(args) -> None:
 
 
 async def _denue(args) -> None:
+    from pathlib import Path
+
     await inicializar_esquema()
     try:
-        total = await denue_downloader.descargar_estado(args.estado, token=args.token)
-    except denue_downloader.TokenFaltante as exc:
-        raise SystemExit(str(exc)) from None
+        total, borrados = await denue_downloader.descargar_estado(
+            args.estado, Path(args.archivo) if args.archivo else None
+        )
+    except denue_downloader.ArchivoInvalido as exc:
+        raise SystemExit(f"No se cargó nada: {exc}") from None
     print(f"{total} negocios guardados/actualizados para el estado {args.estado}.")
+    if borrados is None:
+        print("AVISO: más del 10 % de los negocios de antes no vino en esta carga; no se borró ninguno. Revisar.")
+    elif borrados:
+        print(f"{borrados} negocios que ya no vienen en DENUE, borrados.")
 
     pool = await get_pool()
     async with pool.connection() as conn:
@@ -167,10 +175,12 @@ def _construir_parser() -> argparse.ArgumentParser:
     p_censo.add_argument("--estado", required=True, help="cve_ent, ej. 14 (obligatorio)")
     p_censo.set_defaults(fn=_censo_poblacion)
 
-    p_denue = subparsers.add_parser("denue", help="Descarga los negocios de DENUE de un estado")
+    p_denue = subparsers.add_parser(
+        "denue", help="Carga los negocios de DENUE de un estado desde la descarga masiva (reemplaza los de antes)"
+    )
     p_denue.add_argument("--estado", required=True, help="cve_ent, ej. 14 (obligatorio)")
     p_denue.add_argument(
-        "--token", default=None, help="Token de INEGI (default: variable de entorno GAIARDA_DENUE_TOKEN)"
+        "--archivo", default=None, help="ZIP ya bajado (denue_NN_csv.zip); sin esto se baja de INEGI"
     )
     p_denue.set_defaults(fn=_denue)
 

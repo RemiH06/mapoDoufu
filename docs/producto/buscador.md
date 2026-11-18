@@ -128,8 +128,12 @@ cumple los dos o no, y se dice cuántas dejó fuera cada uno.
 
 - **Indicador con mínimo:** uno a elegir del censo por AGEB (`INDICADORES` en
   `zonas.py`), población total por defecto.
-- **Minutos:** sin negocio del rubro a menos de N minutos en auto.
-- **Orden:** por el indicador o por los minutos, a elección.
+- **Minutos, en dos sentidos:** lejos (el negocio del rubro más cercano a N
+  minutos en auto o más, por defecto) o cerca (a N o menos), para los rubros
+  que se agrupan. El patrón del rubro, arriba, dice cuál es el caso; el
+  sentido lo elige quien pregunta.
+- **Orden:** por el indicador o por los minutos, a elección. Por minutos va
+  primero lo que más cumple: lo más lejos, o lo más cerca.
 - **Arranque:** los dos criterios empiezan en su mediana (los minutos,
   redondeados hacia arriba). Es un punto de partida, no una recomendación, y
   la pantalla lo dice.
@@ -180,6 +184,56 @@ matriz da el dato exacto y cualquier umbral se resuelve filtrando.
   florería de barrio se decide a pie, y ahí la cifra es una aproximación.
 - **DENUE no dice cuánto vende nadie.** Sin competencia cerca no prueba que haya
   demanda: también puede querer decir que ahí no funciona.
+
+## Patrón del rubro
+
+`donde_poner` y `cuantos` traen, aparte, qué hace el rubro en los municipios de
+la pregunta (`POST /buscador/patron`, `patrones.py`). Nació de que el filtro de
+zonas asume que la competencia estorba, y hay rubros que se juntan a propósito:
+el filtro "sin florería a menos de N minutos" nunca propondría Mezquitán.
+
+Todo se compara contra los demás negocios del mismo recorte con las etiquetas
+sorteadas (199 sorteos, semilla fija). El comercio ya se junta en calles y
+centros: contra puntos uniformes, la prueba mediría eso y no al rubro. Sortear
+etiquetas deja las ubicaciones y pregunta si el rubro se junta más que eso.
+
+- **¿Se agrupa?** Distancia media de cada negocio del rubro al otro más cercano
+  del rubro, contra la misma medida en los sorteos. Abajo del 5 % de los
+  sorteos, se agrupa; arriba del 95 %, se reparte. Con menos de 5 negocios no
+  se mide y se dice.
+- **¿En plazas?** Parte del rubro con marca de plaza, mercado, edificio
+  comercial u hospital en DENUE (`tipo_plaza`), contra la de todos, con la
+  misma prueba. Sin la marca en la carga, `null` y una nota, nunca cero.
+- **¿Junto a qué?** Cociente de colocación de Leslie y Kronenfeld (2011): de
+  los negocios del rubro, cuántos tienen de vecino más cercano a otro rubro,
+  contra lo esperado (1 es el azar). Es asimétrico: A junto a B no implica B
+  junto a A. Los empates en distancia (una plaza con muchos locales en la misma
+  coordenada) se reparten entre los 10 vecinos más cercanos. Con 183 rubros a
+  la vez, solo se listan los que dan p < 0.01 y al menos 10 casos, hasta 5.
+- **¿Dónde?** Si se agrupa, `ST_ClusterDBSCAN` en metros (EPSG 6372): al menos
+  5 negocios encadenados a menos de la mitad de la distancia media de los
+  sorteos. K-means no: obliga a dar k, mete todo punto en algún grupo y parte
+  un corredor alargado. Cada foco lleva la colonia que más se repite en DENUE,
+  su contorno en el plano y un botón para centrarlo.
+- **Tope de 300 mil negocios.** La zona metropolitana son 233 mil y tarda unos
+  12 s la primera vez; se guardan las últimas 32 consultas hasta reiniciar.
+
+Validado con datos reales de Jalisco: las florerías de Guadalajara se agrupan
+(145 m contra 240 m al azar) y su foco mayor es Mezquitán con 117, lo mismo que
+contó la API en el punto del panteón. Las dulcerías de la zona metropolitana se
+agrupan en Abastos, San Juan de Dios, el Centro y Santa Teresita, y su vecino
+más cercano es, más de lo esperado, primaria (1.8) y papelería (1.7).
+
+### Lo que no dice
+
+- **Que se junten no dice que les vaya mejor.** DENUE es una foto: no separa
+  la florería que sobrevive junto al panteón de la que cerró. Eso es el estudio
+  de sobrevivencia (en `steps.md`), en notebook.
+- **No dice "conviene".** Dice "se agrupa", y el sentido de las zonas lo elige
+  quien pregunta. Sin puntaje (RNF5).
+- **El recorte importa.** Se compara contra los negocios de los municipios de
+  la pregunta: un rubro puede agruparse en la ciudad y no en un municipio
+  rural. La frontera corta vecinos, pero igual en lo observado y en los sorteos.
 
 ## Filtro "giro" del modo técnico
 

@@ -623,6 +623,7 @@ class SolicitudZonas(BaseModel):
     minimo: float | None = Field(default=None, ge=0)
     minutos: float | None = Field(default=None, ge=0)
     orden: Literal["indicador", "minutos"] = "indicador"
+    sentido: Literal["lejos", "cerca"] = "lejos"
 
 
 @app.post("/buscador/zonas")
@@ -644,7 +645,18 @@ async def buscador_zonas(
             minimo=solicitud.minimo,
             minutos=solicitud.minutos,
             orden=solicitud.orden,
+            sentido=solicitud.sentido,
         )
+    except buscador.PlantillaInvalida as exc:
+        raise HTTPException(422, {"mensaje": str(exc), "faltan": exc.faltan}) from None
+
+
+@app.post("/buscador/patron")
+async def buscador_patron(solicitud: SolicitudResolver, pool: AsyncConnectionPool = Depends(get_pool)) -> dict:
+    """Si el rubro se agrupa, en qué plazas, junto a qué y dónde. Aparte de
+    `/buscador/resolver` porque tarda unos segundos (199 sorteos)."""
+    try:
+        return await buscador.patron(pool, solicitud.cve_ent, solicitud.plantilla)
     except buscador.PlantillaInvalida as exc:
         raise HTTPException(422, {"mensaje": str(exc), "faltan": exc.faltan}) from None
 

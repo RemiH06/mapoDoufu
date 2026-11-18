@@ -107,6 +107,12 @@ CREATE TABLE IF NOT EXISTS fuente_denue_negocios (
 CREATE INDEX IF NOT EXISTS idx_denue_cve_ent ON fuente_denue_negocios (cve_ent);
 CREATE INDEX IF NOT EXISTS idx_denue_cve_mun ON fuente_denue_negocios (cve_ent, cve_mun);
 CREATE INDEX IF NOT EXISTS idx_denue_clase   ON fuente_denue_negocios (clase_actividad);
+-- Sesión 18: CLEE y la plaza o mercado donde está el local (la API los llama
+-- tipo_corredor_industrial, nom_corredor_industrial y numero_local).
+ALTER TABLE fuente_denue_negocios ADD COLUMN IF NOT EXISTS clee         TEXT;
+ALTER TABLE fuente_denue_negocios ADD COLUMN IF NOT EXISTS tipo_plaza   TEXT;
+ALTER TABLE fuente_denue_negocios ADD COLUMN IF NOT EXISTS plaza        TEXT;
+ALTER TABLE fuente_denue_negocios ADD COLUMN IF NOT EXISTS numero_local TEXT;
 
 CREATE TABLE IF NOT EXISTS fuente_enigh_concentradohogar (
     folioviv     TEXT NOT NULL,

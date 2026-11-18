@@ -137,7 +137,7 @@ async def test_sin_criterios_arranca_en_la_mediana_y_lo_regresa(conn, pool_de_un
 
     datos = _pedir(pool_de_una_conexion, OSRMFalso(tabla)).json()
 
-    assert datos["criterios"] == {"minimo": 3000, "minutos": 9.0, "orden": "indicador"}
+    assert datos["criterios"] == {"minimo": 3000, "minutos": 9.0, "orden": "indicador", "sentido": "lejos"}
     assert [f["ageb"] for f in datos["filas"]] == ["0002"]
 
 
@@ -279,3 +279,21 @@ async def test_solo_para_donde_poner_y_con_indicadores_conocidos(conn, pool_de_u
     r = _pedir(pool_de_una_conexion, OSRMFalso(), indicador="pobtot; drop table agebs")
     assert r.status_code == 422
     assert "Indicador desconocido" in r.json()["detail"]["mensaje"]
+
+
+@pytest.mark.asyncio
+async def test_cerca_invierte_el_filtro_y_el_orden_de_los_minutos(conn, pool_de_una_conexion):
+    await _municipio(conn)
+    tabla = {}
+    for sufijo, lat, pobtot, minutos in [("0001", 1.0, 5000, 2.0), ("0002", 2.0, 3000, 4.0), ("0003", 3.0, 100, 12.0)]:
+        await _ageb(conn, sufijo, lat, pobtot)
+        tabla[(await _lat(conn, sufijo), 5.0)] = minutos
+    await _negocio(conn, "n1", 5.0)
+
+    datos = _pedir(
+        pool_de_una_conexion, OSRMFalso(tabla), minimo=0, minutos=5, orden="minutos", sentido="cerca"
+    ).json()
+
+    assert [f["ageb"] for f in datos["filas"]] == ["0001", "0002"]
+    assert datos["descartes"]["por_minutos"] == 1
+    assert datos["criterios"]["sentido"] == "cerca"

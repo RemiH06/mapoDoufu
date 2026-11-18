@@ -93,7 +93,7 @@ docker compose exec mapo_core python -m mapo_core.cli estados
 docker compose exec mapo_core python -m mapo_core.cli municipios --estado 14
 docker compose exec mapo_core python -m mapo_core.cli agebs --estado 14
 docker compose exec mapo_core python -m mapo_core.cli censo_poblacion --estado 14
-docker compose exec mapo_core python -m mapo_core.cli denue --estado 14      # token en mapo_core/.env
+docker compose exec mapo_core python -m mapo_core.cli denue --estado 14      # descarga masiva; reemplaza el estado (~5 min)
 docker compose exec mapo_core python -m mapo_core.cli enigh
 docker compose exec mapo_core python -m mapo_core.cli enoe --anio 2025 --trimestre trim3
 docker compose exec mapo_core python -m mapo_core.cli sesnsp --archivo data/sesnsp/<archivo>.csv

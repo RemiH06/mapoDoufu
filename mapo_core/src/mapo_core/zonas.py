@@ -2,8 +2,10 @@
 
 No es un puntaje (RNF5, docs/arquitectura/decisiones.md). Hay dos criterios, se
 aplican los dos y nada se suma ni se pondera: un indicador del censo con un
-mínimo, y minutos en auto hasta el negocio más cercano del rubro. Se ordena por
-uno de los dos, y se dice cuántas AGEB dejó fuera cada uno.
+mínimo, y minutos en auto hasta el negocio más cercano del rubro. Los minutos
+van en los dos sentidos: lejos de la competencia (al menos N) o cerca de ella
+(N o menos), para los rubros que se agrupan (patrones.py). Se ordena por uno de
+los dos criterios, y se dice cuántas AGEB dejó fuera cada uno.
 
 Los minutos salen de la misma matriz de OSRM que usa /logistica, desde un punto
 dentro de cada AGEB. Con Zapopan tarda segundos, así que se calculan una vez y
@@ -61,7 +63,7 @@ class DemasiadasZonas(Exception):
     pass
 
 
-def _plano(lat: np.ndarray, lon: np.ndarray, lat_media: float) -> np.ndarray:
+def plano(lat: np.ndarray, lon: np.ndarray, lat_media: float) -> np.ndarray:
     """Coordenadas en km, equirectangular: basta para hallar vecinos."""
     return np.column_stack([lat * 111.32, lon * 111.32 * math.cos(math.radians(lat_media))])
 
@@ -105,9 +107,9 @@ async def minutos_a_negocios(
     a_lat = np.array([a[3] for a in agebs], dtype=float)
     a_lon = np.array([a[4] for a in agebs], dtype=float)
     lat_media = float(a_lat.mean())
-    arbol = cKDTree(_plano(puntos[:, 0], puntos[:, 1], lat_media))
+    arbol = cKDTree(plano(puntos[:, 0], puntos[:, 1], lat_media))
     k = min(VECINOS, len(puntos))
-    distancias, vecinos = arbol.query(_plano(a_lat, a_lon, lat_media), k=k)
+    distancias, vecinos = arbol.query(plano(a_lat, a_lon, lat_media), k=k)
     distancias, vecinos = distancias.reshape(len(agebs), k), vecinos.reshape(len(agebs), k)
 
     origenes = list(zip(a_lat.tolist(), a_lon.tolist()))
@@ -143,6 +145,7 @@ async def calcular(
     minutos: float | None,
     orden: str,
     unidad: str,
+    sentido: str = "lejos",
 ) -> dict:
     llave = (cve_ent, tuple(sorted(cve_muns)), tuple(sorted(clases)))
     avisos: list[str] = []
@@ -201,11 +204,15 @@ async def calcular(
         return f["valor"] >= minimo
 
     def cumple_minutos(f: dict) -> bool:
-        return not usa_minutos or f["minutos"] >= minutos
+        if not usa_minutos:
+            return True
+        return f["minutos"] <= minutos if sentido == "cerca" else f["minutos"] >= minutos
 
     candidatas = [f for f in con_dato if cumple_indicador(f) and cumple_minutos(f)]
     clave = "minutos" if orden == "minutos" and usa_minutos else "valor"
-    candidatas.sort(key=lambda f: (-f[clave], f["cvegeo"]))
+    # Por minutos va primero lo que más cumple: lo más lejos, o lo más cerca.
+    signo = 1 if clave == "minutos" and sentido == "cerca" else -1
+    candidatas.sort(key=lambda f: (signo * f[clave], f["cvegeo"]))
 
     return {
         "indicador": indicador,
@@ -215,6 +222,7 @@ async def calcular(
             "minimo": _para_mostrar(minimo),
             "minutos": _para_mostrar(minutos),
             "orden": "minutos" if clave == "minutos" else "indicador",
+            "sentido": sentido,
         },
         "total": len(filas),
         "total_candidatas": len(candidatas),

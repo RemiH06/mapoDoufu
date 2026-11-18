@@ -53,3 +53,59 @@ Las 918 clases de actividad de Jalisco quedaron clasificadas en sector
 y rubro en `mapo_core/src/mapo_core/rubros/clases.csv` (detalle en
 `../producto/buscador.md`). Al cargar otro estado, `cli denue` avisa
 de las clases que todavía no están en la tabla.
+
+## Descarga masiva en vez de la API (2026-11-17, sesión 18)
+
+La carga dejó de paginar `BuscarEntidad`: **su paginación no es estable.** La
+misma página pedida dos veces trae otro orden, y en una de tres pruebas, 5 de
+1,000 negocios distintos. Al recargar Jalisco por la API llegaron 401,813
+registros pero solo 395,704 ids distintos: 6,109 repetidos y 6,109 que nunca
+llegaron. La carga de agosto había salido completa (401,813 distintos), así que
+el problema no siempre se nota.
+
+Ahora `cli denue --estado NN` baja
+`https://www.inegi.org.mx/contenidos/masiva/denue/denue_NN_csv.zip` (40 MB
+para Jalisco, 215 MB descomprimido), lee el CSV en Latin-1 sin cargarlo entero
+en memoria y reemplaza los negocios del estado. Es la misma edición que sirve la
+API (05/2026, 401,813 negocios en Jalisco, ningún id repetido), no pide token y
+tarda unos 5 minutos en vez de media hora. `--archivo` usa un ZIP ya bajado.
+
+- **Cada carga reemplaza el estado.** Es una transacción: si se corta, no queda
+  nada a medias. Al terminar borra los negocios del estado que ya no vinieron,
+  salvo que sean más del 10 %: eso huele a archivo cortado y se avisa sin
+  borrar. Si un id viene dos veces, no carga nada.
+- **Mismas columnas que antes**, con los nombres del CSV: `nom_estab`,
+  `nombre_act` (mismo texto que `Clase_actividad` de la API: las 918 clases
+  empatan con `clases.csv` sin cambios), `per_ocu`, `nom_vial`, `nomb_asent`,
+  `tipoUniEco`. `ubicacion` se arma con localidad, municipio y estado.
+- **`cve_mun` y `cve_ageb` siguen saliendo por geometría**, aunque el CSV traiga
+  las claves: así `cve_ageb` solo existe donde hay AGEB urbana cargada. Si un
+  negocio cambió de coordenadas, se recalculan.
+- **El CSV trae más de lo que se guarda:** código SCIAN (`codigo_act`), manzana
+  y `fecha_alta` (año y mes). La fecha sirve al estudio de sobrevivencia.
+- `/buscador/zonas` y `/buscador/patron` guardan resultados en memoria: después
+  de una carga, reiniciar `mapo_core`.
+
+## CLEE y plaza o mercado (2026-11-17, sesión 18)
+
+Columnas nuevas, que la carga por API tiraba:
+
+| Columna | CSV masivo | `BuscarEntidad` | `Buscar` |
+|---|---|---|---|
+| `clee` | `clee` | `CLEE` | `CLEE` |
+| `tipo_plaza` | `tipoCenCom` | `tipo_corredor_industrial` | `TipoCentroComercial` |
+| `plaza` | `nom_CenCom` | `nom_corredor_industrial` | `CentroComercial` |
+| `numero_local` | `num_local` | `numero_local` | `NumLocal` |
+
+En la API los nombres engañan: no son corredores industriales sino la plaza,
+mercado o edificio donde está el local. Vacío se guarda como `NULL`.
+
+- **Cobertura en Jalisco:** 29,785 de 401,813 (7.4 %). Los más comunes: centro
+  y plaza comercial (11,284), mercado público (10,492), edificio comercial y de
+  servicios (4,423), hospital o clínica (996), pasaje y andador comercial.
+  Sin marca no quiere decir que el local esté en la calle: las 29 dulcerías
+  alrededor de Santa Tere vienen sin ella. La usa el patrón del rubro
+  (`../producto/buscador.md`).
+- **`CLEE`:** 28 caracteres, uno por negocio. Es la llave para empatar
+  ediciones de DENUE en el estudio de sobrevivencia; falta verificar que sea
+  estable entre ediciones.

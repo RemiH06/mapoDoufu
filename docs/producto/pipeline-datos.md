@@ -53,6 +53,8 @@ fallar en voz alta**, no dejar un vacío silencioso ni un número plausible y fa
 | Censo 2020 | `*` es dato reservado y `N/D` no disponible | — | Vacío, nunca cero |
 | Censo 2020 | Los cuartos se agrupan en "3 o más" | `rm` casi constante | Columnas de proporción además del promedio |
 | DENUE | `cve_ageb` viene vacío a veces | — | Asignar la AGEB por geometría |
+| DENUE, API | La paginación de `BuscarEntidad` no es estable: la misma página trae otro orden y otros negocios. En Jalisco llegaron 401,813 registros con 6,109 repetidos, y faltaron otros tantos | Ids distintos menos que registros recibidos | No paginar: cargar la descarga masiva (un CSV por estado), y negarse a cargar si un id se repite |
+| DENUE, masiva | El CSV viene en Latin-1 | "Zúñiga" mal leído; clases que no empatan con `clases.csv` | Leer en Latin-1; la CLI avisa de clases sin rubro |
 | RETC | El encabezado está entre los renglones 7 y 10 según el año; coordenadas como texto `20°41'27"`; columnas distintas por año | — | Buscar el renglón que dice latitud; parser de grados, minutos y segundos |
 | REPDA | Coordenadas en seis columnas de grados, minutos y segundos, longitud sin signo; el CSV viene en UTF-8 y un nombre de archivo trae una Á mal codificada | Longitudes positivas | Negar la longitud en México; buscar el archivo por prefijo |
 | ITER | Coordenadas `104°21'48.123" W`; renglones de totales (`LOC` 0, 9998, 9999) | — | Quitar totales antes de sumar |

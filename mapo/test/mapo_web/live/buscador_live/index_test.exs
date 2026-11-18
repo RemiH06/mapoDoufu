@@ -125,6 +125,51 @@ defmodule MapoWeb.BuscadorLive.IndexTest do
     )
   end
 
+  defp patron(cambios \\ %{}) do
+    Map.merge(
+      %{
+        "negocios" => 120,
+        "todos" => 40_000,
+        "sorteos" => 199,
+        "que" => "Florería",
+        "unidad" => "negocios",
+        "nota" => nil,
+        "agrupacion" => %{
+          "patron" => "se_agrupa",
+          "distancia_m" => 38,
+          "al_azar_m" => 310,
+          "al_azar_rango_m" => [280, 345],
+          "p_agrupa" => 0.005
+        },
+        "plazas" => %{
+          "patron" => "mas_en_plazas",
+          "rubro" => 0.25,
+          "todos" => 0.1,
+          "tipos" => [%{"tipo" => "MERCADO PUBLICO", "negocios" => 30}]
+        },
+        "junto_a" => [
+          %{"rubro" => "funeraria", "nombre" => "Funeraria", "cociente" => 6.2, "casos" => 14}
+        ],
+        "focos" => %{
+          "radio_m" => 155,
+          "minimo" => 5,
+          "total" => 1,
+          "en_focos" => 70,
+          "lista" => [
+            %{
+              "negocios" => 70,
+              "lat" => 20.69,
+              "lon" => -103.35,
+              "colonia" => "MEZQUITAN",
+              "geojson" => "{}"
+            }
+          ]
+        }
+      },
+      cambios
+    )
+  end
+
   defp resolver_donde_poner(conn, opts \\ []) do
     plantilla = %{"intencion" => "donde_poner", "rubro" => "floreria", "municipios" => ["120"]}
     stub([interpretar: interpretacion(plantilla), resolver: resultado_donde_poner()] ++ opts)
@@ -170,6 +215,17 @@ defmodule MapoWeb.BuscadorLive.IndexTest do
 
             respuesta ->
               Req.Test.json(conn, respuesta || zonas())
+          end
+
+        "/buscador/patron" ->
+          case opts[:patron] do
+            {:status, status, respuesta} ->
+              conn
+              |> Plug.Conn.put_resp_content_type("application/json")
+              |> Plug.Conn.send_resp(status, Jason.encode!(respuesta))
+
+            respuesta ->
+              Req.Test.json(conn, respuesta || patron())
           end
 
         "/buscador/resolver" ->
@@ -538,6 +594,18 @@ defmodule MapoWeb.BuscadorLive.IndexTest do
       refute has_element?(view, ~s(input[name="criterios[minutos]"]))
     end
 
+    test "cerca invierte el filtro de minutos y se manda", %{conn: conn} do
+      view = resolver_donde_poner(conn, espia: self())
+      assert_receive {:zonas, %{"sentido" => "lejos"}}
+      render_async(view)
+
+      view
+      |> form("#criterios_form", criterios: %{sentido: "cerca", minutos: "4"})
+      |> render_change()
+
+      assert_receive {:zonas, %{"sentido" => "cerca", "minutos" => 4}}
+    end
+
     test "ver una zona dibuja su isócrona con los minutos del criterio", %{conn: conn} do
       view = resolver_donde_poner(conn)
       render_async(view)
@@ -563,7 +631,7 @@ defmodule MapoWeb.BuscadorLive.IndexTest do
         end
       end)
 
-      view |> element("button", "Ver") |> render_click()
+      view |> element(~s(button[phx-click="ver_zona"])) |> render_click()
       html = render_async(view)
 
       assert_receive {:cerca, %{"plantilla" => %{"intencion" => "cuantos_cerca", "minutos" => 2}}}
@@ -578,6 +646,103 @@ defmodule MapoWeb.BuscadorLive.IndexTest do
 
       refute render(view) =~ "minutos en auto de 0001"
       assert_push_event(view, "capa_isocrona", %{activa: false})
+    end
+  end
+
+  describe "patrón del rubro" do
+    test "dice si se agrupa contra el azar, en plazas, junto a qué y los focos", %{conn: conn} do
+      view = resolver_donde_poner(conn)
+      html = render_async(view)
+
+      assert html =~ "Patrón del rubro"
+      assert html =~ "Se agrupa."
+      assert html =~ "38 m"
+      assert html =~ "310 m"
+      assert html =~ "199 sorteos"
+      assert html =~ "25.0 %"
+      assert html =~ "mercado publico (30)"
+      assert html =~ "Funeraria (6.2 veces)"
+      assert html =~ "MEZQUITAN"
+      assert html =~ "Que se junten no dice que les vaya mejor."
+      refute html =~ "conviene"
+
+      assert_push_event(view, "capa_focos", %{
+        activa: true,
+        focos: [%{"colonia" => "MEZQUITAN"}]
+      })
+    end
+
+    test "lista los cinco focos mayores y dice cuántos más van al plano", %{conn: conn} do
+      foco =
+        &%{
+          "negocios" => 10 - &1,
+          "lat" => 20.6,
+          "lon" => -103.3,
+          "colonia" => "C#{&1}",
+          "geojson" => "{}"
+        }
+
+      muchos =
+        patron(%{
+          "focos" => %{
+            "radio_m" => 100,
+            "minimo" => 5,
+            "total" => 60,
+            "en_focos" => 400,
+            "lista" => Enum.map(1..7, foco)
+          }
+        })
+
+      html = resolver_donde_poner(conn, patron: muchos) |> render_async()
+
+      assert html =~ "con borde en el plano los 7 mayores"
+      assert html =~ "C5"
+      refute html =~ "C6"
+      assert html =~ "y 2 más en el plano."
+    end
+
+    test "ver un foco centra el plano en él", %{conn: conn} do
+      view = resolver_donde_poner(conn)
+      render_async(view)
+
+      view |> element(~s(button[phx-click="ver_foco"])) |> render_click()
+
+      assert_push_event(view, "centrar", %{lat: 20.69, lon: -103.35, zoom: 15})
+    end
+
+    test "sin patrón medible se dice la nota y no hay focos", %{conn: conn} do
+      sin =
+        patron(%{
+          "agrupacion" => nil,
+          "plazas" => nil,
+          "junto_a" => [],
+          "nota" => "Con menos de 5 negocios del rubro con ubicación no hay patrón que medir.",
+          "focos" => %{
+            "radio_m" => nil,
+            "minimo" => 5,
+            "total" => 0,
+            "en_focos" => 0,
+            "lista" => []
+          }
+        })
+
+      view = resolver_donde_poner(conn, patron: sin)
+      html = render_async(view)
+
+      assert html =~ "no hay patrón que medir"
+      refute html =~ "Se agrupa."
+      assert_push_event(view, "capa_focos", %{activa: false})
+    end
+
+    test "el 422 se muestra sin tirar la respuesta", %{conn: conn} do
+      view =
+        resolver_donde_poner(conn,
+          patron: {:status, 422, %{"detail" => %{"mensaje" => "Elige menos municipios."}}}
+        )
+
+      html = render_async(view)
+      assert html =~ "Elige menos municipios."
+      assert html =~ "Zonas candidatas"
     end
   end
 end

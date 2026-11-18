@@ -24,7 +24,7 @@ import {ESTADOS_BBOX} from "./estados_bbox"
 
 const CENTRO_MEXICO = [23.6345, -102.5528]
 const ZOOM_MEXICO = 5
-const ENFOQUE = {propios: "consumo", puntos: "comercio", zonas: "comercio", coropleta: "demografia", voronoi: "comercio", coloreado: "urbanismo", isocrona: "movilidad"}
+const ENFOQUE = {propios: "consumo", puntos: "comercio", zonas: "comercio", focos: "comercio", coropleta: "demografia", voronoi: "comercio", coloreado: "urbanismo", isocrona: "movilidad"}
 // Opacidad de la pelicula por clase: mas valor, mas tinta.
 const TINTA_QUINTIL = [0.12, 0.26, 0.42, 0.6, 0.8]
 const TINTA_COLOREADO = [0.14, 0.32, 0.5, 0.68]
@@ -101,6 +101,11 @@ export const MapaTecnico = {
     this.handleEvent("capa_zonas", datos => {
       this.datos.zonas = datos.activa ? datos : null
       this._dibujar("zonas")
+    })
+    // Los focos llegan después de la respuesta, como las zonas: no reencuadran.
+    this.handleEvent("capa_focos", datos => {
+      this.datos.focos = datos.activa ? datos : null
+      this._dibujar("focos")
     })
     this.handleEvent("pedir_ubicacion", () => this._ubicacion())
     this.handleEvent("encuadrar_estado", ({cve_ent}) => {
@@ -328,6 +333,15 @@ export const MapaTecnico = {
       trazo({color: tinta("--bg"), weight: 4, opacity: 0.95, fill: false}),
       trazo({color: tinta("--text"), weight: 1.8, opacity: 1, fill: false}),
     ])
+  },
+
+  // Focos de un rubro que se agrupa (patrones.py): contorno punteado, sin
+  // relleno, para no tapar la coropleta ni las zonas.
+  _focos({focos}, color, opciones) {
+    return L.featureGroup(focos.map(f => L.geoJSON(JSON.parse(f.geojson), {
+      ...opciones,
+      style: {color, weight: 2, dashArray: "4 3", opacity: 1, fillColor: color, fillOpacity: 0.08},
+    }).bindPopup(`${escapar(f.colonia || "Sin colonia")}<br>${f.negocios} del rubro`)))
   },
 
   _voronoi({geojson}, color, opciones) {

@@ -20,7 +20,7 @@ from functools import cache
 
 from pydantic import BaseModel, Field
 
-from mapo_core import consultas, rubros
+from mapo_core import consultas, patrones, rubros
 from mapo_core import zonas as zonas_candidatas
 from mapo_core.isocronas import calcular_isocrona
 from mapo_core.voronoi import calcular_voronoi
@@ -380,6 +380,7 @@ async def zonas(
     minimo: float | None = None,
     minutos: float | None = None,
     orden: str = "indicador",
+    sentido: str = "lejos",
 ) -> dict:
     """Zonas candidatas de un `donde_poner`: AGEB que cumplen criterios a la
     vista, sin puntaje (docs/producto/buscador.md)."""
@@ -402,9 +403,24 @@ async def zonas(
             minutos=minutos,
             orden=orden,
             unidad=_unidad(p)[0],
+            sentido=sentido,
         )
     except zonas_candidatas.DemasiadasZonas as exc:
         raise PlantillaInvalida(str(exc)) from None
+
+
+async def patron(pool, cve_ent: str, p: Plantilla) -> dict:
+    """Si el rubro se agrupa, en qué plazas, junto a qué y dónde, en los
+    municipios de la pregunta (patrones.py). Para `donde_poner` y `cuantos`."""
+    _validar(p)
+    if p.intencion not in ("donde_poner", "cuantos"):
+        raise PlantillaInvalida("El patrón es de las preguntas dónde poner y cuántos hay.")
+    clases = rubros.clases_de(rubro=p.rubro, sector=p.sector, solo_publicos=p.solo_publicos)
+    try:
+        resultado = await patrones.calcular(pool, cve_ent, p.municipios, clases)
+    except patrones.DemasiadosNegocios as exc:
+        raise PlantillaInvalida(str(exc)) from None
+    return {**resultado, "que": _que(p), "unidad": _unidad(p)[0]}
 
 
 async def _por_municipio(pool, cve_ent: str, p: Plantilla, clases: list[str], avisos: list[str]) -> dict:

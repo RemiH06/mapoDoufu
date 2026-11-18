@@ -161,6 +161,15 @@ defmodule Mapo.MapoCore do
   end
 
   @doc """
+  Patrón del rubro de un `donde_poner` o `cuantos`: `%{"agrupacion",
+  "plazas", "junto_a", "focos", ...}`. Son 199 sorteos sobre todos los negocios
+  de los municipios: con la zona metropolitana tarda unos segundos.
+  """
+  def buscador_patron(cve_ent, plantilla) do
+    post("/buscador/patron", %{cve_ent: cve_ent, plantilla: plantilla}, receive_timeout: 60_000)
+  end
+
+  @doc """
   Lee un archivo del usuario sin guardarlo: `%{"columnas", "muestra",
   "num_filas", "avisos", "sugerencia"}`. Si el archivo no sirve, regresa
   `{:error, {:status, 422, %{"detail" => mensaje}}}` con el motivo.

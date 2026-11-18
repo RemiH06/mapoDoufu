@@ -23,7 +23,7 @@
 Una por fuente: de dónde sale, cómo se carga, sus problemas conocidos y las cifras reales con que se validó.
 
 - [geo-censo.md](fuentes/geo-censo.md): marco geoestadístico (estados, municipios, AGEBs) y censo de población.
-- [denue.md](fuentes/denue.md): negocios (comercio).
+- [denue.md](fuentes/denue.md): negocios (comercio), desde la descarga masiva por estado.
 - [enigh.md](fuentes/enigh.md): ingreso y gasto de hogares (consumo).
 - [enoe.md](fuentes/enoe.md): ocupación y empleo (laboral).
 - [sesnsp.md](fuentes/sesnsp.md): incidencia delictiva (seguridad), carga manual.
@@ -69,6 +69,7 @@ Qué se construyó en cada etapa, por qué así y qué bugs reales aparecieron.
 - [Cruce de datos propios, noviembre 2026](historial/2026-11-cruce.md)
 - [Pasada final de diseño, noviembre 2026](historial/2026-11-diseno-final.md)
 - [Pasada de seguridad, noviembre 2026](historial/2026-11-seguridad.md)
+- [Patrones por rubro, noviembre 2026](historial/2026-11-patrones-rubro.md)
 
 ## Gaiarda
 

@@ -1,74 +1,48 @@
-"""Descargador de DENUE (negocios), vendorizado de
-`gaiarda/src/gaiarda/fuentes/denue/{api,downloader}.py`.
+"""Cargador de DENUE (negocios) desde la descarga masiva de INEGI: un ZIP
+por estado con un CSV de todos sus negocios.
 
-Requiere un token gratuito de INEGI (registro en
-https://www.inegi.org.mx/app/api/denue/v1/tokenVerify.aspx), leido de
-la variable de entorno `GAIARDA_DENUE_TOKEN` (o pasado explicito).
+Hasta la sesión 18 se paginaba `BuscarEntidad` de la API (vendorizado de
+Gaiarda). Se dejó porque la paginación no es estable: la misma página pedida
+dos veces trae otro orden y otros negocios, y en la recarga de Jalisco del
+2026-11-17 llegaron 6,109 repetidos y faltaron otros tantos
+(docs/fuentes/denue.md). El CSV trae los mismos negocios de la misma edición,
+completo, sin token y en minutos en vez de media hora.
 
-Solo usa `BuscarEntidad` (bulk por estado, paginado), no
-`BuscarAreaAct`: Gaiarda nunca confirmo los nombres exactos de las
-propiedades de AGEB/manzana que ese segundo metodo dice traer, y este
-proyecto no reinventa esa incertidumbre. Por eso `BuscarEntidad` no
-trae `cve_ageb`/`cve_mun`: se rellenan despues con un cruce espacial
-contra los poligonos ya descargados (`municipios`/`agebs`), usando
-`ST_Contains` directo en Postgres en vez de cargar geojson en memoria
-como hace Gaiarda con su `IndiceEspacial` (mas simple, la base ya
-tiene los poligonos).
+`cve_mun` y `cve_ageb` se siguen asignando con `ST_Contains` contra los
+polígonos cargados, aunque el CSV traiga las claves: así `cve_ageb` solo
+existe donde hay AGEB urbana en la base, como antes.
 """
 
 from __future__ import annotations
 
-import asyncio
-import os
+import csv
+import io
+import tempfile
+import zipfile
+from pathlib import Path
 
 import httpx
 
-from mapo_core.db import esta_hecho, get_pool, marcar_hecho
+from mapo_core.db import get_pool, marcar_hecho
 
-BASE_URL = "https://www.inegi.org.mx/app/api/denue/v1/consulta"
-TOKEN_ENV_VAR = "GAIARDA_DENUE_TOKEN"
-TAMANO_PAGINA = 1000
-_TIMEOUT = 60.0
-_INTENTOS = 3
+URL_TEMPLATE = "https://www.inegi.org.mx/contenidos/masiva/denue/denue_{cve_ent}_csv.zip"
+_TIMEOUT = 600.0
+# El CSV de INEGI viene en Latin-1 ("Zúñiga" se lee bien así).
+CODIFICACION = "latin-1"
+LOTE = 5000
+
+# Si la carga nueva trae mucho menos que lo que ya hay, lo más probable es un
+# archivo cortado: se deja todo y se avisa en vez de borrar medio estado.
+MAX_PARTE_SIN_VENIR = 0.10
 
 
-class TokenFaltante(Exception):
+class ArchivoInvalido(Exception):
     pass
 
 
-def _obtener_token(token: str | None) -> str:
-    token = token or os.environ.get(TOKEN_ENV_VAR)
-    if not token:
-        raise TokenFaltante(
-            f"Falta un token de DENUE. Pasa --token o define {TOKEN_ENV_VAR} "
-            "(registro gratuito: https://www.inegi.org.mx/app/api/denue/v1/tokenVerify.aspx)"
-        )
-    return token
-
-
-def _cliente() -> httpx.AsyncClient:
-    return httpx.AsyncClient(base_url=BASE_URL, timeout=_TIMEOUT)
-
-
-async def _get(client: httpx.AsyncClient, path: str) -> list[dict]:
-    ultima_excepcion: Exception | None = None
-    for intento in range(1, _INTENTOS + 1):
-        try:
-            respuesta = await client.get(path)
-            respuesta.raise_for_status()
-            return respuesta.json()
-        except httpx.HTTPStatusError:
-            raise
-        except httpx.TransportError as exc:
-            ultima_excepcion = exc
-            await asyncio.sleep(intento)
-    raise ultima_excepcion
-
-
-async def buscar_entidad(
-    client: httpx.AsyncClient, cve_ent: str, pos_ini: int, pos_fin: int, token: str, condicion: str = "todos"
-) -> list[dict]:
-    return await _get(client, f"/BuscarEntidad/{condicion}/{cve_ent}/{pos_ini}/{pos_fin}/{token}")
+def _texto(fila: dict, campo: str) -> str | None:
+    valor = (fila.get(campo) or "").strip()
+    return valor or None
 
 
 def _float_seguro(valor) -> float | None:
@@ -78,90 +52,147 @@ def _float_seguro(valor) -> float | None:
         return None
 
 
-def _normalizar(registro: dict, cve_ent: str) -> dict | None:
-    id_ = registro.get("Id")
+def _normalizar(fila: dict, cve_ent: str) -> dict | None:
+    """Un renglón del CSV masivo a las columnas de `fuente_denue_negocios`
+    (los mismos nombres que usaba la carga por API)."""
+    id_ = _texto(fila, "id")
     if not id_:
         return None
+    lugar = [_texto(fila, c) for c in ("localidad", "municipio", "entidad")]
     return {
-        "id": str(id_),
-        "nombre": registro.get("Nombre"),
-        "razon_social": registro.get("Razon_social"),
-        "clase_actividad": registro.get("Clase_actividad"),
-        "estrato": registro.get("Estrato"),
-        "calle": registro.get("Calle"),
-        "colonia": registro.get("Colonia"),
-        "codigo_postal": registro.get("CP"),
-        "ubicacion": registro.get("Ubicacion"),
-        "telefono": registro.get("Telefono"),
-        "correo": registro.get("Correo_e"),
-        "sitio_web": registro.get("Sitio_internet"),
-        "tipo": registro.get("Tipo"),
-        "lat": _float_seguro(registro.get("Latitud")),
-        "lon": _float_seguro(registro.get("Longitud")),
+        "id": id_,
+        "clee": _texto(fila, "clee"),
+        # Plaza, mercado, edificio o parque industrial donde está el local. Sin
+        # marca no quiere decir que esté en la calle: INEGI no siempre la pone.
+        "tipo_plaza": _texto(fila, "tipoCenCom"),
+        "plaza": _texto(fila, "nom_CenCom"),
+        "numero_local": _texto(fila, "num_local"),
+        "nombre": _texto(fila, "nom_estab"),
+        "razon_social": _texto(fila, "raz_social"),
+        "clase_actividad": _texto(fila, "nombre_act"),
+        "estrato": _texto(fila, "per_ocu"),
+        "calle": _texto(fila, "nom_vial"),
+        "colonia": _texto(fila, "nomb_asent"),
+        "codigo_postal": _texto(fila, "cod_postal"),
+        "ubicacion": ", ".join(p for p in lugar if p) or None,
+        "telefono": _texto(fila, "telefono"),
+        "correo": _texto(fila, "correoelec"),
+        "sitio_web": _texto(fila, "www"),
+        "tipo": _texto(fila, "tipoUniEco"),
+        "lat": _float_seguro(fila.get("latitud")),
+        "lon": _float_seguro(fila.get("longitud")),
         "cve_ent": cve_ent,
     }
 
 
 _COLUMNAS = [
-    "id", "nombre", "razon_social", "clase_actividad", "estrato", "calle", "colonia",
-    "codigo_postal", "ubicacion", "telefono", "correo", "sitio_web", "tipo", "lat", "lon", "cve_ent",
+    "id", "clee", "tipo_plaza", "plaza", "numero_local", "nombre", "razon_social", "clase_actividad",
+    "estrato", "calle", "colonia", "codigo_postal", "ubicacion", "telefono", "correo", "sitio_web",
+    "tipo", "lat", "lon", "cve_ent",
 ]
 
+# Si el negocio se movió, su municipio y AGEB se vuelven a calcular.
+_SE_MOVIO = "(n.lat, n.lon) IS DISTINCT FROM (EXCLUDED.lat, EXCLUDED.lon)"
+_INSERTAR = f"""INSERT INTO fuente_denue_negocios AS n ({", ".join(_COLUMNAS)})
+    VALUES ({", ".join(f"%({c})s" for c in _COLUMNAS)})
+    ON CONFLICT (id) DO UPDATE SET {", ".join(f"{c} = EXCLUDED.{c}" for c in _COLUMNAS if c != "id")},
+        cve_mun = CASE WHEN {_SE_MOVIO} THEN NULL ELSE n.cve_mun END,
+        cve_ageb = CASE WHEN {_SE_MOVIO} THEN NULL ELSE n.cve_ageb END,
+        actualizado = now()"""
 
-async def descargar_estado(
-    cve_ent: str, token: str | None = None, tamano_pagina: int = TAMANO_PAGINA
-) -> int:
-    """Descarga todos los negocios de un estado (paginado, checkpoint
-    a nivel estado completo: si se interrumpe a medio camino, retoma
-    ese estado desde cero al reintentar, no duplica nada gracias al
-    upsert por id, solo repite llamadas ya hechas)."""
-    token = _obtener_token(token)
+
+def leer_zip(ruta: Path, cve_ent: str):
+    """Renglones normalizados del CSV dentro del ZIP, sin cargarlo entero en
+    memoria (Jalisco son 215 MB de texto). Truena si un id se repite: el
+    archivo no está completo o no es el que se espera."""
+    with zipfile.ZipFile(ruta) as zf:
+        nombres = [n for n in zf.namelist() if n.startswith("conjunto_de_datos/") and n.endswith(".csv")]
+        if len(nombres) != 1:
+            raise ArchivoInvalido(f"Se esperaba un CSV en conjunto_de_datos/, hay {len(nombres)}.")
+        with zf.open(nombres[0]) as crudo:
+            vistos: set[str] = set()
+            for fila in csv.DictReader(io.TextIOWrapper(crudo, encoding=CODIFICACION, newline="")):
+                if fila.get("cve_ent") != cve_ent:
+                    raise ArchivoInvalido(f"El archivo trae negocios del estado {fila.get('cve_ent')}, no del {cve_ent}.")
+                normalizado = _normalizar(fila, cve_ent)
+                if normalizado is None:
+                    continue
+                if normalizado["id"] in vistos:
+                    raise ArchivoInvalido(f"El id {normalizado['id']} viene dos veces.")
+                vistos.add(normalizado["id"])
+                yield normalizado
+
+
+async def descargar_zip(cve_ent: str, destino: Path) -> None:
+    async with httpx.AsyncClient(timeout=_TIMEOUT) as client:
+        async with client.stream("GET", URL_TEMPLATE.format(cve_ent=cve_ent)) as respuesta:
+            respuesta.raise_for_status()
+            with open(destino, "wb") as f:
+                async for parte in respuesta.aiter_bytes():
+                    f.write(parte)
+
+
+async def cargar_zip(ruta: Path, cve_ent: str) -> tuple[int, int | None]:
+    """Reemplaza los negocios del estado con los del ZIP. Regresa (guardados,
+    borrados); `borrados` es None si eran demasiados para borrarlos
+    (MAX_PARTE_SIN_VENIR) y entonces no se borra ninguno."""
     pool = await get_pool()
-    clave = f"denue:{cve_ent}"
-
     async with pool.connection() as conn:
-        if await esta_hecho(conn, clave):
-            return 0
+        cursor = await conn.execute("SELECT now()")
+        (inicio,) = await cursor.fetchone()
 
         total = 0
-        async with _cliente() as client:
-            pos_ini = 1
-            while True:
-                pos_fin = pos_ini + tamano_pagina - 1
-                registros = await buscar_entidad(client, cve_ent, pos_ini, pos_fin, token)
-                if not registros:
-                    break
+        lote: list[dict] = []
+        async with conn.cursor() as cur:
+            for fila in leer_zip(ruta, cve_ent):
+                lote.append(fila)
+                if len(lote) == LOTE:
+                    await cur.executemany(_INSERTAR, lote)
+                    total += len(lote)
+                    lote = []
+            if lote:
+                await cur.executemany(_INSERTAR, lote)
+                total += len(lote)
 
-                for registro in registros:
-                    normalizado = _normalizar(registro, cve_ent)
-                    if normalizado is None:
-                        continue
-                    columnas_sql = ", ".join(_COLUMNAS)
-                    marcadores = ", ".join(f"%({c})s" for c in _COLUMNAS)
-                    actualizables = ", ".join(f"{c} = EXCLUDED.{c}" for c in _COLUMNAS if c != "id")
-                    await conn.execute(
-                        f"""INSERT INTO fuente_denue_negocios ({columnas_sql})
-                            VALUES ({marcadores})
-                            ON CONFLICT (id) DO UPDATE SET {actualizables}, actualizado = now()""",
-                        normalizado,
-                    )
-                    total += 1
-
-                if len(registros) < tamano_pagina:
-                    break
-                pos_ini += tamano_pagina
-
-        await marcar_hecho(conn, clave)
+        borrados = await _borrar_los_que_no_vinieron(conn, cve_ent, inicio)
+        await marcar_hecho(conn, f"denue:{cve_ent}")
 
     await enriquecer_con_ubicacion(cve_ent)
-    return total
+    return total, borrados
+
+
+async def descargar_estado(cve_ent: str, archivo: Path | None = None) -> tuple[int, int | None]:
+    """Baja el ZIP del estado (o usa `archivo`, ya bajado) y lo carga."""
+    if archivo is not None:
+        return await cargar_zip(archivo, cve_ent)
+    with tempfile.TemporaryDirectory() as carpeta:
+        ruta = Path(carpeta) / f"denue_{cve_ent}_csv.zip"
+        await descargar_zip(cve_ent, ruta)
+        return await cargar_zip(ruta, cve_ent)
+
+
+async def _borrar_los_que_no_vinieron(conn, cve_ent: str, inicio) -> int | None:
+    """La carga entera es una transacción, y `now()` da su hora de arranque:
+    lo que vino en esta carga tiene `actualizado = inicio`; lo de antes, menos."""
+    cursor = await conn.execute(
+        """SELECT count(*) FILTER (WHERE actualizado < %(inicio)s), count(*)
+           FROM fuente_denue_negocios WHERE cve_ent = %(cve_ent)s""",
+        {"cve_ent": cve_ent, "inicio": inicio},
+    )
+    viejos, todos = await cursor.fetchone()
+    if viejos > MAX_PARTE_SIN_VENIR * todos:
+        return None
+    await conn.execute(
+        "DELETE FROM fuente_denue_negocios WHERE cve_ent = %(cve_ent)s AND actualizado < %(inicio)s",
+        {"cve_ent": cve_ent, "inicio": inicio},
+    )
+    return viejos
 
 
 async def enriquecer_con_ubicacion(cve_ent: str) -> int:
     """Rellena cve_mun/cve_ageb de los negocios que todavia no lo
     tienen, cruzando su punto (lat, lon) contra los poligonos reales
-    ya descargados (`ST_Contains`). Sin esto, BuscarEntidad no trae
-    esas claves directo."""
+    ya descargados (`ST_Contains`)."""
     pool = await get_pool()
     async with pool.connection() as conn:
         cursor_mun = await conn.execute(
