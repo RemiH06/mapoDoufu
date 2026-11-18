@@ -3,6 +3,12 @@ import {entintar} from "./plano_tinta"
 import {Marcas, escapar} from "./marcas"
 import {ESTADOS_BBOX} from "./estados_bbox"
 
+// La url viene del archivo de alguien: solo se vuelve liga si es http(s).
+const valorFicha = (columna, valor) =>
+  columna === "url" && /^https?:\/\//i.test(valor)
+    ? `<a href="${escapar(valor)}" target="_blank" rel="noopener noreferrer">${escapar(valor)}</a>`
+    : escapar(valor)
+
 // Mapa tecnico: cada capa (coropleta, Voronoi, coloreado, isocrona) es un
 // acetato sobre el plano. El servidor las prende y apaga por push_event y
 // dice el orden de la pila y la piel de la mesa; aqui se pintan con la
@@ -304,10 +310,15 @@ export const MapaTecnico = {
   },
 
   _ficha(lugar, llave) {
-    this.pushEvent("ver_fila", llave, ({campos, otras}) => {
-      const filas = campos.map(([c, v]) => `<dt>${escapar(c)}</dt><dd>${escapar(v)}</dd>`).join("")
+    this.pushEvent("ver_fila", llave, ({campos, procedencia, otras}) => {
+      const par = ([c, v]) => `<dt>${escapar(c)}</dt><dd>${valorFicha(c, v)}</dd>`
+      const filas = campos.map(par).join("")
+      // De dónde sale el renglón, aparte de lo que dice.
+      const origen = procedencia.length
+        ? `<p class="ficha-procedencia">Procedencia</p><dl class="ficha-datos">${procedencia.map(par).join("")}</dl>`
+        : ""
       const mas = otras > 0 ? `<p>y ${otras} renglones más en esta zona</p>` : ""
-      L.popup({maxHeight: 260}).setLatLng(lugar).setContent(`<dl class="ficha-datos">${filas}</dl>${mas}`).openOn(this.map)
+      L.popup({maxHeight: 260}).setLatLng(lugar).setContent(`<dl class="ficha-datos">${filas}</dl>${origen}${mas}`).openOn(this.map)
     })
   },
 

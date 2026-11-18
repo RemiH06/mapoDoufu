@@ -738,6 +738,12 @@
     font-family: var(--cond);
     font-weight: 600;
   }
+  /* Columna y texto de una condición, lado a lado si cabe. */
+  .distancia-condicion {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 0 12px;
+  }
   .cruce-desplegable {
     border-top: 1px solid var(--line);
   }
@@ -803,5 +809,12 @@
   .ficha-datos dd {
     margin: 0;
     overflow-wrap: anywhere;
+  }
+  .ficha-procedencia {
+    margin: 8px 0 2px;
+    padding-top: 6px;
+    border-top: 1px solid var(--line);
+    color: var(--text2);
+    font-size: 0.85em;
   }
 }

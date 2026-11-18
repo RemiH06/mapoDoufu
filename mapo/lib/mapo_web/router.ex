@@ -89,6 +89,7 @@ defmodule MapoWeb.Router do
       live "/teams/:id", TeamLive.Show, :show
       live "/teams/:id/datos", DatosLive.Index, :index
       live "/teams/:id/datos/:capa_id/cruce", DatosLive.Cruce, :index
+      live "/teams/:id/datos/:capa_id/distancia", DatosLive.Distancia, :index
 
       live "/sesiones/:id", SesionLive.Show, :show
 

@@ -722,11 +722,17 @@ defmodule MapoWeb.MapaLive.Index do
 
     case ficha do
       {datos, cuantas} ->
-        campos = for c <- a.capa.columnas, not is_nil(datos[c]), do: [c, texto_celda(datos[c])]
-        {:reply, %{campos: campos, otras: cuantas - 1}, socket}
+        procedencia = Capas.columnas_procedencia()
+        par = fn c -> [c, texto_celda(datos[c])] end
+
+        campos =
+          for c <- a.capa.columnas, c not in procedencia, not is_nil(datos[c]), do: par.(c)
+
+        origen = for c <- procedencia, c in a.capa.columnas, not is_nil(datos[c]), do: par.(c)
+        {:reply, %{campos: campos, procedencia: origen, otras: cuantas - 1}, socket}
 
       _ ->
-        {:reply, %{campos: [], otras: 0}, socket}
+        {:reply, %{campos: [], procedencia: [], otras: 0}, socket}
     end
   end
 

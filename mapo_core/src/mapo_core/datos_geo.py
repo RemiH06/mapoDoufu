@@ -160,8 +160,11 @@ def _codificacion(cpg: bytes | None, dbf: bytes) -> str:
         nombre = cpg.decode("ascii", "ignore").strip()
         if nombre:
             return nombre
+    # Solo los registros: el encabezado trae fecha y conteos en binario que casi
+    # nunca son UTF-8 válido. Un texto en Latin-1 con acentos tampoco lo es.
+    inicio = int.from_bytes(dbf[8:10], "little") if len(dbf) >= 10 else 0
     try:
-        dbf.decode("utf-8")
+        dbf[inicio:].decode("utf-8")
         return "utf-8"
     except UnicodeDecodeError:
         return "latin-1"

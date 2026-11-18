@@ -34,9 +34,9 @@ def _feature(geometria, **propiedades):
     return {"type": "Feature", "properties": propiedades, "geometry": geometria.__geo_interface__}
 
 
-def _shp(geometrias, prj: str | None = "WGS84", cpg: str | None = None, extras=()) -> bytes:
+def _shp(geometrias, prj: str | None = "WGS84", cpg: str | None = None, extras=(), encoding="latin-1") -> bytes:
     shp, shx, dbf = io.BytesIO(), io.BytesIO(), io.BytesIO()
-    with shapefile.Writer(shp=shp, shx=shx, dbf=dbf, encoding="latin-1") as w:
+    with shapefile.Writer(shp=shp, shx=shx, dbf=dbf, encoding=encoding) as w:
         w.field("NOMBRE", "C")
         w.field("VENTAS", "N")
         for i, g in enumerate(geometrias):
@@ -175,6 +175,15 @@ def test_shapefile_latin1_con_prj():
     assert tabla.columnas == ["NOMBRE", "VENTAS"]
     assert tabla.filas[0][0] == "Añil"
     assert tabla.geometrias[0].bounds == pytest.approx(GDL.bounds)
+
+
+def test_shapefile_utf8_sin_cpg():
+    # Así vienen los de CONABIO: UTF-8 sin .cpg. El encabezado binario del .dbf
+    # no es UTF-8 válido, así que la prueba mira solo los registros.
+    archivo = _shp([GDL], encoding="utf-8")
+    dbf = zipfile.ZipFile(io.BytesIO(archivo)).read("capa.dbf")
+    assert dg._codificacion(None, dbf[:4] + bytes([0x97]) + dbf[5:]) == "utf-8"
+    assert dg.leer(archivo, "zip").filas[0][0] == "Añil"
 
 
 def test_shapefile_en_la_lambert_de_inegi():

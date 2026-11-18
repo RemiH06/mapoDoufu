@@ -17,6 +17,11 @@ Qué hace:
   100 columnas se queda con las que no empiezan con `c_` y con las del censo de
   `--columnas-agebs`; con más de 2 millones de vértices se simplifica (~5 m).
   Con más de 50,000 renglones o 10,000 polígonos no se recorta: se avisa.
+- Si el paquete trae `diccionario_capas.csv` y `procedencia.csv` (los de
+  `recorte.py`), cada renglón lleva su procedencia en las columnas que Mapo
+  reserva: `fuente`, `url`, `fecha_dato`, `fecha_consulta` y `nivel` (aquí
+  siempre "registro oficial"). `verificado` se queda fuera: dice que una persona
+  confirmó el renglón, y eso no pasó.
 - `.csv` con columnas `lon` y `lat`: se copia (Mapo los lee como tabla con
   coordenadas).
 - Rásters: el compuesto de 10 bandas de Sentinel-2 se vuelve NDVI; los índices
@@ -52,13 +57,45 @@ def vertices(gdf: gpd.GeoDataFrame) -> int:
     return int(shapely.get_num_coordinates(gdf.geometry.values).sum())
 
 
-def vectorial(gdf: gpd.GeoDataFrame, destino: Path, censo: list[str]) -> tuple[str, bool]:
+def procedencias(paquete: Path) -> dict[str, dict[str, str]]:
+    """Capa -> columnas de procedencia, de los CSV que deja `recorte.py`."""
+    dic, pro = paquete / "diccionario_capas.csv", paquete / "procedencia.csv"
+    if not dic.exists():
+        return {}
+    descargas = {}
+    if pro.exists():
+        with open(pro, encoding="utf-8") as f:
+            descargas = {r["capa"]: r for r in csv.DictReader(f)}
+    salida = {}
+    with open(dic, encoding="utf-8") as f:
+        for r in csv.DictReader(f):
+            d = descargas.get(r["capa"], {})
+            salida[r["capa"]] = {
+                "fuente": r["fuente"],
+                "url": d.get("url") or r["url"],
+                "fecha_dato": r["fecha_dato"],
+                "fecha_consulta": (d.get("fecha_descarga") or "")[:10],
+                "nivel": "registro oficial",
+            }
+    return salida
+
+
+def vectorial(gdf: gpd.GeoDataFrame, destino: Path, censo: list[str],
+              procedencia: dict[str, str] | None = None) -> tuple[str, bool]:
     notas, cabe = [], True
+    procedencia = {k: v for k, v in (procedencia or {}).items() if v}
+    choque = [k for k in procedencia if k in gdf.columns]
+    if choque:
+        notas.append(f"ya traía {', '.join(choque)}: no se le puso procedencia")
+        procedencia = {}
     columnas = [c for c in gdf.columns if c != "geometry"]
-    if len(columnas) >= MAX_COLUMNAS:
+    tope = MAX_COLUMNAS - len(procedencia)
+    if len(columnas) >= tope:
         quedan = [c for c in columnas if not c.startswith("c_")] + [f"c_{c}" for c in censo if f"c_{c}" in gdf.columns]
-        gdf = gdf[quedan[: MAX_COLUMNAS - 1] + ["geometry"]]
-        notas.append(f"{len(columnas)} columnas -> {len(quedan[:MAX_COLUMNAS - 1])}")
+        gdf = gdf[quedan[: tope - 1] + ["geometry"]]
+        notas.append(f"{len(columnas)} columnas -> {len(quedan[:tope - 1])}")
+    if procedencia:
+        gdf = gdf.assign(**procedencia)
     if vertices(gdf) > MAX_VERTICES:
         gdf = gdf.assign(geometry=gdf.geometry.simplify(0.00005, preserve_topology=True))
         notas.append(f"simplificada a {vertices(gdf):,} vértices")
@@ -109,11 +146,12 @@ def main() -> None:
     a.salida.mkdir(parents=True, exist_ok=True)
     censo = [c.strip() for c in a.columnas_agebs.split(",") if c.strip()]
     registro = []
+    procedencia = procedencias(a.paquete)
 
     for gpkg in sorted(a.paquete.glob("*.gpkg")):
         for capa in pyogrio.list_layers(gpkg)[:, 0]:
             destino = a.salida / f"{capa}.gpkg"
-            nota, cabe = vectorial(gpd.read_file(gpkg, layer=capa), destino, censo)
+            nota, cabe = vectorial(gpd.read_file(gpkg, layer=capa), destino, censo, procedencia.get(capa))
             registro.append((destino.name, f"capa {capa} de {gpkg.name}", nota, cabe))
     for gj in sorted(a.paquete.glob("*.geojson")):
         destino = a.salida / f"{gj.stem}.gpkg"

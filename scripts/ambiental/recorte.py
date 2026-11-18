@@ -137,6 +137,27 @@ def normalizar(texto: str) -> str:
     return " ".join(sin_acentos.upper().split())
 
 
+
+def codificacion_dbf(ruta_vsi: str) -> str | None:
+    """UTF-8 si los registros del .dbf lo son. Los de CONABIO vienen en UTF-8 sin
+    .cpg y GDAL los leería como Latin-1 ("MESÃ“FILO"). Mismo criterio que
+    `mapo_core.datos_geo._codificacion`: el encabezado es binario y no cuenta."""
+    if not ruta_vsi.startswith("/vsizip/") or not ruta_vsi.lower().endswith(".shp"):
+        return None
+    zip_ruta, _, interna = ruta_vsi[len("/vsizip/"):].partition(".zip/")
+    with zipfile.ZipFile(zip_ruta + ".zip") as z:
+        nombres = {n.lower(): n for n in z.namelist()}
+        base = interna[:-4].lower()
+        if base + ".cpg" in nombres:
+            return None
+        dbf = z.read(nombres[base + ".dbf"])
+    inicio = int.from_bytes(dbf[8:10], "little")
+    try:
+        dbf[inicio:].decode("utf-8")
+        return "UTF-8"
+    except UnicodeDecodeError:
+        return None
+
 class Paquete:
     def __init__(self, crudos: Path, salida: Path, caja: tuple[float, float, float, float], municipios: list[str]):
         self.crudos, self.salida, self.caja, self.municipios = crudos, salida, caja, municipios
@@ -182,7 +203,7 @@ class Paquete:
             t = Transformer.from_crs(CRS, info["crs"], always_xy=True)
             xs, ys = t.transform([caja[0], caja[2], caja[0], caja[2]], [caja[1], caja[1], caja[3], caja[3]])
             caja = (min(xs), min(ys), max(xs), max(ys))
-        gdf = pyogrio.read_dataframe(ruta_vsi, bbox=caja)
+        gdf = pyogrio.read_dataframe(ruta_vsi, bbox=caja, encoding=codificacion_dbf(ruta_vsi))
         if gdf.empty:
             return gdf
         gdf = gdf.to_crs(CRS)

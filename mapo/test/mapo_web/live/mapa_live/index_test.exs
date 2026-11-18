@@ -565,6 +565,26 @@ defmodule MapoWeb.MapaLive.IndexTest do
       assert_reply(lv, %{campos: [["ventas", "12.345"], ["tienda", "Centro"]], otras: 0})
     end
 
+    test "la procedencia va aparte en la ficha, en su orden", %{conn: conn, scope: scope} do
+      fila = %{
+        "lat" => 20.6,
+        "lon" => -103.3,
+        "datos" => %{"tienda" => "Centro", "url" => "https://x.mx", "fuente" => "INEGI"}
+      }
+
+      capa = capa_fixture(scope, "puntos", [fila], %{columnas: ["url", "tienda", "fuente"]})
+      stub_estados_y_municipio(fn _ -> raise "no debería llamarse" end)
+      {:ok, lv, _html} = live(conn, ~p"/mapa?#{[capa: capa.id]}")
+      assert_push_event(lv, "capa_propios", %{puntos: [%{id: id}]})
+
+      render_hook(element(lv, "#mapa-tecnico"), "ver_fila", %{"capa" => capa.id, "id" => id})
+
+      assert_reply(lv, %{
+        campos: [["tienda", "Centro"]],
+        procedencia: [["fuente", "INEGI"], ["url", "https://x.mx"]]
+      })
+    end
+
     test "una capa de otro equipo no abre por URL ni por el select", %{conn: conn} do
       ajena = capa_fixture(Mapo.AccountsFixtures.user_scope_fixture(), "puntos", [punto("x")])
       stub_estados_y_municipio(fn _ -> raise "no debería llamarse" end)

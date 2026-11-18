@@ -69,7 +69,7 @@ defmodule MapoWeb.BuscadorLive.Index do
           </select>
         </.form>
       </:membrete>
-      
+
       <div
         id="mapa-tecnico"
         phx-hook="MapaTecnico"
@@ -78,14 +78,14 @@ defmodule MapoWeb.BuscadorLive.Index do
         class="plano-leaflet flex-1 min-h-0 w-full"
       >
       </div>
-      
+
       <section
         id="pregunta"
         class={["pregunta pegado", @resultado && "resuelta"]}
         aria-labelledby="pregunta-titulo"
       >
         <h1 id="pregunta-titulo">Pregúntale al plano</h1>
-        
+
         <.form
           for={%{}}
           as={:pregunta}
@@ -104,7 +104,7 @@ defmodule MapoWeb.BuscadorLive.Index do
             autocomplete="off"
           /> <button class="boton primario" phx-disable-with="Leyendo...">Entender</button>
         </.form>
-        
+
         <button
           :if={@resultado}
           type="button"
@@ -113,11 +113,11 @@ defmodule MapoWeb.BuscadorLive.Index do
         >
           Editar la plantilla
         </button>
-        
+
         <p :if={@catalogo == nil} class="aviso">
           mapo_core no responde: no se pueden armar las plantillas ahorita.
         </p>
-        
+
         <.form
           :if={@catalogo}
           for={%{}}
@@ -134,13 +134,13 @@ defmodule MapoWeb.BuscadorLive.Index do
               class={["hueco", is_nil(@plantilla["intencion"]) && "vacio"]}
             >
               <option value="">elige una</option>
-               {Phoenix.HTML.Form.options_for_select(
+              {Phoenix.HTML.Form.options_for_select(
                 Enum.map(@catalogo["intenciones"], &{&1["nombre"], &1["intencion"]}),
                 @plantilla["intencion"]
               )}
             </select>
           </label>
-          
+
           <p :if={@plantilla["intencion"]} class="frase">
             <.frase
               intencion={@plantilla["intencion"]}
@@ -149,7 +149,7 @@ defmodule MapoWeb.BuscadorLive.Index do
               municipios={@municipios}
             />
           </p>
-          
+
           <label
             :if={@plantilla["intencion"] in ["donde_poner", "cuantos", "cuantos_cerca"]}
             class="publicos"
@@ -162,7 +162,7 @@ defmodule MapoWeb.BuscadorLive.Index do
               checked={@plantilla["solo_publicos"]}
             /> Solo del sector público
           </label>
-          
+
           <div class="plantilla-pie">
             <button
               class="boton primario"
@@ -171,34 +171,34 @@ defmodule MapoWeb.BuscadorLive.Index do
             >
               Resolver
             </button>
-            
+
             <span :if={@plantilla["intencion"] && huecos_vacios(@plantilla, @catalogo) != []}>
               Falta: {Enum.map_join(huecos_vacios(@plantilla, @catalogo), ", ", &nombre_hueco/1)}.
             </span>
           </div>
         </.form>
-        
+
         <ul :if={@avisos != []} class="avisos">
           <li :for={aviso <- @avisos}>{aviso}</li>
         </ul>
-        
+
         <p :if={@reconocidos != []} class="reconocidos">
           Entendí:
           <span :for={r <- @reconocidos} class="recorte">
             {r["nombre"]} <em>{tipo(r["tipo"])}</em>
           </span>
         </p>
-        
+
         <div :if={is_nil(@plantilla["intencion"]) and @texto == ""} class="ejemplos">
           <span>Por ejemplo:</span>
           <.link :for={e <- @ejemplos} patch={~p"/buscador?#{[q: e]}"}>{e}</.link>
         </div>
       </section>
-      
+
       <p :if={@resolviendo} class="consultando aviso-plano pegado sin-cinta">
         Resolviendo con las fuentes, tarda unos segundos.
       </p>
-      
+
       <.respuesta
         :if={@resultado}
         resultado={@resultado}
@@ -253,7 +253,7 @@ defmodule MapoWeb.BuscadorLive.Index do
     <% else %>
       <span class="hueco vacio">un punto: clic en el plano</span>?
     <% end %>
-     <button type="button" phx-click="usar_ubicacion" class="enlace">Usar mi ubicación</button>
+    <button type="button" phx-click="usar_ubicacion" class="enlace">Usar mi ubicación</button>
     """
   end
 
@@ -266,7 +266,7 @@ defmodule MapoWeb.BuscadorLive.Index do
       class={["hueco", is_nil(@plantilla["edad"]) && "vacio"]}
     >
       <option value="">qué edad</option>
-       {Phoenix.HTML.Form.options_for_select(
+      {Phoenix.HTML.Form.options_for_select(
         Enum.map(@catalogo["edades"], &{&1["nombre"], &1["edad"]}),
         @plantilla["edad"]
       )}
@@ -299,7 +299,7 @@ defmodule MapoWeb.BuscadorLive.Index do
       class={["hueco", is_nil(@plantilla["rubro"] || @plantilla["sector"]) && "vacio"]}
     >
       <option value="">qué rubro</option>
-       {Phoenix.HTML.Form.options_for_select(opciones_que(@catalogo), valor_que(@plantilla))}
+      {Phoenix.HTML.Form.options_for_select(opciones_que(@catalogo), valor_que(@plantilla))}
     </select>
     """
   end
@@ -329,7 +329,7 @@ defmodule MapoWeb.BuscadorLive.Index do
       <option value="" selected>
         {if @plantilla["municipios"] == [], do: "qué municipios", else: "+ municipio"}
       </option>
-       {Phoenix.HTML.Form.options_for_select(
+      {Phoenix.HTML.Form.options_for_select(
         Enum.reject(@municipios, fn {_, cve} -> cve in @plantilla["municipios"] end),
         nil
       )}
@@ -355,11 +355,11 @@ defmodule MapoWeb.BuscadorLive.Index do
       aria-labelledby="respuesta-titulo"
     >
       <h2 id="respuesta-titulo">{@resultado["cifras"]["que"]}</h2>
-      
+
       <%= case @resultado["intencion"] do %>
         <% "cuantos_cerca" -> %>
           <p class="grande num">{cifra(@resultado["cifras"]["total_negocios"])}</p>
-          
+
           <p>
             {unidad(@resultado["cifras"])} a {@resultado["cifras"]["minutos"]} minutos en auto, {metodo(
               @resultado["cifras"]["metodo"]
@@ -370,20 +370,20 @@ defmodule MapoWeb.BuscadorLive.Index do
             <thead>
               <tr>
                 <th>Municipio</th>
-                
+
                 <th class="num">Personas</th>
               </tr>
             </thead>
-            
+
             <tbody>
               <tr :for={m <- @resultado["cifras"]["municipios"]}>
                 <td>{m["nombre"]}</td>
-                
+
                 <td class="num">{dato(m["poblacion"])}</td>
               </tr>
             </tbody>
           </table>
-          
+
           <p :if={@resultado["cifras"]["laboral"]}>
             Desocupación del estado:
             <b class="num">{cifra(@resultado["cifras"]["laboral"]["tasa_desocupacion"], 2)} %</b>
@@ -396,83 +396,83 @@ defmodule MapoWeb.BuscadorLive.Index do
             <thead>
               <tr>
                 <th>Municipio</th>
-                
+
                 <th class="num">{String.capitalize(unidad(@resultado["cifras"]))}</th>
-                
+
                 <th :if={intencion == "donde_poner"} class="num">Población</th>
-                
+
                 <th :if={intencion == "donde_poner"} class="num">
                   Hab. por {singular(@resultado["cifras"])}
                 </th>
               </tr>
             </thead>
-            
+
             <tbody>
               <tr :for={m <- @resultado["cifras"]["municipios"]}>
                 <td>{m["nombre"]}</td>
-                
+
                 <td class="num">{cifra(m["negocios"])}</td>
-                
+
                 <td :if={intencion == "donde_poner"} class="num">{dato(m["poblacion"])}</td>
-                
+
                 <td :if={intencion == "donde_poner"} class="num">
                   {dato(m["habitantes_por_negocio"])}
                 </td>
               </tr>
             </tbody>
-            
+
             <tfoot :if={length(@resultado["cifras"]["municipios"]) > 1}>
               <tr>
                 <td>Juntos</td>
-                
+
                 <td class="num">{cifra(@resultado["cifras"]["total_negocios"])}</td>
-                
+
                 <td :if={intencion == "donde_poner"} class="num">
                   {dato(@resultado["cifras"]["total_poblacion"])}
                 </td>
-                
+
                 <td :if={intencion == "donde_poner"} class="num">
                   {dato(@resultado["cifras"]["habitantes_por_negocio"])}
                 </td>
               </tr>
             </tfoot>
           </table>
-          
+
           <details
             :if={@resultado["cifras"]["formula"] || intencion == "donde_poner"}
             class="como-se-lee"
             phx-mounted={JS.ignore_attributes(["open"])}
           >
             <summary>Cómo se lee</summary>
-            
+
             <p :if={@resultado["cifras"]["formula"]} class="formula">
               {@resultado["cifras"]["formula"]}
             </p>
-            
+
             <p :if={intencion == "donde_poner"} class="leyenda">
               {leyenda(@resultado["cifras"])} La tinta es la población por AGEB. Ninguna cifra
               decide sola.
             </p>
           </details>
       <% end %>
-      
+
       <div :if={@escala} class="escala" aria-label="Población por AGEB, clases por quintil">
         <ol>
           <li :for={o <- [0.12, 0.26, 0.42, 0.6, 0.8]} style={"opacity: #{o}"}></li>
-          
+
           <li class="nula" title="Sin dato"></li>
         </ol>
-        
+
         <div class="marcas num">
           <span :for={v <- Enum.take(@escala.limites, 5)}>{cifra(v)}</span>
           <span>sin dato: {@escala.nulos}</span>
         </div>
       </div>
-      
+
       <ul :if={@resultado["avisos"] != []} class="avisos">
         <li :for={aviso <- @resultado["avisos"]}>{aviso}</li>
       </ul>
-      
+
       <.patron
         :if={@resultado["intencion"] in ~w(donde_poner cuantos)}
         patron={@patron}
@@ -505,16 +505,16 @@ defmodule MapoWeb.BuscadorLive.Index do
     ~H"""
     <section class="patron" aria-labelledby="patron-titulo">
       <h3 id="patron-titulo">Patrón del rubro</h3>
-      
+
       <p :if={@error} class="aviso">{@error}</p>
-      
+
       <p :if={is_nil(@patron) and is_nil(@error)} class="consultando-zonas">
         Comparando con {@cifras["unidad"] || "negocios"} al azar, tarda unos segundos.
       </p>
-      
+
       <%= if @patron do %>
         <p :if={@patron["nota"]} class="leyenda">{@patron["nota"]}</p>
-        
+
         <%= if a = @patron["agrupacion"] do %>
           <p>
             <b>{veredicto(a["patron"])}</b>
@@ -527,7 +527,7 @@ defmodule MapoWeb.BuscadorLive.Index do
             ]} sorteos).
           </p>
         <% end %>
-        
+
         <p :if={pl = @patron["plazas"]}>
           En plaza, mercado o edificio comercial: <b class="num">{porciento(pl["rubro"])}</b>
           del rubro, <span class="num">{porciento(pl["todos"])}</span>
@@ -540,7 +540,7 @@ defmodule MapoWeb.BuscadorLive.Index do
             )}.
           </span>
         </p>
-        
+
         <p :if={@patron["junto_a"] != []}>
           Su vecino más cercano es, más de lo esperado: {Enum.map_join(
             @patron["junto_a"],
@@ -548,7 +548,7 @@ defmodule MapoWeb.BuscadorLive.Index do
             &"#{&1["nombre"]} (#{cifra(&1["cociente"], 1)} veces)"
           )}.
         </p>
-        
+
         <%= if @patron["focos"]["total"] > 0 do %>
           <p>
             <b class="num">{@patron["focos"]["total"]}</b> {if @patron["focos"]["total"] == 1,
@@ -556,7 +556,7 @@ defmodule MapoWeb.BuscadorLive.Index do
               else: "focos"} con <span class="num">{cifra(@patron["focos"]["en_focos"])}</span>
             de {cifra(@patron["negocios"])} {unidad(@cifras)}, {en_el_plano(@patron["focos"])}:
           </p>
-          
+
           <ul class="focos">
             <li :for={f <- Enum.take(@patron["focos"]["lista"], @focos_listados)}>
               {f["colonia"] || "Sin colonia"} · <span class="num">{f["negocios"]}</span>
@@ -571,16 +571,16 @@ defmodule MapoWeb.BuscadorLive.Index do
                 Ver
               </button>
             </li>
-            
+
             <li :if={length(@patron["focos"]["lista"]) > @focos_listados} class="leyenda">
               y {length(@patron["focos"]["lista"]) - @focos_listados} más en el plano.
             </li>
           </ul>
         <% end %>
-        
+
         <details class="como-se-lee" phx-mounted={JS.ignore_attributes(["open"])}>
           <summary>Cómo se lee</summary>
-          
+
           <p class="leyenda">
             Cada comparación es contra los mismos {unidad(@cifras)} de estos municipios con las
             etiquetas sorteadas: el comercio ya se junta en calles y centros, así que se
@@ -620,7 +620,7 @@ defmodule MapoWeb.BuscadorLive.Index do
     ~H"""
     <section class="zonas" aria-labelledby="zonas-titulo">
       <h3 id="zonas-titulo">Zonas candidatas</h3>
-      
+
       <.form for={%{}} as={:criterios} id="criterios_form" phx-change="criterios" class="criterios">
         <fieldset disabled={is_nil(@zonas)}>
           <label>
@@ -632,7 +632,7 @@ defmodule MapoWeb.BuscadorLive.Index do
               )}
             </select>
           </label>
-          
+
           <label>
             <span class="etiqueta">Desde</span>
             <input
@@ -644,7 +644,7 @@ defmodule MapoWeb.BuscadorLive.Index do
               class="campo num"
             />
           </label>
-          
+
           <label :if={@con_minutos}>
             <span class="etiqueta">{String.capitalize(singular(@cifras))} más cercano</span>
             <select name="criterios[sentido]" class="campo">
@@ -657,7 +657,7 @@ defmodule MapoWeb.BuscadorLive.Index do
               )}
             </select>
           </label>
-          
+
           <label :if={@con_minutos}>
             <span class="etiqueta">Minutos en auto</span>
             <input
@@ -670,7 +670,7 @@ defmodule MapoWeb.BuscadorLive.Index do
               class="campo num"
             />
           </label>
-          
+
           <label :if={@con_minutos}>
             <span class="etiqueta">Ordenar por</span>
             <select name="criterios[orden]" class="campo">
@@ -682,13 +682,13 @@ defmodule MapoWeb.BuscadorLive.Index do
           </label>
         </fieldset>
       </.form>
-      
+
       <p :if={@error} class="aviso">{@error}</p>
-      
+
       <p :if={is_nil(@zonas) and is_nil(@error)} class="consultando-zonas">
         Calculando tiempos por calle, tarda unos segundos.
       </p>
-      
+
       <%= if @zonas do %>
         <p>
           <b class="num">{cifra(@zonas["total_candidatas"])}</b>
@@ -696,31 +696,31 @@ defmodule MapoWeb.BuscadorLive.Index do
             do: "los dos criterios",
             else: "el criterio"}.
         </p>
-        
+
         <table :if={@zonas["filas"] != []} class="cifras">
           <thead>
             <tr>
               <th>Zona</th>
-              
+
               <th class="num">{@zonas["etiqueta"]}</th>
-              
+
               <th :if={@con_minutos} class="num">Min.</th>
-              
+
               <th><span class="sr-only">Ver en el plano</span></th>
             </tr>
           </thead>
-          
+
           <tbody>
             <tr
               :for={f <- @zonas["filas"]}
               class={[@zona_vista && @zona_vista["cvegeo"] == f["cvegeo"] && "vista"]}
             >
               <td>{f["municipio"]} · {f["ageb"]}</td>
-              
+
               <td class="num">{cifra(f["valor"])}</td>
-              
+
               <td :if={@con_minutos} class="num">{cifra(f["minutos"], 1)}</td>
-              
+
               <td>
                 <button
                   type="button"
@@ -735,30 +735,30 @@ defmodule MapoWeb.BuscadorLive.Index do
             </tr>
           </tbody>
         </table>
-        
+
         <p :if={@zonas["total_candidatas"] > length(@zonas["filas"])} class="leyenda">
           Se listan {length(@zonas["filas"])}; en el plano van todas, con borde.
         </p>
-        
+
         <p :if={@zona_vista} class="zona-vista">
           {cifra(@zona_vista["total"])} {unidad(@cifras)} a {@zona_vista["minutos"]} minutos en auto de {@zona_vista[
             "ageb"
           ]}, {metodo(@zona_vista["metodo"])}.
         </p>
-        
+
         <p class="leyenda">
           Fuera: {cifra(@zonas["descartes"]["por_indicador"])} por el indicador{if @con_minutos,
             do: ", #{cifra(@zonas["descartes"]["por_minutos"])} por los minutos"}, {cifra(
             @zonas["descartes"]["sin_dato"]
           )} sin dato. Una AGEB puede fallar los dos.
         </p>
-        
+
         <p class="leyenda">
           Los criterios arrancan en la mediana. Los minutos son en auto, desde un punto dentro de la
           AGEB, y cuentan a los de otros municipios. El censo dice dónde vive la gente, no dónde
           trabaja o pasa.
         </p>
-        
+
         <ul :if={@zonas["avisos"] != []} class="avisos">
           <li :for={aviso <- @zonas["avisos"]}>{aviso}</li>
         </ul>

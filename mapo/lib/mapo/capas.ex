@@ -24,7 +24,14 @@ defmodule Mapo.Capas do
   # Unos 5 m en el plano. Lo guardado conserva todos sus vértices.
   @tolerancia_dibujo 0.00005
 
+  # De dónde sale cada renglón (docs/producto/datos-propios.md, "Procedencia").
+  # Mismo esquema que el modo investigación de Bentos.
+  @procedencia ~w(fuente url fecha_dato fecha_consulta nivel verificado)
+
   def max_bytes_archivo, do: @max_bytes_archivo
+
+  @doc "Columnas reservadas para la procedencia de cada renglón, en el orden de la ficha."
+  def columnas_procedencia, do: @procedencia
   def max_bytes_equipo, do: @max_bytes_equipo
 
   defp del_scope(%Scope{} = scope) do
@@ -163,22 +170,38 @@ defmodule Mapo.Capas do
   end
 
   @doc """
-  CSV de una capa de cruce, con BOM para que Excel lea bien los acentos. Las
-  columnas se llaman como su método (`ventas_suma`), así que el archivo se
-  explica sin la pantalla.
+  CSV de una capa de cruce o de distancias, con BOM para que Excel lea bien los
+  acentos. Las columnas se llaman como su método (`ventas_suma`), así que el
+  archivo se explica sin la pantalla. Abre con la clave de la zona o, en una de
+  puntos, su latitud y longitud; una geometría no cabe en una celda.
   """
-  def csv(%Capa{id: id, columnas: columnas}) do
+  def csv(%Capa{id: id, tipo: tipo, columnas: columnas}) do
+    {encabezado, lugar} =
+      case tipo do
+        "puntos" -> {["lat", "lon"], &[&1.lat, &1.lon]}
+        "vector" -> {[], fn _ -> [] end}
+        _ -> {["clave"], &[&1.clave]}
+      end
+
     filas =
       Repo.all(
-        from f in CapaFila, where: f.capa_id == ^id, order_by: f.id, select: {f.clave, f.datos}
+        from f in CapaFila,
+          where: f.capa_id == ^id,
+          order_by: f.id,
+          select: %{
+            clave: f.clave,
+            datos: f.datos,
+            lat: fragment("ST_Y(?)", f.geom),
+            lon: fragment("ST_X(?)", f.geom)
+          }
       )
 
     renglones =
-      Enum.map(filas, fn {clave, datos} ->
-        renglon_csv([clave | Enum.map(columnas, &datos[&1])])
+      Enum.map(filas, fn fila ->
+        renglon_csv(lugar.(fila) ++ Enum.map(columnas, &fila.datos[&1]))
       end)
 
-    IO.iodata_to_binary(["\uFEFF", renglon_csv(["clave" | columnas]), renglones])
+    IO.iodata_to_binary(["\uFEFF", renglon_csv(encabezado ++ columnas), renglones])
   end
 
   defp renglon_csv(celdas), do: [Enum.map_join(celdas, ",", &celda_csv/1), "\r\n"]

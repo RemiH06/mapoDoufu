@@ -13,6 +13,7 @@ defmodule MapoWeb.DatosLive.Index do
   import MapoWeb.Cifras
 
   alias Mapo.Capas
+  alias Mapo.Capas.Distancias
   alias Mapo.Limite
   alias Mapo.MapoCore
   alias Mapo.Teams
@@ -80,6 +81,14 @@ defmodule MapoWeb.DatosLive.Index do
                     class="boton chico-doc"
                   >
                     Cruzar
+                  </.link>
+
+                  <.link
+                    :if={Distancias.medible?(c)}
+                    navigate={~p"/teams/#{@team}/datos/#{c}/distancia"}
+                    class="boton chico-doc"
+                  >
+                    Distancia
                   </.link>
 
                   <a :if={c.metodo} href={~p"/capas/#{c}/cruce.csv"} class="boton chico-doc">
@@ -472,6 +481,11 @@ defmodule MapoWeb.DatosLive.Index do
   defp descripcion(%{"num_filas" => n}), do: ": #{cifra(n)} renglones."
 
   defp detalle(%{tipo: "raster"} = capa), do: "ráster · #{megas(capa.tamano_bytes)}"
+
+  defp detalle(%{metodo: metodo, tipo: tipo} = capa)
+       when is_binary(metodo) and tipo in ~w(puntos vector),
+       do:
+         "distancias desde #{capa.archivo} · #{cifra(capa.num_filas)} renglones · #{etiqueta(tipo)}"
 
   defp detalle(%{metodo: metodo} = capa) when is_binary(metodo),
     do: "cruce de #{capa.archivo} · #{cifra(capa.num_filas)} zonas · #{etiqueta(capa.tipo)}"

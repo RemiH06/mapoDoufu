@@ -28,6 +28,11 @@ y arriba de eso el costo cae en la laptop de quien mira.
 | Vectorial | `.geojson`, `.json`, `.zip` con shapefile, `.gpkg` | Una capa; si hay más se avisa cuál. Respeta la proyección que declare el archivo |
 | Ráster | `.tif`, `.tiff` | La primera banda; si hay más se avisa. Necesita proyección |
 
+Un shapefile sin `.cpg` se lee en UTF-8 si sus registros lo son, y si no, en
+Latin-1. Se prueba solo la parte de registros: el encabezado del `.dbf` trae
+fecha y conteos en binario que casi nunca son UTF-8 válido. Los de CONABIO
+vienen así, y leídos en Latin-1 salían como "MESÃ“FILO".
+
 Los archivos en metros, como los de INEGI en Lambert (EPSG:6372), se reproyectan
 solos si declaran su proyección. Un shapefile sin `.prj` se toma como grados y se
 avisa; si en realidad eran metros, sus renglones salen como "fuera de México" y
@@ -111,12 +116,60 @@ una capa por zona: se pinta por columna en `/mapa`, abre su ficha, sigue los mis
 permisos y cuenta contra la cuota del equipo. No se actualiza si cambia la capa de
 origen, y borrar el origen no la borra.
 
-**CSV.** Una capa de cruce se baja con un botón, en UTF-8 con BOM para Excel. Trae
-la clave, los nombres de columna de arriba y las celdas vacías donde no hay dato.
+**CSV.** Una capa de cruce o de distancias se baja con un botón, en UTF-8 con BOM
+para Excel. Trae la clave (o latitud y longitud, si son puntos; una geometría no
+cabe en una celda), los nombres de columna de arriba y las celdas vacías donde
+no hay dato.
 Un texto que empiece con `=`, `+`, `-` o `@` lleva un apóstrofo para que Excel no
 lo ejecute. Excel le come los ceros a las claves si se abre con doble clic.
 
 Hay un tope de 60 cruces por hora por cuenta.
+
+## Distancia entre capas
+
+Desde "Distancia" en una capa de puntos o geometrías: de cada renglón al más
+cercano de otra capa del mismo equipo. Responde preguntas como "qué escuelas
+tienen una parcela agrícola a menos de 300 m" sin repartir nada entre zonas.
+
+**Qué se mide.** Metros en línea recta sobre el elipsoide WGS84, de borde a
+borde: 0 si se tocan o uno contiene al otro. El más cercano se busca en dos
+pasos, porque un grado de longitud mide menos que uno de latitud y el más
+cercano en grados no siempre lo es en metros: el índice da un candidato, su
+distancia en metros acota una caja, y dentro de la caja gana el de menos
+metros. Si dos empatan, gana uno de ellos.
+
+**Filtros.** Hasta dos condiciones por capa, que se cumplen las dos: la columna
+contiene el texto, sin importar mayúsculas ni acentos. Una barra separa
+alternativas dentro de una condición (`039|120`). Así, "clase contiene
+educación y municipio contiene 039|120" deja las escuelas de Guadalajara y
+Zapopan.
+
+**Resultado.** Una capa nueva con la geometría completa del origen, sus
+columnas y las nuevas, nombradas por la capa de destino:
+
+| Columna | Qué es |
+|---|---|
+| `distancia_m_<destino>` | Metros al más cercano, redondeados |
+| `<destino>_<columna>` | La columna que nombra al más cercano, y su `fuente` y `fecha_dato` si las trae |
+| `<destino>_a_<radio>m` | Si se pide un radio: cuántos renglones del destino quedan a esa distancia o menos |
+
+Antes de guardar se ven los 20 más cercanos y cuántos quedan dentro del radio.
+Junto al resultado va cómo se calculó: capas, filtros, columnas y fecha del
+cálculo. Nada se pondera. Hay un tope de 60 mediciones por hora por cuenta.
+
+**Límites.** La distancia es tan precisa como las capas: un mapa 1:250 000,
+como el de uso de suelo de INEGI, puede desviarse cientos de metros en sus
+bordes, así que no sirve para afirmar 300 m. Cercanía no dice causa: el texto
+dice "a 240 m de", nunca "expuesto a".
+
+## Procedencia
+
+Seis columnas reservadas dicen de dónde sale cada renglón: `fuente`, `url`,
+`fecha_dato`, `fecha_consulta`, `nivel` (registro oficial, prensa, testimonio)
+y `verificado`. Si el archivo las trae, la ficha las muestra aparte, bajo
+"Procedencia", y la `url` es liga solo si empieza con `http://` o `https://`.
+Es el mismo esquema que el modo investigación de Bentos, para que un archivo
+sirva a los dos. Mapo no las llena ni las revisa: son del archivo.
 
 ## Quién puede qué
 
