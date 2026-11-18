@@ -14,19 +14,22 @@ defmodule MapoWeb.TeamLive.Show do
         <section class="doc pegado" aria-labelledby="t-equipo">
           <header class="doc-cab">
             <h1 id="t-equipo">{@team.name}</h1>
-             <span class="doc-tipo">Tu rol: {@role_labels[@current_role]}</span>
+            <span class="doc-tipo">Tu rol: {@role_labels[@current_role]}</span>
           </header>
-          
+
           <div class="doc-seccion">
             <h2>Miembros</h2>
-            
+
             <ul class="lista-doc">
               <li :for={m <- @memberships} class="lista-fila">
                 <span>{m.user.email}</span>
                 <span class="lista-fin">
                   <span class={["sello-rol", m.role == :owner && "dueno"]}>{@role_labels[m.role]}</span>
                   <.button
-                    :if={@can_manage? and not (m.role == :owner and @owner_count <= 1)}
+                    :if={
+                      Teams.puede_quitar?(@current_role, m, @current_scope) and
+                        not (m.role == :owner and @owner_count <= 1)
+                    }
                     phx-click="remove_member"
                     phx-value-id={m.id}
                     data-confirm="¿Quitar a esta persona del equipo?"
@@ -38,10 +41,10 @@ defmodule MapoWeb.TeamLive.Show do
               </li>
             </ul>
           </div>
-          
+
           <div :if={@can_manage?} class="doc-seccion">
             <h2>Agregar a alguien</h2>
-            
+
             <.form for={@add_form} id="add_member_form" phx-submit="add_member" class="agregar">
               <.input field={@add_form[:email]} type="email" label="Correo" required />
               <.input
@@ -51,13 +54,13 @@ defmodule MapoWeb.TeamLive.Show do
                 options={[{"Miembro", "member"}, {"Admin", "admin"}]}
               /> <.button phx-disable-with="Agregando...">Agregar</.button>
             </.form>
-            
+
             <p class="secundario">Si todavía no tiene cuenta, le llega una invitación al correo.</p>
           </div>
-          
+
           <div :if={@can_manage? and @invitaciones_pendientes != []} class="doc-seccion">
             <h2>Invitaciones pendientes</h2>
-            
+
             <ul class="lista-doc">
               <li :for={i <- @invitaciones_pendientes} class="lista-fila">
                 <span>{i.email}</span>
@@ -76,42 +79,42 @@ defmodule MapoWeb.TeamLive.Show do
             </ul>
           </div>
         </section>
-        
+
         <section class="doc pegado" aria-labelledby="t-sesiones">
           <header class="doc-cab">
             <h2 id="t-sesiones">Sesiones</h2>
-             <span class="doc-tipo">Mapas compartidos</span>
+            <span class="doc-tipo">Mapas compartidos</span>
           </header>
-          
+
           <div class="doc-seccion">
             <p :if={@sesiones == []} class="nota">
               Todavía no hay sesiones. En una sesión, lo que alguien marca en el mapa lo ven los demás al instante.
             </p>
-            
+
             <ul :if={@sesiones != []} class="lista-doc">
               <li :for={s <- @sesiones} class="lista-fila">
                 <.link navigate={~p"/sesiones/#{s}"} class="lista-enlace">{s.nombre}</.link>
               </li>
             </ul>
-            
+
             <.form for={@sesion_form} id="sesion_form" phx-submit="crear_sesion" class="agregar">
               <.input field={@sesion_form[:nombre]} type="text" label="Sesión nueva" required />
               <.button variant="primary" phx-disable-with="Creando...">Crear sesión</.button>
             </.form>
           </div>
         </section>
-        
+
         <section class="doc pegado" aria-labelledby="t-datos-propios">
           <header class="doc-cab">
             <h2 id="t-datos-propios">Datos propios</h2>
-             <span class="doc-tipo">Acetatos del equipo</span>
+            <span class="doc-tipo">Acetatos del equipo</span>
           </header>
-          
+
           <div class="doc-seccion">
             <p class="secundario">
               Una tabla con coordenadas o claves de INEGI, un archivo vectorial o un ráster se vuelve acetato en el mapa.
             </p>
-            
+
             <p><.link navigate={~p"/teams/#{@team}/datos"}>Ver los datos del equipo</.link></p>
           </div>
         </section>
@@ -147,44 +150,37 @@ defmodule MapoWeb.TeamLive.Show do
     scope = socket.assigns.current_scope
     team = socket.assigns.team
 
-    case Teams.add_member_by_email(scope, team, email, String.to_existing_atom(role)) do
-      {:ok, _membership} ->
-        memberships = Teams.list_team_memberships(team.id)
+    # Siempre por invitación, tenga o no cuenta: así nadie entra sin aceptar
+    # y el mensaje no delata qué correos están registrados en Mapo. Que ya
+    # sea miembro sí se dice: la lista de miembros ya lo muestra.
+    ya_es_miembro? =
+      Enum.any?(
+        socket.assigns.memberships,
+        &(String.downcase(&1.user.email) == String.downcase(email))
+      )
 
-        {:noreply,
-         socket
-         |> put_flash(:info, "Miembro agregado con éxito.")
-         |> assign(
-           memberships: memberships,
-           owner_count: Enum.count(memberships, &(&1.role == :owner)),
-           add_form: to_form(%{"email" => "", "role" => "member"}, as: "member")
-         )}
+    if ya_es_miembro? do
+      {:noreply, put_flash(socket, :error, "Esa persona ya es miembro de este equipo.")}
+    else
+      case Teams.invitar_por_correo(
+             scope,
+             team,
+             email,
+             String.to_existing_atom(role),
+             &url(~p"/invitaciones/#{&1}")
+           ) do
+        {:ok, _invitacion} ->
+          {:noreply,
+           socket
+           |> put_flash(:info, "Se envió una invitación a #{email}.")
+           |> assign(
+             invitaciones_pendientes: Teams.list_invitaciones_pendientes(scope, team),
+             add_form: to_form(%{"email" => "", "role" => "member"}, as: "member")
+           )}
 
-      {:error, :not_found} ->
-        role_atom = String.to_existing_atom(role)
-
-        case Teams.invitar_por_correo(
-               scope,
-               team,
-               email,
-               role_atom,
-               &url(~p"/invitaciones/#{&1}")
-             ) do
-          {:ok, _invitacion} ->
-            {:noreply,
-             socket
-             |> put_flash(:info, "Se envió una invitación a #{email}.")
-             |> assign(
-               invitaciones_pendientes: Teams.list_invitaciones_pendientes(scope, team),
-               add_form: to_form(%{"email" => "", "role" => "member"}, as: "member")
-             )}
-
-          {:error, %Ecto.Changeset{}} ->
-            {:noreply, put_flash(socket, :error, "No se pudo enviar la invitación.")}
-        end
-
-      {:error, %Ecto.Changeset{}} ->
-        {:noreply, put_flash(socket, :error, "Esa persona ya es miembro de este equipo.")}
+        {:error, %Ecto.Changeset{}} ->
+          {:noreply, put_flash(socket, :error, "No se pudo enviar la invitación.")}
+      end
     end
   end
 
@@ -220,6 +216,10 @@ defmodule MapoWeb.TeamLive.Show do
 
       {:error, :last_owner} ->
         {:noreply, put_flash(socket, :error, "El equipo necesita al menos una persona titular.")}
+
+      {:error, :sin_permiso} ->
+        {:noreply,
+         put_flash(socket, :error, "A esa persona solo la puede quitar alguien titular.")}
     end
   end
 

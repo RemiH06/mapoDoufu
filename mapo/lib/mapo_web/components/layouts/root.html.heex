@@ -13,7 +13,7 @@
     <script phx-track-static type="module" src={~p"/assets/js/app.js"}>
     </script>
 
-    <script>
+    <script nonce={assigns[:csp_nonce]}>
       // Modo claro u oscuro antes de pintar, para que no parpadee. Arranca con
       // el del sistema hasta que la persona elige uno. El botón de la esquina
       // dice a qué modo lleva, con el nombre que le da la piel activa.

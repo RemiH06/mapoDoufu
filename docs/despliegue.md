@@ -54,11 +54,16 @@ del `.env`.
 
 ## Acceso
 
-Mapo responde con **un solo nombre a la vez**: el de `PHX_HOST`.
-LiveView solo acepta el WebSocket si el origen coincide con ese nombre;
-por cualquier otro, la página carga pero se queda en "sin conexión"
-(`/live/websocket` responde 403). Cambiar de nombre es cambiar
-`PHX_HOST` (y `PHX_PORT`) en el `.env` y reiniciar `mapo`.
+El nombre principal es `PHX_HOST`: con él se arman los enlaces de los
+correos. LiveView solo acepta el WebSocket si el origen es ese nombre o
+uno de `PHX_ORIGENES_EXTRA` (opcional, con esquema y puerto, separados
+por coma); por cualquier otro, la página carga pero se queda en "sin
+conexión" (`/live/websocket` responde 403). Así la tailnet sirve de
+puerta trasera si falla Cloudflare:
+`PHX_ORIGENES_EXTRA=https://<máquina>.<tailnet>.ts.net:1865` junto con
+el `tailscale serve --bg --https=1865 http://127.0.0.1:1865` de abajo.
+Cambiar cualquiera de los tres es editar el `.env` y recrear `mapo`
+(`up -d`).
 
 ### Con dominio: Cloudflare Tunnel
 
@@ -112,8 +117,8 @@ a la tailnet, con certificado, y `PHX_HOST` es ese nombre. Si la
 máquina ya publica otro servicio en el 443, ese comando lo
 reemplazaría: Mapo va entonces en su propio puerto
 (`tailscale serve --bg --https=1865 http://127.0.0.1:1865`) con
-`PHX_PORT=1865`. Mientras `PHX_HOST` apunte al dominio, este camino no
-sirve (ver arriba).
+`PHX_PORT=1865`. Con `PHX_HOST` en el dominio, este camino sirve solo
+si su nombre está en `PHX_ORIGENES_EXTRA` (ver arriba).
 
 ### Comprobar
 
@@ -253,5 +258,7 @@ que funciona; revertir es `git checkout <tag>` y el mismo `up -d --build`.
 
 Hecha el 2026-10-30 antes del primer despliegue
 ([historial/2026-10-hosteo.md](historial/2026-10-hosteo.md)): sin
-hallazgos críticos ni altos. Lo que quedó abierto, con su riesgo, está
-en ese mismo documento.
+hallazgos críticos ni altos. La segunda, el 2026-11-17
+([historial/2026-11-seguridad.md](historial/2026-11-seguridad.md)),
+cerró lo que quedó abierto en octubre y un SSRF en la lectura de
+proyecciones; lo pendiente está al final de ese documento.

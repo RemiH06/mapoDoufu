@@ -89,10 +89,19 @@ if config_env() == :prod do
   # comparte nombre con otros servicios (docs/despliegue.md).
   port = String.to_integer(System.get_env("PHX_PORT") || "443")
 
+  # Otros nombres con que se entra, además de PHX_HOST (la tailnet como
+  # puerta trasera si falla Cloudflare): `https://<nombre>:<puerto>`
+  # separados por coma. LiveView rechaza el WebSocket de cualquier otro.
+  origenes_extra =
+    (System.get_env("PHX_ORIGENES_EXTRA") || "")
+    |> String.split(",", trim: true)
+    |> Enum.map(&String.trim/1)
+
   config :mapo, :dns_cluster_query, System.get_env("DNS_CLUSTER_QUERY")
 
   config :mapo, MapoWeb.Endpoint,
     url: [host: host, port: port, scheme: "https"],
+    check_origin: ["https://#{host}:#{port}" | origenes_extra],
     http: [
       # Enable IPv6 and bind on all interfaces.
       # Set it to  {0, 0, 0, 0, 0, 0, 0, 1} for local network only access.

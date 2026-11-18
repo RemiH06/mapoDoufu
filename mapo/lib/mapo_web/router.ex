@@ -9,8 +9,28 @@ defmodule MapoWeb.Router do
     plug :fetch_live_flash
     plug :put_root_layout, html: {MapoWeb.Layouts, :root}
     plug :protect_from_forgery
-    plug :put_secure_browser_headers
+    plug :cabeceras_seguras
     plug :fetch_current_scope_for_user
+  end
+
+  # CSP que solo deja correr los scripts propios. El único en línea es el del
+  # modo claro u oscuro del layout raíz, que lleva este nonce. `style-src`
+  # necesita 'unsafe-inline': Leaflet y LiveView ponen `style` en elementos.
+  defp cabeceras_seguras(conn, _opts) do
+    nonce = 18 |> :crypto.strong_rand_bytes() |> Base.encode64()
+
+    # El CSS de bunny.net manda por los archivos a jsdelivr (fontsource).
+    csp =
+      "default-src 'self'; script-src 'self' 'nonce-#{nonce}'; " <>
+        "style-src 'self' 'unsafe-inline' https://fonts.bunny.net; " <>
+        "font-src 'self' https://fonts.bunny.net https://cdn.jsdelivr.net; " <>
+        "img-src 'self' data: blob: https://*.tile.openstreetmap.org; " <>
+        "connect-src 'self'; object-src 'none'; base-uri 'self'; " <>
+        "form-action 'self'; frame-ancestors 'self'"
+
+    conn
+    |> assign(:csp_nonce, nonce)
+    |> put_secure_browser_headers(%{"content-security-policy" => csp})
   end
 
   pipeline :api do

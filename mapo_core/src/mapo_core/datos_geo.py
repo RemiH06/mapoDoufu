@@ -172,6 +172,9 @@ def _geopackage(contenido: bytes):
     conexion = sqlite3.connect(":memory:")
     try:
         conexion.deserialize(contenido)
+        # Recomendado por SQLite para abrir bases ajenas: sin escribir el
+        # esquema ni tocar la memoria cruda de la base.
+        conexion.setconfig(sqlite3.SQLITE_DBCONFIG_DEFENSIVE, True)
         conexion.execute("PRAGMA trusted_schema=OFF")
         conexion.execute("PRAGMA query_only=ON")
         limite = time.monotonic() + _SEGUNDOS_GPKG
@@ -301,8 +304,11 @@ def _reproyectar(geometrias: np.ndarray, crs: str) -> np.ndarray:
     from rasterio.errors import CRSError
     from rasterio.warp import transform
 
+    # Solo WKT o `EPSG:n`. `from_user_input` acepta URL y GDAL las pide: un
+    # `.prj` con `http://...` haría que el servidor visite esa dirección.
     try:
-        origen = CRS.from_user_input(crs)
+        epsg = re.fullmatch(r"EPSG:(\d+)", crs)
+        origen = CRS.from_epsg(int(epsg.group(1))) if epsg else CRS.from_wkt(crs)
     except CRSError as exc:
         raise ArchivoInvalido("No se reconoce la proyección del archivo.") from exc
     if origen.to_epsg() == 4326:

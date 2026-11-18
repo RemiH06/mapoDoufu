@@ -697,10 +697,13 @@ defmodule MapoWeb.MapaLive.Index do
     {:noreply, cerrar_capa(socket, id)}
   end
 
+  # Repintar trae los datos otra vez: pasan por el scope, como en `abrir_capa`.
   def handle_event("pintar_capa", %{"capa" => id, "columna" => columna}, socket) do
-    case abierta(socket, id) do
+    a = abierta(socket, id)
+
+    case a && Capas.get_capa(socket.assigns.current_scope, a.capa.id) do
       nil -> {:noreply, socket}
-      a -> {:noreply, mostrar_capa(socket, a.capa, columna, a.tono)}
+      capa -> {:noreply, mostrar_capa(socket, capa, columna, a.tono)}
     end
   end
 

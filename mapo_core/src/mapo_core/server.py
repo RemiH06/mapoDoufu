@@ -2,6 +2,7 @@
 # dentro de un `async def` bloquearia el event loop para todas las peticiones.
 import asyncio
 import json
+import logging
 from typing import Literal
 
 import psycopg
@@ -21,7 +22,10 @@ from mapo_core.osrm_client import OSRMClient
 from mapo_core.voronoi import PuntoVoronoi, calcular_voronoi
 from mapo_core.vrp import Parada, Vehiculo, resolver_vrp
 
-app = FastAPI(title="mapo_core")
+# Sin /docs ni /openapi.json: el único cliente es `mapo`, y la lista de
+# rutas solo le serviría a quien llegara a la red interna.
+app = FastAPI(title="mapo_core", docs_url=None, redoc_url=None, openapi_url=None)
+_log = logging.getLogger("mapo_core")
 
 _osrm_client: OSRMClient | None = None
 
@@ -35,9 +39,11 @@ def get_osrm_client() -> OSRMClient:
 
 @app.exception_handler(psycopg.OperationalError)
 async def base_de_datos_no_disponible(request: Request, exc: psycopg.OperationalError) -> JSONResponse:
+    # El texto de psycopg trae host, usuario y base: va al log, no a la respuesta.
+    _log.error("Base no disponible en %s: %s", request.url.path, exc)
     return JSONResponse(
         status_code=503,
-        content={"error": "La base de datos de mapo_core no esta disponible ahorita mismo.", "detalle": str(exc)},
+        content={"error": "La base de datos de mapo_core no esta disponible ahorita mismo."},
     )
 
 

@@ -12,6 +12,9 @@ defmodule Mapo.Teams do
   alias Mapo.Teams.TeamNotifier
   alias Mapo.Accounts.Scope
 
+  # Lo que vive un enlace de invitacion sin aceptarse, desde el ultimo envio.
+  @dias_invitacion 7
+
   @doc """
   Subscribes to scoped notifications about any team changes.
 
@@ -200,36 +203,30 @@ defmodule Mapo.Teams do
   end
 
   @doc """
-  Agrega a un usuario existente (por correo) como miembro de un equipo.
-  Requiere que el scope sea `:owner` o `:admin` del equipo. No permite
-  agregar con rol `:owner` desde aqui (evita mintear dueños de paso).
-
-  Devuelve `{:error, :not_found}` si no existe una cuenta con ese correo.
-  """
-  def add_member_by_email(%Scope{} = scope, %Team{} = team, email, role)
-      when role in [:member, :admin] do
-    true = role_in_team(scope, team.id) in [:owner, :admin]
-
-    case Mapo.Accounts.get_user_by_email(email) do
-      nil -> {:error, :not_found}
-      user -> create_membership(%{team_id: team.id, user_id: user.id, role: role})
-    end
-  end
-
-  @doc """
   Quita a un miembro de un equipo. Requiere que el scope sea `:owner`
-  o `:admin`. No permite dejar el equipo sin ningun `:owner`.
+  o `:admin`. Un `:admin` solo quita miembros (o se sale él); a otro admin
+  o a un titular solo los quita un titular. No permite dejar el equipo sin
+  ningun `:owner`.
   """
   def remove_member(%Scope{} = scope, %Team{} = team, %Membership{} = membership) do
-    true = role_in_team(scope, team.id) in [:owner, :admin]
+    rol = role_in_team(scope, team.id)
+    true = rol in [:owner, :admin]
     true = membership.team_id == team.id
 
-    if membership.role == :owner and count_owners(team.id) <= 1 do
-      {:error, :last_owner}
-    else
-      delete_membership(membership)
+    cond do
+      not puede_quitar?(rol, membership, scope) -> {:error, :sin_permiso}
+      membership.role == :owner and count_owners(team.id) <= 1 -> {:error, :last_owner}
+      true -> delete_membership(membership)
     end
   end
+
+  @doc "¿Puede alguien con `rol` quitar esa membresía? Lo usa también la pantalla."
+  def puede_quitar?(:owner, _membership, _scope), do: true
+
+  def puede_quitar?(:admin, %Membership{} = membership, %Scope{} = scope),
+    do: membership.role == :member or membership.user_id == scope.user.id
+
+  def puede_quitar?(_rol, _membership, _scope), do: false
 
   defp count_owners(team_id) do
     Repo.aggregate(
@@ -324,7 +321,9 @@ defmodule Mapo.Teams do
   todavia. Requiere que el scope sea `:owner` o `:admin` del equipo.
 
   Si ya existe una invitacion pendiente para ese correo en ese equipo,
-  la reutiliza (no duplica) y reenvia el correo.
+  la reutiliza (no duplica) con un enlace nuevo: el anterior deja de
+  servir y el plazo de `@dias_invitacion` vuelve a correr. Regresa la
+  invitacion con `token_claro`, que no se guarda.
   """
   def invitar_por_correo(%Scope{} = scope, %Team{} = team, email, role, url_fn)
       when role in [:member, :admin] and is_function(url_fn, 1) do
@@ -334,10 +333,12 @@ defmodule Mapo.Teams do
       Repo.get_by(Invitacion, team_id: team.id, email: email, estado: :pendiente) ||
         %Invitacion{}
 
+    token = :crypto.strong_rand_bytes(32) |> Base.url_encode64(padding: false)
+
     attrs = %{
       email: email,
       role: role,
-      token: invitacion.token || generar_token(),
+      token: hash_token(token),
       estado: :pendiente,
       team_id: team.id,
       invitado_por_id: scope.user.id
@@ -346,22 +347,30 @@ defmodule Mapo.Teams do
     with {:ok, invitacion} <-
            invitacion
            |> Invitacion.changeset(attrs)
+           |> Ecto.Changeset.force_change(:updated_at, DateTime.utc_now(:second))
            |> Repo.insert_or_update() do
-      TeamNotifier.deliver_invitacion(invitacion, team, url_fn.(invitacion.token))
-      {:ok, invitacion}
+      TeamNotifier.deliver_invitacion(invitacion, team, url_fn.(token))
+      {:ok, %{invitacion | token_claro: token}}
     end
   end
 
-  defp generar_token do
-    :crypto.strong_rand_bytes(32) |> Base.url_encode64(padding: false)
-  end
+  # Igual que en la migracion `20261117120000_hash_invitaciones_token`.
+  defp hash_token(token), do: :crypto.hash(:sha256, token) |> Base.encode16(case: :lower)
 
   @doc """
-  Busca una invitacion pendiente o aceptada por su token. Devuelve `nil`
-  si no existe. Precarga `:team`.
+  Busca una invitacion por su token: aceptada, o pendiente de los ultimos
+  `@dias_invitacion` dias. Devuelve `nil` si no existe o ya caduco.
+  Precarga `:team`.
   """
-  def get_invitacion_por_token(token) do
-    Repo.get_by(Invitacion, token: token) |> Repo.preload(:team)
+  def get_invitacion_por_token(token) when is_binary(token) do
+    vigente_desde = DateTime.add(DateTime.utc_now(), -@dias_invitacion, :day)
+
+    Repo.one(
+      from i in Invitacion,
+        where: i.token == ^hash_token(token),
+        where: i.estado == :aceptada or i.updated_at > ^vigente_desde,
+        preload: :team
+    )
   end
 
   @doc """

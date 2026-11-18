@@ -312,7 +312,7 @@ export const MapaTecnico = {
       style: f => this._estiloQuintil(f, cortes, color),
       onEachFeature: (f, capa) => {
         const valor = f.properties.valor_choropleth
-        capa.bindPopup(`<strong>${etiqueta}</strong><br>${valor === null || valor === undefined ? "sin dato" : valor.toLocaleString("es-MX")}`)
+        capa.bindPopup(`<strong>${escapar(etiqueta)}</strong><br>${valor === null || valor === undefined ? "sin dato" : valor.toLocaleString("es-MX")}`)
       },
     })
   },

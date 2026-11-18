@@ -41,20 +41,35 @@ defmodule MapoWeb.TeamLive.ShowTest do
     end
   end
 
-  test "owner adds an existing user as a member", %{conn: conn, scope: scope} do
+  test "con cuenta o sin ella, se invita igual y nadie entra sin aceptar", %{
+    conn: conn,
+    scope: scope
+  } do
     team = team_fixture(scope)
-    new_member = user_fixture()
+    con_cuenta = user_fixture()
 
     {:ok, lv, _html} = live(conn, ~p"/teams/#{team}")
 
     html =
       lv
-      |> form("#add_member_form", member: %{email: new_member.email, role: "member"})
+      |> form("#add_member_form", member: %{email: con_cuenta.email, role: "member"})
       |> render_submit()
 
-    assert html =~ "Miembro agregado con éxito."
-    assert html =~ new_member.email
-    assert Teams.role_in_team(scope, team.id) |> is_atom()
+    assert html =~ "Se envió una invitación a #{con_cuenta.email}."
+    assert Teams.role_in_team(Mapo.Accounts.Scope.for_user(con_cuenta), team.id) == nil
+  end
+
+  test "invitar a quien ya es miembro lo dice", %{conn: conn, scope: scope} do
+    team = team_fixture(scope)
+    {:ok, lv, _html} = live(conn, ~p"/teams/#{team}")
+
+    html =
+      lv
+      |> form("#add_member_form", member: %{email: scope.user.email, role: "member"})
+      |> render_submit()
+
+    assert html =~ "ya es miembro"
+    assert Teams.list_invitaciones_pendientes(scope, team) == []
   end
 
   test "adding a member with an unknown email sends an invitation", %{conn: conn, scope: scope} do

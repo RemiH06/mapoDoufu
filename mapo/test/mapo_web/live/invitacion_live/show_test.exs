@@ -22,7 +22,7 @@ defmodule MapoWeb.InvitacionLive.ShowTest do
     invitacion = invitacion_fixture(owner_scope, team, %{email: "invitado@example.com"})
     {:ok, _} = Teams.aceptar_invitacion(invitado_scope, invitacion)
 
-    {:ok, _lv, html} = live(conn, ~p"/invitaciones/#{invitacion.token}")
+    {:ok, _lv, html} = live(conn, ~p"/invitaciones/#{invitacion.token_claro}")
 
     assert html =~ "ya se aceptó"
   end
@@ -32,7 +32,7 @@ defmodule MapoWeb.InvitacionLive.ShowTest do
     team = team_fixture(owner_scope)
     invitacion = invitacion_fixture(owner_scope, team, %{email: "invitado@example.com"})
 
-    {:ok, _lv, html} = live(conn, ~p"/invitaciones/#{invitacion.token}")
+    {:ok, _lv, html} = live(conn, ~p"/invitaciones/#{invitacion.token_claro}")
 
     assert html =~ team.name
     assert html =~ "invitado@example.com"
@@ -48,7 +48,7 @@ defmodule MapoWeb.InvitacionLive.ShowTest do
     otro = user_fixture(%{email: "otro@example.com"})
     conn = log_in_user(conn, otro)
 
-    {:ok, _lv, html} = live(conn, ~p"/invitaciones/#{invitacion.token}")
+    {:ok, _lv, html} = live(conn, ~p"/invitaciones/#{invitacion.token_claro}")
 
     assert html =~ "invitado@example.com"
     assert html =~ "otro@example.com"
@@ -63,7 +63,7 @@ defmodule MapoWeb.InvitacionLive.ShowTest do
     conn = log_in_user(conn, invitado)
     invitado_scope = Mapo.Accounts.Scope.for_user(invitado)
 
-    {:ok, lv, html} = live(conn, ~p"/invitaciones/#{invitacion.token}")
+    {:ok, lv, html} = live(conn, ~p"/invitaciones/#{invitacion.token_claro}")
     assert html =~ "Aceptar invitación"
 
     {:error, {:live_redirect, %{to: to}}} =

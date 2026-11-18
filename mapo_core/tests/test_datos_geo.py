@@ -193,6 +193,20 @@ def test_proyeccion_ilegible():
         dg.leer(_shp([GDL], prj="basura"), "zip")
 
 
+def test_proyeccion_con_url_no_sale_a_la_red():
+    """GDAL pide la URL si se le pasa a `from_user_input`: eso sería SSRF."""
+    import socket
+
+    with socket.create_server(("127.0.0.1", 0)) as servidor:
+        servidor.setblocking(False)
+        url = f"http://127.0.0.1:{servidor.getsockname()[1]}/x.prj"
+        for archivo, formato in ((_shp([GDL], prj=url), "zip"), (_gpkg([GDL], srs=9999, definicion=url), "gpkg")):
+            with pytest.raises(dp.ArchivoInvalido, match="proyección"):
+                dg.leer(archivo, formato)
+        with pytest.raises(BlockingIOError):
+            servidor.accept()
+
+
 def test_shapefile_incompleto_y_zip_ajeno():
     with pytest.raises(dp.ArchivoInvalido, match="ningún .shp"):
         salida = io.BytesIO()

@@ -577,6 +577,24 @@ defmodule MapoWeb.MapaLive.IndexTest do
       assert_reply(lv, %{campos: []})
     end
 
+    test "si sacan a la persona del equipo, repintar ya no trae datos", %{
+      conn: conn,
+      scope: scope
+    } do
+      capa = capa_fixture(scope, "municipio", [zona("14039", 10)])
+
+      stub_estados_y_municipio(fn conn ->
+        Req.Test.json(conn, %{"features" => [feature("14039")]})
+      end)
+
+      {:ok, lv, _html} = live(conn, ~p"/mapa?#{[capa: capa.id]}")
+      assert_push_event(lv, "capa_propios", %{cortes: nil})
+
+      Mapo.Repo.delete_all(Mapo.Teams.Membership)
+      render_change(lv, "pintar_capa", %{"capa" => capa.id, "columna" => "ventas"})
+      refute_push_event(lv, "capa_propios", %{})
+    end
+
     test "un id que no es número no tumba la vista", %{conn: conn} do
       stub_estados_y_municipio(fn _ -> raise "no debería llamarse" end)
       {:ok, _lv, html} = live(conn, ~p"/mapa?capa=abc")

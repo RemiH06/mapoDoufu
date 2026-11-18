@@ -44,14 +44,14 @@ defmodule MapoWeb.DatosLive.Cruce do
         <section class="doc pegado" aria-labelledby="t-cruce">
           <header class="doc-cab">
             <h1 id="t-cruce">Cruzar {@capa.nombre}</h1>
-             <span class="doc-tipo">{cifra(@capa.num_filas)} renglones</span>
+            <span class="doc-tipo">{cifra(@capa.num_filas)} renglones</span>
           </header>
-          
+
           <div class="doc-seccion">
             <p class="secundario">
               Cada cifra queda en su propia columna: Mapo no las pondera ni las junta en un puntaje.
             </p>
-            
+
             <.form for={@form} id="cruce_form" phx-change="cambiar" phx-submit="cruzar">
               <.input
                 :if={length(@niveles) > 1}
@@ -62,11 +62,11 @@ defmodule MapoWeb.DatosLive.Cruce do
               /> <.input :if={length(@niveles) == 1} field={@form[:nivel]} type="hidden" />
               <fieldset :if={@capa.numericas != []} class="cruce-grupo">
                 <legend>Columnas de tu capa</legend>
-                
+
                 <p class="secundario">
                   Sumar sirve para ventas; para precios o edades, un promedio o una mediana. Los renglones por zona siempre se cuentan.
                 </p>
-                
+
                 <.input
                   :for={{columna, i} <- Enum.with_index(@capa.numericas)}
                   type="select"
@@ -77,10 +77,10 @@ defmodule MapoWeb.DatosLive.Cruce do
                   options={@agregaciones}
                 />
               </fieldset>
-              
+
               <fieldset class="cruce-grupo">
                 <legend>Censo 2020</legend>
-                 <input type="hidden" name="cruce[censo][]" value="" />
+                <input type="hidden" name="cruce[censo][]" value="" />
                 <details
                   :for={{{titulo, grupo}, i} <- Enum.with_index(grupos_censo(@indicadores))}
                   class="cruce-desplegable"
@@ -90,7 +90,7 @@ defmodule MapoWeb.DatosLive.Cruce do
                   <summary>
                     {titulo} <span class="secundario">{elegidos(grupo, @censo)}</span>
                   </summary>
-                  
+
                   <div class="cruce-censo">
                     <label :for={{clave, etiqueta} <- grupo}>
                       <input
@@ -103,7 +103,7 @@ defmodule MapoWeb.DatosLive.Cruce do
                   </div>
                 </details>
               </fieldset>
-              
+
               <.input
                 field={@form[:denue]}
                 type="select"
@@ -123,7 +123,7 @@ defmodule MapoWeb.DatosLive.Cruce do
             </.form>
           </div>
         </section>
-        
+
         <section
           :if={@resultado}
           class="doc pegado cruce-resultado"
@@ -133,49 +133,49 @@ defmodule MapoWeb.DatosLive.Cruce do
         >
           <header class="doc-cab">
             <h2 id="t-resultado">Resultado</h2>
-            
+
             <span class="doc-tipo">
               {cifra(@resultado["zonas_con_renglones"])} de {cifra(length(@resultado["filas"]))} zonas con renglones
             </span>
           </header>
-          
+
           <div class="doc-seccion">
             <p :for={aviso <- @resultado["avisos"]} class="nota">{aviso}</p>
-            
+
             <div class="tabla-muestra">
               <table>
                 <caption class="sr-only">Primeras zonas del cruce</caption>
-                
+
                 <thead>
                   <tr>
                     <th scope="col">Clave</th>
-                    
+
                     <th :for={c <- @resultado["columnas"]} scope="col">{c}</th>
                   </tr>
                 </thead>
-                
+
                 <tbody>
                   <tr :for={fila <- Enum.take(@resultado["filas"], @a_la_vista)}>
                     <td>{fila["clave"]}</td>
-                    
+
                     <td :for={c <- @resultado["columnas"]}>{celda(fila["datos"][c])}</td>
                   </tr>
                 </tbody>
               </table>
             </div>
-            
+
             <p :if={length(@resultado["filas"]) > @a_la_vista} class="secundario">
               Se ven las primeras {@a_la_vista} zonas. Guarda el cruce para verlas todas en el mapa o bajarlas en CSV.
             </p>
-            
+
             <details class="cruce-metodo" open>
               <summary>Cómo se calculó</summary>
-              
+
               <ul>
                 <li :for={linea <- @resultado["metodo"]}>{linea}</li>
               </ul>
             </details>
-            
+
             <.form for={@guardado} id="guardar_form" phx-submit="guardar">
               <.input field={@guardado[:nombre]} type="text" label="Nombre de la capa" required />
               <div class="doc-botones">

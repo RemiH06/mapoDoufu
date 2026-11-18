@@ -154,6 +154,22 @@ defmodule Mapo.TeamsTest do
       membership = membership_fixture()
       assert %Ecto.Changeset{} = Teams.change_membership(membership)
     end
+
+    test "un admin quita miembros y se sale él, pero no quita a otro admin ni al titular" do
+      titular = user_scope_fixture()
+      team = team_fixture(titular)
+      admin = membership_fixture(team_id: team.id, role: :admin)
+      otro_admin = membership_fixture(team_id: team.id, role: :admin)
+      miembro = membership_fixture(team_id: team.id)
+      [del_titular] = Enum.filter(Teams.list_team_memberships(team.id), &(&1.role == :owner))
+      scope_admin = Mapo.Accounts.Scope.for_user(Mapo.Accounts.get_user!(admin.user_id))
+
+      assert {:error, :sin_permiso} = Teams.remove_member(scope_admin, team, otro_admin)
+      assert {:error, :sin_permiso} = Teams.remove_member(scope_admin, team, del_titular)
+      assert {:ok, _} = Teams.remove_member(scope_admin, team, miembro)
+      assert {:ok, _} = Teams.remove_member(scope_admin, team, admin)
+      assert {:ok, _} = Teams.remove_member(titular, team, otro_admin)
+    end
   end
 
   describe "invitaciones" do
@@ -175,12 +191,15 @@ defmodule Mapo.TeamsTest do
 
       assert invitacion.email == "nadie@example.com"
       assert invitacion.estado == :pendiente
-      assert invitacion.token != nil
       assert_received {:invite_url, token}
-      assert token == invitacion.token
+      assert token == invitacion.token_claro
+      # En la base solo queda el hash: un respaldo filtrado no da enlaces.
+      guardada = Mapo.Repo.get!(Invitacion, invitacion.id)
+      assert guardada.token != token
+      refute guardada.token =~ token
     end
 
-    test "invitar_por_correo/5 reuses the same token for a repeat invite to the same email" do
+    test "reinvitar al mismo correo no duplica y el enlace anterior deja de servir" do
       scope = user_scope_fixture()
       team = team_fixture(scope)
 
@@ -190,9 +209,25 @@ defmodule Mapo.TeamsTest do
       {:ok, second} =
         Teams.invitar_por_correo(scope, team, "nadie@example.com", :admin, &"/#{&1}")
 
-      assert first.token == second.token
+      assert first.id == second.id
       assert second.role == :admin
       assert Teams.list_invitaciones_pendientes(scope, team) |> length() == 1
+      assert Teams.get_invitacion_por_token(first.token_claro) == nil
+      assert Teams.get_invitacion_por_token(second.token_claro).id == second.id
+    end
+
+    test "una invitacion pendiente caduca a los 7 dias del ultimo envio" do
+      scope = user_scope_fixture()
+      team = team_fixture(scope)
+      invitacion = invitacion_fixture(scope, team)
+
+      hace_8_dias = DateTime.add(DateTime.utc_now(:second), -8, :day)
+
+      Mapo.Repo.update_all(from(i in Invitacion, where: i.id == ^invitacion.id),
+        set: [updated_at: hace_8_dias]
+      )
+
+      assert Teams.get_invitacion_por_token(invitacion.token_claro) == nil
     end
 
     test "invitar_por_correo/5 with a scope that is not owner/admin raises" do
@@ -210,7 +245,7 @@ defmodule Mapo.TeamsTest do
       team = team_fixture(scope)
       invitacion = invitacion_fixture(scope, team)
 
-      found = Teams.get_invitacion_por_token(invitacion.token)
+      found = Teams.get_invitacion_por_token(invitacion.token_claro)
       assert found.id == invitacion.id
       assert found.team.id == team.id
     end

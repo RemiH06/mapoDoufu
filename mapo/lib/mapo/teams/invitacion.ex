@@ -5,7 +5,10 @@ defmodule Mapo.Teams.Invitacion do
   schema "invitaciones" do
     field :email, :string
     field :role, Ecto.Enum, values: [:member, :admin]
+    # En la base va el SHA-256 del token: quien lea un respaldo no puede usar
+    # los enlaces. El token en claro solo existe al mandar el correo.
     field :token, :string
+    field :token_claro, :string, virtual: true
     field :estado, Ecto.Enum, values: [:pendiente, :aceptada], default: :pendiente
     belongs_to :team, Mapo.Teams.Team
     belongs_to :invitado_por, Mapo.Accounts.User

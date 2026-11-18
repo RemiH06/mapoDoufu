@@ -15,6 +15,16 @@ defmodule MapoWeb.PageControllerTest do
     refute html =~ "Mis equipos"
   end
 
+  test "la CSP solo deja correr scripts propios y el del tema con su nonce", %{conn: conn} do
+    conn = get(conn, ~p"/")
+    [csp] = get_resp_header(conn, "content-security-policy")
+    [_, nonce] = Regex.run(~r/script-src 'self' 'nonce-([^']+)'/, csp)
+
+    assert html_response(conn, 200) =~ ~s(<script nonce="#{nonce}">)
+    assert csp =~ "object-src 'none'"
+    refute get(build_conn(), ~p"/") |> get_resp_header("content-security-policy") == [csp]
+  end
+
   test "GET / shows the teams CTA when logged in", %{conn: conn} do
     conn = conn |> log_in_user(user_fixture()) |> get(~p"/")
     html = html_response(conn, 200)

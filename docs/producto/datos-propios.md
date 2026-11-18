@@ -31,7 +31,9 @@ y arriba de eso el costo cae en la laptop de quien mira.
 Los archivos en metros, como los de INEGI en Lambert (EPSG:6372), se reproyectan
 solos si declaran su proyección. Un shapefile sin `.prj` se toma como grados y se
 avisa; si en realidad eran metros, sus renglones salen como "fuera de México" y
-no se dibujan en otro lado.
+no se dibujan en otro lado. La proyección se lee solo como WKT (`.prj`, GeoPackage)
+o `EPSG:n` (GeoJSON): GDAL descarga la que venga como URL, y eso dejaría que un
+archivo hiciera al servidor visitar direcciones de su red.
 
 ## Cómo se ubica cada renglón
 
@@ -121,7 +123,8 @@ Hay un tope de 60 cruces por hora por cuenta.
 Cualquier miembro del equipo ve las capas, sube archivos, cruza y baja el CSV. Borrar es de quien la
 subió y de titulares y admins. Toda lectura pasa por la membresía de quien pide,
 incluida la ficha, así que una capa ajena da el mismo resultado que una que no
-existe, y al salir de un equipo se pierde el acceso sin recargar.
+existe, y al salir de un equipo se pierde el acceso sin recargar (abrir, repintar
+y la ficha vuelven a preguntar).
 
 ## Qué se guarda
 
