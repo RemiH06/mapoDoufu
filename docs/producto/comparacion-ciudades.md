@@ -1,0 +1,97 @@
+# Comparación de ciudades: calor, arbolado y marginación
+
+Para el proyecto de arborización (sesión del 2026-11-19): la zona metropolitana de
+Guadalajara completa, con la colonia López Cotilla como objetivo, comparada por AGEB
+urbano con seis metrópolis parecidas y distintas. Temperatura de superficie, dosel, NDVI,
+censo 2020 y marginación de CONAPO, cada una por separado (sin índice), con la
+procedencia de cada dato y una guía para recalcular cualquier número en ArcGIS.
+
+No lleva agua, emisiones, fuego ni defunciones: eso era del caso de Autlán.
+
+## Ciudades
+
+Delimitación oficial: SEDATU, CONAPO e INEGI, *Metrópolis de México 2020* (edición
+2024, [PDF](https://www.gob.mx/cms/uploads/sedatu/MM2020_06022024.pdf), sha256
+`1d8e7b90…`). Solo existe en PDF: los municipios de cada metrópoli salieron de sus
+cuadros A a `scripts/ambiental/metropolis_2020_municipios.csv` (91 de las 92; la de la
+Ciudad de México, partida entre páginas, se sacó aparte). Los conteos de las siete usadas
+coinciden con el cuadro resumen del documento.
+
+| Clave | Metrópoli | Municipios | Grupo | UTM |
+|---|---|---|---|---|
+| `zmg` | Guadalajara | 7 | objetivo | 13N |
+| `mty` | Monterrey | 16 | parecida | 14N |
+| `pue` | Puebla-Tlaxcala | 28 | parecida | 14N |
+| `leo` | León | 3 | parecida | 14N |
+| `mer` | Mérida | 13 | distinta (cálida húmeda) | 16N |
+| `hmo` | Hermosillo | 1 | distinta (desierto) | 12N |
+| `cdmx` | Ciudad de México | 63 | distinta (mucho más grande) | 14N |
+
+La ZMG oficial de 2020 son 7 municipios. `taxonomia` y el dataset de vivienda usan 10
+(con Ixtlahuacán de los Membrillos, Zapotlanejo y Acatlán de Juárez, de delimitaciones
+anteriores): no son la misma zona.
+
+## Cómo se hace
+
+```bash
+# En Pixilate (necesita la base de Mapo con los estados cargados: cli municipios, agebs
+# y censo_poblacion de 09 11 13 14 15 19 21 26 29 31)
+scripts/ambiental/ciudades.sh BASE [zmg mty ...]
+# En Aerilate, con el Python de QGIS
+"C:\Program Files\QGIS 4.2.3\bin\python-qgis.bat" scripts/ambiental/empaquetar_ciudades.py \
+    --entrada BASE --salida comparacion_ciudades \
+    --leeme scripts/ambiental/LEEME_comparacion_ciudades.txt --guia scripts/ambiental/GUIA_VERIFICACION_ArcGIS.txt
+```
+
+| Paso | Qué hace |
+|---|---|
+| `agebs` | AGEB urbanos de los municipios de la metrópoli desde la base de Mapo, con 15 variables del censo 2020 y la marginación de CONAPO por AGEB (`IMU_2020`) |
+| `imagenes.py` | Temperatura de superficie de Landsat (mediana de marzo a mayo de 2025, 30 m) y NDVI de Sentinel-2 (compuestos mensuales de marzo, abril y mayo de 2025, 10 m) |
+| `reales` | Pasa la temperatura a °C y saca la mediana de los tres NDVI mensuales |
+| `dosel` | Lee los mosaicos de ~1 m de Meta y WRI por franjas y deja dos rásteres a 10 m: % del área con árboles de 3 m o más y su altura media. Sin guardar el de 1 m (en la Ciudad de México serían decenas de GB) |
+| `zonal` | Promedio de cada ráster por AGEB, con las celdas cuyo centro cae dentro (la regla de Zonal Statistics de ArcGIS), y cuántas celdas fueron |
+| `colonias` | Solo la ZMG: lo mismo por colonia de CONAPO |
+| `resumen` | Tabla por ciudad: medianas, ponderados por población, rango p90 menos p10, Spearman entre pares y diferencia entre el quintil más y el menos marginado |
+
+Cada paso se salta si su salida ya existe. Los promedios salen de los mismos rásteres que
+se entregan: eso es lo que permite al equipo comprobarlos.
+
+## Validación
+
+- **Dosel:** en la caja del CP 45615, el ráster de 10 m da 3.64 % de cobertura, lo mismo
+  que el de 1 m del paquete de arborización (3.64 %).
+- **Población:** los AGEB urbanos suman 4,999,609 en la ZMG (la metrópoli completa,
+  5,110,617; el resto es rural) y 20,838,648 en la Ciudad de México (21,436,911).
+
+- **Índice de CONAPO al revés de lo intuitivo:** en el IMU 2020 un valor más alto es
+  menos marginación (en la ZMG, grado "Muy bajo" ronda 124.8 y "Muy alto" 113.0; con
+  `SBASC`, sin educación básica, la correlación es −0.93). La primera tabla comparativa
+  salió con las correlaciones de marginación al revés y el "quintil más marginado" era el
+  menos marginado. Ahora `resumen` invierte el signo y el alias del campo lo dice.
+
+## Resultados (2026-11-19)
+
+| Ciudad | AGEB con población | Temperatura mediana (°C) | Dosel mediano (%) | Spearman dosel y temperatura | Quintil más marginado contra el menos (°C; puntos de dosel) |
+|---|---|---|---|---|---|
+| Guadalajara | 1,921 | 42.6 | 3.9 | −0.39 | +0.85; −2.2 |
+| Monterrey | 2,079 | 39.5 | 6.1 | −0.30 | +0.66; +0.6 |
+| Puebla-Tlaxcala | 866 | 39.7 | 2.2 | −0.37 | +0.22; +0.4 |
+| León | 760 | 41.0 | 1.9 | −0.12 | +1.11; −0.4 |
+| Mérida | 692 | 42.1 | 17.0 | −0.37 | +0.38; +13.7 |
+| Hermosillo | 622 | 44.3 | 3.8 | −0.18 | +0.04; +2.7 |
+| Ciudad de México | 5,664 | 40.1 | 3.3 | −0.47 | +0.67; −7.5 |
+
+La colonia López Cotilla: 44.2 °C de superficie (más caliente que el 85 % de las 1,919
+colonias de la ZMG) con 9.4 % de dosel (más que el 87 %).
+
+La temperatura absoluta depende de las fechas de las escenas de cada ciudad; para
+comparar dentro de cada una está `lst_vs_mediana_ciudad_c`.
+
+## Límites
+
+- Una temporada (secas de 2025). Censo y marginación de 2020; dosel de imágenes de 2017 a
+  2020.
+- Solo AGEB urbanos.
+- Ciudades de otros países: temperatura, NDVI y dosel existen en todo el mundo, pero no
+  hay censo ni marginación comparables. Si se agregan, sería en cuadrícula y solo con
+  variables de satélite.

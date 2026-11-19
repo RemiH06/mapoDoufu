@@ -1,0 +1,92 @@
+CALOR, ARBOLADO Y MARGINACIÓN: ZONA METROPOLITANA DE GUADALAJARA Y OTRAS SEIS METRÓPOLIS
+Armado por Mapo (mapo.remlam.dev) con datos públicos. Cada número se puede rehacer con
+los archivos de esta carpeta: ver GUIA_VERIFICACION_ArcGIS.txt.
+
+QUÉ ES
+Para cada AGEB urbano (el área de INEGI de unas cuadras con datos del censo) de siete
+metrópolis: la temperatura de la superficie en la temporada seca de 2025, cuánto del área
+tiene árboles, el verdor (NDVI), quién vive ahí (censo 2020) y la marginación de CONAPO.
+Cada variable va por separado: no hay un índice que las junte.
+
+CIUDADES
+La delimitación es la oficial: SEDATU, CONAPO e INEGI, "Metrópolis de México 2020"
+(procedencia/metropolis_2020_municipios.csv, con la liga al PDF).
+- Objetivo: zona metropolitana de Guadalajara (7 municipios). Dentro, la colonia López
+  Cotilla (Tlaquepaque) y todas las colonias de CONAPO, para compararla con el resto.
+- Parecidas: Monterrey (16 municipios), Puebla-Tlaxcala (28) y León (3). Grandes, del
+  centro y norte, clima semiseco o templado.
+- Distintas: Mérida (13; cálida y húmeda, plana), Hermosillo (1; desierto muy caliente) y
+  Ciudad de México (63; cinco veces más grande y más alta y fresca).
+
+CÓMO ABRIRLO EN ARCGIS PRO
+1. Descomprimir en una carpeta corta sin acentos (C:\comparacion). ArcGIS no lee dentro
+   del zip.
+2. Catalog > Add Folder Connection > esa carpeta > Comparacion_ciudades.gdb.
+3. Cada ciudad es un conjunto de entidades en su propia UTM (metros). Arrastrar la capa
+   AGEB_<ciudad> al mapa y pintarla con Symbology > Graduated Colors sobre el campo que
+   interese (los alias dicen qué es cada uno).
+4. Los rásteres de cada ciudad están en rasters/<ciudad>/: arrastrarlos al mapa.
+5. La tabla Comparacion_por_ciudad resume las siete. Procedencia dice de dónde sale cada
+   dato, con su liga. Diccionario_campos describe cada campo.
+No exportar a shapefile: corta los nombres de campo a 10 letras.
+
+VERLO EN MAPO
+La carpeta para_mapo/ trae lo mismo en el formato que Mapo acepta para los datos de un
+equipo (mapo.remlam.dev > Equipos > Datos > Subir): un GeoPackage por ciudad (AGEB, y en
+Guadalajara también las colonias) y los rásteres de temperatura, NDVI y dosel, reducidos
+donde pasaban de 50 MB (para_mapo.csv dice la resolución final de cada uno). Cada renglón
+lleva su fuente y la liga a la documentación. En Mapo se pueden cruzar con el censo, el
+DENUE y las demás capas públicas.
+
+LOS DATOS Y CÓMO SE CALCULÓ CADA UNO
+- Temperatura de superficie (lst_c, °C): Landsat 8 y 9 (USGS, Collection 2 Level-2, banda
+  térmica), sin nubes ni sombras, mediana de marzo a mayo de 2025 por píxel de 30 m. Es la
+  temperatura del suelo y los techos, no la del aire. Por AGEB: promedio de los píxeles
+  cuyo centro cae dentro.
+- lst_vs_mediana_ciudad_c: la temperatura del AGEB menos la del AGEB mediano de su ciudad.
+  Sirve para comparar ciudades con climas distintos: Hermosillo es más caliente en todo,
+  pero aquí se ve qué tan caliente es una zona respecto a su propia ciudad.
+- NDVI (de -1 a 1): Sentinel-2 (ESA Copernicus), compuestos mensuales sin nubes de marzo,
+  abril y mayo de 2025 y su mediana, a 10 m. Más alto = más vegetación verde. En secas el
+  pasto está seco: el NDVI resalta árboles y riego.
+- Dosel (dosel_pct, %): mapa de altura de árboles de Meta y World Resources Institute
+  (Tolan et al. 2024) a ~1 m. Se cuenta como árbol lo de 3 m o más. Cada celda de 10 m
+  dice qué porcentaje de su área tiene árboles; el AGEB, el promedio de sus celdas. La
+  altura media (dosel_altura_m) es la de los árboles, sin contar el suelo. Ojo: las
+  imágenes de origen son de 2017 a 2020; no ven lo plantado o talado después.
+- Censo 2020 (INEGI) por AGEB: población, niños (0 a 2, 3 a 5, 0 a 14), personas mayores,
+  con discapacidad, sin servicios de salud, escolaridad y viviendas. Vacío = INEGI reservó
+  el dato (AGEB con pocas viviendas), no cero.
+- Marginación urbana 2020 (CONAPO) por AGEB: once porcentajes (sin agua entubada, sin
+  drenaje, sin servicios de salud, sin educación básica, hacinamiento...) más el índice y
+  el grado. El índice es de CONAPO, no de Mapo. OJO: en el índice de 2020 un valor MÁS
+  ALTO es MENOS marginación (grado "Muy bajo" ronda 125 y "Muy alto" 113). Para pintar,
+  usar el grado (gm_2020) o los porcentajes, que se leen derecho.
+- Densidad: habitantes entre el área del AGEB (ha).
+- Los campos "_celdas" dicen cuántos píxeles se promediaron: un AGEB con muy pocas celdas
+  (chico o en el borde) tiene un promedio menos firme.
+
+LA TABLA COMPARATIVA (Comparacion_por_ciudad)
+Por ciudad: población, temperatura mediana y ponderada por población, la diferencia entre
+el AGEB caliente (percentil 90) y el fresco (percentil 10), dosel mediano y ponderado,
+cuánta gente vive en AGEB con menos de 5 % de dosel, y la correlación de Spearman entre
+dosel y temperatura, NDVI y temperatura, marginación y temperatura, y marginación y dosel.
+En esas correlaciones la marginación ya va derecha (positivo = más marginado, más de lo
+otro): se usó el índice de CONAPO con el signo invertido.
+Las dos últimas columnas dicen cuánto más caliente (en °C) y cuánto menos dosel (en puntos)
+tiene el quinto de AGEB más marginado que el menos marginado, en mediana.
+Una correlación describe; no prueba que una cosa cause la otra.
+
+LÍMITES
+- Una sola temporada (secas 2025). Otro año puede cambiar los valores absolutos.
+- Landsat mide a 30 m: en AGEB muy chicos la temperatura mezcla a los vecinos.
+- La marginación y el censo son de 2020; las imágenes, de 2025; el dosel, de 2017 a 2020.
+- Solo AGEB urbanos: la periferia rural de cada metrópoli no está.
+
+FUENTES Y LICENCIAS (detalle y ligas en procedencia/fuentes.csv)
+INEGI (marco geoestadístico, censo 2020): términos de libre uso. CONAPO: datos abiertos.
+SEDATU, CONAPO e INEGI: Metrópolis de México 2020. USGS Landsat: dominio público.
+Contiene datos modificados de Copernicus Sentinel 2025. Dosel: Meta y WRI, CC BY 4.0
+(Tolan et al. 2024, "Very high resolution canopy height maps from RGB imagery using
+self-supervised vision transformer and convolutional decoder trained on aerial lidar").
+Imágenes vía Microsoft Planetary Computer.

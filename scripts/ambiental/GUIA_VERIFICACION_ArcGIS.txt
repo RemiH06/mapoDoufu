@@ -1,0 +1,46 @@
+CÓMO COMPROBAR LOS NÚMEROS EN ARCGIS PRO, SIN CONFIAR EN NOSOTROS
+
+Todos los promedios por AGEB salen de los rásteres de rasters/<ciudad>/. Se pueden
+recalcular así y deben dar lo mismo (diferencias de centésimas por cómo cada programa
+decide qué celdas del borde cuentan).
+
+1. Recalcular un promedio por AGEB
+   a. Agregar al mapa AGEB_<ciudad> y el ráster, por ejemplo
+      rasters/Guadalajara/temperatura_superficie_secas_2025_C.tif.
+   b. Geoprocessing > Zonal Statistics as Table:
+      - Input raster or feature zone data: AGEB_<ciudad>
+      - Zone field: cvegeo
+      - Input value raster: el ráster
+      - Statistics type: Mean
+   c. Unir la tabla resultante a la capa por cvegeo (Add Join) y comparar MEAN con lst_c
+      (o ndvi, dosel_pct, dosel_altura_m). El campo COUNT de la tabla es el mismo que los
+      campos "_celdas".
+
+2. Revisar los rásteres contra su origen
+   - Temperatura y NDVI: las escenas exactas de cada ciudad están en
+     procedencia/<ciudad>_procedencia_imagenes.csv (identificador de cada escena de
+     Landsat y Sentinel-2 en el catálogo de Planetary Computer, con su fecha y nubosidad).
+     Cualquiera se puede abrir en https://planetarycomputer.microsoft.com/explore.
+   - Dosel: los mosaicos de 1 m de Meta están en procedencia/<ciudad>_procedencia_dosel.csv
+     con su liga de descarga directa. Para comprobar una celda: abrir el mosaico, contar
+     en un cuadro de 10 x 10 m qué parte tiene 3 m o más.
+   - Censo: descargar ageb_mza_urbana_EE_cpv2020_csv.zip de INEGI (liga en
+     procedencia/fuentes.csv), buscar el renglón del AGEB (MZA = 000) y comparar POBTOT y
+     las demás variables.
+   - Marginación: IMU_2020.zip de CONAPO (liga en procedencia/fuentes.csv), buscar el AGEB
+     por CVE_AGEB.
+
+3. Revisar qué municipios forman cada metrópoli
+   procedencia/metropolis_2020_municipios.csv salió de los cuadros A del PDF oficial (liga
+   en procedencia/fuentes.csv). Los conteos de las siete coinciden con el cuadro resumen
+   del mismo documento: Guadalajara 7, Monterrey 16, Puebla-Tlaxcala 28, León 3, Mérida
+   13, Hermosillo 1 y Ciudad de México 63.
+
+4. Revisar la tabla comparativa
+   Cada columna de Comparacion_por_ciudad sale de la capa AGEB_<ciudad> (solo AGEB con
+   población). Por ejemplo, dosel_pct_mediana_agebs es la mediana del campo dosel_pct;
+   lst_c_ponderada_poblacion es el promedio de lst_c pesado por pobtot (Summary
+   Statistics no pondera: usar Calculate Field con lst_c * pobtot y dividir la suma entre
+   la suma de pobtot).
+
+Si algo no cuadra, avisar con el cvegeo del AGEB: se revisa contra el origen.
