@@ -1,9 +1,10 @@
-# Fuentes ambientales (en crudo, sin cargar)
+# Fuentes ambientales
 
-Descargadas el 2026-11-13 para la sesión 22. No hay tabla en la base: se
-usan recortándolas a una zona con `scripts/ambiental/recorte.py` (sección
-"Recorte por zona"). Abajo, el inventario y lo revisado en los archivos
-reales.
+Descargadas el 2026-11-13. Diez están cargadas en la base desde la sesión 22 (`cli
+ambiental`, una ficha por fuente en esta carpeta: acuíferos, RENAMECA, REPDA, RETC,
+SIAP, FIRMS, uso de suelo, ANP, sequía y defunciones) y las usa `/riesgos`. Todas se
+pueden además recortar a una zona con `scripts/ambiental/recorte.py` (sección "Recorte
+por zona").
 
 ## Cómo se bajan
 

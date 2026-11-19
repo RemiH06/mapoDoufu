@@ -101,6 +101,7 @@ docker compose exec mapo_core python -m mapo_core.cli shf       # índice de pre
 docker compose exec mapo_core python -m mapo_core.cli sniiv     # financiamientos, los 32 estados (~2 min)
 docker compose exec mapo_core python -m mapo_core.cli eic2025   # Intercensal 2025, vivienda por municipio
 docker compose exec mapo_core python -m mapo_core.cli envi      # renta y valor por estado (ENVI 2020)
+docker compose exec mapo_core python -m mapo_core.cli ambiental --crudos /app/data/crudos-ambiental [--fuente acuiferos,...]   # fuentes ambientales desde los crudos (docs/fuentes/ambientales.md)
 docker compose exec mapo_core python -m mapo_core.cli status
 ```
 

@@ -196,6 +196,18 @@ Después, `bin/migrate` y el `up -d` normal. Las cuentas de la
 instalación de origen no se copian. Comparar `count(*)` de cada tabla
 en los dos lados antes de dar la carga por buena.
 
+## Fuentes ambientales en producción
+
+Los crudos viven en `~/srv/mapo-crudos/ambiental/` (`scripts/crudos-ambientales.sh`). Se
+montan solo para la carga, en un contenedor aparte que sobrevive al cierre de SSH:
+
+```bash
+docker compose -f docker-compose.yml -f docker-compose.prod.yml run -d --name mapo-carga-ambiental   -v "$HOME/srv/mapo-crudos/ambiental:/crudos:ro" mapo_core python -m mapo_core.cli ambiental --crudos /crudos
+docker logs -f mapo-carga-ambiental
+```
+
+En Pixilate las diez tardan unos 7 minutos (2026-11-19).
+
 ## Respaldos
 
 `scripts/respaldo.sh` saca un `pg_dump -Fc` completo a

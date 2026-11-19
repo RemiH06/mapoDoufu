@@ -11,6 +11,7 @@
 - [sobrevivencia.md](producto/sobrevivencia.md): qué negocios de DENUE 2019 siguen en 2024 y si les va mejor juntos, en la ZMG y en los 32 estados; estudio en notebook, aparte de Mapo.
 - [colonias.md](producto/colonias.md): cómo armar el polígono de una colonia en cualquier municipio (oficial, OSM, votación de direcciones sobre manzanas o dibujo del equipo), con el prototipo de López Cotilla.
 - [plan-nacional.md](producto/plan-nacional.md): qué falta para tener el paquete ambiental y el dataset de vivienda en todo el país, y en qué orden.
+- [vista-riesgos.md](producto/vista-riesgos.md): `/riesgos`, cada peligro de una zona por separado con la gente dentro y cerca.
 - [comparacion-ciudades.md](producto/comparacion-ciudades.md): calor, dosel, NDVI, censo y marginación por AGEB de la ZMG y seis metrópolis más, con la entrega para ArcGIS y Mapo y cómo comprobar cada número.
 - [vista-vivienda.md](producto/vista-vivienda.md): acetato de vivienda por municipio en `/mapa`, un indicador de una sola fuente a la vez y la ficha con SHF, SNIIV, Intercensal y ENVI por separado.
 - [datos-propios.md](producto/datos-propios.md): archivos del equipo (tabla, vectorial, ráster) como acetato, su cruce con fuentes públicas, la distancia entre capas y el valor de un ráster: formatos, límites, ubicación, procedencia, permisos y qué se guarda.
@@ -37,6 +38,7 @@ Una por fuente: de dónde sale, cómo se carga, sus problemas conocidos y las ci
 - [shf.md](fuentes/shf.md): índice SHF de precios de la vivienda, trimestral desde 2005, por estado, 8 zonas metropolitanas y 74 municipios.
 - [sniiv.md](fuentes/sniiv.md): créditos y subsidios para vivienda por municipio y año (SNIIV), por organismo, destino y segmento de valor.
 - [eic2025.md](fuentes/eic2025.md): Intercensal 2025, bloque de vivienda por municipio (tenencia, escrituras, servicios) con su precisión.
+- [acuiferos.md](fuentes/acuiferos.md), [renameca.md](fuentes/renameca.md), [repda.md](fuentes/repda.md), [retc.md](fuentes/retc.md), [siap.md](fuentes/siap.md), [firms.md](fuentes/firms.md), [uso-suelo.md](fuentes/uso-suelo.md), [anp.md](fuentes/anp.md), [sequia.md](fuentes/sequia.md), [defunciones.md](fuentes/defunciones.md): fuentes ambientales cargadas (sesión 22).
 - [envi.md](fuentes/envi.md): ENVI 2020, renta mensual y valor estimado de la vivienda por estado.
 - [especies.md](fuentes/especies.md): plantas vasculares registradas en GBIF alrededor de una zona, con su estatus en México (Enciclovida) y el cruce con GRIIS, para elegir árboles nativos.
 - [imagenes.md](fuentes/imagenes.md): compuestos de Sentinel-2 y Landsat y WorldCover por zona, desde el STAC de Planetary Computer.
@@ -79,6 +81,7 @@ Qué se construyó en cada etapa, por qué así y qué bugs reales aparecieron.
 - [Cruce de datos propios, noviembre 2026](historial/2026-11-cruce.md)
 - [Pasada final de diseño, noviembre 2026](historial/2026-11-diseno-final.md)
 - [Pasada de seguridad, noviembre 2026](historial/2026-11-seguridad.md)
+- [Fuentes ambientales y vista de riesgos, noviembre 2026](historial/2026-11-fuentes-ambientales-riesgos.md)
 - [Patrones por rubro, noviembre 2026](historial/2026-11-patrones-rubro.md)
 - [Distancia entre capas, noviembre 2026](historial/2026-11-distancia-capas.md)
 - [Frontera agrícola y ráster con valor por píxel, noviembre 2026](historial/2026-11-raster-valores.md)
