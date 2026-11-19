@@ -74,7 +74,7 @@ FUENTES = {
     "colonias_marginacion": ("CONAPO, índice de marginación urbana por colonia", "2020", "colonia", "https://www.gob.mx/conapo/documentos/indices-de-marginacion-2020-284372"),
     "agebs_marginacion": ("CONAPO, índice de marginación urbana por AGEB", "2020", "AGEB", "https://www.gob.mx/conapo/documentos/indices-de-marginacion-2020-284372"),
     "sequia_municipal": ("Conagua, SMN, Monitor de Sequía", "Categoría D0 a D4 por fecha de corte", "municipio", "https://smn.conagua.gob.mx/es/climatologia/monitor-de-sequia/monitor-de-sequia-en-mexico"),
-    "defunciones": ("INEGI, defunciones registradas", "2020 a 2023, por municipio y localidad de residencia", "localidad", "https://www.inegi.org.mx/programas/edr/"),
+    "defunciones": ("INEGI, defunciones registradas", "2020 a 2023, conteos por municipio de residencia", "municipio", "https://www.inegi.org.mx/programas/edr/"),
     "plantas_tratamiento": ("Conagua", "Inventario de PTAR 2023, sin coordenadas", "localidad (por nombre)", "https://www.gob.mx/conagua"),
     "relieve": ("Copernicus DEM GLO-30", "Modelo digital de superficie, 30 m", "ráster", "https://spacedata.copernicus.eu/collections/copernicus-digital-elevation-model"),
 }
@@ -359,7 +359,9 @@ class Paquete:
         todo = pd.concat(partes, ignore_index=True).astype({c: str for c in partes[0].columns if c not in ("anio", "latitud", "longitud")}, errors="ignore")
         gdf = self.en_caja(todo, "longitud", "latitud")
         gdf = gdf.astype({c: str for c in gdf.columns if c not in ("anio", "latitud", "longitud", "geometry")})
-        self.guardar("retc", gdf, "(columnas cambian por año: se unieron por nombre)")
+        # Sin nombre: hay granjas y talleres a nombre de personas (igual que en Mapo).
+        gdf = gdf.drop(columns=[c for c in ("NOMBRE", "ESTABLECIMIENTO") if c in gdf.columns])
+        self.guardar("retc", gdf, "(columnas cambian por año: se unieron por nombre; sin nombre del establecimiento)")
 
     def firms(self) -> None:
         for capa, prefijo in (("firms_viirs", "firms_viirs_snpp_"), ("firms_modis", "firms_modis_")):
@@ -581,10 +583,16 @@ class Paquete:
                 nombre = max(z.infolist(), key=lambda i: i.file_size).filename
                 df = pd.read_csv(io.BytesIO(z.read(nombre)), dtype=str, encoding="utf-8")
             df = df[[(int(e), int(m)) in claves for e, m in zip(df["ent_resid"], df["mun_resid"])]]
-            df.insert(0, "anio_registro", p.stem.split("_")[-1])
-            partes.append(df)
+            # Solo conteos: cada renglón del original es un certificado (una persona), y con
+            # localidad, edad, causa y fechas se puede reconocer a alguien en un pueblo chico.
+            df = df.assign(anio_registro=p.stem.split("_")[-1], cve_ent=df["ent_resid"].str.zfill(2),
+                           cve_mun=df["mun_resid"].str.zfill(3), causa=df["causa_def"].str[:3],
+                           edad_grupo=df["edad_agru"].fillna("30"))
+            partes.append(df.groupby(["anio_registro", "cve_ent", "cve_mun", "causa", "sexo", "edad_grupo"])
+                          .size().rename("defunciones").reset_index())
         self.guardar_tabla("defunciones", pd.concat(partes, ignore_index=True),
-                           "(por residencia; causa_def en CIE-10, catálogos en el zip original)")
+                           "(conteos por municipio de residencia, año de registro, causa CIE-10 a 3 caracteres, "
+                           "sexo y edad_agru de INEGI; sin microdatos)")
 
     def ptar(self) -> None:
         df = pd.read_csv(self.crudos / "agua" / "plantas_tratamiento.csv", encoding="cp850", dtype=str)

@@ -32,6 +32,8 @@ cómo detectarlo, en `../producto/pipeline-datos.md`.
 | 4d. Especies (arborización) | `uv run --script scripts/ambiental/especies.py --salida SALIDA/especies --caja=O,S,E,N [--radio-km 30]` | `procedencia_especies.csv` (consulta de GBIF, cuadros, licencias, distribución) y `metodo_enciclovida` por especie |
 | 5. Para Mapo | `uv run --script scripts/para_mapo.py SALIDA SALIDA_MAPO` | `para_mapo.csv`: archivo, qué es, qué se recortó, tamaño, si cabe. Cada capa vectorial lleva por renglón `fuente`, `url`, `fecha_dato`, `fecha_consulta` y `nivel`, sacadas de los dos CSV del paso 3 |
 
+| 6. Para ArcGIS (opcional) | `"C:\Program Files\QGIS 4.2.3in\python-qgis.bat" scripts/ambiental/para_arcgis.py --paquete SALIDA --salida SALIDA_ARCGIS --nombre NOMBRE --diccionario-censo diccionario_datos_ageb_urbana_EE_cpv2020.csv --municipios municipios.geojson` | `LEEME_ArcGIS.txt` (qué es cada capa y cómo leerla), tabla `Diccionario_campos` (nombre, alias, nombre original y descripción de INEGI), tabla `Procedencia` |
+
 El recorte también deja las manzanas con su censo (si `poblacion/manzanas_EE_2020.zip`
 está en los crudos) y el viento de ERA5 en `tablas/`.
 
@@ -47,6 +49,31 @@ Notas:
   ver `../producto/plan-nacional.md`).
 - Los rásters de relieve (Copernicus GLO-30) cubren solo Jalisco en los crudos.
 
+### Para ArcGIS
+
+El paquete está pensado para QGIS. `para_arcgis.py` hace una versión para ArcGIS Pro
+(se corre con el Python de QGIS, que trae GDAL con OpenFileGDB):
+
+- Una File Geodatabase con conjuntos por tema (Población, Agua, Emisiones y fuego,
+  Territorio, Ciudad, Especies, Municipios, Clima), todo en UTM 13N (EPSG:32613).
+- Nombres de campo que ArcGIS acepta y alias legibles: el nombre original o el
+  indicador de INEGI (del diccionario de datos del censo por manzana, que viene en
+  `poblacion/manzanas_EE_2020.zip` de los crudos).
+- Conteos del censo y del ITER como números: `*` (reservado) y `N/D` quedan nulos.
+  Enteros de 32 bits: la geodatabase clásica no tiene de 64 y GDAL los volvería
+  decimales.
+- Las tablas también sobre el mapa: marginación sobre los AGEB, un resumen por
+  municipio (sequía, siembra, PTAR, defunciones; los polígonos salen de la base de
+  Mapo con `--municipios`), el estatus de Enciclovida en cada registro de GBIF y el
+  viento en el centro de su celda de ERA5.
+- Imágenes en unidades reales (NDVI de -1 a 1, °C, metros), WorldCover con nombre y
+  color de cada clase, y el relieve en UTM.
+- Cuadra filas contra el original; si no, no termina.
+
+Revisado el 2026-11-19 con el paquete del CP 45615 (39 capas y tablas; la población de
+las manzanas suma 640,778 en los dos). No se probó en ArcGIS Pro (no hay licencia en
+las máquinas del proyecto): la geodatabase se reabrió con GDAL.
+
 ### Verificar antes de entregar
 
 1. **Población:** urbana por AGEB (`agebs.pobtot`) más rural (`agebs_rurales.pobtot_iter`)
@@ -58,6 +85,10 @@ Notas:
    declarado, ni las manchas de reflectancia negativa en las presas.
 4. **Capas vacías:** que digan por qué en `diccionario_capas.csv` (por ejemplo,
    "la red no tiene sitios en la caja"), no que falten sin aviso.
+
+5. **Datos de personas:** las defunciones salen como conteos por municipio (antes del
+   2026-11-19 el recorte copiaba los microdatos: un certificado por renglón, con
+   localidad, edad y causa) y el RETC sin nombre de establecimiento.
 
 ### Lo que no se publica en `docs/`
 

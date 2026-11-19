@@ -80,12 +80,15 @@ Lo que hace con cada formato, por si cambia en la siguiente descarga:
   `CONCESIONES.csv`; `TITULAR` se omite porque puede ser una persona.
 - **RETC:** un Excel por año con el encabezado en el renglón 7 a 10 (se busca el
   que dice latitud) y coordenadas como texto `20°41'27"`. Las columnas cambian
-  entre años: se unen por nombre normalizado y queda la columna `anio`.
+  entre años: se unen por nombre normalizado y queda la columna `anio`. Sin
+  `NOMBRE` ni `ESTABLECIMIENTO`: hay talleres y granjas a nombre de personas.
 - **ITER:** coordenadas como `104°21'48.123" W`. GeoPackage no distingue
   mayúsculas, así que las decimales van en `lon_dec` y `lat_dec`. Se quitan los
   renglones de totales (`LOC` 0, 9998 y 9999).
 - **Defunciones:** el archivo de datos cambia de carpeta según el año (2023 no
-  usa `conjunto_de_datos/`): se toma el miembro más grande del zip.
+  usa `conjunto_de_datos/`): se toma el miembro más grande del zip. Salen solo
+  conteos por municipio de residencia, año, causa (CIE-10 a tres caracteres), sexo
+  y grupo de edad: cada renglón del original es una persona.
 - **PTAR:** sin coordenadas y en cp850. Se empata por nombre de municipio
   normalizado.
 - **Vectoriales** (Conagua, INEGI, CONABIO): la caja se transforma al CRS de cada

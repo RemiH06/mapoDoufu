@@ -1,0 +1,106 @@
+VERSIÓN PARA ARCGIS PRO
+
+Lo mismo que el paquete original (LEEME_original.txt), ordenado para abrirlo en ArcGIS
+Pro capa por capa. Todo está en UTM zona 13N (EPSG:32613): buffers, áreas y distancias
+salen en metros sin proyectar nada.
+
+CÓMO ABRIRLO
+1. Descomprimir el zip en una carpeta corta y sin acentos, por ejemplo C:\arbolado.
+   ArcGIS no lee dentro de un zip.
+2. En ArcGIS Pro: Catalog > Folders > Add Folder Connection > esa carpeta.
+3. Abrir la geodatabase (.gdb). Las capas vienen agrupadas en conjuntos por tema.
+   Arrastrar un conjunto completo al mapa lo agrega como grupo de capas; prender y
+   apagar cada una en Contents.
+4. Las imágenes están en la carpeta imagenes/: arrastrarlas al mapa.
+5. Cada campo trae un alias legible (lo que se ve en la tabla de atributos). El nombre
+   técnico y la descripción completa de cada campo están en la tabla Diccionario_campos.
+
+No exportar a shapefile: corta los nombres de campo a 10 letras. Para editar, copiar
+la capa a otra geodatabase.
+
+QUÉ HAY Y CÓMO LEERLO
+
+Poblacion
+- Manzanas_censo_2020: cada manzana con ~220 variables del censo 2020. Para pintar,
+  Symbology > Graduated Colors sobre un campo (Población total, Población de 0 a 2
+  años, Población de 60 años y más...). Vacío = INEGI reservó el dato (manzana con
+  pocas viviendas) o no lo tiene: no es cero.
+- AGEB_urbanos_censo_2020: lo mismo por AGEB.
+- AGEB_rurales, Localidades_ITER_2020 (puntos), Localidades_amanzanadas (polígonos).
+- Marginacion_AGEB_CONAPO: once porcentajes por AGEB (sin agua entubada, sin drenaje,
+  sin servicios de salud, piso de tierra, hacinamiento...). Pintar cada porcentaje por
+  separado. El índice y el grado son de CONAPO: no usarlos como prioridad.
+- Colonias_marginacion_CONAPO: lo mismo por colonia, con nombre. La colonia López
+  Cotilla es CVE_COL = 14098_0135.
+
+Agua
+- Calidad_agua_superficial y _subterranea: sitios de monitoreo de Conagua con cada
+  medición y su calificación. No miden plaguicidas.
+- Descargas_aguas_residuales, Pozos_concesionados, Tomas_superficiales, Zonas_federales:
+  permisos del REPDA (lo permitido, no lo medido).
+- Acuiferos_disponibilidad_2023, Acuiferos_vedas, Pozos_piezometricos (profundidad del
+  agua por año), Cuerpos_de_agua, Regiones_hidrologicas.
+
+Emisiones_y_fuego
+- Establecimientos_RETC: industrias que reportan emisiones (sin nombre).
+- Focos_calor_VIIRS y _MODIS: puntos donde un satélite vio un píxel caliente. Un foco
+  no es un incendio confirmado: puede ser quema agrícola o industria.
+
+Territorio
+- Uso_suelo_serie_VII_2018 y _VI_2014: Symbology > Unique Values sobre Descripción.
+  Escala 1:250 000: no sirve para distancias de cientos de metros.
+- Frontera_agricola_2011: parcelas agrícolas a 1:10 000 (R riego, T temporal).
+- Edafologia.
+
+Ciudad
+- Edificios_Overture: techos. Área de techo en m².
+- Negocios_DENUE: escuelas, clínicas, mercados y demás; pintar por Actividad.
+
+Especies
+- Registros_plantas_GBIF: cada registro de una planta, con su nombre común y su
+  distribución en México (Enciclovida). Para ver solo árboles nativos: Definition Query
+  con "¿Árbol?" = si y Distribución = Nativa o Endémica.
+- Tablas Arboles_nativos y Especies_registradas: la lista por especie.
+
+Municipios
+- Municipios_resumen: por municipio, la sequía (último corte y cuántos cortes de los
+  últimos 5 años estuvieron en sequía severa o peor), lo que se siembra, las plantas de
+  tratamiento y las defunciones de residentes 2020 a 2023 (total, tumores, renales,
+  respiratorias). Es contexto: no dice que una causa sea ambiental.
+
+Clima
+- Viento_celda_ERA5: un punto en el centro de una celda de ~28 km con el viento típico
+  de secas y del resto del año. Describe la región, no el viento entre casas. El
+  detalle por mes y hora está en la tabla Viento_por_mes_y_hora.
+
+Tablas (sin mapa; se abren desde la geodatabase)
+Viento_por_mes_y_hora, Viento_horario_2015_2024, Siembra_SIAP_municipal,
+Sequia_por_municipio (una columna por fecha), Marginacion_por_AGEB (todos los AGEB de
+los dos municipios), Plantas_de_tratamiento, Defunciones_por_municipio (conteos por
+año, causa, sexo y edad; sin datos de personas), Diccionario_capas, Procedencia y
+Diccionario_campos.
+
+Imágenes (carpeta imagenes/, en unidades reales)
+- Altura_dosel_1m_m.tif: altura de los árboles a 1 m, en metros (0 sin árbol). Imagen
+  de origen de alrededor de abril de 2020: no ve lo plantado o talado después.
+  Symbology > Stretch con un rango de 0 a 20 m.
+- NDVI/, NDWI/, NBR/: un archivo por mes, de -1 a 1. NDVI alto = vegetación verde.
+  Julio a septiembre tienen huecos por nubes.
+- Temperatura_superficie/: °C de la superficie (suelo y techos, no del aire), mediana
+  de marzo a mayo de cada año, 2015 a 2025. Comparar años con el mismo rango de color.
+- Cobertura_WorldCover_2021.tif: clases con nombre y color (árboles, construido,
+  pastizal...).
+- Sentinel2_bandas_secas_2025_x10000.tif: 10 bandas, reflectancia x 10000. Para color
+  natural: rojo = banda 3 (B04), verde = 2 (B03), azul = 1 (B02).
+- Relieve_m.tif: altura sobre el nivel del mar, en metros (Copernicus DEM, 30 m).
+- Fecha_imagen_dosel.tif: fecha de la imagen con que se midió el dosel, como la publica
+  Meta: año menos 2000 y fracción del año (20.33 es alrededor de abril de 2020).
+
+ANTES DE CONCLUIR
+- Nunca sumar capas en un solo puntaje: cruzar calor, dosel, población y receptores
+  como capas separadas.
+- Cercanía no es causa: escribir "a 240 m de", no "expuesto a".
+
+FUENTES Y LICENCIAS: las del paquete original (LEEME_original.txt y la tabla
+Procedencia). Uso de suelo, edafología y regiones hidrológicas son copias de CONABIO con
+licencia no comercial; los edificios son ODbL (citar Overture y OpenStreetMap).
