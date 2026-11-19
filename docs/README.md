@@ -14,6 +14,7 @@
 - [vista-riesgos.md](producto/vista-riesgos.md): `/riesgos`, cada peligro de una zona por separado con la gente dentro y cerca.
 - [comparacion-ciudades.md](producto/comparacion-ciudades.md): calor, dosel, NDVI, censo y marginación por AGEB de la ZMG y seis metrópolis más, con la entrega para ArcGIS y Mapo y cómo comprobar cada número.
 - [vista-vivienda.md](producto/vista-vivienda.md): acetato de vivienda por municipio en `/mapa`, un indicador de una sola fuente a la vez y la ficha con SHF, SNIIV, Intercensal y ENVI por separado.
+- [precio-estimado.md](producto/precio-estimado.md): diseño del precio de vivienda estimado por AGEB como rango con cobertura medida (catastro, calibración con el SNIIV y predicción conformal); sin construir.
 - [datos-propios.md](producto/datos-propios.md): archivos del equipo (tabla, vectorial, ráster) como acetato, su cruce con fuentes públicas, la distancia entre capas y el valor de un ráster: formatos, límites, ubicación, procedencia, permisos y qué se guarda.
 
 ## Arquitectura

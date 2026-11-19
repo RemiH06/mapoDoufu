@@ -72,3 +72,5 @@ punteados y se cuentan aparte en la escala.
   que el SNIIV describe bien al SHF. Decisión (2026-11-19): preguntarle a SHF por
   transparencia y no suponer la delimitación mientras tanto.
 - Rezago habitacional municipal del SNIIV, si hace falta (`steps.md`, sesión 20).
+- Precio estimado por AGEB, como rango y con su método: diseño en
+  `precio-estimado.md`.
