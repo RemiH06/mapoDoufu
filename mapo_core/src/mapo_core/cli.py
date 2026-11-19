@@ -15,11 +15,15 @@ from mapo_core import (
     dataset_vivienda,
     denue_downloader,
     enigh_downloader,
+    eic2025,
     enoe_downloader,
+    envi2020,
     geo_downloader,
     iter_downloader,
     rubros,
     sesnsp_ingesta,
+    shf_ipv,
+    sniiv_financiamiento,
     taxonomia,
 )
 from mapo_core.db import cerrar_pool, get_pool, inicializar_esquema
@@ -115,6 +119,44 @@ async def _enoe(args) -> None:
     print(f"{total} entidades con tasa de desocupacion guardada/actualizada para {args.anio} {args.trimestre}.")
 
 
+async def _shf(_args) -> None:
+    await inicializar_esquema()
+    try:
+        conteo = await shf_ipv.descargar()
+    except shf_ipv.RespuestaInvalida as exc:
+        raise SystemExit(f"No se cargó nada: {exc}") from None
+    print(f"Índice SHF guardado: {conteo}")
+
+
+async def _sniiv(args) -> None:
+    await inicializar_esquema()
+    estados = args.estado.split(",") if args.estado else None
+    conteo = await sniiv_financiamiento.descargar(estados)
+    print(f"Financiamientos del SNIIV: {sum(conteo.values()):,} filas en {len(conteo)} estados.")
+
+
+async def _eic2025(args) -> None:
+    from pathlib import Path
+
+    await inicializar_esquema()
+    try:
+        zonas = await eic2025.descargar(Path(args.archivo).read_bytes() if args.archivo else None)
+    except eic2025.ArchivoInvalido as exc:
+        raise SystemExit(f"No se cargó nada: {exc}") from None
+    print(f"Intercensal 2025, vivienda: {zonas}")
+
+
+async def _envi(args) -> None:
+    from pathlib import Path
+
+    await inicializar_esquema()
+    try:
+        total = await envi2020.descargar(Path(args.archivo).read_bytes() if args.archivo else None)
+    except envi2020.ArchivoInvalido as exc:
+        raise SystemExit(f"No se cargó nada: {exc}") from None
+    print(f"ENVI 2020: {total} indicadores por estado y nacional.")
+
+
 async def _dataset_vivienda(args) -> None:
     from pathlib import Path
 
@@ -176,7 +218,8 @@ async def _status(_args) -> None:
     tablas = [
         "entidades", "municipios", "agebs", "localidades", "fuente_censo_poblacion",
         "fuente_denue_negocios", "fuente_enigh_concentradohogar", "fuente_sesnsp_delitos_municipal",
-        "fuente_enoe_tasa_desocupacion",
+        "fuente_enoe_tasa_desocupacion", "fuente_shf_ipv", "fuente_sniiv_financiamiento",
+        "fuente_eic2025_vivienda", "fuente_envi2020_entidad",
     ]
     async with pool.connection() as conn:
         for tabla in tablas:
@@ -243,6 +286,28 @@ def _construir_parser() -> argparse.ArgumentParser:
     p_enoe.add_argument("--anio", required=True, type=int, help="Ej. 2025 (obligatorio, solo 2023 en adelante)")
     p_enoe.add_argument("--trimestre", required=True, help="trim1, trim2, trim3 o trim4 (obligatorio)")
     p_enoe.set_defaults(fn=_enoe)
+
+    subparsers.add_parser(
+        "shf", help="Índice SHF de precios de la vivienda, serie completa (reemplaza la de antes)"
+    ).set_defaults(fn=_shf)
+
+    p_sniiv = subparsers.add_parser(
+        "sniiv", help="Financiamientos para vivienda del SNIIV por municipio (reemplaza los estados pedidos)"
+    )
+    p_sniiv.add_argument("--estado", default=None, help="cve_ent separadas por coma (default: los 32)")
+    p_sniiv.set_defaults(fn=_sniiv)
+
+    p_eic = subparsers.add_parser(
+        "eic2025", help="Bloque de vivienda de la Intercensal 2025 por municipio (reemplaza el de antes)"
+    )
+    p_eic.add_argument("--archivo", default=None, help="ZIP ya bajado (conjunto_de_datos_eic2025_105_csv.zip)")
+    p_eic.set_defaults(fn=_eic2025)
+
+    p_envi = subparsers.add_parser(
+        "envi", help="Renta y valor de la vivienda por estado, de la ENVI 2020 (reemplaza los de antes)"
+    )
+    p_envi.add_argument("--archivo", default=None, help="ZIP ya bajado (conjunto_de_datos_envi_2020_csv.zip)")
+    p_envi.set_defaults(fn=_envi)
 
     p_viv = subparsers.add_parser(
         "dataset_vivienda", help="Arma el dataset tipo Boston Housing por AGEB de una zona metropolitana"

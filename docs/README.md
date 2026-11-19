@@ -32,6 +32,10 @@ Una por fuente: de dónde sale, cómo se carga, sus problemas conocidos y las ci
 - [ambientales.md](fuentes/ambientales.md): agua, acuíferos, descargas, emisiones, uso de suelo, incendios y más, en crudo, y cómo recortarlas a una zona como paquete para SIG.
 - [localidades.md](fuentes/localidades.md): las 189,432 localidades del Censo 2020 (ITER) de todo el país, con su punto, validadas contra los totales; destino de la distancia en Mapo.
 - [edificios.md](fuentes/edificios.md): huellas de edificios de Overture Maps (OSM, Microsoft y Google) recortadas a una caja, con su validación contra el censo por manzana.
+- [shf.md](fuentes/shf.md): índice SHF de precios de la vivienda, trimestral desde 2005, por estado, 8 zonas metropolitanas y 74 municipios.
+- [sniiv.md](fuentes/sniiv.md): créditos y subsidios para vivienda por municipio y año (SNIIV), por organismo, destino y segmento de valor.
+- [eic2025.md](fuentes/eic2025.md): Intercensal 2025, bloque de vivienda por municipio (tenencia, escrituras, servicios) con su precisión.
+- [envi.md](fuentes/envi.md): ENVI 2020, renta mensual y valor estimado de la vivienda por estado.
 - [imagenes.md](fuentes/imagenes.md): compuestos de Sentinel-2 y Landsat y WorldCover por zona, desde el STAC de Planetary Computer.
 
 ## Guías
@@ -76,6 +80,7 @@ Qué se construyó en cada etapa, por qué así y qué bugs reales aparecieron.
 - [Distancia entre capas, noviembre 2026](historial/2026-11-distancia-capas.md)
 - [Frontera agrícola y ráster con valor por píxel, noviembre 2026](historial/2026-11-raster-valores.md)
 - [Fechas, marginación y colonias, noviembre 2026](historial/2026-11-fechas.md)
+- [Fuentes de vivienda, noviembre 2026](historial/2026-11-fuentes-vivienda.md)
 
 ## Gaiarda
 

@@ -97,6 +97,10 @@ docker compose exec mapo_core python -m mapo_core.cli denue --estado 14      # d
 docker compose exec mapo_core python -m mapo_core.cli enigh
 docker compose exec mapo_core python -m mapo_core.cli enoe --anio 2025 --trimestre trim3
 docker compose exec mapo_core python -m mapo_core.cli sesnsp --archivo data/sesnsp/<archivo>.csv
+docker compose exec mapo_core python -m mapo_core.cli shf       # índice de precios de vivienda (~12 s)
+docker compose exec mapo_core python -m mapo_core.cli sniiv     # financiamientos, los 32 estados (~2 min)
+docker compose exec mapo_core python -m mapo_core.cli eic2025   # Intercensal 2025, vivienda por municipio
+docker compose exec mapo_core python -m mapo_core.cli envi      # renta y valor por estado (ENVI 2020)
 docker compose exec mapo_core python -m mapo_core.cli status
 ```
 

@@ -189,6 +189,62 @@ CREATE TABLE IF NOT EXISTS fuente_enoe_tasa_desocupacion (
     PRIMARY KEY (cve_ent, anio, trimestre)
 );
 
+-- Vivienda (sesión 20). Ver docs/fuentes/{shf,sniiv,eic2025,envi}.md.
+CREATE TABLE IF NOT EXISTS fuente_shf_ipv (
+    nivel       TEXT NOT NULL,          -- nacional, estado, zm, municipio
+    clave       TEXT NOT NULL,          -- '00', cve_ent, nombre de la ZM o cve_ent||cve_mun
+    nombre      TEXT NOT NULL,
+    categoria   TEXT NOT NULL,          -- 'General' en lo territorial; Nueva, Usada... en lo nacional
+    anio        INTEGER NOT NULL,
+    trimestre   INTEGER NOT NULL,
+    indice      REAL NOT NULL,          -- 2018 = 100
+    actualizado TIMESTAMPTZ NOT NULL DEFAULT now(),
+    PRIMARY KEY (nivel, clave, categoria, anio, trimestre)
+);
+
+CREATE TABLE IF NOT EXISTS fuente_sniiv_financiamiento (
+    anio            INTEGER NOT NULL,
+    meses           INTEGER NOT NULL,   -- meses publicados de ese año (12 salvo el último)
+    cve_ent         TEXT NOT NULL,
+    cve_mun         TEXT NOT NULL,      -- '000': no distribuido por municipio
+    organismo       TEXT NOT NULL,
+    destino_credito TEXT NOT NULL,
+    valor_vivienda  TEXT NOT NULL,
+    acciones        INTEGER NOT NULL,
+    monto           DOUBLE PRECISION NOT NULL,
+    actualizado     TIMESTAMPTZ NOT NULL DEFAULT now(),
+    PRIMARY KEY (anio, cve_ent, cve_mun, organismo, destino_credito, valor_vivienda)
+);
+
+CREATE TABLE IF NOT EXISTS fuente_eic2025_vivienda (
+    cvegeo         TEXT NOT NULL,
+    nivel          TEXT NOT NULL,       -- nacional, estado, municipio, localidad
+    cve_ent        TEXT NOT NULL,
+    cve_mun        TEXT NOT NULL,
+    cve_loc        TEXT NOT NULL,
+    nombre         TEXT NOT NULL,
+    indicador      TEXT NOT NULL,
+    valor          DOUBLE PRECISION,    -- NULL con `nota` cuando INEGI no lo da
+    error_estandar DOUBLE PRECISION,
+    lim_inf        DOUBLE PRECISION,
+    lim_sup        DOUBLE PRECISION,
+    cv             DOUBLE PRECISION,
+    nota           TEXT,                -- MI: muestra insuficiente; NA: no aplica
+    actualizado    TIMESTAMPTZ NOT NULL DEFAULT now(),
+    PRIMARY KEY (cvegeo, indicador)
+);
+CREATE INDEX IF NOT EXISTS idx_eic2025_mun ON fuente_eic2025_vivienda (cve_ent, cve_mun);
+
+CREATE TABLE IF NOT EXISTS fuente_envi2020_entidad (
+    cve_ent        TEXT NOT NULL,       -- '00': nacional
+    indicador      TEXT NOT NULL,
+    valor          DOUBLE PRECISION,
+    error_estandar DOUBLE PRECISION,    -- NULL en medianas: no se estima
+    n_muestra      INTEGER NOT NULL,
+    actualizado    TIMESTAMPTZ NOT NULL DEFAULT now(),
+    PRIMARY KEY (cve_ent, indicador)
+);
+
 CREATE TABLE IF NOT EXISTS descargas_checkpoint (
     clave         TEXT PRIMARY KEY,
     completado_en TIMESTAMPTZ NOT NULL DEFAULT now()

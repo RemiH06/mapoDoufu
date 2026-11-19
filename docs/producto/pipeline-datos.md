@@ -31,11 +31,16 @@ fallar en voz alta**, no dejar un vacío silencioso ni un número plausible y fa
 | SEP, Principales cifras | Solo abre por municipio el ciclo vigente; con un ciclo anterior la lista de estados queda vacía | Lista `DDLEntidad` con una sola opción | Usar el ciclo vigente y guardar `ptratio_ciclo`. Para series, bajar cada año mientras está vigente |
 | SEP, Principales cifras | Formulario en cascada: cada lista reinicia a las de abajo | El encabezado del resultado dice "ENTIDAD: TODAS" aunque se eligió una | Orden fijo: ciclo, escolaridad, nivel, control, estado, municipio. Comprobar el encabezado del resultado |
 | Base de producción | Leerla desde una sesión de agente pide permiso explícito | — | Usar la base de desarrollo, que tiene los mismos datos cargados |
+| INEGI, archivos | Una ruta que no existe responde 200 con HTML, y `HEAD` responde 200 con HTML y tamaño 0 aun cuando el archivo sí existe | `content-type` que no es `application/...` en un `GET` | No adivinar rutas: tomar el `contentUrl` del JSON-LD de la página del programa (`inegi.org.mx/programas/<programa>/<año>/`). Así salieron la EIC 2025 y la ENVI 2020 |
+| SNIIV | El dominio cambió de `sniiv.conavi.gob.mx` (ya no resuelve) a `sniiv.sedatu.gob.mx` | Error de DNS | Usar el nuevo; el índice SHF sale de su API `ShfPriceAPI`, que solo aparece en el script de la página de precios |
+| SNIIV, financiamientos | El año en curso viene a medias (2026: hasta agosto) | Consulta nacional con `anio,mes` | Guardar los meses publicados por año (`meses`) |
 
 ## Leer
 
 | Fuente | Qué pasa | Cómo se detecta | Qué hacer |
 |---|---|---|---|
+| INEGI, datos abiertos | La codificación cambia por producto: la EIC 2025 viene en latin-1 y la ENVI 2020 en UTF-8, aun dentro del mismo tipo de ZIP | `UnicodeDecodeError` en UTF-8 estricto, o "Ã" en los nombres | Fijar la codificación por fuente en el cargador y probarla con un nombre acentuado |
+| INEGI, encuestas | Celdas `MI` (muestra insuficiente) y `NA` (no aplica) entre los números | Valores no numéricos | Nulo con su marca, nunca cero |
 | Tablas de valores en PDF | Un municipio publica mapas vectoriales (GDL 2020) y otro un escaneo (Zapopan 2026: JPEG por hoja, sellos encima, sin texto) | Contar spans de texto por página: un escaneo solo tiene el encabezado | Adaptador por formato (`pdf_mapa`, `pdf_raster`), declarado en `scripts/catastro/fuentes.csv` |
 | Tablas de valores escaneadas (OCR) | El OCR confunde `5` con `$` o `S` y `0` con `O`, pega ruido a los números (`9/2100`) y pega las palabras (`RIOLERMA`); los textos en diagonal se le escapan | Valores fuera de 3 a 6 cifras; calles que no empatan | Tabla de confusiones, corrida de dígitos más larga, llave de calle compacta. Contar cuántos valores salen por hoja y revisar las que den cero |
 | Tablas de valores escaneadas (OCR) | El separador de miles parte los números ("38,400" quedaba en 400) y los números de manzana con cero a la izquierda ("080") parecen valores | Muchos valores bajos donde el mapa dice lo contrario | Quitar el separador antes de leer; un número que empieza en 0 es clave. Reglas en `clasificar()`, que `--reclasificar` vuelve a aplicar sin repetir el OCR |
