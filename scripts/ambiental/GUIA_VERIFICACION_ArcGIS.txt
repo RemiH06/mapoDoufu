@@ -1,4 +1,4 @@
-CÓMO COMPROBAR LOS NÚMEROS EN ARCGIS PRO, SIN CONFIAR EN NOSOTROS
+CÓMO COMPROBAR LOS NÚMEROS EN ARCGIS PRO
 
 Todos los promedios por AGEB salen de los rásteres de rasters/<ciudad>/. Se pueden
 recalcular así y deben dar lo mismo (diferencias de centésimas por cómo cada programa

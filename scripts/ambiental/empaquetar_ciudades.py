@@ -61,30 +61,45 @@ ALIAS = {
     "IM_2020": "Índice de marginación 2020 (CONAPO; más alto = MENOS marginado)", "GM_2020": "Grado de marginación 2020 (CONAPO)",
 }
 
+# (dato, productor oficial, liga del productor, cómo se obtuvo, liga por donde se bajó, fecha de consulta, nota)
 PROCEDENCIA = [
-    ("Delimitación de metrópolis", "SEDATU, CONAPO e INEGI, Metrópolis de México 2020 (edición 2024), cuadros A por metrópoli",
+    ("Delimitación de metrópolis", "SEDATU, CONAPO e INEGI (Grupo Interinstitucional), Metrópolis de México 2020, edición 2024",
+     "https://www.gob.mx/cms/uploads/sedatu/MM2020_06022024.pdf", "Directo del productor (PDF); municipios tomados de los cuadros A",
      "https://www.gob.mx/cms/uploads/sedatu/MM2020_06022024.pdf", "2026-11-19",
-     "sha256 1d8e7b90dbbbfcb609914ec89d53580c54cdf9e27f16de3d8adfb00c16e6ee84; municipios en metropolis_2020_municipios.csv"),
-    ("Polígonos de AGEB urbanos", "INEGI, Marco Geoestadístico, API del Catálogo Único (wscatgeo v2), por municipio",
-     "https://gaia.inegi.org.mx/wscatgeo/v2/", "2026-11 (carga en Mapo)", "Términos de libre uso de INEGI"),
-    ("Censo 2020 por AGEB", "INEGI, Censo de Población y Vivienda 2020, resultados por AGEB y manzana urbana (renglones de total de AGEB)",
+     "sha256 1d8e7b90dbbbfcb609914ec89d53580c54cdf9e27f16de3d8adfb00c16e6ee84; tabla en metropolis_2020_municipios.csv"),
+    ("Polígonos de AGEB urbanos", "INEGI, Marco Geoestadístico", "https://www.inegi.org.mx/temas/mg/",
+     "Directo del productor: API del Catálogo Único de Claves Geoestadísticas de INEGI (wscatgeo v2), por municipio",
+     "https://gaia.inegi.org.mx/wscatgeo/v2/", "2026-11", "Términos de libre uso de INEGI"),
+    ("Censo 2020 por AGEB", "INEGI, Censo de Población y Vivienda 2020", "https://www.inegi.org.mx/programas/ccpv/2020/",
+     "Directo del productor: datos abiertos por AGEB y manzana urbana (renglones de total de AGEB)",
      "https://www.inegi.org.mx/contenidos/programas/ccpv/2020/datosabiertos/ageb_manzana/ageb_mza_urbana_EE_cpv2020_csv.zip",
-     "2026-11 (carga en Mapo)", "EE es la clave del estado; '*' es dato reservado por INEGI y queda vacío"),
-    ("Marginación por AGEB", "CONAPO, Índice de marginación urbana 2020 por AGEB",
+     "2026-11", "EE es la clave del estado; '*' es dato reservado por INEGI y queda vacío"),
+    ("Marginación por AGEB", "CONAPO, Índice de marginación urbana 2020",
+     "https://www.gob.mx/conapo/documentos/indices-de-marginacion-2020-284372", "Directo del productor: datos abiertos de CONAPO",
      "https://conapo.segob.gob.mx/work/models/CONAPO/Datos_Abiertos/Marginacion/IMU_2020.zip", "2026-11-18",
-     "sha256 17fdd6a31a57d4deb5519fe1e7bd58e7e52d115cf0474d6b59fbf9a52cde26b9; página: https://www.gob.mx/conapo/documentos/indices-de-marginacion-2020-284372"),
-    ("Marginación por colonia", "CONAPO, Índice de marginación urbana 2020 por colonia (polígonos)",
+     "sha256 17fdd6a31a57d4deb5519fe1e7bd58e7e52d115cf0474d6b59fbf9a52cde26b9. Más alto = menos marginado"),
+    ("Marginación por colonia", "CONAPO, Índice de marginación urbana 2020 por colonia",
+     "https://www.gob.mx/conapo/documentos/indices-de-marginacion-2020-284372", "Directo del productor: datos abiertos de CONAPO",
      "https://conapo.segob.gob.mx/work/models/CONAPO/Datos_Abiertos/Colonia/imc2020_shp.zip", "2026-11-18",
      "sha256 69d73b5bb0127df6c81701684eb28cd6bd666d9319a1ffb45da76446ae278426"),
-    ("Temperatura de superficie", "USGS Landsat 8 y 9 Collection 2 Level-2, banda térmica lwir11 (K = DN × 0.00341802 + 149.0), sin nubes ni sombras (qa_pixel), mediana de marzo a mayo de 2025, a 30 m",
+    ("Temperatura de superficie", "USGS (Servicio Geológico de Estados Unidos), Landsat 8 y 9 Collection 2 Level-2, banda térmica",
+     "https://www.usgs.gov/landsat-missions/landsat-collection-2-level-2-science-products (descarga oficial: https://earthexplorer.usgs.gov)",
+     "Copia del producto del USGS en Microsoft Planetary Computer, que guarda los mismos archivos en formato para leer por partes",
      "https://planetarycomputer.microsoft.com/dataset/landsat-c2-l2", "2026-11-19",
-     "Escenas usadas en procedencia/<ciudad>_procedencia_imagenes.csv. Dominio público (USGS)"),
-    ("NDVI", "ESA Copernicus Sentinel-2 L2A, (B08 − B04) / (B08 + B04), compuesto mensual sin nubes (SCL) de marzo, abril y mayo de 2025 y su mediana, a 10 m",
+     "K = DN × 0.00341802 + 149.0, sin nubes ni sombras (qa_pixel), mediana de marzo a mayo de 2025, 30 m. Escenas en "
+     "procedencia/<ciudad>_procedencia_imagenes.csv con el mismo identificador que en EarthExplorer. Dominio público"),
+    ("NDVI", "ESA, programa Copernicus de la Unión Europea, Sentinel-2 Level-2A",
+     "https://sentinels.copernicus.eu/web/sentinel/sentinel-data-access (descarga oficial: https://browser.dataspace.copernicus.eu)",
+     "Copia del producto de la ESA en Microsoft Planetary Computer",
      "https://planetarycomputer.microsoft.com/dataset/sentinel-2-l2a", "2026-11-19",
-     "Escenas en procedencia/<ciudad>_procedencia_imagenes.csv. Contiene datos modificados de Copernicus Sentinel 2025"),
-    ("Altura de dosel", "Meta y World Resources Institute, High Resolution Canopy Height Maps (Tolan et al. 2024), ~1 m; aquí % del área con altura de 3 m o más y altura media, en celdas de 10 m",
+     "(B08 − B04) / (B08 + B04), compuestos mensuales sin nubes (SCL) de marzo a mayo de 2025 y su mediana, 10 m. Escenas en "
+     "procedencia/<ciudad>_procedencia_imagenes.csv con el mismo identificador que en Copernicus. Contiene datos modificados de Copernicus Sentinel 2025"),
+    ("Altura de dosel", "Meta y World Resources Institute, High Resolution Canopy Height Maps (Tolan et al. 2024, Remote Sensing of Environment 300, doi:10.1016/j.rse.2023.113888)",
+     "https://registry.opendata.aws/dataforgood-fb-forests/",
+     "Directo del productor: su distribución oficial en AWS (programa Data for Good de Meta), mosaicos de ~1 m",
      "https://dataforgood-fb-data.s3.amazonaws.com/forests/v1/alsgedi_global_v6_float/chm/", "2026-11-19",
-     "CC BY 4.0. Mosaicos usados en procedencia/<ciudad>_procedencia_dosel.csv. Imágenes de origen de 2017 a 2020 (Maxar)"),
+     "CC BY 4.0. Modelo entrenado con lidar aéreo sobre imágenes de Maxar de 2017 a 2020: estimación, no medición. "
+     "Aquí, % del área con 3 m o más y altura media en celdas de 10 m. Mosaicos en procedencia/<ciudad>_procedencia_dosel.csv"),
 ]
 
 
@@ -268,7 +283,7 @@ def main() -> None:
         tabla_csv(ds, a.entrada / "comparacion_ciudades.csv", "Comparacion_por_ciudad", diccionario)
     with open(a.salida / "procedencia" / "fuentes.csv", "w", encoding="utf-8", newline="") as f:
         w = csv.writer(f)
-        w.writerow(["dato", "fuente", "url", "fecha_consulta", "nota"])
+        w.writerow(["dato", "productor_oficial", "liga_productor", "como_se_obtuvo", "liga_de_acceso", "fecha_consulta", "nota"])
         w.writerows(PROCEDENCIA)
     tabla_csv(ds, a.salida / "procedencia" / "fuentes.csv", "Procedencia")
     out = ds.CreateLayer("Diccionario_campos", None, ogr.wkbNone)
