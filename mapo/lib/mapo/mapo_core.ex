@@ -86,6 +86,30 @@ defmodule Mapo.MapoCore do
   def coloreado_municipios(cve_ent), do: get("/coloreado/municipios", cve_ent: cve_ent)
 
   @doc """
+  Indicadores de la vista de vivienda (fuente, etiqueta, unidad), segmentos
+  del SNIIV y sus años con cuántos meses trae cada uno.
+  """
+  def vivienda_catalogo, do: get("/vivienda/catalogo", [])
+
+  @doc """
+  Municipios de un estado con el valor de un indicador de vivienda de una
+  sola fuente en `valor_choropleth` (`null` si no hay dato), más su
+  `metodo` y su nivel. `anio` y `segmento` solo cuentan para el SNIIV.
+  """
+  def vivienda_municipios(cve_ent, indicador, anio \\ nil, segmento \\ nil) do
+    params =
+      [cve_ent: cve_ent, indicador: indicador]
+      |> maybe_put(:anio, anio)
+      |> maybe_put(:segmento, segmento)
+
+    get("/vivienda/municipios", params)
+  end
+
+  @doc "SHF, SNIIV, Intercensal 2025 y ENVI de un municipio, cada una con su nivel."
+  def vivienda_ficha(cve_ent, cve_mun),
+    do: get("/vivienda/ficha", cve_ent: cve_ent, cve_mun: cve_mun)
+
+  @doc """
   Polígono del área alcanzable desde `(lat, lon)` en `minutos`, por
   carretera real (OSRM) si está disponible, o un círculo aproximado si
   no. `metodo` en el resultado siempre dice cuál de los dos se usó.

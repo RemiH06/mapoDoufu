@@ -31,6 +31,11 @@ defmodule MapoWeb.MapaLive.Index do
       fuente: "INEGI · Censo 2020",
       enfoque: "demografia"
     },
+    "vivienda" => %{
+      nombre: "Vivienda por municipio",
+      fuente: "SHF · SNIIV · INEGI",
+      enfoque: "urbanismo"
+    },
     "voronoi" => %{nombre: "Área por negocio", fuente: "INEGI · DENUE", enfoque: "comercio"},
     "isocrona" => %{nombre: "Alcance en auto", fuente: "OSRM", enfoque: "movilidad"},
     "coloreado" => %{
@@ -180,6 +185,15 @@ defmodule MapoWeb.MapaLive.Index do
           activa?={@voronoi_activa?}
           resumen={@voronoi_resumen}
         /> <.cinta_coloreado :if={id == "coloreado"} activa?={@coloreado_activa?} />
+        <.cinta_vivienda
+          :if={id == "vivienda"}
+          form={@vivienda_form}
+          catalogo={@vivienda_catalogo}
+          activa?={@vivienda_activa?}
+          escala={@vivienda_escala}
+          meta={@vivienda_meta}
+          ficha={@vivienda_ficha}
+        />
         <.cinta_isocrona :if={id == "isocrona"} form={@isocrona_form} activa?={@isocrona_activa?} />
         <div :if={activa?(assigns, id)} class="cinta-orden">
           <button
@@ -311,11 +325,251 @@ defmodule MapoWeb.MapaLive.Index do
     """
   end
 
+  attr :form, :any, required: true
+  attr :catalogo, :map, default: nil
+  attr :activa?, :boolean, required: true
   attr :escala, :map, default: nil
+  attr :meta, :map, default: nil
+  attr :ficha, :map, default: nil
+
+  defp cinta_vivienda(assigns) do
+    ~H"""
+    <p :if={is_nil(@catalogo)} class="cinta-texto">
+      No se pudo leer la lista de indicadores: mapo_core no responde.
+    </p>
+
+    <.form
+      :if={@catalogo}
+      for={@form}
+      id="vivienda_capa_form"
+      phx-change="cambiar_vivienda"
+      phx-submit="mostrar_vivienda"
+      class="cinta-campos"
+    >
+      <.input
+        field={@form[:indicador]}
+        type="select"
+        label="Indicador"
+        options={opciones_vivienda(@catalogo)}
+        class="cinta-control"
+      />
+      <.input
+        :if={sniiv?(@form)}
+        field={@form[:anio]}
+        type="select"
+        label="Año"
+        prompt="Último completo"
+        options={opciones_anios(@catalogo)}
+        class="cinta-control"
+      />
+      <.input
+        :if={sniiv?(@form)}
+        field={@form[:segmento]}
+        type="select"
+        label="Segmento"
+        prompt="Todos"
+        options={@catalogo["segmentos"]}
+        class="cinta-control"
+      />
+      <div class="cinta-botones">
+        <.button phx-disable-with="Poniendo..." class="boton primario">
+          {if @activa?, do: "Actualizar", else: "Poner"}
+        </.button>
+
+        <.button :if={@activa?} type="button" phx-click="quitar_vivienda" class="boton">
+          Quitar
+        </.button>
+      </div>
+    </.form>
+
+    <div :if={@meta} class="cinta-texto cinta-metodo">
+      <p>
+        <b>{@meta["indicador"]["etiqueta"]}</b>, {@meta["indicador"]["unidad"]}, por {@meta["nivel"]}.
+      </p>
+
+      <p>{@meta["metodo"]}</p>
+    </div>
+    <.escala escala={@escala} tinta="urbanismo" />
+    <p :if={@activa? and is_nil(@ficha)} class="cinta-texto">
+      Toca un municipio para ver sus cuatro fuentes por separado.
+    </p>
+    <.ficha_vivienda :if={@ficha} ficha={@ficha} />
+    """
+  end
+
+  attr :ficha, :map, required: true
+
+  defp ficha_vivienda(assigns) do
+    ~H"""
+    <div id="ficha-vivienda" class="cinta-ficha">
+      <div class="cinta-ficha-titulo">
+        <h3>{@ficha["nombre"]}</h3>
+        <button type="button" phx-click="cerrar_ficha_vivienda" class="enlace">Cerrar</button>
+      </div>
+
+      <div class="fuentes">
+        <section aria-label="Índice SHF">
+          <h4>Índice SHF de precios</h4>
+
+          <%= if shf = @ficha["shf"] do %>
+            <p class="nivel">
+              {if shf["nivel"] == "municipio",
+                do: "Del municipio",
+                else: "Del estado: SHF no lo publica para este municipio"} · 2018 = 100
+            </p>
+
+            <dl class="ficha-datos">
+              <dt>{shf["ultimo"]["anio"]} T{shf["ultimo"]["trimestre"]}</dt>
+
+              <dd>{cifra(shf["ultimo"]["indice"] * 1.0)}</dd>
+
+              <dt>Cambio en un año</dt>
+
+              <dd>{con_unidad(shf["variacion_anual"], "%")}</dd>
+
+              <dt>Serie</dt>
+
+              <dd>{length(shf["serie"])} trimestres desde {hd(hd(shf["serie"]))}</dd>
+            </dl>
+          <% else %>
+            <p class="nivel">Sin serie cargada.</p>
+          <% end %>
+        </section>
+
+        <section aria-label="SNIIV">
+          <h4>Créditos y subsidios (SNIIV)</h4>
+
+          <%= if sniiv = @ficha["sniiv"] do %>
+            <p class="nivel">
+              Del municipio, {sniiv["anio"]}. Lo prestado, no el precio. Acciones · monto promedio.
+            </p>
+
+            <dl class="ficha-datos">
+              <%= for s <- sniiv["segmentos"] do %>
+                <dt>{s["segmento"]}</dt>
+
+                <dd>
+                  {cifra(s["acciones"])} · {pesos(s["promedio"])}{con_monto(s)}
+                </dd>
+              <% end %>
+            </dl>
+
+            <p class="nivel">
+              Destinos: {Enum.map_join(sniiv["destinos"], ", ", fn [d, n] -> "#{d} (#{cifra(n)})" end)}
+            </p>
+          <% else %>
+            <p class="nivel">Sin registros completos en el SNIIV.</p>
+          <% end %>
+        </section>
+
+        <section aria-label="Intercensal 2025">
+          <h4>Tenencia (Intercensal 2025)</h4>
+
+          <%= if eic = @ficha["eic"] do %>
+            <p class="nivel">Del municipio, por muestra. CV: coeficiente de variación.</p>
+
+            <dl class="ficha-datos">
+              <%= for e <- eic do %>
+                <dt>{e["etiqueta"]}</dt>
+
+                <dd>{valor_eic(e)}</dd>
+              <% end %>
+            </dl>
+          <% else %>
+            <p class="nivel">Sin dato de la Intercensal.</p>
+          <% end %>
+        </section>
+
+        <section aria-label="ENVI 2020">
+          <h4>Renta y valor (ENVI 2020)</h4>
+
+          <%= if envi = @ficha["envi"] do %>
+            <p class="nivel">Del estado: la ENVI no llega a municipio.</p>
+
+            <dl class="ficha-datos">
+              <%= for e <- envi do %>
+                <dt>{e["etiqueta"]}</dt>
+
+                <dd>{valor_envi(e)}</dd>
+              <% end %>
+            </dl>
+          <% else %>
+            <p class="nivel">Sin dato de la ENVI.</p>
+          <% end %>
+        </section>
+      </div>
+    </div>
+    """
+  end
+
+  defp sniiv?(form), do: String.starts_with?(form[:indicador].value || "", "sniiv_")
+
+  defp opciones_vivienda(%{"indicadores" => indicadores}) do
+    indicadores
+    |> Enum.chunk_by(& &1["fuente"])
+    |> Enum.map(fn [%{"fuente" => f} | _] = grupo ->
+      {f, Enum.map(grupo, &{"#{&1["etiqueta"]} (#{&1["unidad"]})", &1["clave"]})}
+    end)
+  end
+
+  defp opciones_anios(%{"anios_sniiv" => anios}) do
+    Enum.map(anios, fn
+      %{"anio" => a, "meses" => 12} -> {to_string(a), a}
+      %{"anio" => a, "meses" => m} -> {"#{a} (#{m} de 12 meses)", a}
+    end)
+  end
+
+  defp con_unidad(nil, _unidad), do: "sin dato"
+  defp con_unidad(v, "%"), do: "#{cifra(v * 1.0)} %"
+
+  # El promedio sale solo de las acciones con monto; si no son todas, se dice.
+  defp con_monto(%{"con_monto" => c, "acciones" => a}) when is_integer(c) and c < a,
+    do: " (#{cifra(c)} con monto)"
+
+  defp con_monto(_segmento), do: ""
+
+  defp pesos(nil), do: "sin dato"
+  defp pesos(v), do: "$#{cifra(round(v))}"
+
+  defp valor_eic(%{"valor" => nil, "nota" => nota}), do: "sin dato (#{nota || "no publicado"})"
+  defp valor_eic(%{"unidad" => "viviendas", "valor" => v}), do: cifra(round(v))
+
+  defp valor_eic(%{"valor" => v, "cv" => cv}) when is_number(cv),
+    do: "#{cifra(v * 1.0)} % · CV #{cifra(cv * 1.0)}"
+
+  defp valor_eic(%{"valor" => v}), do: "#{cifra(v * 1.0)} %"
+
+  defp valor_envi(%{"valor" => nil}), do: "sin dato"
+  defp valor_envi(%{"unidad" => "pesos", "valor" => v}), do: pesos(v)
+
+  defp valor_envi(%{"valor" => v, "error_estandar" => ee}) when is_number(ee),
+    do: "#{cifra(v * 1.0)} % ± #{cifra(ee * 1.0)}"
+
+  defp valor_envi(%{"valor" => v}), do: "#{cifra(v * 1.0)} %"
+
+  # El catálogo de la vista se pide la primera vez que se abre su cinta.
+  defp cargar_catalogo_vivienda(
+         %{assigns: %{elegida: "vivienda", vivienda_catalogo: nil}} = socket
+       ) do
+    case MapoCore.vivienda_catalogo() do
+      {:ok, catalogo} -> assign(socket, vivienda_catalogo: catalogo)
+      {:error, _} -> socket
+    end
+  end
+
+  defp cargar_catalogo_vivienda(socket), do: socket
+
+  attr :escala, :map, default: nil
+  attr :tinta, :string, default: nil, doc: "enfoque del acetato; sin él, demografía"
 
   defp escala(assigns) do
     ~H"""
-    <div :if={@escala} class="escala" aria-label="Clases por quintil">
+    <div
+      :if={@escala}
+      class="escala"
+      aria-label="Clases por quintil"
+      style={@tinta && "--tinta-escala: var(--f-#{@tinta})"}
+    >
       <ol>
         <li :for={o <- [0.12, 0.26, 0.42, 0.6, 0.8]} style={"opacity: #{o}"}></li>
 
@@ -564,9 +818,18 @@ defmodule MapoWeb.MapaLive.Index do
        coloreado_activa?: false,
        isocrona_activa?: false,
        coropleta_escala: nil,
+       vivienda_form:
+         to_form(%{"indicador" => "eic_alqui", "anio" => "", "segmento" => ""},
+           as: "vivienda_capa"
+         ),
+       vivienda_catalogo: nil,
+       vivienda_activa?: false,
+       vivienda_escala: nil,
+       vivienda_meta: nil,
+       vivienda_ficha: nil,
        capas_propias: Capas.list_capas_del_usuario(socket.assigns.current_scope),
        abiertas: [],
-       orden: ["propios", "isocrona", "voronoi", "coropleta", "coloreado"],
+       orden: ["propios", "isocrona", "voronoi", "vivienda", "coropleta", "coloreado"],
        elegida: nil,
        piel_fijada: nil,
        piel_pintada: "urbanismo",
@@ -602,7 +865,7 @@ defmodule MapoWeb.MapaLive.Index do
   def handle_event("elegir", %{"capa" => capa}, socket)
       when is_map_key(@capas, capa) or capa == "marcas" do
     elegida = if socket.assigns.elegida == capa, do: nil, else: capa
-    {:noreply, socket |> assign(elegida: elegida) |> modo_marcas()}
+    {:noreply, socket |> assign(elegida: elegida) |> cargar_catalogo_vivienda() |> modo_marcas()}
   end
 
   def handle_event("elegir_sesion", %{"sesion" => id}, socket) do
@@ -802,6 +1065,78 @@ defmodule MapoWeb.MapaLive.Index do
         {:reply, %{campos: [], procedencia: [], otras: 0}, socket}
     end
   end
+
+  def handle_event("cambiar_vivienda", %{"vivienda_capa" => params}, socket) do
+    {:noreply, assign(socket, vivienda_form: to_form(params, as: "vivienda_capa"))}
+  end
+
+  def handle_event("mostrar_vivienda", %{"vivienda_capa" => params}, socket) do
+    cve_ent = socket.assigns.form[:cve_ent].value
+    socket = assign(socket, vivienda_form: to_form(params, as: "vivienda_capa"))
+    sniiv? = String.starts_with?(params["indicador"] || "", "sniiv_")
+    anio = if sniiv?, do: vacio_para_nil(params["anio"])
+    segmento = if sniiv?, do: vacio_para_nil(params["segmento"])
+
+    if cve_ent in [nil, ""] do
+      {:noreply, put_flash(socket, :error, "Selecciona un estado primero.")}
+    else
+      case MapoCore.vivienda_municipios(cve_ent, params["indicador"], anio, segmento) do
+        {:ok, %{"features" => []}} ->
+          {:noreply,
+           put_flash(socket, :error, "No hay municipios cargados para ese estado todavía.")}
+
+        {:ok, geojson} ->
+          escala = escala_quintiles(geojson)
+          meta = Map.take(geojson, ~w(indicador nivel anio meses segmento metodo))
+
+          {:noreply,
+           socket
+           |> assign(vivienda_activa?: true, vivienda_escala: escala, vivienda_meta: meta)
+           |> push_event("capa_vivienda", %{
+             activa: true,
+             geojson: geojson,
+             cortes: escala && escala.cortes,
+             etiqueta: meta["indicador"]["etiqueta"],
+             unidad: meta["indicador"]["unidad"]
+           })
+           |> actualizar_mesa()}
+
+        {:error, {:status, 400, _}} ->
+          {:noreply, put_flash(socket, :error, "Ese indicador o segmento no existe.")}
+
+        {:error, _} ->
+          {:noreply, put_flash(socket, :error, "mapo_core no está disponible ahorita mismo.")}
+      end
+    end
+  end
+
+  def handle_event("quitar_vivienda", _params, socket) do
+    {:noreply,
+     socket
+     |> assign(
+       vivienda_activa?: false,
+       vivienda_escala: nil,
+       vivienda_meta: nil,
+       vivienda_ficha: nil
+     )
+     |> push_event("capa_vivienda", %{activa: false})
+     |> actualizar_mesa()}
+  end
+
+  # El clic en un municipio del acetato pide su ficha: las cuatro fuentes,
+  # cada una con su nivel, en la cinta de la capa.
+  def handle_event("ficha_vivienda", %{"cve_mun" => cve_mun}, socket) when is_binary(cve_mun) do
+    case MapoCore.vivienda_ficha(socket.assigns.form[:cve_ent].value, cve_mun) do
+      {:ok, ficha} ->
+        {:noreply, socket |> assign(vivienda_ficha: ficha, elegida: "vivienda") |> modo_marcas()}
+
+      {:error, _} ->
+        {:noreply, put_flash(socket, :error, "No se pudo leer la ficha de ese municipio.")}
+    end
+  end
+
+  def handle_event("cerrar_ficha_vivienda", _params, socket),
+    do: {:noreply, assign(socket, vivienda_ficha: nil)}
 
   def handle_event("mostrar_coloreado", _params, socket) do
     cve_ent = socket.assigns.form[:cve_ent].value
@@ -1123,6 +1458,7 @@ defmodule MapoWeb.MapaLive.Index do
   defp activa?(assigns, "coropleta"), do: assigns.coropleta_activa?
   defp activa?(assigns, "voronoi"), do: assigns.voronoi_activa?
   defp activa?(assigns, "coloreado"), do: assigns.coloreado_activa?
+  defp activa?(assigns, "vivienda"), do: assigns.vivienda_activa?
   defp activa?(assigns, "isocrona"), do: assigns.isocrona_activa?
 
   defp activas(assigns), do: Enum.filter(assigns.orden, &activa?(assigns, &1))
@@ -1163,13 +1499,19 @@ defmodule MapoWeb.MapaLive.Index do
   defp fuentes(assigns) do
     assigns
     |> activas()
-    |> Enum.map(fn id -> @capas[id].fuente |> String.split(" · ") |> hd() end)
+    |> Enum.map(&fuente_puesta(assigns, &1))
     |> Enum.uniq()
     |> case do
       [] -> "ninguna todavía"
       lista -> Enum.join(lista, ", ")
     end
   end
+
+  # Vivienda junta cuatro fuentes; el rótulo dice la del indicador puesto.
+  defp fuente_puesta(%{vivienda_meta: %{"indicador" => %{"fuente" => f}}}, "vivienda"),
+    do: f |> String.split(" · ") |> hd()
+
+  defp fuente_puesta(_assigns, id), do: @capas[id].fuente |> String.split(" · ") |> hd()
 
   defp lugar(assigns) do
     estado = nombre_de(assigns.estados, assigns.form[:cve_ent].value)

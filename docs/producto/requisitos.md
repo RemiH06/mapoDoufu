@@ -23,6 +23,7 @@ detalle de lo ya construido vive en `../historial/`.
 | RF8 | Vendorizar (no consumir en vivo) las fuentes de datos de Gaiarda: código de descarga/normalización propio, sin depender de un Gaiarda corriendo en ningún lado | Listo: geoestadístico, censo, DENUE, ENIGH, ENOE y SESNSP vendorizados y cargados con datos reales (ver `../fuentes/`). SESNSP se carga a mano (no hay descarga pública automatizable) |
 | RF9 | Casos de ejemplo iniciales, probados en ambos modos: floristería, call center, supermercado, consultorio/hospital, estación de policía | Listo: los cinco casos probados en los dos modos con datos reales y las mismas cifras (`../historial/2026-11-casos-rubro.md`, `tests/test_casos_rubro.py`) |
 | RF10 | Datos propios: un equipo sube archivos y los ve como capa sobre las fuentes públicas | Hecho: tabla, vectorial y ráster como acetatos, hasta tres a la vez, y cruce por zona con censo y DENUE (`datos-propios.md`) |
+| RF11 | Vistas temáticas: capas públicas de un tema (vivienda, ambiental...) con su fuente, nivel y método a la vista | Parcial: vivienda por municipio como acetato de `/mapa` con SHF, SNIIV, Intercensal 2025 y ENVI por separado (`vista-vivienda.md`). Falta ambiental y el catálogo de capas del plan nacional |
 
 ## Requerimientos no funcionales
 

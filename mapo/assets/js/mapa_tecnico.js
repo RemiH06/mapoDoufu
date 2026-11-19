@@ -30,7 +30,7 @@ const valorFicha = (columna, valor) =>
 
 const CENTRO_MEXICO = [23.6345, -102.5528]
 const ZOOM_MEXICO = 5
-const ENFOQUE = {propios: "consumo", puntos: "comercio", zonas: "comercio", focos: "comercio", coropleta: "demografia", voronoi: "comercio", coloreado: "urbanismo", isocrona: "movilidad"}
+const ENFOQUE = {propios: "consumo", puntos: "comercio", zonas: "comercio", focos: "comercio", coropleta: "demografia", vivienda: "urbanismo", voronoi: "comercio", coloreado: "urbanismo", isocrona: "movilidad"}
 // Opacidad de la pelicula por clase: mas valor, mas tinta.
 const TINTA_QUINTIL = [0.12, 0.26, 0.42, 0.6, 0.8]
 const TINTA_COLOREADO = [0.14, 0.32, 0.5, 0.68]
@@ -93,6 +93,7 @@ export const MapaTecnico = {
 
     this.handleEvent("capa_coropleta", datos => this._recibir("coropleta", datos))
     this.handleEvent("capa_voronoi", datos => this._recibir("voronoi", datos))
+    this.handleEvent("capa_vivienda", datos => this._recibir("vivienda", datos))
     this.handleEvent("capa_coloreado", datos => this._recibir("coloreado", datos))
     this.handleEvent("capa_isocrona", datos => this._recibir("isocrona", datos))
     this.handleEvent("capa_puntos", datos => this._recibir("puntos", datos))
@@ -330,6 +331,23 @@ export const MapaTecnico = {
       onEachFeature: (f, capa) => {
         const valor = f.properties.valor_choropleth
         capa.bindPopup(`<strong>${escapar(etiqueta)}</strong><br>${valor === null || valor === undefined ? "sin dato" : valor.toLocaleString("es-MX")}`)
+      },
+    })
+  },
+
+  // Vivienda por municipio: un indicador de una sola fuente. El clic abre la
+  // ficha del municipio (las cuatro fuentes) en la cinta de la capa.
+  _vivienda({geojson, etiqueta, unidad, cortes}, color, opciones) {
+    return L.geoJSON(geojson, {
+      ...opciones,
+      style: f => this._estiloQuintil(f, cortes, color),
+      onEachFeature: (f, capa) => {
+        const {nomgeo, valor_choropleth: valor, cv, nota, cve_mun} = f.properties
+        const cifra = valor === null || valor === undefined
+          ? `sin dato${nota ? ` (${escapar(nota)})` : ""}`
+          : `${valor.toLocaleString("es-MX", {maximumFractionDigits: 1})} ${escapar(unidad)}${cv != null ? ` · CV ${cv.toLocaleString("es-MX", {maximumFractionDigits: 1})}` : ""}`
+        capa.bindPopup(`<strong>${escapar(nomgeo)}</strong><br>${escapar(etiqueta)}: ${cifra}`)
+        capa.on("click", () => this.pushEvent("ficha_vivienda", {cve_mun}))
       },
     })
   },

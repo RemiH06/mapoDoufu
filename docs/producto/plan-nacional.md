@@ -127,6 +127,9 @@ hecha de **capas públicas**: las mismas para todos, con su procedencia a un cli
 Primero Jalisco, con lo que ya está en crudo; es una fase de producto aparte, con
 su propia revisión de rendimiento.
 
+Primera vista hecha (sesión 21): vivienda por municipio como acetato de `/mapa`
+(`vista-vivienda.md`). Todavía sin catálogo: el acetato conoce sus indicadores.
+
 ## Orden
 
 1. Generalizar lo que hoy es de Jalisco: ITER de los 32 estados y relieve desde

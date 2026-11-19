@@ -241,6 +241,9 @@
     align-items: stretch;
     flex-wrap: wrap;
     max-width: min(900px, calc(100% - 320px));
+    /* Con la ficha de vivienda abierta crecía hasta tapar el membrete. */
+    max-height: calc(100dvh - 210px);
+    overflow-y: auto;
   }
   .cinta[hidden] {
     display: none;
@@ -305,6 +308,66 @@
     text-decoration: underline;
     text-underline-offset: 2px;
     white-space: nowrap;
+  }
+  .cinta-metodo {
+    max-width: 46ch;
+  }
+  .cinta-metodo p + p {
+    margin-top: 4px;
+  }
+  /* Ficha de un municipio en la cinta de vivienda: renglón propio, una
+     columna por fuente, cada una con su nivel. */
+  .cinta > .cinta-ficha {
+    flex-basis: 100%;
+    border-left: 0;
+    border-top: 1px solid var(--line);
+    max-height: 32dvh;
+    overflow-y: auto;
+  }
+  .cinta-ficha-titulo {
+    display: flex;
+    align-items: baseline;
+    gap: 12px;
+    margin-bottom: 6px;
+  }
+  .cinta-ficha-titulo h3 {
+    font-family: var(--cond);
+    font-weight: 700;
+    font-size: 17px;
+  }
+  .cinta-ficha-titulo .enlace {
+    color: var(--accent);
+    text-decoration: underline;
+    text-underline-offset: 2px;
+    font-size: 13px;
+    cursor: pointer;
+  }
+  .cinta-ficha .fuentes {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+    gap: 10px 20px;
+    font-size: 13px;
+  }
+  .cinta-ficha h4 {
+    font-family: var(--cond);
+    font-weight: 700;
+    font-size: 15px;
+  }
+  /* La etiqueta se parte en renglones; la cifra nunca. */
+  .cinta-ficha .ficha-datos {
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 2px 12px;
+  }
+  .cinta-ficha .ficha-datos dd {
+    white-space: nowrap;
+    overflow-wrap: normal;
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+  }
+  .cinta-ficha .nivel {
+    color: var(--text2);
+    font-size: 12px;
+    margin: 2px 0 4px;
   }
   .cinta-orden {
     display: flex;
@@ -430,6 +493,11 @@
     }
     .cinta-texto {
       max-width: none;
+    }
+    /* La cinta ya se desplaza: la ficha no lleva un scroll adentro. */
+    .cinta > .cinta-ficha {
+      max-height: none;
+      overflow: visible;
     }
     .capas-abiertas {
       flex-direction: column;

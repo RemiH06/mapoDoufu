@@ -363,7 +363,7 @@ defmodule MapoWeb.MapaLive.IndexTest do
       |> render_click()
 
       assert_push_event(lv, "orden_capas", %{
-        orden: ["propios", "isocrona", "voronoi", "coloreado", "coropleta"]
+        orden: ["propios", "isocrona", "voronoi", "vivienda", "coloreado", "coropleta"]
       })
 
       assert_push_event(lv, "piel", %{piel: "urbanismo"})
@@ -789,6 +789,216 @@ defmodule MapoWeb.MapaLive.IndexTest do
 
       render_change(lv, "agregar_capa", %{"capa" => d})
       assert_push_event(lv, "capa_propios", %{id: ^d, tono: "seguridad"})
+    end
+  end
+
+  describe "vivienda por municipio" do
+    defp catalogo_vivienda do
+      %{
+        "indicadores" => [
+          %{
+            "clave" => "eic_alqui",
+            "fuente" => "INEGI · Intercensal 2025",
+            "etiqueta" => "Viviendas rentadas",
+            "unidad" => "% de las habitadas"
+          },
+          %{
+            "clave" => "sniiv_acciones",
+            "fuente" => "SNIIV · Financiamientos",
+            "etiqueta" => "Créditos y subsidios otorgados",
+            "unidad" => "acciones en el año"
+          }
+        ],
+        "segmentos" => ["Media", "Residencial"],
+        "anios_sniiv" => [%{"anio" => 2026, "meses" => 8}, %{"anio" => 2025, "meses" => 12}]
+      }
+    end
+
+    defp municipios_vivienda(conn) do
+      Req.Test.json(conn, %{
+        "type" => "FeatureCollection",
+        "features" => [
+          %{
+            "properties" => %{"cve_mun" => "039", "valor_choropleth" => 34.1, "cv" => 3.3},
+            "geometry" => %{}
+          },
+          %{"properties" => %{"cve_mun" => "098", "valor_choropleth" => nil}, "geometry" => %{}}
+        ],
+        "indicador" => hd(catalogo_vivienda()["indicadores"]),
+        "nivel" => "municipio",
+        "metodo" => "Estimación por muestra de la Intercensal 2025."
+      })
+    end
+
+    defp ficha(conn) do
+      Req.Test.json(conn, %{
+        "nombre" => "Guadalajara",
+        "shf" => %{
+          "nivel" => "municipio",
+          "serie" => [[2005, 1, 50.0], [2026, 2, 238.62]],
+          "ultimo" => %{"anio" => 2026, "trimestre" => 2, "indice" => 238.62},
+          "variacion_anual" => 9.64
+        },
+        "sniiv" => %{
+          "anio" => 2025,
+          "segmentos" => [
+            %{
+              "segmento" => "No disponible",
+              "acciones" => 1011,
+              "monto" => 40500.0,
+              "con_monto" => 3,
+              "promedio" => 13500.0
+            }
+          ],
+          "destinos" => [["Mejoramientos", 1007]]
+        },
+        "eic" => [
+          %{
+            "indicador" => "PCN_VPH_ALQUI",
+            "etiqueta" => "Rentadas",
+            "unidad" => "% de las habitadas",
+            "valor" => 34.1,
+            "cv" => 3.3,
+            "nota" => nil
+          },
+          %{
+            "indicador" => "PCN_VPH_NOESCRI",
+            "etiqueta" => "Sin escrituras",
+            "unidad" => "% de las propias",
+            "valor" => nil,
+            "cv" => nil,
+            "nota" => "MI"
+          }
+        ],
+        "envi" => [
+          %{
+            "indicador" => "renta_mensual_mediana",
+            "etiqueta" => "Renta mensual, mediana",
+            "unidad" => "pesos",
+            "valor" => 2000.0,
+            "error_estandar" => nil
+          }
+        ]
+      })
+    end
+
+    defp montar_vivienda(
+           conn,
+           extra \\ fn conn -> raise "no debería llamarse: #{conn.request_path}" end
+         ) do
+      lv =
+        montar_con_ubicacion(conn, fn conn ->
+          case conn.request_path do
+            "/vivienda/catalogo" -> Req.Test.json(conn, catalogo_vivienda())
+            "/vivienda/municipios" -> municipios_vivienda(conn)
+            "/vivienda/ficha" -> ficha(conn)
+            _ -> extra.(conn)
+          end
+        end)
+
+      lv |> element(".pestana[aria-controls=cinta-vivienda]") |> render_click()
+      lv
+    end
+
+    test "abrir la cinta trae el catálogo por fuente; año y segmento solo con el SNIIV", %{
+      conn: conn
+    } do
+      lv = montar_vivienda(conn)
+      html = render(lv)
+
+      assert html =~ ~s(<optgroup label="INEGI · Intercensal 2025">)
+      refute html =~ "Último completo"
+
+      html =
+        lv
+        |> form("#vivienda_capa_form", vivienda_capa: %{"indicador" => "sniiv_acciones"})
+        |> render_change()
+
+      assert html =~ "Último completo"
+      assert html =~ "2026 (8 de 12 meses)"
+    end
+
+    test "poner pinta el acetato con su método y deja los sin dato aparte", %{conn: conn} do
+      lv = montar_vivienda(conn)
+
+      html =
+        lv
+        |> form("#vivienda_capa_form", vivienda_capa: %{"indicador" => "eic_alqui"})
+        |> render_submit()
+
+      assert_push_event(lv, "capa_vivienda", %{activa: true, etiqueta: "Viviendas rentadas"})
+      assert html =~ "Estimación por muestra de la Intercensal 2025."
+      assert html =~ "sin dato: 1"
+    end
+
+    test "con un indicador del censo no manda año ni segmento", %{conn: conn} do
+      lv =
+        montar_con_ubicacion(conn, fn conn ->
+          case conn.request_path do
+            "/vivienda/catalogo" ->
+              Req.Test.json(conn, catalogo_vivienda())
+
+            "/vivienda/municipios" ->
+              refute Map.has_key?(conn.params, "anio")
+              refute Map.has_key?(conn.params, "segmento")
+              municipios_vivienda(conn)
+          end
+        end)
+
+      lv |> element(".pestana[aria-controls=cinta-vivienda]") |> render_click()
+
+      lv
+      |> form("#vivienda_capa_form", vivienda_capa: %{"indicador" => "eic_alqui"})
+      |> render_submit(%{vivienda_capa: %{"anio" => "2025", "segmento" => "Media"}})
+
+      assert_push_event(lv, "capa_vivienda", %{activa: true})
+    end
+
+    test "el clic en un municipio abre su ficha con cada fuente y su nivel", %{conn: conn} do
+      lv = montar_vivienda(conn)
+
+      lv
+      |> form("#vivienda_capa_form", vivienda_capa: %{"indicador" => "eic_alqui"})
+      |> render_submit()
+
+      html = render_hook(lv, "ficha_vivienda", %{"cve_mun" => "039"})
+
+      assert html =~ "Guadalajara"
+      assert html =~ "Del municipio"
+      assert html =~ "9.6 %"
+      assert html =~ "1,011 · $13,500 (3 con monto)"
+      assert html =~ "34.1 % · CV 3.3"
+      assert html =~ "sin dato (MI)"
+      assert html =~ "Del estado: la ENVI no llega a municipio."
+      assert html =~ "$2,000"
+
+      html = lv |> element("#ficha-vivienda button", "Cerrar") |> render_click()
+      refute html =~ ~s(id="ficha-vivienda")
+    end
+
+    test "quitar apaga el acetato y su ficha", %{conn: conn} do
+      lv = montar_vivienda(conn)
+
+      lv
+      |> form("#vivienda_capa_form", vivienda_capa: %{"indicador" => "eic_alqui"})
+      |> render_submit()
+
+      render_hook(lv, "ficha_vivienda", %{"cve_mun" => "039"})
+      html = lv |> element("#cinta-vivienda button", "Quitar") |> render_click()
+
+      assert_push_event(lv, "capa_vivienda", %{activa: false})
+      refute html =~ ~s(id="ficha-vivienda")
+    end
+
+    test "sin mapo_core la cinta lo dice en vez de un formulario vacío", %{conn: conn} do
+      lv =
+        montar_con_ubicacion(conn, fn conn ->
+          conn |> Plug.Conn.put_status(500) |> Req.Test.json(%{"detail" => "caído"})
+        end)
+
+      html = lv |> element(".pestana[aria-controls=cinta-vivienda]") |> render_click()
+
+      assert html =~ "No se pudo leer la lista de indicadores"
     end
   end
 end

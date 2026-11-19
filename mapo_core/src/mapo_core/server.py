@@ -11,7 +11,7 @@ from fastapi.responses import JSONResponse, Response
 from psycopg_pool import AsyncConnectionPool
 from pydantic import BaseModel, Field
 
-from mapo_core import buscador, consultas, cruce, datos_geo, datos_propios, localidades
+from mapo_core import buscador, consultas, cruce, datos_geo, datos_propios, localidades, vivienda_vista
 from mapo_core.coloreado_mapa import PoligonoColoreable, colorear_mapa
 from mapo_core.consultas import INDICADORES_CHOROPLETH, TOLERANCIA_SIMPLIFICACION as _TOLERANCIA_SIMPLIFICACION
 from mapo_core.consultas import feature as _feature
@@ -750,3 +750,39 @@ async def cruce_calcular(
         )
     except cruce.CruceInvalido as exc:
         raise HTTPException(422, str(exc)) from None
+
+
+@app.get("/vivienda/catalogo")
+async def vivienda_catalogo(pool: AsyncConnectionPool = Depends(get_pool)) -> dict:
+    """Indicadores de la vista de precios, segmentos y años del SNIIV con
+    cuántos meses trae cada uno."""
+    return {**vivienda_vista.catalogo(), "anios_sniiv": await vivienda_vista.anios_sniiv(pool)}
+
+
+@app.get("/vivienda/municipios")
+async def vivienda_municipios(
+    cve_ent: str = Query(pattern=r"^\d{2}$"),
+    indicador: str = Query(),
+    anio: int | None = Query(default=None, ge=2000, le=2100),
+    segmento: str | None = Query(default=None),
+    pool: AsyncConnectionPool = Depends(get_pool),
+) -> dict:
+    """Municipios de un estado con el valor de un indicador de una sola
+    fuente, su nivel y su `metodo`. Sin dato es `null`, nunca cero."""
+    try:
+        return await vivienda_vista.municipios(pool, cve_ent, indicador, anio, segmento or None)
+    except ValueError as exc:
+        raise HTTPException(400, str(exc)) from None
+
+
+@app.get("/vivienda/ficha")
+async def vivienda_ficha(
+    cve_ent: str = Query(pattern=r"^\d{2}$"),
+    cve_mun: str = Query(pattern=r"^\d{3}$"),
+    pool: AsyncConnectionPool = Depends(get_pool),
+) -> dict:
+    """SHF, SNIIV, Intercensal 2025 y ENVI de un municipio, por separado."""
+    ficha = await vivienda_vista.ficha(pool, cve_ent, cve_mun)
+    if ficha is None:
+        raise HTTPException(404, "municipio no encontrado")
+    return ficha
