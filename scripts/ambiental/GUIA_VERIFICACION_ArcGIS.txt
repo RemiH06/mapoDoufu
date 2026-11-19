@@ -16,6 +16,10 @@ decide qué celdas del borde cuentan).
       (o ndvi, dosel_pct, dosel_altura_m). El campo COUNT de la tabla es el mismo que los
       campos "_celdas".
 
+   Ya lo hicimos con otro programa: la estadística zonal de QGIS (native:zonalstatisticsfb)
+   sobre los 1,987 AGEB de Guadalajara y la temperatura da el mismo promedio, con las
+   mismas celdas en el 99.9 % de los AGEB y una diferencia máxima de 0.04 °C.
+
 2. Revisar los rásteres contra su origen
    - Temperatura y NDVI: las escenas exactas de cada ciudad están en
      procedencia/<ciudad>_procedencia_imagenes.csv (identificador de cada escena de

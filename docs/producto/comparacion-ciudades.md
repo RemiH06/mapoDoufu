@@ -60,6 +60,9 @@ se entregan: eso es lo que permite al equipo comprobarlos.
 
 - **Dosel:** en la caja del CP 45615, el ráster de 10 m da 3.64 % de cobertura, lo mismo
   que el de 1 m del paquete de arborización (3.64 %).
+- **Promedios por AGEB contra otro programa:** la estadística zonal de QGIS
+  (`native:zonalstatisticsfb`) sobre los 1,987 AGEB de la ZMG y la temperatura da el mismo
+  promedio: mismas celdas en el 99.9 %, diferencia máxima de 0.04 °C.
 - **Población:** los AGEB urbanos suman 4,999,609 en la ZMG (la metrópoli completa,
   5,110,617; el resto es rural) y 20,838,648 en la Ciudad de México (21,436,911).
 
