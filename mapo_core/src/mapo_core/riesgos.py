@@ -158,10 +158,16 @@ async def _poblacion(conn, zona: dict, cerca_de: str | None = None, cerca_m: int
     zona_sql = _zona_sql(zona) if cerca_de else _zona_sql(zona)
     sql = (f"WITH zona AS ({zona_sql}), {_UNIDADES}{previa} "
            f"SELECT count(*) FILTER (WHERE tipo = 'ageb') AS agebs, count(*) FILTER (WHERE tipo = 'localidad') AS localidades,"
+           # Una localidad urbana sin AGEB cargados cuenta entera por su punto: avisarlo.
+           f" count(*) FILTER (WHERE tipo = 'localidad' AND u.d->>'POBTOT' ~ '^[0-9]+$'"
+           f" AND (u.d->>'POBTOT')::int >= 2500) AS urbanas_por_punto,"
+           f" coalesce(sum((u.d->>'POBTOT')::int) FILTER (WHERE tipo = 'localidad' AND u.d->>'POBTOT' ~ '^[0-9]+$'"
+           f" AND (u.d->>'POBTOT')::int >= 2500), 0) AS pob_urbanas_por_punto,"
            f" {_SUMAS} FROM unidades u {filtro}")
     cur = await _ex(conn, sql, {**zona, "cerca_m": cerca_m, **(extra or {})})
     fila = await cur.fetchone()
-    return {"agebs": fila["agebs"], "localidades": fila["localidades"], "grupos": _grupos(fila)}
+    return {"agebs": fila["agebs"], "localidades": fila["localidades"], "grupos": _grupos(fila),
+            "urbanas_por_punto": fila["urbanas_por_punto"], "pob_urbanas_por_punto": fila["pob_urbanas_por_punto"]}
 
 
 def _bloque(clave, titulo, fuente, fecha, nivel, metodo, hechos, poblacion=None, capa=None, ficha=None):

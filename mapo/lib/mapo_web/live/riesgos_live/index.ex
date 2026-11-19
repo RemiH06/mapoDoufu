@@ -181,6 +181,16 @@ defmodule MapoWeb.RiesgosLive.Index do
         )} lugares falta algún grupo. No se cuentan como cero, así que los grupos pueden quedar cortos.
       </p>
       
+      <p :if={(@poblacion["urbanas_por_punto"] || 0) > 0} class="cerca">
+        {cifra(@poblacion["pob_urbanas_por_punto"])} personas son de {cifra(
+          @poblacion["urbanas_por_punto"]
+        )} {if @poblacion[
+                 "urbanas_por_punto"
+               ] == 1,
+               do: "localidad urbana que cuenta",
+               else: "localidades urbanas que cuentan"} entera por su punto: Mapo no tiene sus AGEB cargados, así que cuenta a toda la ciudad aunque la zona toque solo una parte.
+      </p>
+      
       <p class="metodo">Método: {@metodo}</p>
     </article>
     """

@@ -42,7 +42,13 @@ defmodule MapoWeb.RiesgosLive.IndexTest do
           ]
         }),
       "cerca_m" => 1000,
-      "poblacion" => %{"agebs" => 33, "localidades" => 139, "grupos" => grupos(64_931)},
+      "poblacion" => %{
+        "agebs" => 33,
+        "localidades" => 139,
+        "grupos" => grupos(64_931),
+        "urbanas_por_punto" => 1,
+        "pob_urbanas_por_punto" => 12_500
+      },
       "metodo_poblacion" => "AGEB urbanos y localidades del ITER.",
       "bloques" => [
         %{
@@ -146,6 +152,7 @@ defmodule MapoWeb.RiesgosLive.IndexTest do
     assert html =~ "Quién vive en Autlán de Navarro"
     assert html =~ "64,931"
     assert html =~ "en 4 de los 172"
+    assert html =~ "12,500 personas son de 1 localidad urbana que cuenta entera por su punto"
     assert has_element?(lv, "#bloque-agua_superficial h2", "Calidad del agua superficial")
     assert has_element?(lv, "#bloque-agua_superficial .procedencia", "Conagua, RENAMECA")
 
