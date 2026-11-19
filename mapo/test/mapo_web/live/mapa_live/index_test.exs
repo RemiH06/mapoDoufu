@@ -835,6 +835,7 @@ defmodule MapoWeb.MapaLive.IndexTest do
         "nombre" => "Guadalajara",
         "shf" => %{
           "nivel" => "municipio",
+          "nombre" => "Guadalajara",
           "serie" => [[2005, 1, 50.0], [2026, 2, 238.62]],
           "ultimo" => %{"anio" => 2026, "trimestre" => 2, "indice" => 238.62},
           "variacion_anual" => 9.64
@@ -967,6 +968,11 @@ defmodule MapoWeb.MapaLive.IndexTest do
       assert html =~ "Del municipio"
       assert html =~ "9.6 %"
       assert html =~ "1,011 · $13,500 (3 con monto)"
+      # Serie del SHF: la línea, la base 2018 y la tabla plegada.
+      assert html =~ ~s(class="serie-linea")
+      assert html =~ "Índice SHF de Guadalajara: de 50.0 en 2005 T1 a 238.6 en 2026 T2"
+      assert html =~ "<title>2026 T2: 238.6</title>"
+      assert html =~ "Ver la serie"
       assert html =~ "34.1 % · CV 3.3"
       assert html =~ "sin dato (MI)"
       assert html =~ "Del estado: la ENVI no llega a municipio."

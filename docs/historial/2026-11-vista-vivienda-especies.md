@@ -16,6 +16,8 @@ de precios de vivienda que la sesión 20 dejó preparada.
   municipio" en `/mapa`, con ocho indicadores de cuatro fuentes, uno a la vez, y la
   ficha de un municipio con SHF, SNIIV, Intercensal 2025 y ENVI por separado.
   Endpoints `/vivienda/catalogo`, `/vivienda/municipios` y `/vivienda/ficha`.
+  La ficha trae la serie del SHF como línea en SVG, sin JavaScript: el valor de
+  cada trimestre en su `<title>` y la tabla completa plegada.
 
 ## Por qué así
 

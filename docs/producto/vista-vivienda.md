@@ -42,8 +42,9 @@ punteados y se cuentan aparte en la escala.
 
 - **SHF:** la serie del municipio si SHF la publica; si no, la del estado, y lo
   dice ("Del estado: SHF no lo publica para este municipio"). Último índice,
-  cambio en un año y desde cuándo hay serie. La zona metropolitana no se usa
-  todavía: falta la tabla de qué municipios forman cada ZM según SHF.
+  cambio en un año y la serie trimestral como línea, con la base 2018 = 100
+  punteada; cada trimestre trae su valor al pasar el cursor y la tabla completa
+  va plegada en "Ver la serie". La zona metropolitana no se usa: ver Pendiente.
 - **SNIIV:** último año completo, acciones y monto promedio por segmento (solo con
   las acciones que traen monto), y los cuatro destinos con más acciones.
 - **Intercensal 2025:** viviendas habitadas, tenencia y escrituras, cada valor con
@@ -63,7 +64,10 @@ punteados y se cuentan aparte en la escala.
 
 ## Pendiente
 
-- Tabla de municipios por zona metropolitana de SHF, para mostrar la serie de la ZM
-  cuando el municipio no tiene la suya.
-- Serie del SHF como gráfica en la ficha (hoy son cifras).
+- Serie de la zona metropolitana cuando el municipio no tiene la suya. SHF no
+  publica qué municipios forman cada una de sus 8 zonas: su nota metodológica
+  (4 páginas, 2026) solo dice "zonas metropolitanas". La página de precios del
+  SNIIV dice que la delimitación es la del Sistema Urbano Nacional 2018, pero su
+  catálogo municipal solo está en PDF y no se pudo bajar. Usarlo sería suponer
+  que el SNIIV describe bien al SHF: falta confirmarlo con SHF o con el catálogo.
 - Rezago habitacional municipal del SNIIV, si hace falta (`steps.md`, sesión 20).

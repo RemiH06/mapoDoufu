@@ -426,11 +426,8 @@ defmodule MapoWeb.MapaLive.Index do
               <dt>Cambio en un año</dt>
 
               <dd>{con_unidad(shf["variacion_anual"], "%")}</dd>
-
-              <dt>Serie</dt>
-
-              <dd>{length(shf["serie"])} trimestres desde {hd(hd(shf["serie"]))}</dd>
             </dl>
+            <.serie_shf serie={shf["serie"]} nombre={shf["nombre"]} />
           <% else %>
             <p class="nivel">Sin serie cargada.</p>
           <% end %>
@@ -500,6 +497,120 @@ defmodule MapoWeb.MapaLive.Index do
       </div>
     </div>
     """
+  end
+
+  attr :serie, :list, required: true
+  attr :nombre, :string, required: true
+
+  # Serie trimestral del índice SHF: una línea, sin leyenda (el título la
+  # nombra), con la base 2018 = 100 punteada. Cada trimestre lleva su <title>
+  # para leer el valor al pasar el cursor, y la tabla completa va plegada.
+  defp serie_shf(assigns) do
+    assigns = assign(assigns, :g, geometria_serie(assigns.serie))
+
+    ~H"""
+    <figure class="serie-shf">
+      <div class="serie-eje">
+        <span>{cifra(@g.hi * 1.0)}</span>
+      </div>
+
+      <svg
+        viewBox={"0 0 #{@g.ancho} #{@g.alto}"}
+        preserveAspectRatio="none"
+        role="img"
+        aria-label={"Índice SHF de #{@nombre}: #{@g.resumen}"}
+      >
+        <line
+          x1="0"
+          x2={@g.ancho}
+          y1={@g.y100}
+          y2={@g.y100}
+          class="serie-base"
+          vector-effect="non-scaling-stroke"
+        /> <polyline points={@g.puntos} class="serie-linea" vector-effect="non-scaling-stroke" />
+        <rect
+          :for={h <- @g.huecos}
+          x={h.x}
+          y="0"
+          width={h.ancho}
+          height={@g.alto}
+          class="serie-hueco"
+        >
+          <title>{h.texto}</title>
+        </rect>
+      </svg>
+
+      <div class="serie-eje">
+        <span>{cifra(@g.lo * 1.0)}</span>
+      </div>
+
+      <figcaption class="serie-eje">
+        <span>{@g.desde}</span> <span>base 2018 = 100</span> <span>{@g.hasta}</span>
+      </figcaption>
+
+      <details class="serie-tabla">
+        <summary>Ver la serie</summary>
+
+        <table>
+          <thead>
+            <tr>
+              <th scope="col">Trimestre</th><th scope="col">Índice</th>
+            </tr>
+          </thead>
+
+          <tbody>
+            <tr :for={[a, t, v] <- Enum.reverse(@serie)}>
+              <td>{a} T{t}</td>
+
+              <td>{cifra(v * 1.0)}</td>
+            </tr>
+          </tbody>
+        </table>
+      </details>
+    </figure>
+    """
+  end
+
+  # Coordenadas en un lienzo de 300 x 64; el dominio incluye 100 para que la
+  # base siempre se vea. El SVG se estira a lo ancho y el trazo no se deforma.
+  defp geometria_serie(serie) do
+    {ancho, alto, margen} = {300, 64, 3}
+    valores = Enum.map(serie, fn [_a, _t, v] -> v end)
+    lo = min(Enum.min(valores), 100)
+    hi = max(Enum.max(valores), 100)
+    n = length(serie)
+    paso = if n > 1, do: ancho / (n - 1), else: ancho
+    x = fn i -> if n > 1, do: i * paso, else: ancho / 2 end
+    y = fn v -> margen + (hi - v) / max(hi - lo, 1.0e-9) * (alto - 2 * margen) end
+    [[a0, t0, v0] | _] = serie
+    [an, tn, vn] = List.last(serie)
+
+    %{
+      ancho: ancho,
+      alto: alto,
+      lo: lo,
+      hi: hi,
+      y100: Float.round(y.(100) * 1.0, 2),
+      puntos:
+        serie
+        |> Enum.with_index()
+        |> Enum.map_join(" ", fn {[_a, _t, v], i} ->
+          "#{Float.round(x.(i) * 1.0, 2)},#{Float.round(y.(v) * 1.0, 2)}"
+        end),
+      huecos:
+        serie
+        |> Enum.with_index()
+        |> Enum.map(fn {[a, t, v], i} ->
+          %{
+            x: Float.round(max(x.(i) - paso / 2, 0) * 1.0, 2),
+            ancho: Float.round(paso * 1.0, 2),
+            texto: "#{a} T#{t}: #{cifra(v * 1.0)}"
+          }
+        end),
+      desde: "#{a0} T#{t0}",
+      hasta: "#{an} T#{tn}",
+      resumen: "de #{cifra(v0 * 1.0)} en #{a0} T#{t0} a #{cifra(vn * 1.0)} en #{an} T#{tn}"
+    }
   end
 
   defp sniiv?(form), do: String.starts_with?(form[:indicador].value || "", "sniiv_")
