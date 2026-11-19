@@ -66,3 +66,23 @@ reporte del IIEG de ese trimestre:
 - Las cifras recientes son preliminares según el SNIIV.
 - La SHF no publica licencia. El SNIIV dice "fuente: Sociedad Hipotecaria Federal".
   Citarla así.
+
+## Zonas metropolitanas: pregunta a la SHF
+
+La SHF no publica qué municipios forman cada una de sus 8 zonas ni con qué
+delimitación las arma (`../producto/vista-vivienda.md`, Pendiente). Por eso se le
+pregunta por la Plataforma Nacional de Transparencia (sujeto obligado: Sociedad
+Hipotecaria Federal, S.N.C.):
+
+1. Municipios de cada zona, con su clave de INEGI.
+2. Delimitación oficial que usa (SEDATU, CONAPO e INEGI 2015, Sistema Urbano
+   Nacional 2018, Metrópolis de México 2020 u otra) y su versión.
+3. Si la composición de las zonas cambió desde 2005, y cuándo. Lo mismo para los
+   municipios con índice propio, que pasaron de 69 a 74 en 2022-I según los
+   reportes del IIEG.
+4. Si la serie de una zona usa los avalúos de todos sus municipios o solo los de
+   los que tienen índice propio.
+5. Número de avalúos por zona, municipio y trimestre, o al nivel que exista.
+
+Mientras no haya respuesta, la ficha de vivienda no muestra serie de zona: un
+municipio sin serie propia ve la de su estado.
