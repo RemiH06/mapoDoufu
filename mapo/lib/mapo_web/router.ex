@@ -98,6 +98,7 @@ defmodule MapoWeb.Router do
       live "/buscador", BuscadorLive.Index, :index
       live "/perfil", PerfilLive.Index, :index
       live "/logistica", LogisticaLive.Index, :index
+      live "/riesgos", RiesgosLive.Index, :index
     end
 
     post "/users/update-password", UserSessionController, :update_password

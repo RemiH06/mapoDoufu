@@ -1,0 +1,123 @@
+/* /riesgos: el plano ocupa la mesa y encima va la hoja de la zona (la misma
+   hoja de /logistica, más ancha). Cada peligro es un bloque aparte. */
+
+@layer components {
+  :root {
+    --r-rojo: #B3261E;
+    --r-amarillo: #B07A00;
+    --r-verde: #2E7D32;
+  }
+  [data-theme="dark"] {
+    --r-rojo: #FF8A80;
+    --r-amarillo: #FFD54F;
+    --r-verde: #A5D6A7;
+  }
+
+  #riesgos-map {
+    cursor: crosshair;
+  }
+  #riesgos-map .leaflet-top.leaflet-right {
+    top: 64px;
+    right: 10px;
+  }
+  #riesgos-map .leaflet-control-layers {
+    font-family: var(--cond);
+    font-size: 14px;
+    max-width: 260px;
+    background: var(--bg);
+    color: var(--text);
+    border: 1.5px solid var(--line);
+  }
+
+  .hoja.riesgos {
+    width: 440px;
+  }
+  .riesgos-cuerpo {
+    overflow-y: auto;
+    flex: 1;
+    min-height: 0;
+    padding-bottom: 16px;
+  }
+  .riesgos-cuerpo form {
+    display: grid;
+    gap: 4px;
+    margin-top: 8px;
+    padding-bottom: 12px;
+    border-bottom: 1px dashed var(--line);
+  }
+  .riesgos-resultado {
+    display: grid;
+    gap: 14px;
+    margin-top: 12px;
+  }
+  .bloque {
+    border-top: 1.5px solid var(--text);
+    padding-top: 8px;
+  }
+  .bloque h2 {
+    font-family: var(--cond);
+    font-weight: 700;
+    font-size: 18px;
+    line-height: 1.15;
+  }
+  .bloque .procedencia {
+    font-family: var(--cond);
+    font-size: 13px;
+    color: var(--text2);
+    margin-bottom: 4px;
+  }
+  .bloque ul {
+    display: grid;
+    gap: 4px;
+    font-size: 14px;
+    line-height: 1.35;
+    list-style: disc;
+    padding-left: 18px;
+  }
+  .bloque .cerca {
+    margin-top: 6px;
+    font-size: 14px;
+    line-height: 1.35;
+    border-left: 3px solid var(--accent);
+    padding-left: 8px;
+  }
+  .bloque .metodo {
+    margin-top: 6px;
+    font-size: 12px;
+    line-height: 1.35;
+    color: var(--text2);
+  }
+  .bloque .num {
+    font-family: var(--mono);
+  }
+  .riesgos .aviso {
+    margin-top: 8px;
+  }
+
+  @media (max-width: 760px) {
+    #riesgos-map .leaflet-top.leaflet-right {
+      top: var(--alto-cabecera);
+    }
+    #riesgos-map .leaflet-control-layers {
+      display: none;
+    }
+    .hoja.riesgos {
+      width: auto;
+    }
+    .hoja.riesgos.plegada .riesgos-cuerpo {
+      display: none;
+    }
+  }
+
+  /* Celular acostado: la hoja va a la derecha (regla de /logistica), más angosta
+     y abajo de los botones de la esquina para no tapar ni quedar bajo el membrete. */
+  @media (max-height: 500px) and (max-width: 900px) {
+    .hoja.riesgos {
+      width: 290px;
+      top: 64px;
+    }
+    #riesgos-map .leaflet-control-layers {
+      display: none;
+    }
+  }
+}

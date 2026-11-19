@@ -47,7 +47,7 @@ defmodule MapoWeb.Layouts do
   attr :seccion, :string,
     default: nil,
     doc:
-      "la sección del membrete que va marcada: \"buscador\", \"mapa\", \"perfil\", \"logistica\" o \"equipos\""
+      "la sección del membrete que va marcada: \"buscador\", \"mapa\", \"perfil\", \"logistica\", \"riesgos\" o \"equipos\""
 
   slot :inner_block, required: true
 
@@ -67,7 +67,7 @@ defmodule MapoWeb.Layouts do
         <.link navigate={~p"/"} class="marca">
           <img src={~p"/images/mapo-logo.svg"} alt="" /> <span>MAPO</span>
         </.link>
-
+        
         <div :if={@current_scope || @membrete != []} class="membrete-datos">
           <%!-- Solo en celular: las secciones y la esquina se pliegan detrás
                de este botón, que dice dónde está la persona. --%>
@@ -84,7 +84,7 @@ defmodule MapoWeb.Layouts do
           >
             {nombre_seccion(@seccion)} <span aria-hidden="true">▾</span>
           </button>
-
+          
           <nav :if={@current_scope} class="secciones" aria-label="Secciones">
             <.link
               :for={{clave, texto, ruta} <- secciones()}
@@ -94,7 +94,7 @@ defmodule MapoWeb.Layouts do
               {texto}
             </.link>
           </nav>
-
+          
           <div class="membrete-fila">
             <%= if @membrete != [] do %>
               {render_slot(@membrete)}
@@ -104,7 +104,7 @@ defmodule MapoWeb.Layouts do
           </div>
         </div>
       </div>
-
+      
       <div class="esquina">
         <%!-- El texto lo pone el script de root.html.heex; ignore evita que un
              parche de LiveView lo regrese a "Modo". --%>
@@ -118,7 +118,7 @@ defmodule MapoWeb.Layouts do
         >
           Modo
         </button>
-
+        
         <%= if @current_scope do %>
           <details
             class="cuenta-menu"
@@ -126,7 +126,7 @@ defmodule MapoWeb.Layouts do
             phx-click-away={JS.remove_attribute("open")}
           >
             <summary class="esquina-enlace">Cuenta <span aria-hidden="true">▾</span></summary>
-
+            
             <div class="cuenta-opciones pegado">
               <span class="mano cuenta-correo">{@current_scope.user.email}</span>
               <.link navigate={~p"/users/settings"}>Configuración</.link>
@@ -153,7 +153,7 @@ defmodule MapoWeb.Layouts do
         {render_slot(@inner_block)}
       </div>
     </main>
-    <.flash_group flash={@flash} />
+     <.flash_group flash={@flash} />
     """
   end
 
@@ -163,6 +163,7 @@ defmodule MapoWeb.Layouts do
       {"mapa", "Mapa", ~p"/mapa"},
       {"perfil", "Perfil", ~p"/perfil"},
       {"logistica", "Logística", ~p"/logistica"},
+      {"riesgos", "Riesgos", ~p"/riesgos"},
       {"equipos", "Equipos", ~p"/teams"}
     ]
   end
@@ -199,7 +200,7 @@ defmodule MapoWeb.Layouts do
         {gettext("Attempting to reconnect")}
         <.icon name="hero-arrow-path" class="ml-1 size-3 motion-safe:animate-spin" />
       </.flash>
-
+      
       <.flash
         id="server-error"
         kind={:error}

@@ -105,6 +105,18 @@ defmodule Mapo.MapoCore do
     get("/vivienda/municipios", params)
   end
 
+  @doc """
+  Vista de riesgos: cada peligro de una zona por separado, con la gente que
+  vive dentro y cerca. `zona` es `%{cve_ent:, cve_mun:}` o
+  `%{lon:, lat:, radio_m:}`. Un municipio grande tarda varios segundos.
+  """
+  def riesgos_zona(zona, cerca_m) do
+    params =
+      zona |> Map.take([:cve_ent, :cve_mun, :lon, :lat, :radio_m]) |> Map.put(:cerca_m, cerca_m)
+
+    get("/riesgos/zona", Enum.to_list(params), receive_timeout: 120_000)
+  end
+
   @doc "SHF, SNIIV, Intercensal 2025 y ENVI de un municipio, cada una con su nivel."
   def vivienda_ficha(cve_ent, cve_mun),
     do: get("/vivienda/ficha", cve_ent: cve_ent, cve_mun: cve_mun)
@@ -262,10 +274,10 @@ defmodule Mapo.MapoCore do
   defp maybe_put(params, _key, nil), do: params
   defp maybe_put(params, key, value), do: params ++ [{key, value}]
 
-  defp get(path, params) do
+  defp get(path, params, extra \\ []) do
     opts =
       [base_url: Application.fetch_env!(:mapo, :mapo_core_url), url: path, params: params] ++
-        Application.get_env(:mapo, :mapo_core_req_options, [])
+        extra ++ Application.get_env(:mapo, :mapo_core_req_options, [])
 
     request(Req.get(opts))
   end

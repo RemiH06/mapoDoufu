@@ -27,6 +27,7 @@ import topbar from "../vendor/topbar"
 import {CollabMap} from "./collab_map"
 import {MapaTecnico} from "./mapa_tecnico"
 import {LogisticaMap} from "./logistica_map"
+import {RiesgosMapa} from "./riesgos_mapa"
 
 const csrfToken = document.querySelector("meta[name='csrf-token']").getAttribute("content")
 const liveSocket = new LiveSocket("/live", Socket, {
@@ -37,6 +38,7 @@ const liveSocket = new LiveSocket("/live", Socket, {
     CollabMap,
     MapaTecnico,
     LogisticaMap,
+    RiesgosMapa,
   },
 })
 

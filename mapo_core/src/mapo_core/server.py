@@ -11,7 +11,7 @@ from fastapi.responses import JSONResponse, Response
 from psycopg_pool import AsyncConnectionPool
 from pydantic import BaseModel, Field
 
-from mapo_core import buscador, consultas, cruce, datos_geo, datos_propios, localidades, vivienda_vista
+from mapo_core import buscador, consultas, cruce, datos_geo, datos_propios, localidades, riesgos, vivienda_vista
 from mapo_core.coloreado_mapa import PoligonoColoreable, colorear_mapa
 from mapo_core.consultas import INDICADORES_CHOROPLETH, TOLERANCIA_SIMPLIFICACION as _TOLERANCIA_SIMPLIFICACION
 from mapo_core.consultas import feature as _feature
@@ -786,3 +786,25 @@ async def vivienda_ficha(
     if ficha is None:
         raise HTTPException(404, "municipio no encontrado")
     return ficha
+
+
+@app.get("/riesgos/zona")
+async def riesgos_zona(
+    cve_ent: str | None = Query(default=None, pattern=r"^\d{2}$"),
+    cve_mun: str | None = Query(default=None, pattern=r"^\d{3}$"),
+    lon: float | None = Query(default=None, ge=-119, le=-85),
+    lat: float | None = Query(default=None, ge=14, le=33.5),
+    radio_m: float | None = Query(default=None, ge=100, le=riesgos.RADIO_MAX_M),
+    cerca_m: int = Query(default=1000),
+) -> dict:
+    """Cada peligro de la zona por separado, con la gente que vive dentro y cerca.
+    Ver docs/producto/vista-riesgos.md."""
+    try:
+        zona = riesgos.zona_valida(cve_ent, cve_mun, lon, lat, radio_m)
+        cerca = riesgos.cerca_valido(cerca_m)
+    except riesgos.ZonaInvalida as exc:
+        raise HTTPException(422, str(exc)) from None
+    resultado = await riesgos.resumen(zona, cerca)
+    if resultado is None:
+        raise HTTPException(404, "municipio no encontrado")
+    return resultado
