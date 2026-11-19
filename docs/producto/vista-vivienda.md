@@ -69,5 +69,6 @@ punteados y se cuentan aparte en la escala.
   (4 páginas, 2026) solo dice "zonas metropolitanas". La página de precios del
   SNIIV dice que la delimitación es la del Sistema Urbano Nacional 2018, pero su
   catálogo municipal solo está en PDF y no se pudo bajar. Usarlo sería suponer
-  que el SNIIV describe bien al SHF: falta confirmarlo con SHF o con el catálogo.
+  que el SNIIV describe bien al SHF. Decisión (2026-11-19): preguntarle a SHF por
+  transparencia y no suponer la delimitación mientras tanto.
 - Rezago habitacional municipal del SNIIV, si hace falta (`steps.md`, sesión 20).
