@@ -29,6 +29,7 @@ cómo detectarlo, en `../producto/pipeline-datos.md`.
 | 4. Imágenes | `uv run --script scripts/ambiental/imagenes.py --salida SALIDA/imagenes --caja=O,S,E,N --epsg 326ZZ --worldcover --bandas INICIO/FIN --lst AAAA/AAAA --indices AAAA-MM/AAAA-MM` | `procedencia_imagenes.csv`: cada escena (ID del STAC de Planetary Computer, fecha, nubosidad, mosaico) por producto y por bloque |
 | 4b. Dosel (zona urbana) | `uv run --script scripts/ambiental/dosel.py --salida SALIDA/imagenes --caja=O,S,E,N --epsg 326ZZ` | `procedencia_dosel.csv` (mosaicos y URL), `dosel_fecha.tif` (fecha de la imagen de origen) |
 | 4c. Edificios | `uv run --script scripts/ambiental/edificios.py --salida SALIDA --caja=O,S,E,N` | `procedencia_edificios.csv` (versión de Overture, consulta y edificios por fuente) |
+| 4d. Especies (arborización) | `uv run --script scripts/ambiental/especies.py --salida SALIDA/especies --caja=O,S,E,N [--radio-km 30]` | `procedencia_especies.csv` (consulta de GBIF, cuadros, licencias, distribución) y `metodo_enciclovida` por especie |
 | 5. Para Mapo | `uv run --script scripts/para_mapo.py SALIDA SALIDA_MAPO` | `para_mapo.csv`: archivo, qué es, qué se recortó, tamaño, si cabe. Cada capa vectorial lleva por renglón `fuente`, `url`, `fecha_dato`, `fecha_consulta` y `nivel`, sacadas de los dos CSV del paso 3 |
 
 El recorte también deja las manzanas con su censo (si `poblacion/manzanas_EE_2020.zip`
