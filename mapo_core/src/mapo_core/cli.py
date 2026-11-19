@@ -212,6 +212,44 @@ async def _taxonomia(args) -> None:
         print(f"  {g}. {descripcion} ({len(claves)}): {', '.join(claves[:12])}{' ...' if len(claves) > 12 else ''}")
 
 
+AMBIENTALES = {
+    "acuiferos": ("ambiental_agua", "cargar_acuiferos"),
+    "renameca": ("ambiental_agua", "cargar_renameca"),
+    "repda": ("ambiental_agua", "cargar_repda"),
+    "retc": ("ambiental_emisiones", "cargar_retc"),
+    "siap": ("ambiental_municipal", "cargar_siap"),
+    "firms": ("ambiental_emisiones", "cargar_firms"),
+    "uso_suelo": ("ambiental_territorio", "cargar_uso_suelo"),
+    "anp": ("ambiental_territorio", "cargar_anp"),
+    "sequia": ("ambiental_municipal", "cargar_sequia"),
+    "defunciones": ("ambiental_municipal", "cargar_defunciones"),
+}
+
+
+async def _ambiental(args) -> None:
+    import importlib
+    import json
+    import time
+    from pathlib import Path
+
+    from mapo_core.crudos import CrudoFaltante
+
+    await inicializar_esquema()
+    crudos = Path(args.crudos)
+    fuentes = args.fuente.split(",") if args.fuente else list(AMBIENTALES)
+    desconocidas = [f for f in fuentes if f not in AMBIENTALES]
+    if desconocidas:
+        raise SystemExit(f"Fuentes desconocidas: {', '.join(desconocidas)}. Hay: {', '.join(AMBIENTALES)}")
+    for fuente in fuentes:
+        modulo, funcion = AMBIENTALES[fuente]
+        inicio = time.monotonic()
+        try:
+            resumen = await getattr(importlib.import_module(f"mapo_core.{modulo}"), funcion)(crudos)
+        except CrudoFaltante as exc:
+            raise SystemExit(f"No se cargó {fuente}: {exc}") from None
+        print(f"{fuente} ({time.monotonic() - inicio:.0f} s): {json.dumps(resumen, ensure_ascii=False, default=str)}")
+
+
 async def _status(_args) -> None:
     await inicializar_esquema()
     pool = await get_pool()
@@ -220,6 +258,10 @@ async def _status(_args) -> None:
         "fuente_denue_negocios", "fuente_enigh_concentradohogar", "fuente_sesnsp_delitos_municipal",
         "fuente_enoe_tasa_desocupacion", "fuente_shf_ipv", "fuente_sniiv_financiamiento",
         "fuente_eic2025_vivienda", "fuente_envi2020_entidad",
+        "fuente_acuiferos", "fuente_acuiferos_ordenamientos", "fuente_piezometria", "fuente_renameca_sitios",
+        "fuente_repda_descargas", "fuente_retc_establecimientos", "fuente_retc_emisiones", "fuente_siap_agricola",
+        "fuente_firms_focos", "fuente_uso_suelo", "fuente_anp", "fuente_sequia_municipal",
+        "fuente_defunciones_municipal",
     ]
     async with pool.connection() as conn:
         for tabla in tablas:
@@ -308,6 +350,14 @@ def _construir_parser() -> argparse.ArgumentParser:
     )
     p_envi.add_argument("--archivo", default=None, help="ZIP ya bajado (conjunto_de_datos_envi_2020_csv.zip)")
     p_envi.set_defaults(fn=_envi)
+
+    p_amb = subparsers.add_parser(
+        "ambiental", help="Carga las fuentes ambientales desde los crudos ya bajados (reemplaza las de antes)"
+    )
+    p_amb.add_argument("--crudos", required=True,
+                       help="Carpeta de scripts/crudos-ambientales.sh dentro del contenedor, ej. /app/data/crudos-ambiental")
+    p_amb.add_argument("--fuente", default=None, help=f"Separadas por coma (default: todas): {', '.join(AMBIENTALES)}")
+    p_amb.set_defaults(fn=_ambiental)
 
     p_viv = subparsers.add_parser(
         "dataset_vivienda", help="Arma el dataset tipo Boston Housing por AGEB de una zona metropolitana"

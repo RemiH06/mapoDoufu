@@ -605,12 +605,20 @@ class Paquete:
         from rasterio.merge import merge
 
         o, s, e, n = self.caja
-        mosaicos = []
+        mosaicos, faltan = [], False
         for lat in range(math.floor(s), math.floor(n) + 1):
             for lon in range(math.floor(o), math.floor(e) + 1):
                 p = self.crudos / "relieve" / f"Copernicus_DSM_COG_10_N{lat:02d}_00_W{abs(lon):03d}_00_DEM.tif"
                 if p.exists():
                     mosaicos.append(rasterio.open(p))
+                else:
+                    faltan = True
+        origen = f"{len(mosaicos)} mosaicos locales"
+        if faltan:
+            # Los crudos solo traen Jalisco: el resto del país se lee del STAC de
+            # Planetary Computer, la misma colección, leyendo solo la ventana.
+            mosaicos = [rasterio.open(u) for u in self.relieve_stac()]
+            origen = f"{len(mosaicos)} mosaicos de Planetary Computer (cop-dem-glo-30)"
         if not mosaicos:
             self.anotar("relieve", 0, "relieve.tif", "sin mosaicos para la caja")
             return
@@ -619,7 +627,20 @@ class Paquete:
                                         "driver": "GTiff", "compress": "deflate", "tiled": True}
         with rasterio.open(self.salida / "relieve.tif", "w", **perfil) as dst:
             dst.write(arr)
-        self.anotar("relieve", arr.shape[1] * arr.shape[2], "relieve.tif", f"(píxeles; {len(mosaicos)} mosaicos)")
+        self.anotar("relieve", arr.shape[1] * arr.shape[2], "relieve.tif", f"(píxeles; {origen})")
+
+    def relieve_stac(self) -> list[str]:
+        """URL firmadas (/vsicurl/) de los mosaicos GLO-30 que tocan la caja. La firma
+        dura cerca de una hora: alcanza para leer una caja de un municipio."""
+        api = "https://planetarycomputer.microsoft.com/api"
+        cuerpo = json.dumps({"collections": ["cop-dem-glo-30"], "bbox": list(self.caja), "limit": 100}).encode()
+        req = urllib.request.Request(f"{api}/stac/v1/search", data=cuerpo,
+                                     headers={"Content-Type": "application/json", "User-Agent": "mapo-recorte/1.0"})
+        with urllib.request.urlopen(req, timeout=120) as r:
+            items = json.load(r)["features"]
+        with urllib.request.urlopen(f"{api}/sas/v1/token/cop-dem-glo-30", timeout=60) as r:
+            token = json.load(r)["token"]
+        return [f"/vsicurl/{i['assets']['data']['href']}?{token}" for i in items]
 
     # --- orquestación ----------------------------------------------------
     def intentar(self, capa: str, fn) -> None:

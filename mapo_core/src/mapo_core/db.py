@@ -245,6 +245,200 @@ CREATE TABLE IF NOT EXISTS fuente_envi2020_entidad (
     PRIMARY KEY (cve_ent, indicador)
 );
 
+-- Ambientales (sesión 22). Cargadas de los crudos (`cli ambiental`). Ver
+-- docs/fuentes/ambientales.md y la ficha de cada fuente.
+CREATE TABLE IF NOT EXISTS fuente_acuiferos (
+    clave            TEXT PRIMARY KEY,   -- CLV_ACUI de Conagua (4 dígitos)
+    nombre           TEXT NOT NULL,
+    cve_ent          TEXT NOT NULL,      -- estado al que Conagua asigna el acuífero
+    region           TEXT,               -- región hidrológico-administrativa
+    area_km2         DOUBLE PRECISION,
+    recarga          DOUBLE PRECISION,   -- hm³/año, todas las columnas de volumen
+    descarga_natural DOUBLE PRECISION,   -- descarga natural comprometida (DNC)
+    vcas             DOUBLE PRECISION,   -- concesionado o asignado en el REPDA
+    veala            DOUBLE PRECISION,   -- en libre alumbramiento
+    vaptyr           DOUBLE PRECISION,   -- pendiente de título y registro
+    vaprh            DOUBLE PRECISION,   -- por reservas e instrumentos
+    veas             DOUBLE PRECISION,   -- extracción total (suma de los cuatro)
+    disponibilidad   DOUBLE PRECISION NOT NULL,  -- DMA: R - DNC - VEAS, negativa es déficit
+    fecha_dof        DATE NOT NULL,
+    geom             geometry(MultiPolygon, 4326),
+    actualizado      TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS idx_acuiferos_geom ON fuente_acuiferos USING GIST (geom);
+
+CREATE TABLE IF NOT EXISTS fuente_acuiferos_ordenamientos (
+    id           BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    tipo         TEXT NOT NULL,          -- veda, suspension, reglamento
+    nombre       TEXT NOT NULL,
+    nombre_dof   TEXT,
+    fecha_dof    DATE,
+    clave_acuifero TEXT,
+    clasificacion TEXT,
+    url_dof      TEXT,
+    geom         geometry(MultiPolygon, 4326),
+    actualizado  TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS idx_acu_ord_geom ON fuente_acuiferos_ordenamientos USING GIST (geom);
+
+CREATE TABLE IF NOT EXISTS fuente_piezometria (
+    pozo          TEXT PRIMARY KEY,
+    nombre        TEXT,
+    clave_acuifero TEXT,
+    elev_brocal   DOUBLE PRECISION,      -- m sobre el nivel del mar
+    pne           JSONB NOT NULL,        -- {"1996": m, ...} profundidad al nivel estático
+    geom          geometry(Point, 4326) NOT NULL,
+    actualizado   TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS idx_piezometria_geom ON fuente_piezometria USING GIST (geom);
+
+CREATE TABLE IF NOT EXISTS fuente_renameca_sitios (
+    clave        TEXT NOT NULL,
+    tipo         TEXT NOT NULL,          -- superficial, subterranea
+    nombre       TEXT,
+    organismo    TEXT,
+    estado       TEXT,
+    municipio    TEXT,
+    cuenca       TEXT,                   -- superficial: cuenca; subterránea: acuífero
+    cuerpo       TEXT,
+    subtipo      TEXT,
+    periodo      TEXT NOT NULL,          -- '2012-2025': cada fila resume el periodo
+    semaforo     TEXT,                   -- el de Conagua, tal cual
+    parametros   JSONB NOT NULL,         -- {"DBO_mg/L": {"valor": "<2", "calidad": "Excelente"}}
+    geom         geometry(Point, 4326),
+    actualizado  TIMESTAMPTZ NOT NULL DEFAULT now(),
+    PRIMARY KEY (tipo, clave)
+);
+CREATE INDEX IF NOT EXISTS idx_renameca_geom ON fuente_renameca_sitios USING GIST (geom);
+
+CREATE TABLE IF NOT EXISTS fuente_repda_descargas (
+    id            BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    titulo        TEXT NOT NULL,
+    anexo         TEXT,
+    uso           TEXT,                  -- uso que ampara el título
+    cve_ent       TEXT,
+    cve_mun       TEXT,
+    municipio     TEXT,
+    cuenca        TEXT,
+    volumen_anual DOUBLE PRECISION,      -- m³
+    procedencia   TEXT,
+    cuerpo_receptor TEXT,
+    tipo_descarga TEXT,
+    afluente      TEXT,
+    forma         TEXT,
+    fecha_registro DATE,
+    geom          geometry(Point, 4326),
+    actualizado   TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS idx_repda_desc_geom ON fuente_repda_descargas USING GIST (geom);
+
+CREATE TABLE IF NOT EXISTS fuente_retc_establecimientos (
+    anio         INTEGER NOT NULL,
+    nra          TEXT NOT NULL,          -- número de registro ambiental
+    scian        TEXT,
+    actividad    TEXT,
+    sector       TEXT,
+    estado       TEXT,
+    municipio    TEXT,
+    geom         geometry(Point, 4326),
+    actualizado  TIMESTAMPTZ NOT NULL DEFAULT now(),
+    PRIMARY KEY (anio, nra)
+);
+CREATE INDEX IF NOT EXISTS idx_retc_est_geom ON fuente_retc_establecimientos USING GIST (geom);
+
+CREATE TABLE IF NOT EXISTS fuente_retc_emisiones (
+    anio           INTEGER NOT NULL,
+    nra            TEXT NOT NULL,
+    sustancia      TEXT NOT NULL,
+    cas            TEXT,
+    aire_kg        DOUBLE PRECISION,
+    agua_kg        DOUBLE PRECISION,
+    suelo_kg       DOUBLE PRECISION,
+    transferencias JSONB NOT NULL,       -- {"reciclado": kg, ...}
+    actualizado    TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS idx_retc_emi ON fuente_retc_emisiones (anio, nra);
+
+CREATE TABLE IF NOT EXISTS fuente_siap_agricola (
+    anio         INTEGER NOT NULL,
+    cve_ent      TEXT NOT NULL,
+    cve_mun      TEXT NOT NULL,
+    ciclo        TEXT NOT NULL,
+    modalidad    TEXT NOT NULL,          -- Riego o Temporal
+    cultivo      TEXT NOT NULL,
+    unidad       TEXT NOT NULL,          -- del volumen de producción
+    sembrada     DOUBLE PRECISION,       -- ha
+    cosechada    DOUBLE PRECISION,
+    siniestrada  DOUBLE PRECISION,
+    volumen      DOUBLE PRECISION,
+    valor        DOUBLE PRECISION,       -- pesos de cada año, sin deflactar
+    actualizado  TIMESTAMPTZ NOT NULL DEFAULT now(),
+    PRIMARY KEY (anio, cve_ent, cve_mun, ciclo, modalidad, cultivo, unidad)
+);
+CREATE INDEX IF NOT EXISTS idx_siap_mun ON fuente_siap_agricola (cve_ent, cve_mun);
+
+CREATE TABLE IF NOT EXISTS fuente_firms_focos (
+    sensor       TEXT NOT NULL,          -- VIIRS_SNPP o MODIS
+    fecha        DATE NOT NULL,
+    hora         TEXT NOT NULL,          -- HHMM en UTC, como la publica FIRMS
+    confianza    TEXT,                   -- VIIRS: l, n, h; MODIS: 0 a 100
+    frp          DOUBLE PRECISION,       -- potencia radiativa, MW
+    dia_noche    TEXT,
+    tipo         SMALLINT,               -- 0 vegetación, 1 volcán, 2 fuente fija, 3 costa
+    geom         geometry(Point, 4326) NOT NULL,
+    actualizado  TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS idx_firms_geom  ON fuente_firms_focos USING GIST (geom);
+CREATE INDEX IF NOT EXISTS idx_firms_fecha ON fuente_firms_focos (sensor, fecha);
+
+CREATE TABLE IF NOT EXISTS fuente_uso_suelo (
+    serie        SMALLINT NOT NULL,      -- 6 (2014) o 7 (2018)
+    descripcion  TEXT NOT NULL,
+    codigo       TEXT,
+    geom         geometry(MultiPolygon, 4326) NOT NULL,
+    actualizado  TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS idx_uso_suelo_geom ON fuente_uso_suelo USING GIST (geom);
+CREATE INDEX IF NOT EXISTS idx_uso_suelo_serie ON fuente_uso_suelo (serie);
+
+CREATE TABLE IF NOT EXISTS fuente_anp (
+    id           TEXT PRIMARY KEY,
+    nombre       TEXT NOT NULL,
+    categoria    TEXT,
+    estados      TEXT,
+    superficie_ha DOUBLE PRECISION,      -- la del decreto, terrestre más marina
+    terrestre_ha DOUBLE PRECISION,
+    marina_ha    DOUBLE PRECISION,
+    primer_decreto DATE,
+    ultimo_dof   DATE,
+    geom         geometry(MultiPolygon, 4326),
+    actualizado  TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS idx_anp_geom ON fuente_anp USING GIST (geom);
+
+CREATE TABLE IF NOT EXISTS fuente_sequia_municipal (
+    cve_ent      TEXT NOT NULL,
+    cve_mun      TEXT NOT NULL,
+    fecha        DATE NOT NULL,          -- fecha de corte del Monitor
+    categoria    TEXT NOT NULL,          -- D0 a D4, o 'sin' (sin anomalía)
+    actualizado  TIMESTAMPTZ NOT NULL DEFAULT now(),
+    PRIMARY KEY (cve_ent, cve_mun, fecha)
+);
+CREATE INDEX IF NOT EXISTS idx_sequia_fecha ON fuente_sequia_municipal (fecha);
+
+CREATE TABLE IF NOT EXISTS fuente_defunciones_municipal (
+    anio_registro INTEGER NOT NULL,
+    cve_ent      TEXT NOT NULL,          -- de residencia habitual; '99' no especificado
+    cve_mun      TEXT NOT NULL,
+    causa        TEXT NOT NULL,          -- CIE-10 a tres caracteres (C34, N18...)
+    sexo         SMALLINT NOT NULL,      -- 1 hombre, 2 mujer, 9 no especificado
+    edad_grupo   SMALLINT NOT NULL,      -- edad_agru de INEGI (1 menores de un año ... 30 no especificada)
+    defunciones  INTEGER NOT NULL,
+    actualizado  TIMESTAMPTZ NOT NULL DEFAULT now(),
+    PRIMARY KEY (anio_registro, cve_ent, cve_mun, causa, sexo, edad_grupo)
+);
+CREATE INDEX IF NOT EXISTS idx_defun_mun ON fuente_defunciones_municipal (cve_ent, cve_mun);
+
 CREATE TABLE IF NOT EXISTS descargas_checkpoint (
     clave         TEXT PRIMARY KEY,
     completado_en TIMESTAMPTZ NOT NULL DEFAULT now()
