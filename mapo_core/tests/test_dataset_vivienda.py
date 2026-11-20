@@ -52,18 +52,18 @@ def _fila(cve_mun, x0, y0):
     return {"cve_mun": cve_mun, "_geom": box(x0, y0, x0 + 1, y0 + 1).wkb}
 
 
-def test_medv_por_clase_y_sin_relleno():
+def test_suelo_por_clase_y_sin_relleno():
     filas = [_fila("039", 0, 0), _fila("039", 5, 5), _fila("120", 10, 10)]
     v = lambda clase, valor, x, y: {"municipio": "14039", "anio": 2020, "clase": clase, "valor": valor, "lon": x, "lat": y}
     valores = [v("zona", 100, 0.5, 0.5), v("zona", 300, 0.6, 0.6), v("calle", 900, 0.2, 0.2),
                v("calle", 1000, 0.3, 0.3), v("calle", 1100, 0.4, 0.4), v("calle", 50, 5.5, 5.5)]
-    dv.asignar_medv(filas, valores, "14")
+    dv.asignar_suelo(filas, valores, "14")
     a, b, c = filas
-    assert (a["medv"], a["medv_n"], a["medv_calle"], a["medv_calle_n"]) == (200.0, 2, 1000.0, 3)
+    assert (a["suelo_m2"], a["suelo_n"], a["suelo_calle_m2"], a["suelo_calle_n"]) == (200.0, 2, 1000.0, 3)
     # Una sola etiqueta de tramo no basta, y sin zona no se inventa nada.
-    assert b["medv"] is None and b["medv_calle"] is None and "sin valor de zona" in b["medv_metodo"]
+    assert b["suelo_m2"] is None and b["suelo_calle_m2"] is None and "sin valor de zona" in b["suelo_metodo"]
     # Municipio sin tabla: se dice, no se deja en cero.
-    assert c["medv"] is None and c["medv_n"] is None and "sin tabla" in c["medv_metodo"]
+    assert c["suelo_m2"] is None and c["suelo_n"] is None and "sin tabla" in c["suelo_metodo"]
 
 
 def test_chas_y_rad_desde_overpass(tmp_path):
@@ -141,19 +141,19 @@ def test_nox_toma_la_celda_del_punto(tmp_path):
     assert (filas[2]["nox"], filas[2]["nox_obs"]) == (40.0, 8)
 
 
-def test_medv_mismo_anio_solo_ese_anio():
+def test_suelo_mismo_anio_solo_ese_anio():
     filas = [_fila("039", 0, 0), _fila("124", 5, 5)]
     v = lambda anio, valor: {"municipio": "14039", "anio": anio, "clase": "", "valor": valor, "lon": 0.5, "lat": 0.5}
-    dv.asignar_medv_mismo_anio(filas, [v(2026, 100), v(2026, 200), v(2026, 300), v(2020, 9999)], "14", 2026)
-    assert (filas[0]["medv_2026"], filas[0]["medv_2026_n"]) == (200.0, 3)  # el de 2020 no entra
-    assert filas[1]["medv_2026"] is None and filas[1]["medv_2026_n"] is None  # municipio sin tabla 2026
+    dv.asignar_suelo_mismo_anio(filas, [v(2026, 100), v(2026, 200), v(2026, 300), v(2020, 9999)], "14", 2026)
+    assert (filas[0]["suelo_2026_m2"], filas[0]["suelo_2026_n"]) == (200.0, 3)  # el de 2020 no entra
+    assert filas[1]["suelo_2026_m2"] is None and filas[1]["suelo_2026_n"] is None  # municipio sin tabla 2026
 
 
-def test_medv_no_cruza_limites_municipales():
+def test_suelo_no_cruza_limites_municipales():
     # Etiqueta de la tabla de Guadalajara que cae en una AGEB de Tlaquepaque.
     filas = [_fila("098", 0, 0)]
     v = {"municipio": "14039", "anio": 2020, "clase": "zona", "valor": 5000, "lon": 0.5, "lat": 0.5}
-    dv.asignar_medv(filas, [v], "14")
-    assert filas[0]["medv"] is None and "sin tabla" in filas[0]["medv_metodo"]
-    dv.asignar_medv_mismo_anio(filas, [{**v, "anio": 2026}] * 3, "14", 2026)
-    assert filas[0]["medv_2026"] is None
+    dv.asignar_suelo(filas, [v], "14")
+    assert filas[0]["suelo_m2"] is None and "sin tabla" in filas[0]["suelo_metodo"]
+    dv.asignar_suelo_mismo_anio(filas, [{**v, "anio": 2026}] * 3, "14", 2026)
+    assert filas[0]["suelo_2026_m2"] is None

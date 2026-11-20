@@ -50,7 +50,7 @@ predictor de precio.
 
 | Boston | Columna | Cómo se calcula | Estado |
 |---|---|---|---|
-| MEDV | `medv`, `medv_calle` | Mediana del valor catastral de suelo ($/m²) de la AGEB: de zona y por tramo de calle, por separado | Guadalajara hecho; el resto, ver [MEDV](#medv-valor-catastral) |
+| MEDV | `medv`, `medv_m2` | Mediana del precio de oferta por vivienda (y por m² construido) de la AGEB, de los anuncios del IIEG repartidos por el área de su colonia, pesos de julio de 2024. Hasta la v7, `medv` era el valor catastral de suelo, hoy `suelo_m2` | Seis municipios; ver [MEDV](#medv-precio-de-oferta-iieg) |
 | CRIM | `crim` | Delitos del año base por 100 mil habitantes del municipio (SESNSP / censo). En Boston también era por municipio | Hecho |
 | ZN | `viv_ha` | Viviendas habitadas por hectárea. ZN es la parte del suelo zonificada para lote grande; la zonificación de los planes parciales no tiene descarga general, y la densidad mide lo mismo al revés | Sustituto |
 | INDUS | `indus` | Parte del personal ocupado en industria, mayoreo, transporte y agro (sectores de `rubros/sectores.csv`), con el personal estimado por el punto medio del estrato de DENUE | Hecho |
@@ -89,14 +89,38 @@ predictor de precio.
 - CRIM de Guadalajara en 2020: 39,698 delitos entre 1,385,629 habitantes da
   2,865 por 100 mil, el valor de la tabla.
 
-## MEDV: valor catastral
+## MEDV: precio de oferta (IIEG)
+
+Desde la v8 (2026-11-20), `medv` es la mediana del precio pedido por vivienda en
+los anuncios de venta que junta el IIEG (`../fuentes/iieg-oferta.md`). Antes era
+el valor catastral de suelo en $/m², que sigue en las columnas `suelo_*`. El
+cambio resuelve dos cosas: la unidad (pesos por vivienda, como el MEDV de
+Boston y como las cifras oficiales contra las que se calibra) y los años
+distintos (todos los anuncios son de julio de 2024).
+
+Columnas: `medv`, `medv_n` (anuncios efectivos), `medv_m2` (precio por m²
+construido), `pct_departamentos`, `medv_periodo` y `medv_metodo`. Junto a la
+tabla va `mercado_municipal.csv` con la media, la mediana y los cuartiles de
+cada municipio.
+
+Cobertura y validación de la v8: pendientes (la tabla se está armando).
+
+## Valor de suelo catastral (`suelo_m2`, MEDV hasta la v7)
+
+Las columnas `medv`, `medv_n`, `medv_calle`, `medv_calle_n`, `medv_anio`,
+`medv_metodo`, `medv_2026` y `medv_2026_n` de la v7 se llaman desde la v8
+`suelo_m2`, `suelo_n`, `suelo_calle_m2`, `suelo_calle_n`, `suelo_anio`,
+`suelo_metodo`, `suelo_2026_m2` y `suelo_2026_n`. Las opciones del comando
+`--medv` y `--medv-2026` son ahora `--suelo` y `--suelo-2026`. Lo que sigue
+describe cómo se arman.
 
 No hay precio de vivienda abierto por AGEB:
 
 - El índice de la SHF llega a municipio y sale de avalúos de crédito.
 - El registro de vivienda de EconLab (Banxico) es de acceso restringido.
 - Properati ya no publica México.
-- Los portales de anuncios prohíben la extracción en sus términos.
+- Los portales de anuncios prohíben la extracción en sus términos. El IIEG sí
+  publica lo que junta de ellos (ver arriba), pero solo para seis municipios.
 
 Lo más cercano son las **tablas de valores unitarios de suelo** que cada
 municipio publica para el predial y que aprueba el Congreso del estado: un valor
@@ -177,7 +201,7 @@ tocar las dependencias de `mapo_core`) y los datos en `mapo_core/data/catastro/`
 5. **Normalización:** pendiente. Hará falta al mezclar años (Zapopan es 2026):
    llevar los pesos al año base con los aumentos aprobados por el Congreso o el
    INPC.
-6. **Agregación por AGEB**, en `dataset_vivienda --medv valores.csv[,otro.csv]`:
+6. **Agregación por AGEB**, en `dataset_vivienda --suelo valores.csv[,otro.csv]`:
    - `medv`: mediana de los valores de **zona** dentro de la AGEB. Es el valor
      base de la colonia, lo más parecido al valor típico de Boston.
    - `medv_calle`: mediana de los valores por **tramo**, con 3 como mínimo. Los
@@ -190,7 +214,7 @@ tocar las dependencias de `mapo_core`) y los datos en `mapo_core/data/catastro/`
 C=mapo_core/data/catastro
 uv run --script scripts/catastro/extraer_pdf_mapa.py $C/crudos/guadalajara_2020.pdf   $C/etiquetas_14039_2020.csv --municipio 14039 --anio 2020
 uv run --script scripts/catastro/ubicar_pdf_mapa.py $C/etiquetas_14039_2020.csv   $C/crudos/osm_calles_gdl.json $C/ubicado_14039_2020 --epsg 32613 --zona-desde-tamano 10
-MSYS_NO_PATHCONV=1 docker compose exec mapo_core python -m mapo_core.cli dataset_vivienda   --estado 14 --municipios 002,039,044,051,070,097,098,101,120,124 --salida /app/data/vivienda_gdl   --medv /app/data/catastro/ubicado_14039_2020/valores.csv
+MSYS_NO_PATHCONV=1 docker compose exec mapo_core python -m mapo_core.cli dataset_vivienda   --estado 14 --municipios 002,039,044,051,070,097,098,101,120,124 --salida /app/data/vivienda_gdl   --suelo /app/data/catastro/ubicado_14039_2020/valores.csv
 ```
 
 **Para mantenerlo al día:** cada año, una fila por municipio en `fuentes.csv` y
@@ -483,4 +507,4 @@ Contra `medv`: `parques_ha_1km` 0.37, `restaurantes_cafes_1km` 0.37,
 ## Pendientes de las otras columnas
 
 - `dis_km` y `rad_km` por calle: la matriz de OSRM de las zonas candidatas.
-- `medv` de los otros ocho municipios de la ZMG (Tlaquepaque, Tonalá y Tlajomulco no publican sus tablas en línea).
+- `suelo_m2` de los otros ocho municipios de la ZMG (Tlaquepaque, Tonalá y Tlajomulco no publican sus tablas en línea).

@@ -6,7 +6,7 @@ valores de Jalisco) a una muestra de validación: un renglón por predio con su
 fraccionamiento, su valor unitario de terreno y el año (vigente o propuesto).
 
 La corrida no cubre el municipio: son unas decenas de predios de ejemplo. Sirve
-para medir el error de predicción de `medv` donde no hay tabla ubicada
+para medir el error de predicción de `suelo_m2` (el `medv` hasta la v7) donde no hay tabla ubicada
 (docs/producto/dataset-vivienda.md, "Para modelar").
 
     uv run --script scripts/catastro/corrida_valores.py ETIQUETAS_OCR.csv SALIDA.csv --paginas 82-86

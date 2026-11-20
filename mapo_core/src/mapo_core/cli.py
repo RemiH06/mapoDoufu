@@ -20,6 +20,7 @@ from mapo_core import (
     envi2020,
     precio_estimado,
     geo_downloader,
+    iieg_oferta,
     iter_downloader,
     rubros,
     sesnsp_ingesta,
@@ -173,11 +174,18 @@ async def _dataset_vivienda(args) -> None:
     from pathlib import Path
 
     municipios = [m.strip().zfill(3) for m in args.municipios.split(",")]
-    valores = dataset_vivienda.leer_valores([Path(r) for r in args.medv.split(",")]) if args.medv else []
-    valores_2026 = dataset_vivienda.leer_valores([Path(r) for r in args.medv_2026.split(",")]) if args.medv_2026 else []
+    valores = dataset_vivienda.leer_valores([Path(r) for r in args.suelo.split(",")]) if args.suelo else []
+    valores_2026 = dataset_vivienda.leer_valores([Path(r) for r in args.suelo_2026.split(",")]) if args.suelo_2026 else []
     ghsl = None
     if args.ghsl:
         ghsl = {a: next(Path(args.ghsl).glob(f"GHS_BUILT_S_E{a}_*.tif"), None) for a in (1975, 1990, 2020)}
+    oferta, municipal = None, None
+    if args.oferta:
+        if not args.oferta_colonias:
+            raise SystemExit("--oferta requiere --oferta-colonias (mapa_venta.shp del IIEG)")
+        anuncios = iieg_oferta.leer_anuncios(Path(args.oferta))
+        oferta = (anuncios, iieg_oferta.leer_colonias(Path(args.oferta_colonias)), args.oferta_periodo)
+        municipal = iieg_oferta.resumen_municipal(anuncios, args.oferta_periodo)
     filas, centros = await dataset_vivienda.construir(
         await get_pool(), args.estado, municipios, args.anio_crimen, valores,
         agua=Path(args.osm_agua) if args.osm_agua else None,
@@ -193,19 +201,22 @@ async def _dataset_vivienda(args) -> None:
             "ndvi": Path(args.ndvi) if args.ndvi else None,
             "lst": Path(args.lst) if args.lst else None,
         },
+        oferta=oferta,
     )
     if not filas:
         raise SystemExit("Ninguna AGEB con censo para esos municipios: revisa que el estado esté cargado.")
     dataset_vivienda.escribir(filas, centros, Path(args.salida), {
         "estado": args.estado, "municipios": ",".join(municipios),
         "anio_base_censo": 2020, "anio_crimen": args.anio_crimen, "agebs": len(filas),
-        "valores_catastrales": args.medv or "ninguno",
-        "valores_catastrales_2026": args.medv_2026 or "ninguno",
+        "valores_catastrales": args.suelo or "ninguno",
+        "valores_catastrales_2026": args.suelo_2026 or "ninguno",
         "osm_agua": args.osm_agua or "ninguno", "osm_vias": args.osm_vias or "ninguno",
         "ghsl": args.ghsl or "ninguno", "sep": args.sep or "ninguno", "no2": args.no2 or "ninguno",
         "predial": "predial_tablas.csv (leyes de ingresos 2026)",
         **{k: getattr(args, k) or "ninguno" for k in ("transporte", "osm_parques", "dem", "ndvi", "lst")},
-    })
+        "oferta_iieg": f"{args.oferta} ({args.oferta_periodo})" if args.oferta else "ninguno",
+        "oferta_colonias": args.oferta_colonias or "ninguno",
+    }, municipal)
     print(f"{len(filas)} AGEB en {args.salida}. Centros de empleo: {centros}")
     for columna, (p5, p50, p95) in dataset_vivienda.resumen(filas).items():
         print(f"  {columna:26} p5={p5:<12} mediana={p50:<12} p95={p95}")
@@ -386,11 +397,11 @@ def _construir_parser() -> argparse.ArgumentParser:
     p_viv.add_argument("--salida", required=True, help="Carpeta de salida (dentro del contenedor, ej. /app/data/...)")
     p_viv.add_argument("--anio-crimen", type=int, default=2020, help="Año de SESNSP para CRIM (default: 2020, el del censo)")
     p_viv.add_argument(
-        "--medv", default=None,
+        "--suelo", default=None,
         help="valores.csv de scripts/catastro/ubicar_pdf_mapa.py, separados por coma (rutas dentro del contenedor)",
     )
-    p_viv.add_argument("--medv-2026", default=None,
-                       help="valores.csv de tablas 2026, separados por coma (columna medv_2026)")
+    p_viv.add_argument("--suelo-2026", default=None,
+                       help="valores.csv de tablas 2026, separados por coma (columna suelo_2026_m2)")
     p_viv.add_argument("--osm-agua", default=None, help="JSON de Overpass con waterway (para CHAS)")
     p_viv.add_argument("--osm-vias", default=None, help="JSON de Overpass con highway=motorway|trunk (para RAD)")
     p_viv.add_argument("--ghsl", default=None, help="Carpeta con los GHS_BUILT_S de 1975, 1990 y 2020 (para AGE)")
@@ -401,6 +412,10 @@ def _construir_parser() -> argparse.ArgumentParser:
     p_viv.add_argument("--dem", default=None, help="DEM en grados (Copernicus GLO-30) que cubra la zona")
     p_viv.add_argument("--ndvi", default=None, help="s2_indices_<mes>.tif de scripts/ambiental/imagenes.py")
     p_viv.add_argument("--lst", default=None, help="lst_secas_<año>.tif de scripts/ambiental/imagenes.py")
+    p_viv.add_argument("--oferta", default=None,
+                       help="BD_SECTOR_INMOBILIARIO_<mes>_<año>.xlsx del IIEG (para MEDV, solo Jalisco)")
+    p_viv.add_argument("--oferta-colonias", default=None, help="mapa_venta.shp del IIEG")
+    p_viv.add_argument("--oferta-periodo", default="2024-07", help="Mes de los anuncios, AAAA-MM")
     p_viv.set_defaults(fn=_dataset_vivienda)
 
     subparsers.add_parser("status", help="Cuenta filas por tabla").set_defaults(fn=_status)

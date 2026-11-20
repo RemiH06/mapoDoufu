@@ -26,7 +26,7 @@ from psycopg_pool import AsyncConnectionPool
 from shapely import wkb
 from shapely.geometry import mapping
 
-from mapo_core import rubros, vivienda_entorno
+from mapo_core import iieg_oferta, rubros, vivienda_entorno
 
 # Personal ocupado estimado por estrato de DENUE: punto medio del rango. El
 # último estrato no tiene tope; 300 es una convención, se dice en el diccionario.
@@ -74,14 +74,20 @@ DICCIONARIO = [
     Columna("area_ha", "Superficie de la AGEB en hectáreas", "", "PostGIS, sobre el elipsoide", "AGEB", "calculado"),
     Columna("pobtot", "Población total", "", "Censo 2020, POBTOT", "AGEB", "directo"),
     Columna("viv_hab", "Viviendas particulares habitadas", "", "Censo 2020, VIVPAR_HAB", "AGEB", "directo"),
-    Columna("medv", "Mediana del valor catastral de suelo de zona, $/m², pesos del año de la tabla", "MEDV", "Tablas de valores municipales (scripts/catastro/fuentes.csv)", "AGEB", "mediana de las etiquetas de valor de zona que caen en la AGEB; ver medv_metodo"),
-    Columna("medv_n", "Etiquetas de valor de zona dentro de la AGEB", "", "Tablas de valores municipales", "AGEB", "conteo; una zona rotulada en dos hojas cuenta dos veces"),
-    Columna("medv_calle", "Mediana del valor catastral por tramo de calle, $/m²", "MEDV (alternativa)", "Tablas de valores municipales", "AGEB", f"mediana de las etiquetas de tramo; vacía con menos de {MIN_VALORES_CALLE}. Los corredores comerciales la suben"),
-    Columna("medv_calle_n", "Etiquetas de valor por tramo dentro de la AGEB", "", "Tablas de valores municipales", "AGEB", "conteo"),
-    Columna("medv_anio", "Año fiscal de la tabla de valores", "", "scripts/catastro/fuentes.csv", "municipio", "directo; tablas de años distintos no son comparables sin deflactar"),
+    Columna("medv", "Mediana del precio de oferta por vivienda (casas y departamentos en venta), pesos de medv_periodo", "MEDV", "IIEG, anuncios de portales inmobiliarios (BD_SECTOR_INMOBILIARIO) y polígonos de colonia (mapa_venta)", "AGEB", f"mediana ponderada de los anuncios de las colonias que tocan la AGEB; peso = parte del área de la colonia dentro de la AGEB; vacía con menos de {iieg_oferta.MIN_ANUNCIOS} anuncios efectivos; ver medv_metodo"),
+    Columna("medv_n", "Anuncios efectivos de la AGEB", "", "IIEG", "AGEB", "suma de los pesos; un anuncio de una colonia partida en dos AGEB cuenta en las dos en proporción"),
+    Columna("medv_m2", "Mediana del precio de oferta por m² construido, pesos de medv_periodo", "MEDV (por m²)", "IIEG", "AGEB", f"igual que medv con precio / m² de construcción ({iieg_oferta.M2_MIN} a {iieg_oferta.M2_MAX} m²)"),
+    Columna("pct_departamentos", "% de departamentos entre los anuncios efectivos", "", "IIEG", "AGEB", "ponderado igual que medv; el resto son casas"),
+    Columna("medv_periodo", "Mes de los anuncios", "", "IIEG", "municipio", "directo; vacío si el IIEG no cubre el municipio"),
     Columna("medv_metodo", "De dónde sale medv o por qué está vacío", "", "", "AGEB", "texto"),
-    Columna("medv_2026", "Mediana del valor catastral de suelo con las tablas de 2026, $/m² (zona y tramo juntos)", "MEDV (mismo año)", "Tablas de valores 2026: Guadalajara, Zapopan y Tonalá (expedientes de INFOLEJ y Zapopan)", "AGEB", "mediana de las etiquetas dentro, con 3 como mínimo; todas del mismo año fiscal, para comparar municipios"),
-    Columna("medv_2026_n", "Etiquetas de valor de 2026 dentro de la AGEB", "", "Tablas de valores 2026", "AGEB", "conteo; vacío si el municipio no tiene tabla 2026 ubicada"),
+    Columna("suelo_m2", "Mediana del valor catastral de suelo de zona, $/m², pesos del año de la tabla", "", "Tablas de valores municipales (scripts/catastro/fuentes.csv)", "AGEB", "mediana de las etiquetas de valor de zona que caen en la AGEB; ver suelo_metodo. Hasta la v7 se llamaba medv"),
+    Columna("suelo_n", "Etiquetas de valor de zona dentro de la AGEB", "", "Tablas de valores municipales", "AGEB", "conteo; una zona rotulada en dos hojas cuenta dos veces"),
+    Columna("suelo_calle_m2", "Mediana del valor catastral por tramo de calle, $/m²", "", "Tablas de valores municipales", "AGEB", f"mediana de las etiquetas de tramo; vacía con menos de {MIN_VALORES_CALLE}. Los corredores comerciales la suben"),
+    Columna("suelo_calle_n", "Etiquetas de valor por tramo dentro de la AGEB", "", "Tablas de valores municipales", "AGEB", "conteo"),
+    Columna("suelo_anio", "Año fiscal de la tabla de valores", "", "scripts/catastro/fuentes.csv", "municipio", "directo; tablas de años distintos no son comparables sin deflactar"),
+    Columna("suelo_metodo", "De dónde sale suelo_m2 o por qué está vacío", "", "", "AGEB", "texto"),
+    Columna("suelo_2026_m2", "Mediana del valor catastral de suelo con las tablas de 2026, $/m² (zona y tramo juntos)", "", "Tablas de valores 2026: Guadalajara, Zapopan y Tonalá (expedientes de INFOLEJ y Zapopan)", "AGEB", "mediana de las etiquetas dentro, con 3 como mínimo; todas del mismo año fiscal, para comparar municipios"),
+    Columna("suelo_2026_n", "Etiquetas de valor de 2026 dentro de la AGEB", "", "Tablas de valores 2026", "AGEB", "conteo; vacío si el municipio no tiene tabla 2026 ubicada"),
     Columna("crim", "Delitos registrados en el año base por 100 mil habitantes del municipio", "CRIM", "SESNSP, incidencia municipal; población del censo 2020", "municipio", "suma de cantidad del año base / POBTOT municipal × 100 000"),
     Columna("viv_ha", "Viviendas particulares habitadas por hectárea", "ZN (sustituto)", "Censo 2020 + área de la AGEB", "AGEB", "VIVPAR_HAB / area_ha. ZN de Boston es zonificación de lote grande: aquí la densidad, que va en sentido contrario"),
     Columna("indus", "Parte del personal ocupado en industria, mayoreo, transporte y agro", "INDUS", "DENUE (personal estimado por estrato)", "AGEB", "personal en sectores no minoristas / personal total de la AGEB; vacío si no hay negocios"),
@@ -397,8 +403,8 @@ def leer_valores(rutas: list[Path]) -> list[dict]:
     return valores
 
 
-def asignar_medv_mismo_anio(filas: list[dict], valores: list[dict], cve_ent: str, anio: int) -> None:
-    """`medv_<año>`: mediana de todas las etiquetas (zona y tramo juntas) de las tablas
+def asignar_suelo_mismo_anio(filas: list[dict], valores: list[dict], cve_ent: str, anio: int) -> None:
+    """`suelo_<año>_m2`: mediana de todas las etiquetas (zona y tramo juntas) de las tablas
     de un mismo año fiscal, para comparar municipios sin mezclar años. Las tablas
     escaneadas no distinguen zona de tramo, así que aquí tampoco."""
     from shapely import STRtree
@@ -415,12 +421,12 @@ def asignar_medv_mismo_anio(filas: list[dict], valores: list[dict], cve_ent: str
     for i, f in enumerate(filas):
         vals = por_ageb.get(i, [])
         con_tabla = cve_ent + f["cve_mun"] in municipios
-        f[f"medv_{anio}"] = float(np.median(vals)) if len(vals) >= MIN_VALORES_CALLE else None
-        f[f"medv_{anio}_n"] = len(vals) if con_tabla else None
+        f[f"suelo_{anio}_m2"] = float(np.median(vals)) if len(vals) >= MIN_VALORES_CALLE else None
+        f[f"suelo_{anio}_n"] = len(vals) if con_tabla else None
 
 
-def asignar_medv(filas: list[dict], valores: list[dict], cve_ent: str) -> None:
-    """Mediana por AGEB, por clase. Nunca rellena con vecinas: lo que falta se dice."""
+def asignar_suelo(filas: list[dict], valores: list[dict], cve_ent: str) -> None:
+    """Valor catastral de suelo: mediana por AGEB, por clase. Nunca rellena con vecinas: lo que falta se dice."""
     from shapely import STRtree
     from shapely.geometry import Point
 
@@ -439,17 +445,17 @@ def asignar_medv(filas: list[dict], valores: list[dict], cve_ent: str) -> None:
         anio = anio_por_mun.get(cve_ent + fila["cve_mun"])
         grupos = por_ageb.get(i, {"zona": [], "calle": []})
         zona, calle = grupos.get("zona", []), grupos.get("calle", [])
-        fila["medv_anio"] = anio
-        fila["medv_n"], fila["medv_calle_n"] = len(zona), len(calle)
-        fila["medv"] = float(np.median(zona)) if zona else None
-        fila["medv_calle"] = float(np.median(calle)) if len(calle) >= MIN_VALORES_CALLE else None
+        fila["suelo_anio"] = anio
+        fila["suelo_n"], fila["suelo_calle_n"] = len(zona), len(calle)
+        fila["suelo_m2"] = float(np.median(zona)) if zona else None
+        fila["suelo_calle_m2"] = float(np.median(calle)) if len(calle) >= MIN_VALORES_CALLE else None
         if anio is None:
-            fila["medv_metodo"] = "sin tabla de valores ubicada para este municipio"
-            fila["medv_n"] = fila["medv_calle_n"] = None
+            fila["suelo_metodo"] = "sin tabla de valores ubicada para este municipio"
+            fila["suelo_n"] = fila["suelo_calle_n"] = None
         elif zona:
-            fila["medv_metodo"] = f"mediana de {len(zona)} valores de zona, tabla {anio}"
+            fila["suelo_metodo"] = f"mediana de {len(zona)} valores de zona, tabla {anio}"
         else:
-            fila["medv_metodo"] = f"sin valor de zona dentro de la AGEB (tabla {anio}; {len(calle)} de tramo)"
+            fila["suelo_metodo"] = f"sin valor de zona dentro de la AGEB (tabla {anio}; {len(calle)} de tramo)"
 
 
 async def construir(pool: AsyncConnectionPool, cve_ent: str, municipios: list[str], anio_crimen: int = 2020,
@@ -457,7 +463,8 @@ async def construir(pool: AsyncConnectionPool, cve_ent: str, municipios: list[st
                     valores_2026: list[dict] | None = None,
                     ghsl: dict[int, Path | None] | None = None,
                     sep: Path | None = None, no2: Path | None = None,
-                    entorno: dict[str, Path | None] | None = None) -> tuple[list[dict], list[dict]]:
+                    entorno: dict[str, Path | None] | None = None,
+                    oferta: tuple[list, dict, str] | None = None) -> tuple[list[dict], list[dict]]:
     """Filas del dataset y los centros de empleo usados para DIS."""
     agebs = await _agebs(pool, cve_ent, municipios)
     negocios = await _negocios(pool, cve_ent, municipios)
@@ -510,8 +517,10 @@ async def construir(pool: AsyncConnectionPool, cve_ent: str, municipios: list[st
             **vivienda_entorno.censo_extra(d),
             "_geom": a["geom"],
         })
-    asignar_medv(filas, valores or [], cve_ent)
-    asignar_medv_mismo_anio(filas, valores_2026 or [], cve_ent, 2026)
+    asignar_suelo(filas, valores or [], cve_ent)
+    asignar_suelo_mismo_anio(filas, valores_2026 or [], cve_ent, 2026)
+    if oferta and cve_ent == "14":
+        iieg_oferta.asignar(filas, *oferta)
     asignar_osm(filas, agua, vias)
     if ghsl:
         asignar_ghsl(filas, ghsl)
@@ -534,9 +543,16 @@ async def construir(pool: AsyncConnectionPool, cve_ent: str, municipios: list[st
     return filas, centros
 
 
-def escribir(filas: list[dict], centros: list[dict], salida: Path, notas: dict) -> None:
-    """CSV para el modelo, GeoJSON para el SIG, diccionario y centros de empleo."""
+def escribir(filas: list[dict], centros: list[dict], salida: Path, notas: dict,
+             municipal: list[dict] | None = None) -> None:
+    """CSV para el modelo, GeoJSON para el SIG, diccionario, centros de empleo y,
+    si hay anuncios, el resumen municipal del IIEG."""
     salida.mkdir(parents=True, exist_ok=True)
+    if municipal:
+        with open(salida / "mercado_municipal.csv", "w", newline="", encoding="utf-8") as f:
+            w = csv.DictWriter(f, fieldnames=list(municipal[0]))
+            w.writeheader()
+            w.writerows(municipal)
     with open(salida / "vivienda_ageb.csv", "w", newline="", encoding="utf-8") as f:
         w = csv.DictWriter(f, fieldnames=COLUMNAS, extrasaction="ignore")
         w.writeheader()
@@ -566,7 +582,8 @@ def escribir(filas: list[dict], centros: list[dict], salida: Path, notas: dict) 
         "Documentación completa: docs/producto/dataset-vivienda.md del repo de Mapo.\n"
         "Atribución: censo 2020 y DENUE, INEGI; incidencia delictiva, SESNSP; calles y cauces,\n"
         "© colaboradores de OpenStreetMap (ODbL); superficie construida, JRC GHSL (CC BY 4.0);\n"
-        "valores catastrales, tablas de valores de cada municipio (ver medv_anio); predial, leyes\n"
+        "precios de oferta, IIEG con información de sitios web de venta de propiedades (medv);\n"
+        "valores catastrales, tablas de valores de cada municipio (ver suelo_anio); predial, leyes\n"
         "de ingresos municipales 2026; alumnos y docentes, SEP DGPPyEE (formato 911); NO2,\n"
         "Copernicus Sentinel-5P procesado por Mapo (contiene datos modificados de Copernicus).\n",
         encoding="utf-8",

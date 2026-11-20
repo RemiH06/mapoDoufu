@@ -36,6 +36,7 @@ Una por fuente: de dónde sale, cómo se carga, sus problemas conocidos y las ci
 - [ambientales.md](fuentes/ambientales.md): agua, acuíferos, descargas, emisiones, uso de suelo, incendios y más, en crudo, y cómo recortarlas a una zona como paquete para SIG.
 - [localidades.md](fuentes/localidades.md): las 189,432 localidades del Censo 2020 (ITER) de todo el país, con su punto, validadas contra los totales; destino de la distancia en Mapo.
 - [edificios.md](fuentes/edificios.md): huellas de edificios de Overture Maps (OSM, Microsoft y Google) recortadas a una caja, con su validación contra el censo por manzana.
+- [iieg-oferta.md](fuentes/iieg-oferta.md): precios de oferta de vivienda del IIEG por anuncio y colonia, seis municipios de la ZMG; el MEDV del dataset de vivienda desde la v8.
 - [shf.md](fuentes/shf.md): índice SHF de precios de la vivienda, trimestral desde 2005, por estado, 8 zonas metropolitanas y 74 municipios.
 - [sniiv.md](fuentes/sniiv.md): créditos y subsidios para vivienda por municipio y año (SNIIV), por organismo, destino y segmento de valor.
 - [eic2025.md](fuentes/eic2025.md): Intercensal 2025, bloque de vivienda por municipio (tenencia, escrituras, servicios) con su precisión.

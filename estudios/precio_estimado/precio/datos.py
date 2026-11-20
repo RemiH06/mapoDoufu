@@ -1,10 +1,16 @@
 """Carga del dataset de vivienda por AGEB y bloques espaciales.
 
-El objetivo es `log(medv)`: mediana del valor catastral de suelo de zona en la
-AGEB, $/m² en pesos del año de la tabla de su municipio (Guadalajara 2020;
-Zapopan, Tonalá e Ixtlahuacán 2026). Los años distintos los absorbe el efecto
-fijo por municipio. Las columnas de nivel municipal (crim, tax, ptratio) quedan
-fuera: con el efecto fijo no aportan nada.
+El objetivo es `log(medv)`. Su significado cambió con el dataset:
+
+- v7 (`precio_estimado.ipynb`, lo que está en producción): mediana del valor
+  catastral de suelo de zona, $/m² en pesos del año de la tabla de su municipio
+  (Guadalajara 2020; Zapopan, Tonalá e Ixtlahuacán 2026).
+- v8 (`modelos.ipynb`): mediana del precio de oferta por vivienda del IIEG, en
+  pesos de julio de 2024, en seis municipios. El suelo pasó a `suelo_m2`.
+
+Los años distintos los absorbe el efecto fijo por municipio. Las columnas de
+nivel municipal (crim, tax, ptratio) quedan fuera: con el efecto fijo no aportan
+nada.
 """
 
 from __future__ import annotations

@@ -32,10 +32,10 @@ pio.templates.default = "mapo"
 pio.renderers.default = "notebook_connected"
 
 
-def distribucion(v: pd.DataFrame) -> go.Figure:
-    fig = px.box(v, x="municipio", y="medv", points="outliers", log_y=True,
-                 title="Valor catastral de suelo por AGEB (escala logarítmica)")
-    fig.update_layout(xaxis_title="", yaxis_title="$/m², pesos del año de la tabla")
+def distribucion(v: pd.DataFrame, titulo: str = "Valor catastral de suelo por AGEB (escala logarítmica)",
+                 unidad: str = "$/m², pesos del año de la tabla") -> go.Figure:
+    fig = px.box(v, x="municipio", y="medv", points="outliers", log_y=True, title=titulo)
+    fig.update_layout(xaxis_title="", yaxis_title=unidad)
     return fig
 
 
