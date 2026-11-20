@@ -61,7 +61,9 @@ async def test_suelo_por_ageb_con_rango_y_sin_dato(conn, cliente):
             """INSERT INTO agebs (cvegeo, cve_ent, cve_mun, cve_loc, cve_ageb, geom)
                VALUES (%(c)s, '99', %(m)s, '0001', %(a)s, ST_Multi(ST_SetSRID(ST_GeomFromGeoJSON(%(g)s), 4326)))""",
             {"c": f["cvegeo"], "m": f["cve_mun"], "a": f["cvegeo"][9:],
-             "g": json.dumps(box(i, 0, i + 1, 1).__geo_interface__)},
+             # La estimada es más chica que la tolerancia de simplificación.
+             "g": json.dumps(box(i, 0, i + (0.0002 if f["fuente"] == "modelo" else 1),
+                                 0.0002 if f["fuente"] == "modelo" else 1).__geo_interface__)},
         )
         await conn.execute(
             f"INSERT INTO fuente_precio_estimado ({', '.join(precio_estimado.COLUMNAS)}) "
@@ -73,6 +75,7 @@ async def test_suelo_por_ageb_con_rango_y_sin_dato(conn, cliente):
 
     assert cuerpo["nivel"] == "AGEB" and "no precio de mercado" in cuerpo["metodo"]
     p = {f["properties"]["cvegeo"]: f["properties"] for f in cuerpo["features"]}
+    assert len(p) == 3  # ninguna AGEB se pierde al simplificar
     assert p["9903900010010"]["valor_choropleth"] == 3080 and p["9903900010010"]["fuente"] == "catastro"
     assert p["9903900010010"]["nomgeo"] == "AGEB 0010, Guadalajara"
     # Un rango no se vuelve color; viaja completo para la ventana.

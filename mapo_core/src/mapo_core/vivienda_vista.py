@@ -199,7 +199,8 @@ async def _suelo_agebs(pool: AsyncConnectionPool, cve_ent: str) -> list[dict]:
         cursor = await conn.execute(
             """SELECT p.cvegeo, a.cve_ageb, m.nombre, p.cve_mun, p.fuente, p.valor, p.rango_bajo,
                       p.rango_alto, p.anio_tabla, p.cobertura, p.n_base, p.version,
-                      ST_AsGeoJSON(ST_Simplify(a.geom, %(t)s), 5)
+                      -- true: una AGEB más chica que la tolerancia no se pierde (24 de la ZMG).
+                      ST_AsGeoJSON(ST_Simplify(a.geom, %(t)s, true), 5)
                FROM fuente_precio_estimado p
                JOIN agebs a ON a.cvegeo = p.cvegeo
                LEFT JOIN municipios m ON m.cve_ent = p.cve_ent AND m.cve_mun = p.cve_mun
