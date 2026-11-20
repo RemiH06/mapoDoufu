@@ -982,6 +982,70 @@ defmodule MapoWeb.MapaLive.IndexTest do
       refute html =~ ~s(id="ficha-vivienda")
     end
 
+    test "el valor de suelo va por AGEB y sin datos del estado lo dice", %{conn: conn} do
+      suelo = fn features ->
+        fn conn ->
+          case conn.request_path do
+            "/vivienda/catalogo" ->
+              Req.Test.json(conn, catalogo_vivienda())
+
+            "/vivienda/municipios" ->
+              Req.Test.json(conn, %{
+                "type" => "FeatureCollection",
+                "features" => features,
+                "indicador" => %{
+                  "clave" => "suelo_ageb",
+                  "fuente" => "Tablas de valores catastrales · Mapo",
+                  "etiqueta" => "Valor de suelo por AGEB",
+                  "unidad" => "$/m² del año de la tabla"
+                },
+                "nivel" => "AGEB",
+                "metodo" => "Valor catastral de suelo de zona, no precio de mercado ni avalúo."
+              })
+          end
+        end
+      end
+
+      lv =
+        montar_con_ubicacion(
+          conn,
+          suelo.([
+            %{
+              "properties" => %{
+                "cve_mun" => "039",
+                "valor_choropleth" => 3080,
+                "fuente" => "catastro"
+              },
+              "geometry" => %{}
+            },
+            %{"properties" => %{"cve_mun" => "098", "fuente" => "sin_base"}, "geometry" => %{}}
+          ])
+        )
+
+      lv |> element(".pestana[aria-controls=cinta-vivienda]") |> render_click()
+
+      html =
+        lv
+        |> form("#vivienda_capa_form", vivienda_capa: %{"indicador" => "eic_alqui"})
+        |> render_submit(%{vivienda_capa: %{"indicador" => "suelo_ageb"}})
+
+      assert_push_event(lv, "capa_vivienda", %{activa: true, etiqueta: "Valor de suelo por AGEB"})
+      assert html =~ "por AGEB."
+      assert html =~ "no precio de mercado ni avalúo"
+      assert html =~ "Toca una AGEB"
+      assert html =~ "sin dato: 1"
+
+      lv = montar_con_ubicacion(conn, suelo.([]))
+      lv |> element(".pestana[aria-controls=cinta-vivienda]") |> render_click()
+
+      html =
+        lv
+        |> form("#vivienda_capa_form", vivienda_capa: %{"indicador" => "eic_alqui"})
+        |> render_submit(%{vivienda_capa: %{"indicador" => "suelo_ageb"}})
+
+      assert html =~ "Todavía no hay valor de suelo por AGEB para ese estado."
+    end
+
     test "quitar apaga el acetato y su ficha", %{conn: conn} do
       lv = montar_vivienda(conn)
 

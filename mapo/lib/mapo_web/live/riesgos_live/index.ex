@@ -31,7 +31,7 @@ defmodule MapoWeb.RiesgosLive.Index do
     ~H"""
     <Layouts.app flash={@flash} current_scope={@current_scope} seccion="riesgos" full_width?={true}>
       <:membrete><span class="mano">Riesgos ambientales de una zona</span></:membrete>
-      
+
       <div
         id="riesgos-map"
         phx-hook="RiesgosMapa"
@@ -41,7 +41,7 @@ defmodule MapoWeb.RiesgosLive.Index do
         aria-label="Plano de la zona"
       >
       </div>
-      
+
       <section
         id="hoja"
         class={["hoja pegado riesgos", @plegada && "plegada"]}
@@ -50,7 +50,7 @@ defmodule MapoWeb.RiesgosLive.Index do
       >
         <div class="hoja-cab">
           <h1 id="t-hoja">Riesgos de la zona</h1>
-          
+
           <button
             type="button"
             class="chico plegar"
@@ -59,14 +59,14 @@ defmodule MapoWeb.RiesgosLive.Index do
           >
             {if @plegada, do: "Ver la hoja", else: "Plegar"}
           </button>
-           <span :if={@resultado} class="tipo">{cifra(@resultado["zona"]["km2"], 1)} km²</span>
+          <span :if={@resultado} class="tipo">{cifra(@resultado["zona"]["km2"], 1)} km²</span>
         </div>
-        
+
         <div class="riesgos-cuerpo">
           <p class="pista">
             Cada peligro va por separado, con su fuente y su fecha: aquí no hay índice. Cercanía no dice causa.
           </p>
-          
+
           <.form for={@form} id="riesgos_form" phx-change="cambiar" phx-submit="consultar">
             <.input
               field={@form[:modo]}
@@ -109,7 +109,7 @@ defmodule MapoWeb.RiesgosLive.Index do
                 Ese estado no tiene municipios cargados en Mapo: usa un círculo en el plano.
               </p>
             <% end %>
-            
+
             <.input
               field={@form[:cerca_m]}
               type="select"
@@ -122,9 +122,9 @@ defmodule MapoWeb.RiesgosLive.Index do
               </.button>
             </div>
           </.form>
-          
+
           <p :if={@error} class="aviso" role="alert">{@error}</p>
-          
+
           <div :if={@resultado} id="riesgos-resultado" class="riesgos-resultado">
             <.poblacion
               titulo={titulo_poblacion(@resultado)}
@@ -133,22 +133,22 @@ defmodule MapoWeb.RiesgosLive.Index do
             />
             <article :for={b <- @resultado["bloques"]} id={"bloque-#{b["clave"]}"} class="bloque">
               <h2>{b["titulo"]}</h2>
-              
+
               <p class="procedencia">
                 {b["fuente"]}<span :if={b["fecha_dato"] not in [nil, ""]}> · {b["fecha_dato"]}</span>
                 · {b["nivel"]}
               </p>
-              
+
               <ul>
                 <li :for={h <- b["hechos"]}>{h}</li>
               </ul>
-              
+
               <p :if={cerca = b["poblacion_cerca"]} class="cerca">
                 {cifra_o_nada(cerca["grupos"]["POBTOT"]["valor"])} personas de la zona {cerca["frase"]}{detalle_grupos(
                   cerca["grupos"]
                 )}.
               </p>
-              
+
               <p class="metodo">Método: {b["metodo"]}</p>
             </article>
           </div>
@@ -166,21 +166,21 @@ defmodule MapoWeb.RiesgosLive.Index do
     ~H"""
     <article id="bloque-poblacion" class="bloque">
       <h2>{@titulo}</h2>
-      
+
       <p class="procedencia">INEGI, censo 2020 · AGEB urbano y localidad</p>
-      
+
       <ul>
         <li :for={{clave, g} <- grupos_ordenados(@poblacion["grupos"])}>
           <span class="num">{cifra_o_nada(g["valor"])}</span> {g["etiqueta"]}{donde(clave, @poblacion)}
         </li>
       </ul>
-      
+
       <p :if={reservados(@poblacion) > 0} class="cerca">
         INEGI reserva los datos de lugares con pocas viviendas: en {cifra(reservados(@poblacion))} de los {cifra(
           @poblacion["agebs"] + @poblacion["localidades"]
         )} lugares falta algún grupo. No se cuentan como cero, así que los grupos pueden quedar cortos.
       </p>
-      
+
       <p :if={(@poblacion["urbanas_por_punto"] || 0) > 0} class="cerca">
         {cifra(@poblacion["pob_urbanas_por_punto"])} personas son de {cifra(
           @poblacion["urbanas_por_punto"]
@@ -190,7 +190,7 @@ defmodule MapoWeb.RiesgosLive.Index do
                do: "localidad urbana que cuenta",
                else: "localidades urbanas que cuentan"} entera por su punto: Mapo no tiene sus AGEB cargados, así que cuenta a toda la ciudad aunque la zona toque solo una parte.
       </p>
-      
+
       <p class="metodo">Método: {@metodo}</p>
     </article>
     """

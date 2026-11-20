@@ -64,6 +64,13 @@ INDICADORES: dict[str, dict] = {
         "etiqueta": "Cambio del índice SHF en un año",
         "unidad": "%",
     },
+    # Por AGEB, no por municipio: el catastro donde hay y un rango donde no
+    # (docs/producto/precio-estimado.md).
+    "suelo_ageb": {
+        "fuente": "Tablas de valores catastrales · Mapo",
+        "etiqueta": "Valor de suelo por AGEB",
+        "unidad": "$/m² del año de la tabla",
+    },
 }
 
 EIC_FICHA = [
@@ -164,6 +171,13 @@ async def _valores_shf(conn, cve_ent: str) -> dict[str, dict]:
 
 
 def _metodo(clave: str, anio: int | None, meses: int | None, segmento: str | None, periodo: str | None) -> str:
+    if clave == "suelo_ageb":
+        return ("Valor catastral de suelo de zona, no precio de mercado ni avalúo. Donde la AGEB tiene "
+                "etiquetas en la tabla de valores de su municipio, su mediana, y solo esas se colorean. "
+                "Donde no, un rango con 80 % de cobertura medida contra el catastro en AGEB que el modelo "
+                "no vio: va sin color y con borde punteado, y el rango sale al tocarla. Cada municipio en pesos del año de su "
+                "tabla (Guadalajara 2020; Zapopan, Tonalá e Ixtlahuacán 2026): entre años distintos los "
+                "colores no se comparan. Municipios sin tabla ubicada quedan sin dato.")
     if clave.startswith("eic_"):
         return ("Estimación por muestra de la Intercensal 2025, por municipio. Cada valor trae su "
                 "coeficiente de variación; MI es muestra insuficiente y queda sin dato.")
@@ -180,11 +194,52 @@ def _metodo(clave: str, anio: int | None, meses: int | None, segmento: str | Non
             "trimestre un año antes. Es cambio, no nivel: SHF lo publica solo para 74 municipios del país.")
 
 
+async def _suelo_agebs(pool: AsyncConnectionPool, cve_ent: str) -> list[dict]:
+    async with pool.connection() as conn:
+        cursor = await conn.execute(
+            """SELECT p.cvegeo, a.cve_ageb, m.nombre, p.cve_mun, p.fuente, p.valor, p.rango_bajo,
+                      p.rango_alto, p.anio_tabla, p.cobertura, p.n_base, p.version,
+                      ST_AsGeoJSON(ST_Simplify(a.geom, %(t)s), 5)
+               FROM fuente_precio_estimado p
+               JOIN agebs a ON a.cvegeo = p.cvegeo
+               LEFT JOIN municipios m ON m.cve_ent = p.cve_ent AND m.cve_mun = p.cve_mun
+               WHERE p.cve_ent = %(cve_ent)s ORDER BY p.cvegeo""",
+            {"cve_ent": cve_ent, "t": TOLERANCIA_SIMPLIFICACION},
+        )
+        filas = await cursor.fetchall()
+    features = []
+    for cvegeo, ageb, mun, cve_mun, fuente, valor, bajo, alto, anio, cob, n, version, geom in filas:
+        if geom is None:
+            continue
+        # Solo el catastro pinta. Un rango estimado no se vuelve color: fuera de
+        # Guadalajara su alto llega a ser 20 veces el bajo y el punto medio no
+        # ordenaría nada (docs/producto/precio-estimado.md, Validación).
+        color = round(valor) if fuente == "catastro" else None
+        props = {"cve_mun": cve_mun, "valor_choropleth": color, "fuente": fuente,
+                 "valor": valor, "rango_bajo": bajo, "rango_alto": alto, "anio_tabla": anio,
+                 "cobertura": cob, "n_base": n, "version": version}
+        features.append(feature(cvegeo, f"AGEB {ageb}, {mun or cve_mun}", geom,
+                                {k: v for k, v in props.items() if v is not None}))
+    return features
+
+
 async def municipios(
     pool: AsyncConnectionPool, cve_ent: str, clave: str, anio: int | None = None, segmento: str | None = None
 ) -> dict:
     if clave not in INDICADORES:
         raise ValueError(f"indicador inválido: {clave}")
+    if clave == "suelo_ageb":
+        ind = INDICADORES[clave]
+        return {
+            "type": "FeatureCollection",
+            "features": await _suelo_agebs(pool, cve_ent),
+            "indicador": {"clave": clave, **{c: ind[c] for c in ("fuente", "etiqueta", "unidad")}},
+            "nivel": "AGEB",
+            "anio": None,
+            "meses": None,
+            "segmento": None,
+            "metodo": _metodo(clave, None, None, None, None),
+        }
     if segmento is not None and segmento not in SEGMENTOS:
         raise ValueError(f"segmento inválido: {segmento}")
     ind = INDICADORES[clave]

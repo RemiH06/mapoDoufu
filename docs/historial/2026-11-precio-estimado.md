@@ -1,0 +1,41 @@
+# Precio estimado, primera parte: forma y rango (noviembre 2026)
+
+Sesiones 23c y 23d, 2026-11-20. Diseño y cifras en
+`../producto/precio-estimado.md`; la vista, en `../producto/vista-vivienda.md`.
+
+## Qué se hizo
+
+- **Estudio** `estudios/precio_estimado/` (entorno propio de `uv`): notebook que
+  compara cuatro modelos de la forma, prueba la transferencia a un municipio sin
+  tabla, mide la cobertura de tres maneras de dar el rango y escribe la tabla por
+  AGEB. Corre de arriba abajo en unos 15 minutos.
+- **Cargador** `cli precio_estimado` y tabla `fuente_precio_estimado` (la crea
+  `mapo_core`, sin migración de Ecto).
+- **Indicador** "Valor de suelo por AGEB" en el acetato de vivienda, que deja de
+  llamarse "Vivienda por municipio". El catastro lleva color; las estimadas, borde
+  punteado y su rango en la ventana; los municipios sin tabla, sin dato.
+- **Capturas** `scripts/capturas/suelo.js`: plano, vista cerca y la ventana de una
+  AGEB estimada, en tres tamaños y dos modos.
+
+## Por qué así
+
+- **Validación por bloques de 3 km y anidada.** Con particiones al azar la
+  calibración tiene vecinas de las AGEB evaluadas: el rango sale 14 % más angosto
+  y promete de más. Afuera, cinco particiones por bloques; adentro, ajuste y
+  calibración también por bloques.
+- **Normalizado y no CQR.** CQR cubrió 67 % en Zapopan, lejos del 80 %.
+- **Bosque y no SVR.** Empatan en forma; la SVR normalizada cubrió 75 % en
+  Zapopan. La SVR sigue en el notebook como comparación (proyecto de AEM).
+- **Solo el catastro pinta.** Fuera de Guadalajara el rango de las AGEB estimadas
+  llega a 20 veces de alto a bajo: pintar su punto medio lo haría pasar por dato.
+- **La ventana de una AGEB no abre la ficha del municipio.** La ficha agranda la
+  cinta y tapaba la ventana (se vio en las capturas).
+
+## Lo que apareció
+
+- **Valores menores a $1,000 del OCR.** 51 AGEB de Zapopan, 25 de Tonalá y 7 de
+  Ixtlahuacán. Son la mayor parte del ancho: sin ellas, el rango baja a la mitad.
+  Mezclan números de manzana con periferia real, así que no se quitaron a ciegas
+  (pendiente en el diseño).
+- **El plano es canvas.** Las capturas no pueden esperar ni tocar un `path`: la
+  AGEB se ubica con la posición de un mosaico del mapa base.

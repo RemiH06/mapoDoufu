@@ -245,6 +245,26 @@ CREATE TABLE IF NOT EXISTS fuente_envi2020_entidad (
     PRIMARY KEY (cve_ent, indicador)
 );
 
+-- Valor de suelo por AGEB (sesión 23c): resultado del estudio
+-- estudios/precio_estimado/, cargado con `cli precio_estimado`. Ver
+-- docs/producto/precio-estimado.md.
+CREATE TABLE IF NOT EXISTS fuente_precio_estimado (
+    cvegeo      TEXT PRIMARY KEY,
+    cve_ent     TEXT NOT NULL,
+    cve_mun     TEXT NOT NULL,
+    fuente      TEXT NOT NULL,          -- catastro, modelo o sin_base
+    valor       DOUBLE PRECISION,       -- catastro: $/m² del año de la tabla
+    rango_bajo  DOUBLE PRECISION,       -- modelo: rango en $/m²
+    rango_alto  DOUBLE PRECISION,
+    anio_tabla  INTEGER,                -- año de la tabla de valores del municipio
+    cobertura   DOUBLE PRECISION,       -- modelo: medida en AGEB no vistas del municipio
+    n_base      INTEGER,                -- catastro: etiquetas; modelo: AGEB de ajuste
+    metodo      TEXT NOT NULL,
+    version     TEXT NOT NULL,
+    actualizado TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS idx_precio_estimado_mun ON fuente_precio_estimado (cve_ent, cve_mun);
+
 -- Ambientales (sesión 22). Cargadas de los crudos (`cli ambiental`). Ver
 -- docs/fuentes/ambientales.md y la ficha de cada fuente.
 CREATE TABLE IF NOT EXISTS fuente_acuiferos (

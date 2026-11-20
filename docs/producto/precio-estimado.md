@@ -1,7 +1,11 @@
-# Precio estimado de vivienda por AGEB (diseño)
+# Precio estimado de vivienda por AGEB
 
-Estado: diseño, sin construir (2026-11-19). Sesiones 23c (método y validación) y
-23d (vista) de `steps.md`.
+Estado (2026-11-20): construida la primera parte, la **forma**. Mapo muestra el
+valor catastral de suelo por AGEB y, donde falta, un rango conformal con su
+cobertura medida (acetato "Vivienda", indicador "Valor de suelo por AGEB";
+`vista-vivienda.md`). La **escala de mercado** sigue sin construir: ver
+Pendiente. Estudio en `estudios/precio_estimado/` (notebook y módulos); historia
+en `../historial/2026-11-precio-estimado.md`.
 
 Ninguna fuente abierta da el precio de mercado por AGEB
 (`dataset-vivienda.md`, "MEDV"). Esta vista lo aproxima con método propio y lo
@@ -10,6 +14,8 @@ cabe en RNF5: lo que RNF5 prohíbe es un puntaje que esconda su método, no una
 estimación que lo enseña.
 
 ## Qué se muestra
+
+(Diseño completo. Lo que ya está en Mapo, en "Lo construido".)
 
 - Un rango en $/m² por AGEB ("de 18,000 a 26,000, cobertura medida 80 %"), con el
   trimestre al que está llevado.
@@ -68,10 +74,64 @@ mercado hace falta una muestra de precios reales (ver Validación). Mientras no
 la haya, la ficha dice "orden confiable, escala aproximada" y la cobertura que
 muestra es la del catastro.
 
+## Lo construido (sesiones 23c y 23d)
+
+Decisiones de Remi al arrancar (2026-11-20): cobertura nominal de 80 %,
+trimestre de referencia 2026-II y, por ahora, calibrar contra el catastro; la
+muestra de precios a mano viene después.
+
+- **Objetivo:** `log(medv)` del dataset de vivienda v7, 892 AGEB con catastro en
+  85 bloques de 3 km. Guadalajara con su tabla de 2020; Zapopan, Tonalá e
+  Ixtlahuacán con la de 2026. Efecto fijo por municipio para los años distintos;
+  44 rasgos de nivel AGEB (censo, DENUE, OSM, GHSL, relieve, NDVI, LST).
+- **Forma:** ridge, SVR (RBF), bosque aleatorio y boosting, validados fuera de
+  muestra por bloques con hiperparámetros elegidos dentro de cada partición.
+  Empatan casi (RMSE en log de 0.62 a 0.68). Por municipio, el bosque:
+
+  | Municipio | AGEB | RMSE log | Spearman |
+  |---|---|---|---|
+  | Guadalajara | 415 | 0.20 | 0.82 |
+  | Zapopan | 302 | 0.87 | 0.63 |
+  | Tonalá | 152 | 0.73 | 0.45 |
+  | Ixtlahuacán | 23 | 0.86 | 0.12 |
+
+- **Transferencia:** con un municipio entero fuera, el orden aguanta en
+  Guadalajara (Spearman 0.79) y Zapopan (0.62), poco en Tonalá (0.42) y nada en
+  Ixtlahuacán. Sin tabla tampoco hay nivel, así que los seis municipios sin tabla
+  quedan sin dato.
+- **Rango:** conformal partido normalizado (σ̂ de un bosque sobre el error fuera
+  de muestra), calibrado por bloques. Cobertura medida en AGEB que ni el ajuste
+  ni la calibración vieron:
+
+  | Municipio | Normalizado, bosque | CQR | Alto entre bajo (mediana) |
+  |---|---|---|---|
+  | Todos | 79.6 % | 78.9 % | 3.1 |
+  | Guadalajara | 78.6 % | 88.0 % | 1.5 |
+  | Zapopan | 78.8 % | 67.2 % | 5.2 |
+  | Tonalá | 83.6 % | 79.6 % | 5.2 |
+  | Ixtlahuacán | 82.6 % | 65.2 % | 10.3 |
+
+  CQR falla en Zapopan e Ixtlahuacán. Partir al azar en vez de por bloques da
+  rangos 14 % más angostos (26 % en Tonalá): lo que se promete de más cuando la
+  calibración tiene vecinas de lo evaluado.
+- **Ruido del OCR:** sin las AGEB con valor menor a $1,000 de los municipios con
+  OCR, el ancho baja a la mitad (Zapopan 2.7, Tonalá 2.3) con la misma cobertura.
+  No se quitaron: en Zapopan esas AGEB tienen escolaridad mediana de 8.7 años
+  contra 12.5, así que muchas son periferia de verdad.
+- **Tabla:** 892 AGEB con catastro, 344 con rango (27 de Guadalajara, 227 de
+  Zapopan, 76 de Tonalá, 14 de Ixtlahuacán) y 832 sin tabla. Las que se estiman
+  están en la periferia, y su rango es ancho: mediana de alto entre bajo de 1.6
+  en Guadalajara y de 17 a 50 en los otros tres. Por eso en el mapa solo el
+  catastro lleva color.
+
+**Límites:** la cobertura se mide en AGEB con catastro, y las estimadas están más
+en la orilla, donde se ubicaron menos hojas: nada garantiza que se parezcan. El
+rango cubre el catastro, no el mercado.
+
 ## Validación
 
-Sin precios reales no hay forma de medir el error en pesos. Opciones legales,
-por decidir en la 23c:
+Sin precios reales no hay forma de medir el error en pesos. Opciones legales
+(se empieza sin ninguna: decisión de Remi del 2026-11-20):
 
 - **Datos de equipos:** avalúos o ventas que un equipo sube como datos propios,
   con permiso explícito para calibrar. Nunca se muestran.
@@ -83,10 +143,29 @@ Comprobaciones mínimas antes de abrir la vista: cobertura medida por municipio
 cerca de la prometida, orden contra escolaridad y marginación, y que ninguna AGEB
 tome valores de un municipio vecino.
 
-## Dónde vivirá
+## Dónde vive
 
-- El modelo y su calibración se ajustan fuera de la app, en un notebook, sobre el
-  dataset de vivienda. Mapo guarda el resultado por AGEB con su método, versión y
-  cobertura medida.
-- La vista sigue el patrón del acetato de vivienda (`vista-vivienda.md`):
+- `estudios/precio_estimado/`: notebook `precio_estimado.ipynb` y módulos
+  `precio/` (datos, modelos, conformal, salida, gráficas). Escribe
+  `mapo_core/data/precio_estimado/precio_ageb_v1.csv`.
+- `mapo_core/src/mapo_core/precio_estimado.py`: valida y carga esa tabla en
+  `fuente_precio_estimado` (`python -m mapo_core.cli precio_estimado --archivo
+  /app/data/precio_estimado/precio_ageb_v1.csv`). Rechaza un catastro sin valor
+  o un rango sin cobertura.
+- El indicador `suelo_ageb` del acetato de vivienda (`vista-vivienda.md`):
   catálogo cerrado de claves, nada interpolado en el SQL.
+
+## Pendiente
+
+- **Ruido del OCR:** revisar a mano una muestra de valores menores a $1,000 en los
+  escaneos de Zapopan y Tonalá. Si la mayoría son números de manzana, subir el
+  filtro del pipeline a $1,000, rehacer el dataset y esta tabla.
+- **Escala de mercado:** el SNIIV da monto por crédito (pesos por vivienda) y el
+  catastro da $/m² de suelo; el mapeo por cuantiles del Método uniría unidades
+  distintas. Decidir con Remi si la escala se da en pesos por vivienda o se
+  busca otra fuente por m². Sin precios reales no se valida.
+- **Años distintos y trimestre:** llevar Guadalajara 2020 a 2026 con su tabla de
+  2026 (hay 288 AGEB con las dos; Spearman 0.85) en vez de dejar cada municipio en
+  su año, y luego todo a 2026-II, el trimestre elegido, con el índice SHF. Hoy
+  cada AGEB va en pesos del año de su tabla y lo dice.
+- **Validación con precios reales** (arriba).

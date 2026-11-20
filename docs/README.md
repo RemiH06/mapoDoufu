@@ -13,8 +13,8 @@
 - [plan-nacional.md](producto/plan-nacional.md): qué falta para tener el paquete ambiental y el dataset de vivienda en todo el país, y en qué orden.
 - [vista-riesgos.md](producto/vista-riesgos.md): `/riesgos`, cada peligro de una zona por separado con la gente dentro y cerca.
 - [comparacion-ciudades.md](producto/comparacion-ciudades.md): calor, dosel, NDVI, censo y marginación (2020, y 2010 en tablas) por AGEB de la ZMG y seis metrópolis más, con la entrega para ArcGIS y Mapo y cómo comprobar cada número.
-- [vista-vivienda.md](producto/vista-vivienda.md): acetato de vivienda por municipio en `/mapa`, un indicador de una sola fuente a la vez y la ficha con SHF, SNIIV, Intercensal y ENVI por separado.
-- [precio-estimado.md](producto/precio-estimado.md): diseño del precio de vivienda estimado por AGEB como rango con cobertura medida (catastro, calibración con el SNIIV y predicción conformal); sin construir.
+- [vista-vivienda.md](producto/vista-vivienda.md): acetato de vivienda en `/mapa`, un indicador de una sola fuente a la vez (por municipio, o el valor de suelo por AGEB) y la ficha con SHF, SNIIV, Intercensal y ENVI por separado.
+- [precio-estimado.md](producto/precio-estimado.md): precio de vivienda estimado por AGEB como rango con cobertura medida; hecha la forma (catastro y rango conformal, validados por bloques), pendiente la escala de mercado.
 - [datos-propios.md](producto/datos-propios.md): archivos del equipo (tabla, vectorial, ráster) como acetato, su cruce con fuentes públicas, la distancia entre capas y el valor de un ráster: formatos, límites, ubicación, procedencia, permisos y qué se guarda.
 
 ## Arquitectura
@@ -89,6 +89,7 @@ Qué se construyó en cada etapa, por qué así y qué bugs reales aparecieron.
 - [Fechas, marginación y colonias, noviembre 2026](historial/2026-11-fechas.md)
 - [Fuentes de vivienda, noviembre 2026](historial/2026-11-fuentes-vivienda.md)
 - [Vista de vivienda y especies nativas, noviembre 2026](historial/2026-11-vista-vivienda-especies.md)
+- [Precio estimado: forma y rango, noviembre 2026](historial/2026-11-precio-estimado.md)
 
 ## Gaiarda
 

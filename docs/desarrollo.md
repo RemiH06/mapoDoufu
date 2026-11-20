@@ -101,6 +101,7 @@ docker compose exec mapo_core python -m mapo_core.cli shf       # índice de pre
 docker compose exec mapo_core python -m mapo_core.cli sniiv     # financiamientos, los 32 estados (~2 min)
 docker compose exec mapo_core python -m mapo_core.cli eic2025   # Intercensal 2025, vivienda por municipio
 docker compose exec mapo_core python -m mapo_core.cli envi      # renta y valor por estado (ENVI 2020)
+docker compose exec mapo_core python -m mapo_core.cli precio_estimado --archivo /app/data/precio_estimado/precio_ageb_v1.csv   # valor de suelo por AGEB (estudios/precio_estimado)
 docker compose exec mapo_core python -m mapo_core.cli ambiental --crudos /app/data/crudos-ambiental [--fuente acuiferos,...]   # fuentes ambientales desde los crudos (docs/fuentes/ambientales.md)
 docker compose exec mapo_core python -m mapo_core.cli status
 ```
@@ -116,6 +117,14 @@ entorno de `uv` (no comparten dependencias con `mapo_core`):
 
 ```bash
 cd estudios/sobrevivencia && uv sync && uv run jupyter lab   # docs/producto/sobrevivencia.md
+cd estudios/precio_estimado && uv sync && uv run jupyter nbconvert --to notebook --execute --inplace precio_estimado.ipynb   # ~15 min; docs/producto/precio-estimado.md
+```
+
+El de precio estimado escribe `mapo_core/data/precio_estimado/precio_ageb_v1.csv`,
+que se carga con:
+
+```bash
+docker compose exec mapo_core python -m mapo_core.cli precio_estimado --archivo /app/data/precio_estimado/precio_ageb_v1.csv
 ```
 
 La taxonomía de rubros que usa sale de `mapo_core`:

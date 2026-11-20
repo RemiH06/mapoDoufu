@@ -9,6 +9,19 @@ const valorFicha = (columna, valor) =>
     ? `<a href="${escapar(valor)}" target="_blank" rel="noopener noreferrer">${escapar(valor)}</a>`
     : escapar(valor)
 
+// Valor de suelo por AGEB (docs/producto/precio-estimado.md): el catastro tal
+// cual, o el rango con la cobertura medida en su municipio. Nunca un número solo
+// donde lo que hay es un rango.
+const pesos = v => `$${Math.round(v).toLocaleString("es-MX")}`
+const valorSuelo = ({fuente, valor, rango_bajo, rango_alto, anio_tabla, cobertura, n_base}) => {
+  if (fuente === "catastro")
+    return `Catastro ${anio_tabla}: ${pesos(valor)}/m²<br>Mediana de ${n_base} ${n_base === 1 ? "valor" : "valores"} de zona de la tabla`
+  if (fuente === "modelo")
+    return `Estimado: de ${pesos(rango_bajo)} a ${pesos(rango_alto)}/m² (pesos de ${anio_tabla})<br>` +
+      `En AGEB que el modelo no vio de este municipio, el catastro cayó dentro del rango el ${Math.round(cobertura * 100)} % de las veces`
+  return "Sin dato: el municipio no tiene tabla de valores ubicada"
+}
+
 // Mapa tecnico: cada capa (coropleta, Voronoi, coloreado, isocrona) es un
 // acetato sobre el plano. El servidor las prende y apaga por push_event y
 // dice el orden de la pila y la piel de la mesa; aqui se pintan con la
@@ -335,14 +348,23 @@ export const MapaTecnico = {
     })
   },
 
-  // Vivienda por municipio: un indicador de una sola fuente. El clic abre la
+  // Vivienda: un indicador de una sola fuente, por municipio o por AGEB. El clic abre la
   // ficha del municipio (las cuatro fuentes) en la cinta de la capa.
   _vivienda({geojson, etiqueta, unidad, cortes}, color, opciones) {
     return L.geoJSON(geojson, {
       ...opciones,
-      style: f => this._estiloQuintil(f, cortes, color),
+      // Valor de suelo por AGEB: las estimadas por rango van con borde punteado.
+      style: f => ({
+        ...this._estiloQuintil(f, cortes, color),
+        ...(f.properties.fuente === "modelo" ? {dashArray: "4 3", weight: 1.2, opacity: 0.9} : {}),
+      }),
       onEachFeature: (f, capa) => {
         const {nomgeo, valor_choropleth: valor, cv, nota, cve_mun} = f.properties
+        // Por AGEB solo la ventana: la ficha del municipio agranda la cinta y la tapaba.
+        if (f.properties.fuente) {
+          capa.bindPopup(`<strong>${escapar(nomgeo)}</strong><br>${valorSuelo(f.properties)}`)
+          return
+        }
         const cifra = valor === null || valor === undefined
           ? `sin dato${nota ? ` (${escapar(nota)})` : ""}`
           : `${valor.toLocaleString("es-MX", {maximumFractionDigits: 1})} ${escapar(unidad)}${cv != null ? ` · CV ${cv.toLocaleString("es-MX", {maximumFractionDigits: 1})}` : ""}`

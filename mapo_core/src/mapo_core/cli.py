@@ -18,6 +18,7 @@ from mapo_core import (
     eic2025,
     enoe_downloader,
     envi2020,
+    precio_estimado,
     geo_downloader,
     iter_downloader,
     rubros,
@@ -157,6 +158,17 @@ async def _envi(args) -> None:
     print(f"ENVI 2020: {total} indicadores por estado y nacional.")
 
 
+async def _precio_estimado(args) -> None:
+    from pathlib import Path
+
+    await inicializar_esquema()
+    try:
+        total = await precio_estimado.cargar(Path(args.archivo).read_text(encoding="utf-8"))
+    except precio_estimado.ArchivoInvalido as exc:
+        raise SystemExit(f"No se cargó nada: {exc}") from None
+    print(f"Valor de suelo por AGEB: {total} AGEB.")
+
+
 async def _dataset_vivienda(args) -> None:
     from pathlib import Path
 
@@ -257,7 +269,7 @@ async def _status(_args) -> None:
         "entidades", "municipios", "agebs", "localidades", "fuente_censo_poblacion",
         "fuente_denue_negocios", "fuente_enigh_concentradohogar", "fuente_sesnsp_delitos_municipal",
         "fuente_enoe_tasa_desocupacion", "fuente_shf_ipv", "fuente_sniiv_financiamiento",
-        "fuente_eic2025_vivienda", "fuente_envi2020_entidad",
+        "fuente_eic2025_vivienda", "fuente_envi2020_entidad", "fuente_precio_estimado",
         "fuente_acuiferos", "fuente_acuiferos_ordenamientos", "fuente_piezometria", "fuente_renameca_sitios",
         "fuente_repda_descargas", "fuente_retc_establecimientos", "fuente_retc_emisiones", "fuente_siap_agricola",
         "fuente_firms_focos", "fuente_uso_suelo", "fuente_anp", "fuente_sequia_municipal",
@@ -350,6 +362,13 @@ def _construir_parser() -> argparse.ArgumentParser:
     )
     p_envi.add_argument("--archivo", default=None, help="ZIP ya bajado (conjunto_de_datos_envi_2020_csv.zip)")
     p_envi.set_defaults(fn=_envi)
+
+    p_precio = subparsers.add_parser(
+        "precio_estimado", help="Valor de suelo por AGEB del estudio de precio estimado (reemplaza el de antes)"
+    )
+    p_precio.add_argument("--archivo", required=True,
+                          help="CSV del notebook, ej. /app/data/precio_estimado/precio_ageb_v1.csv")
+    p_precio.set_defaults(fn=_precio_estimado)
 
     p_amb = subparsers.add_parser(
         "ambiental", help="Carga las fuentes ambientales desde los crudos ya bajados (reemplaza las de antes)"

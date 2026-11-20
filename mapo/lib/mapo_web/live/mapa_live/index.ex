@@ -32,7 +32,7 @@ defmodule MapoWeb.MapaLive.Index do
       enfoque: "demografia"
     },
     "vivienda" => %{
-      nombre: "Vivienda por municipio",
+      nombre: "Vivienda",
       fuente: "SHF · SNIIV · INEGI",
       enfoque: "urbanismo"
     },
@@ -83,14 +83,14 @@ defmodule MapoWeb.MapaLive.Index do
           />
         </.form>
       </:membrete>
-
+      
       <h1 class="sr-only">Mapa técnico</h1>
-
+      
       <p :if={@estados == []} class="aviso-plano pegado sin-cinta">
         No se pudo cargar la lista de estados: mapo_core no responde o todavía no hay estados
         descargados.
       </p>
-
+      
       <div
         id="mapa-tecnico"
         phx-hook="MapaTecnico"
@@ -98,7 +98,7 @@ defmodule MapoWeb.MapaLive.Index do
         class="plano-leaflet flex-1 min-h-0 w-full"
       >
       </div>
-
+      
       <section
         id="cinta-marcas"
         class="cinta pegado"
@@ -107,17 +107,17 @@ defmodule MapoWeb.MapaLive.Index do
       >
         <div class="cinta-titulo">
           <h2>Tus marcas</h2>
-
+          
           <p class="fuente">a mano, del equipo</p>
         </div>
-
+        
         <p :if={@sesiones == []} class="cinta-texto">
           Las marcas se guardan en una sesión de tu equipo. <.link
             navigate={~p"/teams"}
             class="enlace"
           >Abre o crea una</.link>.
         </p>
-
+        
         <.form
           :if={@sesiones != []}
           for={%{}}
@@ -130,14 +130,14 @@ defmodule MapoWeb.MapaLive.Index do
             <span class="etiqueta">Sesión</span>
             <select name="sesion" class="cinta-control">
               <option value="">Ninguna</option>
-              {Phoenix.HTML.Form.options_for_select(
+               {Phoenix.HTML.Form.options_for_select(
                 opciones_sesiones(@sesiones),
                 @sesion && @sesion.id
               )}
             </select>
           </label>
         </.form>
-        <Marcas.selector :if={@sesion} herramienta={@herramienta} />
+         <Marcas.selector :if={@sesion} herramienta={@herramienta} />
         <p :if={@sesiones != []} class="cinta-texto">
           <%= cond do %>
             <% is_nil(@sesion) -> %>
@@ -147,13 +147,13 @@ defmodule MapoWeb.MapaLive.Index do
             <% true -> %>
               Clic en el plano para poner una marca. {marcas(@num_marcas)}.
           <% end %>
-
+          
           <.link :if={@sesion} navigate={~p"/sesiones/#{@sesion}"} class="enlace">
             Abrir la sesión
           </.link>
         </p>
       </section>
-
+      
       <section
         :for={id <- @orden}
         id={"cinta-#{id}"}
@@ -163,10 +163,10 @@ defmodule MapoWeb.MapaLive.Index do
       >
         <div class="cinta-titulo">
           <h2>{@capas[id].nombre}</h2>
-
+          
           <p class="fuente">{@capas[id].fuente}</p>
         </div>
-
+        
         <.cinta_propios
           :if={id == "propios"}
           capas={@capas_propias}
@@ -205,7 +205,7 @@ defmodule MapoWeb.MapaLive.Index do
           >
             Más arriba
           </button>
-
+          
           <button
             type="button"
             phx-click="mover"
@@ -217,31 +217,31 @@ defmodule MapoWeb.MapaLive.Index do
           </button>
         </div>
       </section>
-
+      
       <dl class="rotulo pegado">
         <div class="rotulo-titulo">{lugar(assigns)}</div>
-
+        
         <dt>Lámina</dt>
-
+        
         <dd>{acetatos(assigns)}</dd>
-
+        
         <dt :if={@sesion}>Marcas</dt>
-
+        
         <dd :if={@sesion}>{@sesion.nombre}</dd>
-
+        
         <dt>Fuentes</dt>
-
+        
         <dd>{fuentes(assigns)}</dd>
-
+        
         <dt>Piel</dt>
-
+        
         <dd>
           <.form for={%{}} as={:piel} id="piel_form" phx-change="fijar_piel">
             <select name="piel" aria-label="Piel de la mesa">
               <option value="" selected={is_nil(@piel_fijada)}>
                 Automática · {nombre_piel(piel_automatica(assigns))}
               </option>
-
+              
               <option :for={{nombre, clave} <- @pieles} value={clave} selected={@piel_fijada == clave}>
                 {nombre}
               </option>
@@ -249,7 +249,7 @@ defmodule MapoWeb.MapaLive.Index do
           </.form>
         </dd>
       </dl>
-
+      
       <nav id="charola" class="charola" aria-label="Acetatos">
         <%!-- Solo en pantallas angostas: la charola se pliega en una lista. --%>
         <button
@@ -264,7 +264,7 @@ defmodule MapoWeb.MapaLive.Index do
         >
           <b>Acetatos</b> <em>{encima(assigns)}</em> <span aria-hidden="true">▴</span>
         </button>
-
+        
         <button
           type="button"
           class="pestana"
@@ -277,7 +277,7 @@ defmodule MapoWeb.MapaLive.Index do
           <span class="pelicula lapiz" aria-hidden="true"></span> <b>Tus marcas</b>
           <em>{if @sesion, do: @sesion.nombre, else: "sin sesión"}</em>
         </button>
-
+        
         <button
           :for={id <- @orden}
           type="button"
@@ -315,13 +315,13 @@ defmodule MapoWeb.MapaLive.Index do
         <.button phx-disable-with="Poniendo..." class="boton primario">
           {if @activa?, do: "Actualizar", else: "Poner"}
         </.button>
-
+        
         <.button :if={@activa?} type="button" phx-click="quitar_coropleta" class="boton">
           Quitar
         </.button>
       </div>
     </.form>
-    <.escala escala={@escala} />
+     <.escala escala={@escala} />
     """
   end
 
@@ -375,7 +375,7 @@ defmodule MapoWeb.MapaLive.Index do
         <.button phx-disable-with="Poniendo..." class="boton primario">
           {if @activa?, do: "Actualizar", else: "Poner"}
         </.button>
-
+        
         <.button :if={@activa?} type="button" phx-click="quitar_vivienda" class="boton">
           Quitar
         </.button>
@@ -386,14 +386,16 @@ defmodule MapoWeb.MapaLive.Index do
       <p>
         <b>{@meta["indicador"]["etiqueta"]}</b>, {@meta["indicador"]["unidad"]}, por {@meta["nivel"]}.
       </p>
-
+      
       <p>{@meta["metodo"]}</p>
     </div>
-    <.escala escala={@escala} tinta="urbanismo" />
+     <.escala escala={@escala} tinta="urbanismo" />
     <p :if={@activa? and is_nil(@ficha)} class="cinta-texto">
-      Toca un municipio para ver sus cuatro fuentes por separado.
+      {if @meta["nivel"] == "AGEB",
+        do: "Toca una AGEB para ver su valor o su rango.",
+        else: "Toca un municipio para ver sus cuatro fuentes por separado."}
     </p>
-    <.ficha_vivienda :if={@ficha} ficha={@ficha} />
+     <.ficha_vivienda :if={@ficha} ficha={@ficha} />
     """
   end
 
@@ -404,53 +406,53 @@ defmodule MapoWeb.MapaLive.Index do
     <div id="ficha-vivienda" class="cinta-ficha">
       <div class="cinta-ficha-titulo">
         <h3>{@ficha["nombre"]}</h3>
-        <button type="button" phx-click="cerrar_ficha_vivienda" class="enlace">Cerrar</button>
+         <button type="button" phx-click="cerrar_ficha_vivienda" class="enlace">Cerrar</button>
       </div>
-
+      
       <div class="fuentes">
         <section aria-label="Índice SHF">
           <h4>Índice SHF de precios</h4>
-
+          
           <%= if shf = @ficha["shf"] do %>
             <p class="nivel">
               {if shf["nivel"] == "municipio",
                 do: "Del municipio",
                 else: "Del estado: SHF no lo publica para este municipio"} · 2018 = 100
             </p>
-
+            
             <dl class="ficha-datos">
               <dt>{shf["ultimo"]["anio"]} T{shf["ultimo"]["trimestre"]}</dt>
-
+              
               <dd>{cifra(shf["ultimo"]["indice"] * 1.0)}</dd>
-
+              
               <dt>Cambio en un año</dt>
-
+              
               <dd>{con_unidad(shf["variacion_anual"], "%")}</dd>
             </dl>
-            <.serie_shf serie={shf["serie"]} nombre={shf["nombre"]} />
+             <.serie_shf serie={shf["serie"]} nombre={shf["nombre"]} />
           <% else %>
             <p class="nivel">Sin serie cargada.</p>
           <% end %>
         </section>
-
+        
         <section aria-label="SNIIV">
           <h4>Créditos y subsidios (SNIIV)</h4>
-
+          
           <%= if sniiv = @ficha["sniiv"] do %>
             <p class="nivel">
               Del municipio, {sniiv["anio"]}. Lo prestado, no el precio. Acciones · monto promedio.
             </p>
-
+            
             <dl class="ficha-datos">
               <%= for s <- sniiv["segmentos"] do %>
                 <dt>{s["segmento"]}</dt>
-
+                
                 <dd>
                   {cifra(s["acciones"])} · {pesos(s["promedio"])}{con_monto(s)}
                 </dd>
               <% end %>
             </dl>
-
+            
             <p class="nivel">
               Destinos: {Enum.map_join(sniiv["destinos"], ", ", fn [d, n] -> "#{d} (#{cifra(n)})" end)}
             </p>
@@ -458,17 +460,17 @@ defmodule MapoWeb.MapaLive.Index do
             <p class="nivel">Sin registros completos en el SNIIV.</p>
           <% end %>
         </section>
-
+        
         <section aria-label="Intercensal 2025">
           <h4>Tenencia (Intercensal 2025)</h4>
-
+          
           <%= if eic = @ficha["eic"] do %>
             <p class="nivel">Del municipio, por muestra. CV: coeficiente de variación.</p>
-
+            
             <dl class="ficha-datos">
               <%= for e <- eic do %>
                 <dt>{e["etiqueta"]}</dt>
-
+                
                 <dd>{valor_eic(e)}</dd>
               <% end %>
             </dl>
@@ -476,17 +478,17 @@ defmodule MapoWeb.MapaLive.Index do
             <p class="nivel">Sin dato de la Intercensal.</p>
           <% end %>
         </section>
-
+        
         <section aria-label="ENVI 2020">
           <h4>Renta y valor (ENVI 2020)</h4>
-
+          
           <%= if envi = @ficha["envi"] do %>
             <p class="nivel">Del estado: la ENVI no llega a municipio.</p>
-
+            
             <dl class="ficha-datos">
               <%= for e <- envi do %>
                 <dt>{e["etiqueta"]}</dt>
-
+                
                 <dd>{valor_envi(e)}</dd>
               <% end %>
             </dl>
@@ -513,7 +515,7 @@ defmodule MapoWeb.MapaLive.Index do
       <div class="serie-eje">
         <span>{cifra(@g.hi * 1.0)}</span>
       </div>
-
+      
       <svg
         viewBox={"0 0 #{@g.ancho} #{@g.alto}"}
         preserveAspectRatio="none"
@@ -539,29 +541,29 @@ defmodule MapoWeb.MapaLive.Index do
           <title>{h.texto}</title>
         </rect>
       </svg>
-
+      
       <div class="serie-eje">
         <span>{cifra(@g.lo * 1.0)}</span>
       </div>
-
+      
       <figcaption class="serie-eje">
         <span>{@g.desde}</span> <span>base 2018 = 100</span> <span>{@g.hasta}</span>
       </figcaption>
-
+      
       <details class="serie-tabla">
         <summary>Ver la serie</summary>
-
+        
         <table>
           <thead>
             <tr>
               <th scope="col">Trimestre</th><th scope="col">Índice</th>
             </tr>
           </thead>
-
+          
           <tbody>
             <tr :for={[a, t, v] <- Enum.reverse(@serie)}>
               <td>{a} T{t}</td>
-
+              
               <td>{cifra(v * 1.0)}</td>
             </tr>
           </tbody>
@@ -683,10 +685,10 @@ defmodule MapoWeb.MapaLive.Index do
     >
       <ol>
         <li :for={o <- [0.12, 0.26, 0.42, 0.6, 0.8]} style={"opacity: #{o}"}></li>
-
+        
         <li class="nula" title="Sin dato"></li>
       </ol>
-
+      
       <div class="marcas num">
         <span :for={v <- Enum.take(@escala.limites, 5)}>{cifra(v)}</span>
         <span :if={@escala.nulos}>sin dato: {@escala.nulos}</span>
@@ -725,7 +727,7 @@ defmodule MapoWeb.MapaLive.Index do
             Quitar
           </button>
         </div>
-
+        
         <.form
           :if={a.capa.tipo not in ~w(puntos raster) and a.capa.numericas != []}
           for={%{}}
@@ -741,10 +743,10 @@ defmodule MapoWeb.MapaLive.Index do
             disabled={a.capa.repetidas > 0}
           >
             <option value="">Sin pintar por columna</option>
-            {Phoenix.HTML.Form.options_for_select(a.capa.numericas, a.columna)}
+             {Phoenix.HTML.Form.options_for_select(a.capa.numericas, a.columna)}
           </select>
         </.form>
-
+        
         <.form
           :if={a.capa.tipo in ~w(puntos vector) and a.capa.fechas != []}
           for={%{}}
@@ -762,7 +764,7 @@ defmodule MapoWeb.MapaLive.Index do
           >
             {Phoenix.HTML.Form.options_for_select(a.capa.fechas, a.fecha && elem(a.fecha, 0))}
           </select>
-
+          
           <input
             :if={length(a.capa.fechas) == 1}
             type="hidden"
@@ -778,7 +780,7 @@ defmodule MapoWeb.MapaLive.Index do
               value={a.fecha && elem(a.fecha, 1)}
             />
           </label>
-
+          
           <label>
             hasta
             <input
@@ -789,7 +791,7 @@ defmodule MapoWeb.MapaLive.Index do
             />
           </label>
         </.form>
-        <.escala escala={a.escala} />
+         <.escala escala={a.escala} />
         <p class="cinta-texto">
           <span :if={a.fecha}>{cifra(a.visibles)} en el rango, de</span> {resumen_capa(a.capa)}
           <span :if={a.capa.repetidas > 0}>
@@ -811,7 +813,7 @@ defmodule MapoWeb.MapaLive.Index do
         <span class="etiqueta">Agregar capa</span>
         <select name="capa" class="cinta-control">
           <option value="">Elige una</option>
-          {Phoenix.HTML.Form.options_for_select(opciones_capas(@cerradas), nil)}
+           {Phoenix.HTML.Form.options_for_select(opciones_capas(@cerradas), nil)}
         </select>
       </label>
     </.form>
@@ -836,7 +838,7 @@ defmodule MapoWeb.MapaLive.Index do
         <.button phx-disable-with="Poniendo..." class="boton primario">
           {if @activa?, do: "Actualizar", else: "Poner"}
         </.button>
-
+        
         <.button :if={@activa?} type="button" phx-click="quitar_voronoi" class="boton">
           Quitar
         </.button>
@@ -859,7 +861,7 @@ defmodule MapoWeb.MapaLive.Index do
         <.button phx-click="mostrar_coloreado" class="boton primario">
           {if @activa?, do: "Actualizar", else: "Poner"}
         </.button>
-
+        
         <.button :if={@activa?} type="button" phx-click="quitar_coloreado" class="boton">
           Quitar
         </.button>
@@ -889,7 +891,7 @@ defmodule MapoWeb.MapaLive.Index do
         <.button phx-disable-with="Activando..." class="boton primario">
           {if @activa?, do: "Actualizar", else: "Activar"}
         </.button>
-
+        
         <.button :if={@activa?} type="button" phx-click="quitar_isocrona" class="boton">
           Quitar
         </.button>
@@ -1192,6 +1194,10 @@ defmodule MapoWeb.MapaLive.Index do
       {:noreply, put_flash(socket, :error, "Selecciona un estado primero.")}
     else
       case MapoCore.vivienda_municipios(cve_ent, params["indicador"], anio, segmento) do
+        {:ok, %{"features" => [], "nivel" => "AGEB"}} ->
+          {:noreply,
+           put_flash(socket, :error, "Todavía no hay valor de suelo por AGEB para ese estado.")}
+
         {:ok, %{"features" => []}} ->
           {:noreply,
            put_flash(socket, :error, "No hay municipios cargados para ese estado todavía.")}
