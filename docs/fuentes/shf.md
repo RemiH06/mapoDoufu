@@ -84,5 +84,6 @@ Hipotecaria Federal, S.N.C.):
    los que tienen índice propio.
 5. Número de avalúos por zona, municipio y trimestre, o al nivel que exista.
 
-Mientras no haya respuesta, la ficha de vivienda no muestra serie de zona: un
+Enviada el 2026-11-19; la SHF tiene hasta el 2026-12-18 para responder (hasta el
+2027-01-01 si pide ampliación). Mientras no haya respuesta, la ficha de vivienda no muestra serie de zona: un
 municipio sin serie propia ve la de su estado.

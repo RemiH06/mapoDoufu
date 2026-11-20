@@ -9,7 +9,7 @@ en `../arquitectura/stack.md` ("reutilizando Gaiarda tal cual... las
 fuentes de datos", el mismo patrón que ya se había aplicado bien a
 OSRM) y lo que el usuario aclaró explícito: *"todo lo que corre es
 mapo, independientemente de gaiarda, lo único que se recicla es su
-código."* `Gaiarda-main.zip` está en el repo exactamente para sacar
+código."* `private/Gaiarda-main.zip` (gitignorada) está exactamente para sacar
 ese código, no para tener un Gaiarda vivo al lado.
 
 **Corregido, alcance de esta pasada: geoestadístico (estados,

@@ -4,8 +4,9 @@ CLAUDE.md
 steps.md
 plan.md
 
-# Codigo fuente de Gaiarda, solo para vendorizar (no se versiona aqui)
-Gaiarda-main.zip
+# Lo privado: Gaiarda-main.zip (solo para vendorizar), notas de casos y
+# acuses de transparencia con datos personales (ver private/LEEME.md)
+private/
 
 # -- Python (mapo_core/) --
 __pycache__/
@@ -42,7 +43,6 @@ mapo/.elixir_ls/
 
 # -- Claude Code (estado/config local, no de equipo) --
 .claude/
-investigation/
 # -- Capturas de diseño (scripts/capturas/) --
 scripts/capturas/node_modules/
 scripts/capturas/salida/
