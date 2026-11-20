@@ -75,3 +75,72 @@ def mapa_ancho(r: pd.DataFrame, v: pd.DataFrame) -> go.Figure:
     fig.update_layout(xaxis_title="Longitud", yaxis_title="Latitud",
                       coloraxis_colorbar_title="log₂(alto/bajo)", height=600)
     return fig
+
+
+# Modelos interpretables (modelos.ipynb) ---------------------------------------------
+
+FAMILIAS = {"clase": VERDE, "extra": NARANJA, "red": VINO, "referencia": "#9AA5B4"}
+
+
+def correlaciones(base: pd.DataFrame, rasgos: list[str], n: int = 20) -> go.Figure:
+    t = base[rasgos].corrwith(base["y"], method="spearman").dropna()
+    t = t.reindex(t.abs().sort_values().index)[-n:]
+    fig = px.bar(x=t.values, y=t.index, orientation="h",
+                 color=np.where(t.values > 0, "Sube el valor", "Baja el valor"),
+                 color_discrete_map={"Sube el valor": VERDE, "Baja el valor": VINO},
+                 title=f"Correlación de Spearman con log(valor), los {n} rasgos más fuertes")
+    fig.update_layout(xaxis_title="ρ de Spearman", yaxis_title="", legend_title="", height=600)
+    return fig
+
+
+def qq(residuos: pd.Series, titulo: str) -> go.Figure:
+    from scipy import stats
+    r = np.sort((residuos - residuos.mean()) / residuos.std())
+    teo = stats.norm.ppf((np.arange(1, len(r) + 1) - 0.5) / len(r))
+    fig = go.Figure([go.Scatter(x=teo, y=r, mode="markers", marker=dict(color=VERDE, size=4),
+                                name="Residuos"),
+                     go.Scatter(x=[-3.5, 3.5], y=[-3.5, 3.5], mode="lines",
+                                line=dict(color=TINTA, dash="dot"), name="Normal")])
+    fig.update_layout(title=titulo, xaxis_title="Cuantil normal teórico",
+                      yaxis_title="Residuo estandarizado", showlegend=False)
+    return fig
+
+
+def coeficientes(t: pd.DataFrame, titulo: str) -> go.Figure:
+    t = t.iloc[::-1]
+    a = lambda c: 100 * (np.exp(t[c]) - 1)  # noqa: E731
+    fig = go.Figure(go.Scatter(
+        x=t["cambio_pct"], y=t.index, mode="markers", marker=dict(color=VERDE, size=8),
+        error_x=dict(type="data", symmetric=False, array=a("alto") - t["cambio_pct"],
+                     arrayminus=t["cambio_pct"] - a("bajo"), color=TINTA)))
+    fig.add_vline(x=0, line_color="#9AA5B4")
+    fig.update_layout(title=titulo, height=max(400, 22 * len(t)), yaxis_title="",
+                      xaxis_title="% de cambio del valor por una desviación estándar (IC 95 %)")
+    return fig
+
+
+def varianza(var: pd.Series) -> go.Figure:
+    fig = px.line(x=var.index, y=var.values, markers=True,
+                  title="Varianza explicada acumulada por los componentes principales")
+    fig.add_hline(y=0.8, line_color=TINTA, line_dash="dot")
+    fig.update_layout(xaxis_title="Componentes", yaxis_title="Varianza acumulada",
+                      yaxis_tickformat=".0%")
+    return fig
+
+
+def mapa_calor(t: pd.DataFrame, titulo: str, etiqueta: str) -> go.Figure:
+    fig = px.imshow(t, color_continuous_scale="RdBu_r", color_continuous_midpoint=0,
+                    aspect="auto", title=titulo)
+    fig.update_layout(height=max(450, 18 * len(t)), coloraxis_colorbar_title=etiqueta)
+    return fig
+
+
+def modelos_juntos(t: pd.DataFrame, familias: dict[str, str]) -> go.Figure:
+    t = t.assign(familia=t["modelo"].map(familias))
+    fig = px.scatter(t, x="rmse_log", y="spearman", color="familia", text="modelo",
+                     color_discrete_map=FAMILIAS,
+                     title="Todos los modelos fuera de muestra: error contra orden")
+    fig.update_traces(textposition="top center", marker_size=10)
+    fig.update_layout(xaxis_title="RMSE en log (menos es mejor)",
+                      yaxis_title="Spearman (más es mejor)", height=550)
+    return fig

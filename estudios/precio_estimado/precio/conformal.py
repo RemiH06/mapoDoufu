@@ -16,6 +16,7 @@ import numpy as np
 import pandas as pd
 from sklearn.base import clone
 from sklearn.ensemble import HistGradientBoostingRegressor, RandomForestRegressor
+from sklearn.linear_model import RidgeCV
 from sklearn.model_selection import GroupKFold, GroupShuffleSplit, KFold, ShuffleSplit
 from sklearn.pipeline import make_pipeline
 
@@ -29,21 +30,30 @@ def cuantil_conformal(puntajes: np.ndarray, alfa: float) -> float:
 
 
 class Normalizado:
-    """ŷ del modelo dado; σ̂ de un bosque ajustado a |residuo| fuera de muestra."""
+    """ŷ del modelo dado; σ̂ ajustado a |residuo| fuera de muestra. Con
+    `escala="bosque"`, un bosque; con `"lineal"`, una ridge sobre log|residuo|
+    (interpretable: cada coeficiente dice qué rasgo abre o cierra el rango)."""
 
-    def __init__(self, modelo, rasgos: list[str]):
-        self.modelo, self.rasgos = modelo, rasgos
+    def __init__(self, modelo, rasgos: list[str], escala: str = "bosque"):
+        self.modelo, self.rasgos, self.escala = modelo, rasgos, escala
 
     def ajustar(self, X, y, grupos):
         self.m = modelos.ajustar(self.modelo, X, y, grupos)
         res = (y - modelos.fuera_de_muestra(self.modelo, X, y, grupos, 4)).abs()
-        self.s = make_pipeline(modelos._columnas(self.rasgos, False), RandomForestRegressor(
-            n_estimators=300, min_samples_leaf=10, random_state=modelos.SEMILLA, n_jobs=-1))
-        self.s.fit(X, res)
+        if self.escala == "lineal":
+            self.s = make_pipeline(modelos._columnas(self.rasgos, True),
+                                   RidgeCV(alphas=np.logspace(-1, 3, 20)))
+            self.s.fit(X, np.log(res + 1e-3))
+        else:
+            self.s = make_pipeline(modelos._columnas(self.rasgos, False), RandomForestRegressor(
+                n_estimators=300, min_samples_leaf=10, random_state=modelos.SEMILLA, n_jobs=-1))
+            self.s.fit(X, res)
         return self
 
     def centro_y_escala(self, X):
-        return self.m.predict(X), np.maximum(self.s.predict(X), 1e-3)
+        s = self.s.predict(X)
+        s = np.exp(s) if self.escala == "lineal" else s
+        return self.m.predict(X), np.maximum(s, 1e-3)
 
     def puntaje(self, X, y):
         c, s = self.centro_y_escala(X)

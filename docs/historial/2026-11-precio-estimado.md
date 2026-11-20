@@ -39,3 +39,11 @@ Sesiones 23c y 23d, 2026-11-20. Diseño y cifras en
   (pendiente en el diseño).
 - **El plano es canvas.** Las capturas no pueden esperar ni tocar un `path`: la
   AGEB se ubica con la posición de un mosaico del mapa base.
+
+## Modelos interpretables (2026-11-20)
+
+`modelos.ipynb`: once modelos con la misma validación por bloques. Lasso queda
+primero (RMSE log 0.619, Spearman 0.738) por delante del bosque (0.622, 0.720);
+la red chica, último (0.698). Con Lasso el rango conformal es más angosto pero
+cubre 77.8 %: producción sigue con el bosque. Detalle en
+`docs/producto/precio-estimado.md`, "Modelos interpretables".

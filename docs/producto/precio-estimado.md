@@ -128,6 +128,42 @@ muestra de precios a mano viene después.
 en la orilla, donde se ubicaron menos hojas: nada garantiza que se parezcan. El
 rango cubre el catastro, no el mercado.
 
+## Modelos interpretables (2026-11-20)
+
+`estudios/precio_estimado/modelos.ipynb` repite la forma con modelos que se
+pueden leer, en el orden de un curso de estadística multivariada: OLS, selección
+por pasos con BIC, Lasso, regresión sobre componentes principales, tipos de zona
+con k-medias, ANOVA y ANCOVA por municipio y regresión logística. Fuera de ese
+temario: un modelo aditivo con splines, un árbol corto y un modelo mixto con
+intercepto aleatorio por municipio. Una red chica (32 y 16 neuronas) y las
+referencias de caja negra (SVR y bosque) se comparan con la misma validación por
+bloques.
+
+| Modelo | RMSE log | Spearman |
+|---|---|---|
+| Lasso | 0.619 | 0.738 |
+| Bosque (referencia) | 0.622 | 0.720 |
+| Aditivo con splines | 0.629 | 0.717 |
+| Pasos BIC (11 rasgos) | 0.634 | 0.722 |
+| SVR (referencia) | 0.636 | 0.735 |
+| PCR | 0.643 | 0.716 |
+| Tipos k-medias | 0.653 | 0.615 |
+| Mixto | 0.658 | 0.698 |
+| OLS completa | 0.663 | 0.695 |
+| Árbol | 0.689 | 0.614 |
+| Red | 0.698 | 0.654 |
+
+Lasso ordena mejor que el bosque y transfiere mejor a un municipio no visto, así
+que la forma no necesita una caja negra. Lo que más pesa, estable entre modelos:
+escolaridad (+10 a +13 % por desviación estándar), ocupantes por cuarto (−12 a
+−13 %), pendiente (−6 a −10 %) y parques a 1 km (+7 a +10 %). Con las covariables,
+el municipio deja de ser significativo en la ANCOVA (p = 0.27).
+
+Con Lasso al centro y una ridge sobre log|residuo| para el ancho
+(`conformal.Normalizado(..., escala="lineal")`), el rango es más angosto (alto
+entre bajo 2.5 contra 3.1) pero cubre 77.8 % en vez de 79.6 %, y Zapopan 71.5 %.
+Producción sigue con el bosque hasta resolver esa falta de cobertura (pendiente).
+
 ## Validación
 
 Sin precios reales no hay forma de medir el error en pesos. Opciones legales
@@ -145,8 +181,9 @@ tome valores de un municipio vecino.
 
 ## Dónde vive
 
-- `estudios/precio_estimado/`: notebook `precio_estimado.ipynb` y módulos
-  `precio/` (datos, modelos, conformal, salida, gráficas). Escribe
+- `estudios/precio_estimado/`: notebooks `precio_estimado.ipynb` (el rango que
+  va a producción) y `modelos.ipynb` (modelos interpretables), con módulos
+  `precio/` (datos, modelos, interpretables, conformal, salida, gráficas). Escribe
   `mapo_core/data/precio_estimado/precio_ageb_v1.csv`.
 - `mapo_core/src/mapo_core/precio_estimado.py`: valida y carga esa tabla en
   `fuente_precio_estimado` (`python -m mapo_core.cli precio_estimado --archivo
@@ -169,3 +206,13 @@ tome valores de un municipio vecino.
   su año, y luego todo a 2026-II, el trimestre elegido, con el índice SHF. Hoy
   cada AGEB va en pesos del año de su tabla y lo dice.
 - **Validación con precios reales** (arriba).
+- **Cambiar a Lasso en producción:** solo si el rango vuelve a cubrir 80 % por
+  municipio; probar conformal calibrado por municipio (Mondrian).
+- **Calibrar contra promedios oficiales:** la SHF publica cada trimestre la media y
+  los cuartiles del precio por vivienda por estado (no por municipio: ahí solo da
+  el índice). El IIEG publica precios de oferta por colonia para seis municipios
+  de la zona metropolitana, con base descargable. Idea: modelo mixto cuyo
+  intercepto municipal se ajusta para que la media ponderada por viviendas
+  coincida con la cifra oficial (benchmarking de áreas pequeñas), calibrando con
+  el estado y midiendo contra los municipios del IIEG. Requiere decidir antes la
+  unidad (pesos por vivienda contra $/m² de suelo).

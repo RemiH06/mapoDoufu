@@ -11,6 +11,7 @@ dependencies = [
     "plotly>=5.22",
     "ipykernel>=6.29",
     "nbconvert>=7.16",
+    "statsmodels>=0.15.0",
 ]
 
 [tool.uv]
