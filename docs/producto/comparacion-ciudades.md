@@ -90,10 +90,57 @@ colonias de la ZMG) con 9.4 % de dosel (más que el 87 %).
 La temperatura absoluta depende de las fechas de las escenas de cada ciudad; para
 comparar dentro de cada una está `lst_vs_mediana_ciudad_c`.
 
+## Marginación 2010
+
+Complemento solo en tablas (2026-11-19), sin rehacer el paquete:
+`scripts/ambiental/marginacion_2010.py` con la base de CONAPO por AGEB urbano 2000 a 2010
+([`Base_marginacion_AGEB_00-10.csv`](https://conapo.segob.gob.mx/work/models/CONAPO/Datos_Abiertos/AGEB_Urbana/Base_marginacion_AGEB_00-10.csv),
+sha256 `ac31daf7…`, enlazada desde
+[Índices de marginación 1990-2010](https://www.gob.mx/conapo/documentos/indices-de-marginacion-1990-2010))
+y el IMU 2020 de siempre. Mismos municipios de 2020 en los dos años. Sale
+`4_marginacion_2010.zip` junto a la entrega, con `LEEME.txt`
+(`scripts/ambiental/LEEME_marginacion_2010.txt`).
+
+- `marginacion_ageb_2010.csv`: los AGEB de 2010 con sus 10 indicadores, índice y grado, tal cual.
+- `comparacion_ageb_2010_2020.csv`: unión por `cvegeo`; `presencia` dice si la clave existe
+  en los dos años (`en_ambos`) o en uno.
+- `resumen_ciudad_2010_2020.csv`: por ciudad.
+
+Qué se compara y qué no, según las metodologías de CONAPO (2010: cuadro 1.1 y anexo C del
+*Índice de marginación urbana 2010*; 2020: nota técnica del IMU 2020):
+
+- **Índices en sentidos opuestos y con métodos distintos.** 2010 es de componentes
+  principales y más alto es más marginado; 2020 al revés. El script lo comprueba con los
+  datos (Spearman contra sin educación básica: +0.91 en 2010, −0.91 en 2020) y no los resta.
+- **Posición:** el grado (orientativo, los cortes también cambiaron) y el percentil del AGEB
+  dentro de su ciudad en cada año, que es lo más sólido.
+- **Tres indicadores con la misma fórmula y unidad:** no asistencia de 6 a 14 años, sin
+  educación básica de 15 o más y sin derechohabiencia.
+- **No se restan:** en 2010 los de vivienda son % de viviendas y en 2020 % de ocupantes;
+  drenaje, agua y hacinamiento además cambiaron de definición. Piso de tierra y refrigerador
+  van lado a lado solo como referencia.
+
+La no asistencia de 6 a 14 sube en las siete ciudades; también en todo el país (3.9 % a
+5.5 %, ponderado por población), con la misma fórmula. Es de los censos, no del cruce.
+
+| Ciudad | AGEB 2010 | Misma clave en 2020 | Población 2020 en esos AGEB | Población en grado Alto o Muy alto, 2010 y 2020 | Sin educación básica, mediana 2010 y 2020 |
+|---|---|---|---|---|---|
+| Guadalajara | 1,510 | 1,490 | 90.1 % | 15.7 %; 13.0 % | 35.0 %; 23.5 % |
+| Monterrey | 1,586 | 1,580 | 82.5 % | 4.5 %; 2.3 % | 25.0 %; 15.7 % |
+| Puebla-Tlaxcala | 788 | 772 | 95.2 % | 45.3 %; 26.2 % | 35.5 %; 23.8 % |
+| León | 517 | 462 | 83.2 % | 22.8 %; 19.9 % | 47.3 %; 32.5 % |
+| Mérida | 533 | 525 | 87.8 % | 18.3 %; 13.7 % | 33.5 %; 21.2 % |
+| Hermosillo | 418 | 411 | 90.4 % | 9.8 %; 5.6 % | 23.9 %; 14.9 % |
+| Ciudad de México | 5,301 | 5,224 | 96.5 % | 25.3 %; 13.2 % | 29.5 %; 20.2 % |
+
+Que la clave se repita no garantiza los mismos límites. Los AGEB que solo existen en un año
+quedan sin columnas de cambio; repartirlos por superficie no se hizo (pediría el marco
+geoestadístico de 2010).
+
 ## Límites
 
-- Una temporada (secas de 2025). Censo y marginación de 2020; dosel de imágenes de 2017 a
-  2020.
+- Una temporada (secas de 2025). Censo y marginación de 2020 (la de 2010, aparte y solo en
+  tablas); dosel de imágenes de 2017 a 2020.
 - Solo AGEB urbanos.
 - Ciudades de otros países: temperatura, NDVI y dosel existen en todo el mundo, pero no
   hay censo ni marginación comparables. Si se agregan, sería en cuadrícula y solo con

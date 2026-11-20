@@ -1,0 +1,49 @@
+MARGINACIÓN URBANA 2010 Y SU COMPARACIÓN CON 2020
+
+Complemento de la comparación de ciudades: las mismas siete metrópolis (Guadalajara,
+Monterrey, Puebla-Tlaxcala, León, Mérida, Hermosillo y Ciudad de México), con los
+municipios de la delimitación de 2020 en los dos años. Solo tablas (CSV, UTF-8), sin mapa.
+Cada renglón tiene la clave del AGEB (cvegeo) para unirlo a una capa si hace falta.
+
+ARCHIVOS
+
+marginacion_ageb_2010.csv       Contexto. Un renglón por AGEB urbano de 2010, con los 10
+                                indicadores, el índice y el grado de CONAPO tal cual.
+comparacion_ageb_2010_2020.csv  Un renglón por clave de AGEB. La columna "presencia" dice
+                                si la clave existe en los dos años o solo en uno.
+resumen_ciudad_2010_2020.csv    Un renglón por ciudad.
+diccionario_campos.csv          Qué es cada columna.
+fuentes.csv                     De dónde sale cada dato, con liga y sha256.
+
+CUIDADO AL LEER
+
+1. Los índices van en sentidos opuestos. En 2010 (imu_2010) más alto es MÁS marginado;
+   en 2020 (im_2020) más alto es MENOS marginado. Además se calcularon con métodos
+   distintos, así que no se restan.
+
+2. Qué sí se compara entre años:
+   - El grado (Muy bajo a Muy alto): dice la posición del AGEB respecto a todo el país en
+     cada año. Los cortes también cambiaron de método, así que es orientativo.
+   - percentil_ciudad_2010 y percentil_ciudad_2020: la posición del AGEB dentro de su
+     ciudad (0 = el menos marginado, 100 = el más marginado). Es la comparación más sólida,
+     porque no depende de la escala de cada índice.
+   - Tres indicadores con la misma fórmula y la misma unidad en los dos años (columnas
+     _2010, _2020 y _dif): no asistencia escolar de 6 a 14 años, sin educación básica de 15
+     años o más y sin derechohabiencia a servicios de salud.
+
+3. Qué no se compara: en 2010 los indicadores de vivienda son % de VIVIENDAS y en 2020 son
+   % de OCUPANTES; además drenaje, agua y hacinamiento cambiaron de definición. Piso de
+   tierra y refrigerador vienen lado a lado solo como referencia, sin resta.
+
+4. La no asistencia escolar de 6 a 14 años sube en las siete ciudades. También sube en todo
+   el país (de 3.9 % a 5.5 % de la población urbana, ponderado por población), con la misma
+   fórmula en los dos años. Es lo que dicen los censos, no un error del cruce.
+
+5. AGEB que cambiaron: INEGI parte, redibuja o crea AGEB entre censos. Los que solo existen
+   en un año (solo_2010 o solo_2020) no tienen columnas de cambio. En Guadalajara la misma
+   clave existe en los dos años para 1,490 de 1,510 AGEB de 2010, donde vive el 90 % de la
+   población de 2020. Las claves iguales casi siempre son el mismo territorio, pero un AGEB
+   pudo cambiar de límites sin cambiar de clave.
+
+6. CONAPO solo calcula el índice en AGEB urbanos con al menos 20 viviendas habitadas, así
+   que hay menos AGEB que en la capa de la comparación de ciudades.

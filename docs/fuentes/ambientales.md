@@ -177,6 +177,11 @@ https://www.gob.mx/conapo/documentos/indices-de-marginacion-2020-284372:
 | `marginacion/imc_2020_colonias.zip` | La misma tabla en Excel |
 | `marginacion/imu_2020_ageb.zip` | Por AGEB urbana, con la CVEGEO de 13 caracteres |
 
+La de 2010 por AGEB (en la misma base que 2000 y 2005) sale de
+[Índices de marginación 1990-2010](https://www.gob.mx/conapo/documentos/indices-de-marginacion-1990-2010)
+y se usa en [comparacion-ciudades.md](../producto/comparacion-ciudades.md#marginación-2010),
+con lo que se compara y lo que no entre los dos años.
+
 Es un índice compuesto, y en Mapo nunca hay puntaje único: el recorte lo entrega
 con sus once componentes, porcentajes del censo 2020 que se leen por separado
 (`P6A14NAE` de 6 a 14 años que no va a la escuela, `SBASC` sin educación básica,
