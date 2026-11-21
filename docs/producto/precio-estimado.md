@@ -169,7 +169,7 @@ Producción sigue con el bosque hasta resolver esa falta de cobertura (pendiente
 Desde la v8, `modelos.ipynb` usa como objetivo la mediana del precio pedido por
 vivienda del IIEG (`../fuentes/iieg-oferta.md`), 787 AGEB en seis municipios,
 todas de julio de 2024. Lasso sigue primero (RMSE log 0.398, Spearman 0.828),
-con el bosque en 0.403 y 0.820 y la red en 0.460 y 0.764. El rango conformal con
+con el bosque en 0.403 y 0.820 y la red en 0.459 y 0.764. El rango conformal con
 Lasso y ancho lineal cubre 82 % con alto entre bajo de 2.8, igual que el bosque:
 con este objetivo, Lasso puede reemplazarlo.
 
