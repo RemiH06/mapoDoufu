@@ -55,3 +55,19 @@ Remi decidió pasar el MEDV a pesos por vivienda con los anuncios del IIEG
 queda en `suelo_*`. En `modelos.ipynb`, Lasso sigue primero (RMSE log 0.398,
 Spearman 0.828) y el rango cubre 82 %. Calibrar con la mediana municipal de
 anuncios empeora o deja igual el error por AGEB: mide otra población.
+
+## La vista pasa al precio de oferta (2026-11-21)
+
+El indicador `suelo_ageb` del acetato de vivienda se reemplazó por `precio_ageb`
+(tabla v2, `modelos.ipynb` sección 12): la mediana de anuncios donde la AGEB tiene
+al menos tres (787), un rango de Lasso con ancho lineal donde no (801) y sin dato
+en el resto, con el motivo en la ventana. Antes de publicar salió que el modelo
+lineal extrapolaba en la periferia sin anuncios (rangos de $0 a infinito en 8
+AGEB) aunque la cobertura medida fuera de 82 %: se recortan los rasgos, se topa el
+ancho y quedan sin dato las AGEB que se parecen poco a las de anuncios (227).
+El Salto queda sin rangos: 5 AGEB con anuncios no alcanzan para medir cobertura.
+
+De paso, todas las simplificaciones de geometría para pintar o medir usan
+`ST_Simplify(geom, tol, true)`: la coropleta del censo, el buscador y
+`/geo/agebs` ya no pierden las 24 AGEB chicas de la ZMG
+(`mapo_core/tests/test_simplificar.py`). Capturas: `scripts/capturas/precio_ageb.js`.

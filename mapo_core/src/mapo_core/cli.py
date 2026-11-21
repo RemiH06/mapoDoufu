@@ -167,7 +167,7 @@ async def _precio_estimado(args) -> None:
         total = await precio_estimado.cargar(Path(args.archivo).read_text(encoding="utf-8"))
     except precio_estimado.ArchivoInvalido as exc:
         raise SystemExit(f"No se cargó nada: {exc}") from None
-    print(f"Valor de suelo por AGEB: {total} AGEB.")
+    print(f"Precio por AGEB: {total} AGEB.")
 
 
 async def _dataset_vivienda(args) -> None:
@@ -375,7 +375,7 @@ def _construir_parser() -> argparse.ArgumentParser:
     p_envi.set_defaults(fn=_envi)
 
     p_precio = subparsers.add_parser(
-        "precio_estimado", help="Valor de suelo por AGEB del estudio de precio estimado (reemplaza el de antes)"
+        "precio_estimado", help="Precio por AGEB del estudio de precio estimado (reemplaza el de antes)"
     )
     p_precio.add_argument("--archivo", required=True,
                           help="CSV del notebook, ej. /app/data/precio_estimado/precio_ageb_v1.csv")

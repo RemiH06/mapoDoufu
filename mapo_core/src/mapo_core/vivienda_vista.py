@@ -13,6 +13,7 @@ from __future__ import annotations
 from psycopg_pool import AsyncConnectionPool
 
 from mapo_core.consultas import TOLERANCIA_SIMPLIFICACION, feature
+from mapo_core.precio_estimado import OBSERVADAS
 
 SEGMENTOS = ["Económica", "Popular", "Tradicional", "Media", "Residencial", "Residencial plus", "No disponible"]
 
@@ -64,12 +65,12 @@ INDICADORES: dict[str, dict] = {
         "etiqueta": "Cambio del índice SHF en un año",
         "unidad": "%",
     },
-    # Por AGEB, no por municipio: el catastro donde hay y un rango donde no
-    # (docs/producto/precio-estimado.md).
-    "suelo_ageb": {
-        "fuente": "Tablas de valores catastrales · Mapo",
-        "etiqueta": "Valor de suelo por AGEB",
-        "unidad": "$/m² del año de la tabla",
+    # Por AGEB, no por municipio: la mediana de anuncios donde hay y un rango
+    # donde no (docs/producto/precio-estimado.md).
+    "precio_ageb": {
+        "fuente": "IIEG, anuncios de venta · Mapo",
+        "etiqueta": "Precio de oferta",
+        "unidad": "pesos por vivienda, julio de 2024",
     },
 }
 
@@ -111,7 +112,7 @@ async def anios_sniiv(pool: AsyncConnectionPool) -> list[dict]:
 
 async def _geometrias(conn, cve_ent: str) -> list[tuple[str, str, str, str]]:
     cursor = await conn.execute(
-        "SELECT cvegeo, cve_mun, nombre, ST_AsGeoJSON(ST_Simplify(geom, %(t)s), 5) "
+        "SELECT cvegeo, cve_mun, nombre, ST_AsGeoJSON(ST_Simplify(geom, %(t)s, true), 5) "
         "FROM municipios WHERE cve_ent = %(cve_ent)s ORDER BY cvegeo",
         {"cve_ent": cve_ent, "t": TOLERANCIA_SIMPLIFICACION},
     )
@@ -171,13 +172,13 @@ async def _valores_shf(conn, cve_ent: str) -> dict[str, dict]:
 
 
 def _metodo(clave: str, anio: int | None, meses: int | None, segmento: str | None, periodo: str | None) -> str:
-    if clave == "suelo_ageb":
-        return ("Valor catastral de suelo de zona, no precio de mercado ni avalúo. Donde la AGEB tiene "
-                "etiquetas en la tabla de valores de su municipio, su mediana, y solo esas se colorean. "
-                "Donde no, un rango con 80 % de cobertura medida contra el catastro en AGEB que el modelo "
-                "no vio: va sin color y con borde punteado, y el rango sale al tocarla. Cada municipio en pesos del año de su "
-                "tabla (Guadalajara 2020; Zapopan, Tonalá e Ixtlahuacán 2026): entre años distintos los "
-                "colores no se comparan. Municipios sin tabla ubicada quedan sin dato.")
+    if clave == "precio_ageb":
+        return ("Precio pedido por vivienda (casas y departamentos) en los anuncios de venta que junta el "
+                "IIEG, julio de 2024; no es precio de cierre ni avalúo. Donde la AGEB tiene al menos tres "
+                "anuncios, su mediana, y solo esas se colorean. Donde no, un rango con 80 % de cobertura "
+                "medida contra los anuncios en AGEB que el modelo no vio: va sin color y con borde "
+                "punteado, y el rango sale al tocarla. El IIEG cubre seis municipios de la zona "
+                "metropolitana de Guadalajara; los demás quedan sin dato.")
     if clave.startswith("eic_"):
         return ("Estimación por muestra de la Intercensal 2025, por municipio. Cada valor trae su "
                 "coeficiente de variación; MI es muestra insuficiente y queda sin dato.")
@@ -194,11 +195,11 @@ def _metodo(clave: str, anio: int | None, meses: int | None, segmento: str | Non
             "trimestre un año antes. Es cambio, no nivel: SHF lo publica solo para 74 municipios del país.")
 
 
-async def _suelo_agebs(pool: AsyncConnectionPool, cve_ent: str) -> list[dict]:
+async def _precio_agebs(pool: AsyncConnectionPool, cve_ent: str) -> list[dict]:
     async with pool.connection() as conn:
         cursor = await conn.execute(
             """SELECT p.cvegeo, a.cve_ageb, m.nombre, p.cve_mun, p.fuente, p.valor, p.rango_bajo,
-                      p.rango_alto, p.anio_tabla, p.cobertura, p.n_base, p.version,
+                      p.rango_alto, p.anio_tabla, p.cobertura, p.n_base, p.version, p.metodo,
                       -- true: una AGEB más chica que la tolerancia no se pierde (24 de la ZMG).
                       ST_AsGeoJSON(ST_Simplify(a.geom, %(t)s, true), 5)
                FROM fuente_precio_estimado p
@@ -209,16 +210,16 @@ async def _suelo_agebs(pool: AsyncConnectionPool, cve_ent: str) -> list[dict]:
         )
         filas = await cursor.fetchall()
     features = []
-    for cvegeo, ageb, mun, cve_mun, fuente, valor, bajo, alto, anio, cob, n, version, geom in filas:
+    for cvegeo, ageb, mun, cve_mun, fuente, valor, bajo, alto, anio, cob, n, version, metodo, geom in filas:
         if geom is None:
             continue
-        # Solo el catastro pinta. Un rango estimado no se vuelve color: fuera de
-        # Guadalajara su alto llega a ser 20 veces el bajo y el punto medio no
-        # ordenaría nada (docs/producto/precio-estimado.md, Validación).
-        color = round(valor) if fuente == "catastro" else None
+        # Solo lo observado pinta. Un rango estimado no se vuelve color: su punto
+        # medio pasaría por dato (docs/producto/precio-estimado.md).
+        color = round(valor) if fuente in OBSERVADAS else None
         props = {"cve_mun": cve_mun, "valor_choropleth": color, "fuente": fuente,
                  "valor": valor, "rango_bajo": bajo, "rango_alto": alto, "anio_tabla": anio,
-                 "cobertura": cob, "n_base": n, "version": version}
+                 "cobertura": cob, "n_base": n, "version": version,
+                 "metodo": metodo if fuente == "sin_base" else None}
         features.append(feature(cvegeo, f"AGEB {ageb}, {mun or cve_mun}", geom,
                                 {k: v for k, v in props.items() if v is not None}))
     return features
@@ -229,11 +230,11 @@ async def municipios(
 ) -> dict:
     if clave not in INDICADORES:
         raise ValueError(f"indicador inválido: {clave}")
-    if clave == "suelo_ageb":
+    if clave == "precio_ageb":
         ind = INDICADORES[clave]
         return {
             "type": "FeatureCollection",
-            "features": await _suelo_agebs(pool, cve_ent),
+            "features": await _precio_agebs(pool, cve_ent),
             "indicador": {"clave": clave, **{c: ind[c] for c in ("fuente", "etiqueta", "unidad")}},
             "nivel": "AGEB",
             "anio": None,

@@ -982,8 +982,8 @@ defmodule MapoWeb.MapaLive.IndexTest do
       refute html =~ ~s(id="ficha-vivienda")
     end
 
-    test "el valor de suelo va por AGEB y sin datos del estado lo dice", %{conn: conn} do
-      suelo = fn features ->
+    test "el precio de oferta va por AGEB y sin datos del estado lo dice", %{conn: conn} do
+      precio = fn features ->
         fn conn ->
           case conn.request_path do
             "/vivienda/catalogo" ->
@@ -994,13 +994,13 @@ defmodule MapoWeb.MapaLive.IndexTest do
                 "type" => "FeatureCollection",
                 "features" => features,
                 "indicador" => %{
-                  "clave" => "suelo_ageb",
-                  "fuente" => "Tablas de valores catastrales · Mapo",
-                  "etiqueta" => "Valor de suelo por AGEB",
-                  "unidad" => "$/m² del año de la tabla"
+                  "clave" => "precio_ageb",
+                  "fuente" => "IIEG, anuncios de venta · Mapo",
+                  "etiqueta" => "Precio de oferta",
+                  "unidad" => "pesos por vivienda, julio de 2024"
                 },
                 "nivel" => "AGEB",
-                "metodo" => "Valor catastral de suelo de zona, no precio de mercado ni avalúo."
+                "metodo" => "Precio pedido por vivienda; no es precio de cierre ni avalúo."
               })
           end
         end
@@ -1009,12 +1009,12 @@ defmodule MapoWeb.MapaLive.IndexTest do
       lv =
         montar_con_ubicacion(
           conn,
-          suelo.([
+          precio.([
             %{
               "properties" => %{
                 "cve_mun" => "039",
-                "valor_choropleth" => 3080,
-                "fuente" => "catastro"
+                "valor_choropleth" => 2_704_000,
+                "fuente" => "anuncios"
               },
               "geometry" => %{}
             },
@@ -1027,23 +1027,23 @@ defmodule MapoWeb.MapaLive.IndexTest do
       html =
         lv
         |> form("#vivienda_capa_form", vivienda_capa: %{"indicador" => "eic_alqui"})
-        |> render_submit(%{vivienda_capa: %{"indicador" => "suelo_ageb"}})
+        |> render_submit(%{vivienda_capa: %{"indicador" => "precio_ageb"}})
 
-      assert_push_event(lv, "capa_vivienda", %{activa: true, etiqueta: "Valor de suelo por AGEB"})
+      assert_push_event(lv, "capa_vivienda", %{activa: true, etiqueta: "Precio de oferta"})
       assert html =~ "por AGEB."
-      assert html =~ "no precio de mercado ni avalúo"
+      assert html =~ "no es precio de cierre ni avalúo"
       assert html =~ "Toca una AGEB"
       assert html =~ "sin dato: 1"
 
-      lv = montar_con_ubicacion(conn, suelo.([]))
+      lv = montar_con_ubicacion(conn, precio.([]))
       lv |> element(".pestana[aria-controls=cinta-vivienda]") |> render_click()
 
       html =
         lv
         |> form("#vivienda_capa_form", vivienda_capa: %{"indicador" => "eic_alqui"})
-        |> render_submit(%{vivienda_capa: %{"indicador" => "suelo_ageb"}})
+        |> render_submit(%{vivienda_capa: %{"indicador" => "precio_ageb"}})
 
-      assert html =~ "Todavía no hay valor de suelo por AGEB para ese estado."
+      assert html =~ "Todavía no hay precio de oferta por AGEB para ese estado."
     end
 
     test "quitar apaga el acetato y su ficha", %{conn: conn} do

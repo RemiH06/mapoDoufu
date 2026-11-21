@@ -1,10 +1,10 @@
 # Precio estimado de vivienda por AGEB
 
-Estado (2026-11-20): construida la primera parte, la **forma**. Mapo muestra el
-valor catastral de suelo por AGEB y, donde falta, un rango conformal con su
-cobertura medida (acetato "Vivienda", indicador "Valor de suelo por AGEB";
-`vista-vivienda.md`). La **escala de mercado** sigue sin construir: ver
-Pendiente. Estudio en `estudios/precio_estimado/` (notebook y módulos); historia
+Estado (2026-11-21): Mapo muestra el precio de oferta por vivienda por AGEB (la
+mediana de los anuncios del IIEG) y, donde falta, un rango conformal de Lasso con
+su cobertura medida (acetato "Vivienda", indicador "Precio de oferta por AGEB";
+`vista-vivienda.md`). Del 2026-11-20 al 21 mostró el valor catastral de suelo
+(tabla v1). Estudio en `estudios/precio_estimado/` (notebooks y módulos); historia
 en `../historial/2026-11-precio-estimado.md`.
 
 Ninguna fuente abierta da el precio de mercado por AGEB
@@ -173,6 +173,14 @@ con el bosque en 0.403 y 0.820 y la red en 0.459 y 0.764. El rango conformal con
 Lasso y ancho lineal cubre 82 % con alto entre bajo de 2.8, igual que el bosque:
 con este objetivo, Lasso puede reemplazarlo.
 
+**Extrapolación.** La cobertura se mide en AGEB con anuncios; las que reciben
+rango son las que no tienen, muchas en la periferia. Ahí Lasso y el ancho lineal
+extrapolaban: 8 AGEB salían con rangos de $0 a infinito y 45 con piso menor a
+$100,000. Por eso los rasgos se recortan al rango de las AGEB con anuncios, el
+ancho se topa en el percentil 99 del ajuste y queda sin dato la AGEB con tres
+rasgos o más fuera de rango o donde el modelo extrapola (227 de 1,028). Con eso,
+el rango típico va de un piso a 2.9 veces el piso y el más ancho a 12.
+
 **Calibrar contra la mediana municipal no mejora.** Al dejar fuera un municipio
 y mover su nivel para igualar la mediana de anuncios del IIEG, el error por AGEB
 empeora si se pesa por viviendas (lo que habría sin datos) y queda igual si se
@@ -198,15 +206,17 @@ tome valores de un municipio vecino.
 
 ## Dónde vive
 
-- `estudios/precio_estimado/`: notebooks `precio_estimado.ipynb` (el rango que
-  va a producción) y `modelos.ipynb` (modelos interpretables), con módulos
-  `precio/` (datos, modelos, interpretables, conformal, salida, gráficas). Escribe
-  `mapo_core/data/precio_estimado/precio_ageb_v1.csv`.
+- `estudios/precio_estimado/`: `modelos.ipynb` (modelos interpretables sobre el
+  precio de oferta; su sección 12 escribe
+  `mapo_core/data/precio_estimado/precio_ageb_v2.csv`, lo que está en producción) y
+  `precio_estimado.ipynb` (el estudio del suelo catastral, tabla v1), con módulos
+  `precio/` (datos, modelos, interpretables, conformal, calibracion, salida,
+  gráficas).
 - `mapo_core/src/mapo_core/precio_estimado.py`: valida y carga esa tabla en
   `fuente_precio_estimado` (`python -m mapo_core.cli precio_estimado --archivo
-  /app/data/precio_estimado/precio_ageb_v1.csv`). Rechaza un catastro sin valor
-  o un rango sin cobertura.
-- El indicador `suelo_ageb` del acetato de vivienda (`vista-vivienda.md`):
+  /app/data/precio_estimado/precio_ageb_v2.csv`). Rechaza un valor observado
+  (`anuncios` o `catastro`) sin valor o un rango sin cobertura.
+- El indicador `precio_ageb` del acetato de vivienda (`vista-vivienda.md`):
   catálogo cerrado de claves, nada interpolado en el SQL.
 
 ## Pendiente
@@ -223,8 +233,7 @@ tome valores de un municipio vecino.
 - **Validación con precios reales** (arriba).
 - **Cambiar a Lasso en producción:** solo si el rango vuelve a cubrir 80 % por
   municipio; probar conformal calibrado por municipio (Mondrian).
-- **Vista con precio de mercado:** el acetato de `/mapa` sigue mostrando el valor
-  catastral de suelo (v7). Pasarlo al precio de oferta por vivienda (v8, Lasso con
-  rango conformal) es decisión de Remi; Tonalá necesitaría más anuncios.
+- **Vista con precio de mercado:** hecha el 2026-11-21 (Remi). Tonalá necesitaría
+  más anuncios; El Salto, al menos 20 AGEB con anuncios para dar rangos.
 - **Dónde aparecen los anuncios:** para usar una cifra municipal en un municipio
   sin anuncios por AGEB, primero habría que modelar dónde se anuncia.

@@ -2,7 +2,7 @@
 
 Acetato "Vivienda" en `/mapa`. Pinta los municipios de un estado con un indicador
 de **una sola fuente** y, al tocar un municipio, abre su ficha con las cuatro
-fuentes de vivienda por separado. Un indicador, el valor de suelo, va por AGEB
+fuentes de vivienda por separado. Un indicador, el precio de oferta, va por AGEB
 (ver abajo). Es la primera vista temática del plan
 (`plan-nacional.md`, "Vistas temáticas"), hecha como acetato y no como pantalla
 aparte: así se cruza con el censo, el DENUE o los datos del equipo en la misma mesa.
@@ -31,7 +31,7 @@ indicador a la vez y siempre dice su fuente, su unidad, su nivel y su método.
 | `sniiv_acciones` | Créditos y subsidios del año | Suma de todos los organismos y destinos; año y segmento elegibles; si el año está incompleto, dice cuántos meses trae |
 | `sniiv_promedio` | Monto promedio por acción, en miles de pesos | Monto entre las acciones que traen monto, mismo filtro. Muchos mejoramientos llegan con monto 0: contarlos bajaba el promedio de un segmento de Tlaquepaque a $40 |
 | `shf_anual` | Cambio del índice SHF en un año | Último trimestre contra el mismo un año antes; solo donde SHF publica |
-| `suelo_ageb` | Valor de suelo por AGEB, $/m² del año de la tabla | Catastro donde la AGEB tiene etiquetas; rango conformal donde no (`precio-estimado.md`) |
+| `precio_ageb` | Precio de oferta por AGEB, pesos por vivienda de julio de 2024 | Mediana de los anuncios del IIEG donde la AGEB tiene al menos tres; rango conformal donde no (`precio-estimado.md`). Hasta el 2026-11-21 era `suelo_ageb`, el valor catastral de suelo |
 
 Sin año, el SNIIV toma el último año completo (12 meses). Un municipio sin
 registro en el SNIIV ese año queda sin dato, no en cero: el SNIIV no distingue
@@ -40,25 +40,27 @@ registro en el SNIIV ese año queda sin dato, no en cero: el SNIIV no distingue
 Los colores son quintiles de los municipios con dato; los que no tienen van
 punteados y se cuentan aparte en la escala.
 
-## Valor de suelo por AGEB
+## Precio de oferta por AGEB
 
 Sale de la tabla `fuente_precio_estimado` (`precio-estimado.md`), una fila por AGEB
-urbana del dataset de vivienda:
+urbana del dataset de vivienda (v8):
 
-- **Catastro:** la mediana de las etiquetas de la tabla de valores dentro de la
-  AGEB, con el año de la tabla y cuántas etiquetas son.
-- **Estimado:** un rango ("de $2,000 a $4,500/m²") y, al lado, en cuántas AGEB no
-  vistas de ese municipio el catastro cayó dentro. Va sin color y con borde
-  punteado: fuera de Guadalajara el alto llega a ser 20 veces el bajo, y pintar su
-  punto medio lo haría pasar por dato. La escala cuenta estas AGEB como "sin dato"
-  porque no tienen color, no porque no tengan rango.
-- **Sin dato:** el municipio no tiene tabla de valores ubicada. No se rellena con
-  vecinas ni con otro municipio.
+- **Con anuncios:** la mediana del precio pedido en los anuncios de venta del IIEG
+  (julio de 2024) de las colonias que tocan la AGEB, con cuántos anuncios son. Solo
+  estas llevan color.
+- **Estimado:** un rango ("de $1,030,000 a $3,300,000 por vivienda") y, al lado, en
+  cuántas AGEB no vistas de ese municipio la mediana de anuncios cayó dentro. Va
+  sin color y con borde punteado: pintar su punto medio lo haría pasar por dato.
+  La escala cuenta estas AGEB como "sin dato" porque no tienen color, no porque
+  no tengan rango.
+- **Sin dato:** el IIEG no cubre el municipio (Acatlán, Ixtlahuacán, Juanacatlán,
+  Zapotlanejo), o tiene menos de 20 AGEB con anuncios para medir un rango (El
+  Salto), o la AGEB se parece poco a las que tienen anuncios y el modelo
+  extrapolaría. La ventana dice cuál. No se rellena con vecinas, con otro
+  municipio ni con la mediana municipal (no mejora: `precio-estimado.md`).
 
-Cada municipio está en pesos del año de su tabla (Guadalajara 2020; Zapopan,
-Tonalá e Ixtlahuacán 2026); el método lo dice y pide no comparar colores entre
-años distintos. Al tocar una AGEB se abre su ventana; la ficha del municipio no,
-porque agranda la cinta y la tapaba.
+Es precio pedido, no de cierre ni avalúo, y el método lo dice. Al tocar una AGEB
+se abre su ventana; la ficha del municipio no, porque agranda la cinta y la tapaba.
 
 ## Ficha del municipio
 
@@ -98,4 +100,4 @@ porque agranda la cinta y la tapaba.
   transparencia y no suponer la delimitación mientras tanto. Lo que se pregunta,
   en `../fuentes/shf.md`, "Zonas metropolitanas: pregunta a la SHF".
 - Rezago habitacional municipal del SNIIV, si hace falta (`steps.md`, sesión 20).
-- Escala de mercado del valor de suelo: ver `precio-estimado.md`, Pendiente.
+- Tonalá: el rango cubre lo prometido pero el orden de sus AGEB es débil (pocos anuncios); ver `dataset-vivienda.md`.

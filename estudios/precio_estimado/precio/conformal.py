@@ -39,20 +39,34 @@ class Normalizado:
 
     def ajustar(self, X, y, grupos):
         self.m = modelos.ajustar(self.modelo, X, y, grupos)
+        self.y_lim = (float(np.min(y)), float(np.max(y)))
         res = (y - modelos.fuera_de_muestra(self.modelo, X, y, grupos, 4)).abs()
         if self.escala == "lineal":
             self.s = make_pipeline(modelos._columnas(self.rasgos, True),
                                    RidgeCV(alphas=np.logspace(-1, 3, 20)))
             self.s.fit(X, np.log(res + 1e-3))
+            # Lo lineal extrapola: fuera de lo visto, exp() da anchos infinitos.
+            # Tope en el percentil 99 del ajuste (el máximo es un caso atípico).
+            ajustados = self.s.predict(X)
+            self.s_lim = (ajustados.min(), np.percentile(ajustados, 99))
         else:
             self.s = make_pipeline(modelos._columnas(self.rasgos, False), RandomForestRegressor(
                 n_estimators=300, min_samples_leaf=10, random_state=modelos.SEMILLA, n_jobs=-1))
             self.s.fit(X, res)
         return self
 
+    def fuera_de_ajuste(self, X) -> np.ndarray:
+        """AGEB donde el modelo extrapola: centro fuera de los valores observados
+        o, con ancho lineal, ancho por arriba del tope. Su rango no está medido."""
+        c = self.m.predict(X)
+        malo = (c < self.y_lim[0]) | (c > self.y_lim[1])
+        if self.escala == "lineal":
+            malo |= self.s.predict(X) > self.s_lim[1]
+        return np.asarray(malo)
+
     def centro_y_escala(self, X):
         s = self.s.predict(X)
-        s = np.exp(s) if self.escala == "lineal" else s
+        s = np.exp(np.clip(s, *self.s_lim)) if self.escala == "lineal" else s
         return self.m.predict(X), np.maximum(s, 1e-3)
 
     def puntaje(self, X, y):
