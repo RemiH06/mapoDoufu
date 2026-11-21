@@ -139,10 +139,22 @@ límite (código 28): es lo esperado.
 
 ## Correo
 
-Todavía no hay correo real: ya hay dominio, pero falta un proveedor de
-envío con sus registros SPF y DKIM. En prod el mailer es
-`Swoosh.Adapters.Logger`: cada correo (enlace de acceso, invitación) se
-escribe completo en el log, y quien administra lo reenvía a mano:
+Sale de `no-reply@correo.mapo.remlam.dev` por Scaleway TEM
+(`Swoosh.Adapters.Scaleway`, por su API) cuando el `.env` trae
+`MAPO_SCW_PROJECT_ID` y `MAPO_SCW_SECRET_KEY`. La llave es de una
+aplicación de IAM con `TransactionalEmailEmailFullAccess` solo en el
+proyecto de Scaleway de Mapo: envía, pero no toca dominios ni otros
+proyectos. El dominio y sus registros DNS se configuran desde Bakery
+(`publicacion/correo.md`). Nadie lee las respuestas: el MX del
+subdominio es el agujero negro de Scaleway.
+
+Para comprobarlo después de desplegar, pide un enlace de acceso con tu
+correo y revisa en el original del mensaje que SPF, DKIM y DMARC digan
+`pass`.
+
+Sin esas dos variables, el mailer es `Swoosh.Adapters.Logger`: cada
+correo (enlace de acceso, invitación) se escribe completo en el log, y
+quien administra lo reenvía a mano:
 
 ```bash
 docker compose -p mapo-prod logs mapo | grep -A20 "Instrucciones"

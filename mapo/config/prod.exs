@@ -19,7 +19,7 @@ config :mapo, MapoWeb.Endpoint,
     ]
   ]
 
-# Mientras no haya dominio ni correo real, los correos (enlaces de acceso,
+# Sin la llave de Scaleway (runtime.exs), los correos (enlaces de acceso,
 # invitaciones) se escriben completos en el log y quien administra los
 # reenvía a mano: `docker compose logs mapo`. El log trae enlaces de
 # acceso vigentes, así que solo lo lee quien opera el servidor.
