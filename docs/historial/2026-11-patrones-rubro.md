@@ -107,7 +107,7 @@ test), `test_denue_downloader.py` (8, ZIP armado en el test), un caso de
   vectorial cabe en unos 19 GB. Remi decidió que los rásteres públicos no se
   hospedan: los sube cada equipo (`../arquitectura/decisiones.md`).
 - **Menú de rubros:** los sectores se quedan; la navegación del desplegable va a
-  la sesión 24.
+  la pasada final de diseño (sesión 29).
 
 ## Pendiente
 
