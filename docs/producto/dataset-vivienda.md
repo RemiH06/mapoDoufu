@@ -103,7 +103,28 @@ construido), `pct_departamentos`, `medv_periodo` y `medv_metodo`. Junto a la
 tabla va `mercado_municipal.csv` con la media, la mediana y los cuartiles de
 cada municipio.
 
-Cobertura y validación de la v8: pendientes (la tabla se está armando).
+### Cobertura y validación (v8, 2026-11-21)
+
+41,978 anuncios sin duplicados; 24,412 traen colonia y 24,120 empatan con un
+polígono. 787 de 2,068 AGEB quedan con `medv` (con el catastro eran 892):
+
+| Municipio | AGEB con `medv` | Mediana por AGEB | Spearman con `graproes` | Con `suelo_m2` |
+|---|---|---|---|---|
+| Guadalajara | 299 de 442 | $2.70 M | 0.66 | 0.66 |
+| Zapopan | 296 de 529 | $3.50 M | 0.50 | 0.42 |
+| Tlajomulco de Zúñiga | 84 de 377 | $1.36 M | 0.71 | |
+| San Pedro Tlaquepaque | 68 de 234 | $2.15 M | 0.16 (0.45 por m²) | |
+| Tonalá | 35 de 228 | $1.41 M | −0.40 | 0.08 |
+| El Salto | 5 de 127 | $0.85 M | | |
+
+- La mediana por AGEB queda abajo de la municipal (Guadalajara $2.70 M contra
+  $4.63 M): la municipal cuenta anuncios, que se juntan en las colonias caras;
+  la de AGEB cuenta zonas.
+- **Tonalá no sirve todavía:** tiene una mediana de 4.8 anuncios efectivos por
+  AGEB y sus AGEB más baratas son las de más departamentos (65 a 70 %). El orden
+  sale al revés de la escolaridad, aun por m². Tlaquepaque mejora por m².
+- La mezcla de casas y departamentos mueve `medv`: `pct_departamentos` la
+  documenta y `medv_m2` la corrige en parte.
 
 ## Valor de suelo catastral (`suelo_m2`, MEDV hasta la v7)
 

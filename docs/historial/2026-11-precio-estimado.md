@@ -47,3 +47,11 @@ primero (RMSE log 0.619, Spearman 0.738) por delante del bosque (0.622, 0.720);
 la red chica, último (0.698). Con Lasso el rango conformal es más angosto pero
 cubre 77.8 %: producción sigue con el bosque. Detalle en
 `docs/producto/precio-estimado.md`, "Modelos interpretables".
+
+## MEDV a precio de oferta (2026-11-21)
+
+Remi decidió pasar el MEDV a pesos por vivienda con los anuncios del IIEG
+(julio de 2024, seis municipios). Dataset v8: 787 AGEB con precio; el catastro
+queda en `suelo_*`. En `modelos.ipynb`, Lasso sigue primero (RMSE log 0.398,
+Spearman 0.828) y el rango cubre 82 %. Calibrar con la mediana municipal de
+anuncios empeora o deja igual el error por AGEB: mide otra población.

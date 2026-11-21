@@ -164,6 +164,23 @@ Con Lasso al centro y una ridge sobre log|residuo| para el ancho
 entre bajo 2.5 contra 3.1) pero cubre 77.8 % en vez de 79.6 %, y Zapopan 71.5 %.
 Producción sigue con el bosque hasta resolver esa falta de cobertura (pendiente).
 
+### Con el precio de oferta (dataset v8, 2026-11-21)
+
+Desde la v8, `modelos.ipynb` usa como objetivo la mediana del precio pedido por
+vivienda del IIEG (`../fuentes/iieg-oferta.md`), 787 AGEB en seis municipios,
+todas de julio de 2024. Lasso sigue primero (RMSE log 0.398, Spearman 0.828),
+con el bosque en 0.403 y 0.820 y la red en 0.460 y 0.764. El rango conformal con
+Lasso y ancho lineal cubre 82 % con alto entre bajo de 2.8, igual que el bosque:
+con este objetivo, Lasso puede reemplazarlo.
+
+**Calibrar contra la mediana municipal no mejora.** Al dejar fuera un municipio
+y mover su nivel para igualar la mediana de anuncios del IIEG, el error por AGEB
+empeora si se pesa por viviendas (lo que habría sin datos) y queda igual si se
+pesa por anuncios (el mejor caso). La mediana de anuncios describe dónde se
+anuncia, no la vivienda típica; la SHF mide otra población todavía (avalúos de
+crédito en todo el estado). Una cifra agregada solo calibra si mide la misma
+población que lo que se predice.
+
 ## Validación
 
 Sin precios reales no hay forma de medir el error en pesos. Opciones legales
@@ -197,10 +214,8 @@ tome valores de un municipio vecino.
 - **Ruido del OCR:** revisar a mano una muestra de valores menores a $1,000 en los
   escaneos de Zapopan y Tonalá. Si la mayoría son números de manzana, subir el
   filtro del pipeline a $1,000, rehacer el dataset y esta tabla.
-- **Escala de mercado:** el SNIIV da monto por crédito (pesos por vivienda) y el
-  catastro da $/m² de suelo; el mapeo por cuantiles del Método uniría unidades
-  distintas. Decidir con Remi si la escala se da en pesos por vivienda o se
-  busca otra fuente por m². Sin precios reales no se valida.
+- **Escala de mercado:** resuelta el 2026-11-20 (Remi): pesos por vivienda, con el
+  precio de oferta del IIEG (dataset v8).
 - **Años distintos y trimestre:** llevar Guadalajara 2020 a 2026 con su tabla de
   2026 (hay 288 AGEB con las dos; Spearman 0.85) en vez de dejar cada municipio en
   su año, y luego todo a 2026-II, el trimestre elegido, con el índice SHF. Hoy
@@ -208,11 +223,8 @@ tome valores de un municipio vecino.
 - **Validación con precios reales** (arriba).
 - **Cambiar a Lasso en producción:** solo si el rango vuelve a cubrir 80 % por
   municipio; probar conformal calibrado por municipio (Mondrian).
-- **Calibrar contra promedios oficiales:** la SHF publica cada trimestre la media y
-  los cuartiles del precio por vivienda por estado (no por municipio: ahí solo da
-  el índice). El IIEG publica precios de oferta por colonia para seis municipios
-  de la zona metropolitana, con base descargable. Idea: modelo mixto cuyo
-  intercepto municipal se ajusta para que la media ponderada por viviendas
-  coincida con la cifra oficial (benchmarking de áreas pequeñas), calibrando con
-  el estado y midiendo contra los municipios del IIEG. Requiere decidir antes la
-  unidad (pesos por vivienda contra $/m² de suelo).
+- **Vista con precio de mercado:** el acetato de `/mapa` sigue mostrando el valor
+  catastral de suelo (v7). Pasarlo al precio de oferta por vivienda (v8, Lasso con
+  rango conformal) es decisión de Remi; Tonalá necesitaría más anuncios.
+- **Dónde aparecen los anuncios:** para usar una cifra municipal en un municipio
+  sin anuncios por AGEB, primero habría que modelar dónde se anuncia.

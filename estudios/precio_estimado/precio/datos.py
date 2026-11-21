@@ -62,3 +62,10 @@ def bloques(v: pd.DataFrame, km: float = 3.0) -> pd.Series:
     x = v["lon"] * 111.32 * np.cos(lat0)
     y = v["lat"] * 110.57
     return (np.floor(x / km).astype(int).astype(str) + "_" + np.floor(y / km).astype(int).astype(str))
+
+
+def municipal(zip_path: Path) -> pd.DataFrame:
+    """`mercado_municipal.csv` del dataset (v8 en adelante): media, mediana y
+    cuartiles de todos los anuncios del IIEG por municipio."""
+    with zipfile.ZipFile(zip_path) as z:
+        return pd.read_csv(z.open("vivienda_gdl/mercado_municipal.csv"), dtype={"cve_mun": str})

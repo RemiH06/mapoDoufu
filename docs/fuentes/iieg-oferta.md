@@ -59,6 +59,9 @@ de julio de 2024 (publicada en diciembre de 2024).
   para la AGEB.
 - La colonia del anuncio la escribe quien anuncia; el IIEG la valida contra su
   catálogo, pero un anuncio en la colonia equivocada se queda ahí.
+- Pocos anuncios fuera de Guadalajara, Zapopan y Tlajomulco: Tonalá tiene 886
+  y El Salto 231 en todo el municipio. En Tonalá el orden de las AGEB sale al
+  revés de la escolaridad (`../producto/dataset-vivienda.md`).
 - Seis municipios. Los otros cuatro de la zona metropolitana (Acatlán,
   Ixtlahuacán de los Membrillos, Juanacatlán y Zapotlanejo) quedan sin `medv`.
 - El IIEG no publica licencia. Citar como "IIEG con información de sitios web de
