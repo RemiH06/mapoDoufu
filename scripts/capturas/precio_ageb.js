@@ -1,8 +1,8 @@
-// /mapa con el acetato de vivienda en "Valor de suelo por AGEB" (Jalisco), en
-// los tres tamaños y los dos modos: el plano, la ventana de una AGEB con
-// catastro y la de una estimada (borde punteado). Deja el texto de la cinta.
+// /mapa con el acetato de vivienda en "Precio de oferta por AGEB" (Jalisco), en
+// los tres tamaños y los dos modos: el plano, de cerca y la ventana de una AGEB
+// estimada (borde punteado). Deja el texto de la cinta.
 //
-//   node suelo.js <corrida>
+//   node precio_ageb.js <corrida>
 const fs = require("fs");
 const path = require("path");
 const { BASE, conectado, quieto, iniciar, porCadaVista, carpeta } = require("./comun");
@@ -18,7 +18,7 @@ const abrirCharola = async (p) => {
 };
 
 (async () => {
-  const dir = carpeta(process.argv[2] || "suelo");
+  const dir = carpeta(process.argv[2] || "precio_ageb");
   const { browser, estado } = await iniciar();
   const errores = [];
 
@@ -34,7 +34,7 @@ const abrirCharola = async (p) => {
     await abrirCharola(p);
     await tocar(p, ".charola .pestana[aria-controls=cinta-vivienda]");
     await p.waitForSelector("#vivienda_capa_form", { timeout: 60000 });
-    await p.selectOption("#vivienda_capa_form select[name='vivienda_capa[indicador]']", "suelo_ageb");
+    await p.selectOption("#vivienda_capa_form select[name='vivienda_capa[indicador]']", "precio_ageb");
     await quieto(p, 800);
     await tocar(p, "#vivienda_capa_form button:not([type=button])");
     await p.waitForSelector("#cinta-vivienda .cinta-metodo", { timeout: 120000 });
@@ -46,7 +46,7 @@ const abrirCharola = async (p) => {
       if (ancho) errores.push("scroll lateral en escritorio");
     }
 
-    // Una AGEB estimada de Guadalajara (140390001215A, 28 ha). El plano es canvas:
+    // Una AGEB estimada de Guadalajara (1403900013016, 96 ha). El plano es canvas:
     // se ubica en pantalla con la posición de un mosaico del mapa base (z/x/y).
     const ubicar = () => p.evaluate(([lat, lon]) => {
       for (const img of document.querySelectorAll("img.leaflet-tile")) {
@@ -60,9 +60,30 @@ const abrirCharola = async (p) => {
         return { x: r.left + (wx - tx) * r.width, y: r.top + (wy - ty) * r.height };
       }
       return null;
-    }, [20.662909, -103.358288]);
+    }, [20.726751, -103.295323]);
+    // Si la cinta o un membrete tapan la AGEB, se arrastra el mapa hasta un hueco
+    // libre (arriba a la derecha) antes de acercar: el clic caería en el panel.
+    const libre = (q) => p.evaluate(({x, y}) => {
+      const e = document.elementFromPoint(x, y);
+      return !!e && !!e.closest(".leaflet-container") && !e.closest(".leaflet-control, .leaflet-popup");
+    }, q);
+    const destino = await p.evaluate(() => ({x: innerWidth * 0.75, y: innerHeight * 0.3}));
+    const despejar = async (punto) => {
+      for (let i = 0; punto && !(await libre(punto)) && i < 8; i++) {
+        // Se arrastra desde el hueco libre, de a lo más 200 px por vez.
+        const dx = Math.max(-200, Math.min(200, destino.x - punto.x));
+        const dy = Math.max(-200, Math.min(200, destino.y - punto.y));
+        await p.mouse.move(destino.x, destino.y);
+        await p.mouse.down();
+        await p.mouse.move(destino.x + dx, destino.y + dy, {steps: 10});
+        await p.mouse.up();
+        await quieto(p, 800);
+        punto = await ubicar();
+      }
+      return punto;
+    };
+    let punto = await despejar(await ubicar());
     // De cerca, para ver el borde punteado de las estimadas junto a las coloreadas.
-    let punto = await ubicar();
     if (punto) {
       await p.mouse.move(punto.x, punto.y);
       for (let i = 0; i < 4; i++) {
@@ -70,8 +91,8 @@ const abrirCharola = async (p) => {
         await p.waitForTimeout(400);
       }
       await quieto(p, 2500);
+      punto = await despejar(await ubicar());
       await p.screenshot({ path: path.join(dir, `cerca-${tn}-${modo}.png`) });
-      punto = await ubicar();
     }
     if (punto) {
       await p.mouse.click(punto.x, punto.y);
