@@ -55,7 +55,7 @@ async def coropleta(
 
     async with pool.connection() as conn:
         cursor = await conn.execute(
-            f"""SELECT a.cvegeo, ST_AsGeoJSON(ST_Simplify(a.geom, %(tolerancia)s), 5), c.{indicador}
+            f"""SELECT a.cvegeo, ST_AsGeoJSON(ST_Simplify(a.geom, %(tolerancia)s, true), 5), c.{indicador}
                 FROM agebs a
                 LEFT JOIN fuente_censo_poblacion c
                   ON c.cvegeo = a.cvegeo AND c.nivel = 'ageb'
@@ -78,7 +78,7 @@ async def limite_municipios(pool: AsyncConnectionPool, cve_ent: str, cve_muns: l
     uno). None si alguno no está en la base."""
     async with pool.connection() as conn:
         cursor = await conn.execute(
-            """SELECT count(*), ST_AsGeoJSON(ST_Simplify(ST_Union(geom), %(tolerancia)s), 5)
+            """SELECT count(*), ST_AsGeoJSON(ST_Simplify(ST_Union(geom), %(tolerancia)s, true), 5)
                FROM municipios WHERE cve_ent = %(cve_ent)s AND cve_mun = ANY(%(cve_muns)s)""",
             {"cve_ent": cve_ent, "cve_muns": cve_muns, "tolerancia": TOLERANCIA_SIMPLIFICACION},
         )

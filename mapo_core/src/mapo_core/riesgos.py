@@ -477,10 +477,10 @@ async def _anp(conn, zona):
         f"WITH zona AS ({_zona_sql(zona)}) SELECT a.nombre, a.categoria,"
         f" ST_Intersects(a.geom, z.geom) AS dentro,"
         # La distancia, redondeada a 100 m, se mide sobre los contornos simplificados a ~50 m.
-        f" round(ST_Distance(ST_Simplify(a.geom, 0.0005)::geography, ST_Simplify(z.geom, 0.0005)::geography)::numeric, -2) AS distancia_m,"
+        f" round(ST_Distance(ST_Simplify(a.geom, 0.0005, true)::geography, ST_Simplify(z.geom, 0.0005, true)::geography)::numeric, -2) AS distancia_m,"
         f" round((100 * ST_Area(ST_Intersection(a.geom, z.geom)::geography) / ST_Area(z.geom::geography))::numeric, 1) AS pct"
-        f" FROM fuente_anp a, zona z WHERE a.geom && ST_Expand(z.geom, 0.6) AND ST_DWithin(ST_Simplify(a.geom, 0.0005)::geography,"
-        f" ST_Simplify(z.geom, 0.0005)::geography, 50000)"
+        f" FROM fuente_anp a, zona z WHERE a.geom && ST_Expand(z.geom, 0.6) AND ST_DWithin(ST_Simplify(a.geom, 0.0005, true)::geography,"
+        f" ST_Simplify(z.geom, 0.0005, true)::geography, 50000)"
         f" ORDER BY distancia_m LIMIT 5", zona)
     filas = await cur.fetchall()
     hechos = []

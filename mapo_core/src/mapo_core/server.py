@@ -56,7 +56,7 @@ def _geometria_sql(geometria: bool) -> str:
     """Las listas de nombres (selects de estado y municipio) no
     necesitan el poligono: con `geometria=false` la consulta no lo
     serializa y la respuesta baja de MB a KB."""
-    return "ST_AsGeoJSON(ST_Simplify(geom, %(tolerancia)s), 5)" if geometria else "NULL"
+    return "ST_AsGeoJSON(ST_Simplify(geom, %(tolerancia)s, true), 5)" if geometria else "NULL"
 
 
 @app.get("/geo/estados")
@@ -108,13 +108,13 @@ async def geo_agebs(
     async with pool.connection() as conn:
         if cve_mun:
             cursor = await conn.execute(
-                """SELECT cvegeo, ST_AsGeoJSON(ST_Simplify(geom, %(tolerancia)s), 5)
+                """SELECT cvegeo, ST_AsGeoJSON(ST_Simplify(geom, %(tolerancia)s, true), 5)
                    FROM agebs WHERE cve_ent = %(cve_ent)s AND cve_mun = %(cve_mun)s ORDER BY cvegeo""",
                 {"cve_ent": cve_ent, "cve_mun": cve_mun, "tolerancia": _TOLERANCIA_SIMPLIFICACION},
             )
         else:
             cursor = await conn.execute(
-                """SELECT cvegeo, ST_AsGeoJSON(ST_Simplify(geom, %(tolerancia)s), 5)
+                """SELECT cvegeo, ST_AsGeoJSON(ST_Simplify(geom, %(tolerancia)s, true), 5)
                    FROM agebs WHERE cve_ent = %(cve_ent)s ORDER BY cvegeo""",
                 {"cve_ent": cve_ent, "tolerancia": _TOLERANCIA_SIMPLIFICACION},
             )
@@ -138,7 +138,7 @@ async def geo_por_clave(peticion: PeticionPorClave, pool: AsyncConnectionPool = 
     no exista en el marco cargado simplemente no regresa."""
     async with pool.connection() as conn:
         cursor = await conn.execute(
-            f"""SELECT cvegeo, ST_AsGeoJSON(ST_Simplify(geom, %(tolerancia)s), 5)
+            f"""SELECT cvegeo, ST_AsGeoJSON(ST_Simplify(geom, %(tolerancia)s, true), 5)
                FROM {_TABLA_POR_NIVEL[peticion.nivel]} WHERE cvegeo = ANY(%(claves)s) ORDER BY cvegeo""",
             {"claves": peticion.claves, "tolerancia": _TOLERANCIA_SIMPLIFICACION},
         )
@@ -486,7 +486,7 @@ async def coloreado_municipios(cve_ent: str, pool: AsyncConnectionPool = Depends
     color en un mapa categorico."""
     async with pool.connection() as conn:
         cursor = await conn.execute(
-            "SELECT cvegeo, cve_mun, nombre, ST_AsGeoJSON(ST_Simplify(geom, %(tolerancia)s), 5) "
+            "SELECT cvegeo, cve_mun, nombre, ST_AsGeoJSON(ST_Simplify(geom, %(tolerancia)s, true), 5) "
             "FROM municipios WHERE cve_ent = %(cve_ent)s ORDER BY cvegeo",
             {"cve_ent": cve_ent, "tolerancia": _TOLERANCIA_SIMPLIFICACION},
         )
