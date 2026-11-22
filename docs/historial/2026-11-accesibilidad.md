@@ -56,6 +56,6 @@ supermercado y una estación de transporte masivo. Ficha en
 
 ## Despliegue
 
-Producción en `e2aecec` el 2026-11-22 (revertir: `deploy-20261122`; sin migración, las
-tablas las crea `mapo_core`). CLUES cargado y los 9 servicios calculados a pie y en auto
+Producción en `dc64425` el 2026-11-22 (código en `e2aecec`; revertir:
+`deploy-20261122`; sin migración, las tablas las crea `mapo_core`). CLUES cargado y los 9 servicios calculados a pie y en auto
 para Jalisco el mismo día.
