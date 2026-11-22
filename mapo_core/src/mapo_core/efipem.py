@@ -104,12 +104,14 @@ async def municipio(pool: AsyncConnectionPool, cve_ent: str, cve_mun: str) -> di
                FROM fuente_efipem_municipal WHERE cve_ent = %s AND cve_mun = %s ORDER BY anio""",
             (cve_ent, cve_mun))
         filas = await cur.fetchall()
-        cur = await conn.execute("SELECT max(anio) FROM fuente_efipem_municipal")
-        (ultimo_publicado,) = await cur.fetchone()
+        cur = await conn.execute("SELECT max(anio), bool_or(cve_ent = %s) FROM fuente_efipem_municipal", (cve_ent,))
+        ultimo_publicado, estado_publicado = await cur.fetchone()
     if ultimo_publicado is None:
         return None
     if not filas:
-        return {"sin_dato": True, "ultimo_publicado": ultimo_publicado}
+        # La Ciudad de México no está en EFIPEM municipal: sus alcaldías no tienen hacienda
+        # propia. Eso no es "no reportó".
+        return {"sin_dato": True, "ultimo_publicado": ultimo_publicado, "estado_sin_datos": not estado_publicado}
     por_anio: dict[int, dict] = {}
     for anio, tema, categoria, concepto, valor, _ in filas:
         a = por_anio.setdefault(anio, {"ingresos": {}, "egresos": {}, "total_ingresos": None,

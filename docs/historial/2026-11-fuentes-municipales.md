@@ -43,3 +43,16 @@ planeación del Censo de Gobiernos Municipales 2025. Fichas en `../fuentes/`:
 - En celular, la columna del porcentaje de cada sector se salía del papel; ahora va entre
   paréntesis junto al nombre. Los nombres de los instrumentos pierden "del municipio o
   demarcación territorial".
+- Al revisar producción, las alcaldías de la Ciudad de México decían "el municipio no
+  reportó sus finanzas": EFIPEM municipal no trae la Ciudad de México en ningún año
+  (sus alcaldías no tienen hacienda propia). Ahora el perfil distingue un estado ausente de
+  un municipio que no reportó.
+
+## Despliegue
+
+Producción en `2c82eb9` el 2026-11-22 (revertir: `deploy-20261122c`; sin migración, las
+tablas las crea `mapo_core`), y el arreglo de la Ciudad de México después. Cargados el
+rezago social (61,430 AGEB), EFIPEM 2019 a 2023 (cero descuadres), el CNGMD (2,465
+municipios) y los Censos Económicos de los 32 estados, cada uno cuadrando con su total
+estatal. Revisado contra el endpoint de producción en Cuauhtémoc, Oaxaca de Juárez,
+Monterrey y Autlán.

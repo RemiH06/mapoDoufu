@@ -654,6 +654,10 @@ defmodule MapoWeb.PerfilLive.Index do
               El municipio no reportó {@datos["ultimo_publicado"]}: es su último año con datos.
             </span>
           </p>
+        <% @datos && @datos["estado_sin_datos"] -> %>
+          <p class="falta">
+            EFIPEM no publica finanzas municipales de este estado (en la Ciudad de México, las alcaldías no tienen hacienda propia).
+          </p>
         <% @datos -> %>
           <p class="falta">
             El municipio no reportó sus finanzas a INEGI de 2019 a {@datos["ultimo_publicado"]}.

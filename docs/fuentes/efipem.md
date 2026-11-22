@@ -17,7 +17,10 @@ papel "Hacienda municipal".
 - **Pesos corrientes** de cada año, sin ajustar por inflación; el perfil lo dice.
 - **Municipios que no reportan:** no tienen renglones ese año. 2019: 2,121; 2020: 2,250;
   2021: 2,225; 2022: 2,386; 2023: 2,249 de 2,475. El perfil muestra el último año del
-  municipio y avisa si no es el último publicado; si no reportó ninguno, lo dice.
+  municipio y avisa si no es el último publicado; si no reportó ninguno, lo dice. Por
+  estado varía mucho: en 2023, Puebla 61 de 217 y Oaxaca 550 de 570. La Ciudad de México no
+  está en ningún año (sus alcaldías no tienen hacienda propia) y el perfil lo dice así, no
+  como "no reportó".
 - INEGI escribe algunos conceptos con espacios duros (`Remuneraciones\xa0al\xa0personal`):
   se limpian al leer.
 

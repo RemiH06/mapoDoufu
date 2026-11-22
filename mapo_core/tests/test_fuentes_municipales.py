@@ -171,7 +171,7 @@ async def test_perfil_trae_cada_fuente_aparte(conn, pool_de_una_conexion, tmp_pa
         2023, 2024, 200, 40.0, 60.0)
     assert [x["anio"] for x in h["serie_propios"]] == [2021, 2022, 2023]
     assert h["ingresos"][0] == ["Participaciones federales", 600]
-    assert datos["hacienda"]["sin_dato"] is True
+    assert (datos["hacienda"]["sin_dato"], datos["hacienda"]["estado_sin_datos"]) == (True, False)
     r = gdl["rezago_social"]
     assert [(g["grado"], g["agebs"], g["personas"]) for g in r["grados"]] == [("Bajo", 2, 800), ("Muy alto", 1, None)]
     assert gdl["planeacion"] is None  # el CNGMD no está cargado en la base de prueba
