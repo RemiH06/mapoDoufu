@@ -16,6 +16,7 @@
 - [vista-vivienda.md](producto/vista-vivienda.md): acetato de vivienda en `/mapa`, un indicador de una sola fuente a la vez (por municipio, o el valor de suelo por AGEB) y la ficha con SHF, SNIIV, Intercensal y ENVI por separado.
 - [precio-estimado.md](producto/precio-estimado.md): precio de vivienda estimado por AGEB como rango con cobertura medida; hecha la forma (catastro y rango conformal, validados por bloques), pendiente la escala de mercado.
 - [citar.md](producto/citar.md): enlace permanente de `/mapa` y `/riesgos` (qué parámetros guarda y cómo se validan) y "Cómo citar" con la fuente original primero, en APA y BibTeX, con la versión de la tabla.
+- [accesibilidad.md](producto/accesibilidad.md): `/accesibilidad`, cuánta gente vive a más de N minutos a pie o en auto de cada servicio (salud, escuelas por nivel, supermercado, transporte masivo), cada uno con su grupo de población; cómo se calcula por estado y por qué las escuelas solo desde AGEB.
 - [datos-propios.md](producto/datos-propios.md): archivos del equipo (tabla, vectorial, ráster) como acetato, su cruce con fuentes públicas, la distancia entre capas y el valor de un ráster: formatos, límites, ubicación, procedencia, permisos y qué se guarda.
 
 ## Arquitectura
@@ -33,7 +34,7 @@ Una por fuente: de dónde sale, cómo se carga, sus problemas conocidos y las ci
 - [enigh.md](fuentes/enigh.md): ingreso y gasto de hogares (consumo).
 - [enoe.md](fuentes/enoe.md): ocupación y empleo (laboral).
 - [sesnsp.md](fuentes/sesnsp.md): incidencia delictiva (seguridad), carga manual.
-- [osrm.md](fuentes/osrm.md): ruteo por carretera, demo público contra servidor propio.
+- [osrm.md](fuentes/osrm.md): ruteo por carretera, demo público contra servidor propio, y el perfil a pie por estado.
 - [ambientales.md](fuentes/ambientales.md): agua, acuíferos, descargas, emisiones, uso de suelo, incendios y más, en crudo, y cómo recortarlas a una zona como paquete para SIG.
 - [localidades.md](fuentes/localidades.md): las 189,432 localidades del Censo 2020 (ITER) de todo el país, con su punto, validadas contra los totales; destino de la distancia en Mapo.
 - [edificios.md](fuentes/edificios.md): huellas de edificios de Overture Maps (OSM, Microsoft y Google) recortadas a una caja, con su validación contra el censo por manzana.
@@ -42,6 +43,7 @@ Una por fuente: de dónde sale, cómo se carga, sus problemas conocidos y las ci
 - [sniiv.md](fuentes/sniiv.md): créditos y subsidios para vivienda por municipio y año (SNIIV), por organismo, destino y segmento de valor.
 - [eic2025.md](fuentes/eic2025.md): Intercensal 2025, bloque de vivienda por municipio (tenencia, escrituras, servicios) con su precisión.
 - [acuiferos.md](fuentes/acuiferos.md), [renameca.md](fuentes/renameca.md), [repda.md](fuentes/repda.md), [retc.md](fuentes/retc.md), [siap.md](fuentes/siap.md), [firms.md](fuentes/firms.md), [uso-suelo.md](fuentes/uso-suelo.md), [anp.md](fuentes/anp.md), [sequia.md](fuentes/sequia.md), [defunciones.md](fuentes/defunciones.md): fuentes ambientales cargadas (sesión 22).
+- [clues.md](fuentes/clues.md): establecimientos de salud de la DGIS con institución, tipo, estatus y coordenadas; qué es público y a quién atiende, y las coordenadas y claves mal capturadas.
 - [imss.md](fuentes/imss.md): empleo formal del IMSS por municipio y grupo de actividad (puestos, salario de cotización), con la equivalencia de claves IMSS a INEGI; validado al puesto contra el IMSS y el IIEG.
 - [envi.md](fuentes/envi.md): ENVI 2020, renta mensual y valor estimado de la vivienda por estado.
 - [especies.md](fuentes/especies.md): plantas vasculares registradas en GBIF alrededor de una zona, con su estatus en México (Enciclovida) y el cruce con GRIIS, para elegir árboles nativos.

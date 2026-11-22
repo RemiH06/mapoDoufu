@@ -46,6 +46,7 @@ En `.env` junto al compose, con `chmod 600`. Plantilla: `.env.example`.
 | `PHX_PORT` | el puerto HTTPS con que se entra; vacío es 443 |
 | `MAPO_CONTACTO` | el correo que sale en `/privacidad` |
 | `MAPO_OSRM_DATOS` | carpeta con `mexico-latest.osrm.*` |
+| `MAPO_OSRM_PIE_DATOS` | carpeta con `pie.osrm.*` (`scripts/osrm/pie.sh`); solo para `--profile calculo` |
 
 El compose no arranca si falta alguna. `POSTGRES_PASSWORD` solo se
 aplica la primera vez que se crea el volumen de la base; cambiarla
@@ -262,6 +263,20 @@ Sirve el mapa de México ya preprocesado (algoritmo MLD). Ocupa unos
 ext4 (el de WSL) responde a los 13 segundos de arrancar; desde una
 carpeta de Windows montada tardó 3.5 minutos. Mientras tanto,
 `mapo_core` cae a línea recta y lo dice en `metodo`. Detalle en [fuentes/osrm.md](fuentes/osrm.md).
+
+`osrm_pie` (a pie, Jalisco) va con perfil `calculo`: no sube con el `up` de siempre.
+Para recalcular la accesibilidad (`producto/accesibilidad.md`):
+
+```bash
+C="docker compose -p mapo-prod -f docker-compose.yml -f docker-compose.prod.yml"
+$C run --rm -v "$HOME/srv/mapo-crudos/clues:/crudos:ro" mapo_core   python -m mapo_core.cli clues /crudos/ESTABLECIMIENTO_SALUD_202610.xlsx
+$C --profile calculo up -d osrm_pie
+$C run --rm -v "$HOME/srv/mapo-crudos/osm:/osm:ro" mapo_core   python -u -m mapo_core.cli accesibilidad --estado 14 --estaciones /osm/transporte_masivo_zmg.csv
+$C --profile calculo stop osrm_pie && $C --profile calculo rm -f osrm_pie
+```
+
+Así quedó en `~/srv/calcular-accesibilidad.sh` (trabajo `mapo-accesibilidad` de
+`job.ps1`).
 
 ## Operación
 

@@ -813,8 +813,6 @@ TABLAS_CITABLES = {
     "envi": ("fuente_envi2020_entidad", False),
     "precio": ("fuente_precio_estimado", True),
     "imss": ("fuente_imss_asegurados", True),
-    "clues": ("fuente_clues", True),
-    "accesibilidad": ("accesibilidad_cargas", True),
 }
 
 

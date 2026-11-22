@@ -49,6 +49,14 @@ botón, con el mismo límite de 30 por hora; un municipio que no está en la lis
 del estado, un radio fuera de 0.1 a 25 km o una cercanía que no es de la lista
 dejan la hoja vacía.
 
+### `/accesibilidad`
+
+`ent=&mun=&modo=&umbral=&servicio=`. Se escribe al terminar la consulta y al mover el
+umbral o el servicio del plano. Un modo que no es `pie` o `auto` o un umbral fuera de 1 a
+120 caen al valor inicial (a pie, 15); un municipio que no está deja la hoja vacía. La
+cita de cada servicio trae tres referencias: la fuente de los destinos (CLUES, DENUE u
+OSM), el censo y OSM como red, con la fecha del cálculo como versión.
+
 `/perfil` y `/buscador` ya guardaban su estado en la URL (`cve_ent`, `cve_mun`
 y `q`); todavía no tienen botón de cita.
 
@@ -108,6 +116,7 @@ texto), autor largo (para BibTeX), año comprobado o `nil`, título y liga.
 | `censo` | INEGI | 2021 | Programa del Censo 2020 |
 | `marco` | INEGI | s. f. | Servicio `wscatgeo/v2` |
 | `denue` | INEGI | s. f. | Descarga masiva |
+| `clues` | DGIS, Secretaría de Salud | s. f. | Página del catálogo CLUES |
 | `eic2025` | INEGI | 2026 | Zip de datos abiertos |
 | `envi` | INEGI | s. f. | Zip de datos abiertos |
 | `sniiv` | SEDATU | s. f. | Datos abiertos del SNIIV |

@@ -58,3 +58,32 @@ Para actualizar el mapa: bajar `mexico-latest.osm.pbf` de Geofabrik y
 correr con la misma imagen `osrm-extract -p /opt/car.lua`,
 `osrm-partition` y `osrm-customize` sobre la carpeta, en una máquina
 con 16 GB para Docker.
+
+## Perfil a pie (sesión 26)
+
+La accesibilidad a servicios (`../producto/accesibilidad.md`) necesita minutos a pie, y
+el OSRM de producción solo tiene `car.lua`. El demo público tampoco sirve: no hace
+rutas a pie y son cientos de miles de rutas por estado.
+
+`scripts/osrm/pie.sh` baja el pbf de México de Geofabrik con fecha fija (la ruta pasó a
+`north-america/mexico/mexico-AAMMDD.osm.pbf`; `mexico-latest` redirige al archivo del
+día aunque todavía no exista y da 404), recorta una caja con `osmium extract` en un
+contenedor de paso (por omisión Jalisco con 0.15° de margen, 86 MB) y prepara
+`foot.lua` con la misma imagen 26.7.3. Mide tiempo y pico de memoria de cada paso.
+
+| Paso | Jalisco |
+|---|---|
+| `osrm-extract` | 34 s, 2.4 GB |
+| `osrm-partition` | 21 s, 689 MB |
+| `osrm-customize` | 7 s, 528 MB |
+| Servir (`osrm-routed`) | 934 MB |
+
+Con datos del 2026-11-20 (el de auto es del 2026-08-01). El perfil camina a 5 km/h:
+2.27 km por calle en Guadalajara dieron 27.7 min. Para todo México, al ritmo de
+Jalisco (13 % del pbf), `osrm-extract` pediría unos 18 GB: no cabe en los 16 GB del
+WSL de Pixilate. Por estado sí.
+
+En producción es el servicio `osrm_pie` de `docker-compose.prod.yml`, con perfil
+`calculo`: no corre siempre, solo mientras `cli accesibilidad` calcula
+(`../despliegue.md`). `osrm-routed` no mira el perfil de la URL (`/table/v1/foot/` y
+`/driving/` dan lo mismo): manda el de los datos.
