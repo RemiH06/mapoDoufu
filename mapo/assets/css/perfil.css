@@ -397,6 +397,54 @@
     font-family: var(--mono);
   }
 
+  /* Cuenta pública: hacienda municipal (sesión 28), con el sello como la tarjeta. */
+  .d-hacienda {
+    grid-column: span 7;
+    --giro: 0.3deg;
+  }
+  .d-hacienda .sello {
+    display: inline-block;
+    margin: 6px 0 4px;
+    padding: 4px 14px;
+    border: 2.5px solid var(--film);
+    color: var(--film);
+    rotate: 3deg;
+    font-size: 40px;
+    font-weight: 500;
+    line-height: 1.1;
+    background: var(--bg);
+  }
+  .d-hacienda dl {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 4px 14px;
+    margin: 10px 0;
+    font-size: 13px;
+  }
+  .d-hacienda dt {
+    font-family: var(--cond);
+    color: var(--text2);
+  }
+  .d-hacienda dd {
+    font-family: var(--mono);
+  }
+  .d-hacienda h3,
+  .anexo h3 {
+    font-family: var(--cond);
+    font-weight: 600;
+    font-size: 16px;
+    margin: 12px 0 6px;
+  }
+  /* Una segunda fuente dentro del mismo documento, separada por una raya. */
+  .anexo {
+    margin-top: 14px;
+    padding-top: 6px;
+    border-top: 1px solid var(--line);
+  }
+  .anexo .libro + .libro {
+    margin-top: 8px;
+  }
+
   /* Mientras llega el perfil: el papel en su lugar con renglones en blanco,
      de alto parecido al documento lleno para que la mesa no salte. */
   .esqueleto {
@@ -445,7 +493,8 @@
   @media (max-width: 1100px) {
     .d-demografia,
     .d-comercio,
-    .d-laboral {
+    .d-laboral,
+    .d-hacienda {
       grid-column: span 6;
     }
     .d-consumo {

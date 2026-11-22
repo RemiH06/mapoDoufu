@@ -597,6 +597,65 @@ CREATE TABLE IF NOT EXISTS transporte_paradas (
 );
 CREATE INDEX IF NOT EXISTS idx_transporte_paradas_mun ON transporte_paradas (cve_ent, cve_mun);
 
+-- Sesión 28: Censos Económicos 2024 por municipio y sector (docs/fuentes/censos-economicos.md).
+-- Montos en millones de pesos de 2023; null = reservado por INEGI.
+CREATE TABLE IF NOT EXISTS fuente_ce2024_municipal (
+    cve_ent         TEXT NOT NULL,
+    cve_mun         TEXT NOT NULL,
+    sector          TEXT NOT NULL,      -- 'total' o el código SCIAN del sector ('46', '31-33')
+    nombre          TEXT NOT NULL,
+    ue              DOUBLE PRECISION,
+    personal        DOUBLE PRECISION,
+    remuneraciones  DOUBLE PRECISION,
+    ingresos        DOUBLE PRECISION,
+    produccion      DOUBLE PRECISION,
+    vacb            DOUBLE PRECISION,
+    actualizado     TIMESTAMPTZ NOT NULL DEFAULT now(),
+    PRIMARY KEY (cve_ent, cve_mun, sector)
+);
+
+-- Sesión 28: finanzas públicas municipales de INEGI (EFIPEM), tema y capítulo, y el
+-- predial (docs/fuentes/efipem.md). Pesos corrientes de cada año.
+CREATE TABLE IF NOT EXISTS fuente_efipem_municipal (
+    anio        INTEGER NOT NULL,
+    cve_ent     TEXT NOT NULL,
+    cve_mun     TEXT NOT NULL,
+    tema        TEXT NOT NULL,      -- Ingresos | Egresos
+    categoria   TEXT NOT NULL,      -- Tema | Capítulo | Partida Genérica (solo el predial)
+    concepto    TEXT NOT NULL,
+    valor       DOUBLE PRECISION NOT NULL,
+    estatus     TEXT NOT NULL,
+    actualizado TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS idx_efipem_mun ON fuente_efipem_municipal (cve_ent, cve_mun, anio);
+
+-- Sesión 28: Grado de Rezago Social por AGEB urbana 2020 de CONEVAL
+-- (docs/fuentes/rezago-social.md).
+CREATE TABLE IF NOT EXISTS fuente_rezago_social_ageb (
+    cvegeo      TEXT PRIMARY KEY,
+    cve_ent     TEXT NOT NULL,
+    cve_mun     TEXT NOT NULL,
+    pobtot      DOUBLE PRECISION,
+    grado       TEXT NOT NULL,      -- Muy bajo | Bajo | Medio | Alto | Muy alto
+    indicadores JSONB NOT NULL,     -- porcentajes; null en AGEB con menos de 3 viviendas
+    actualizado TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS idx_rezago_mun ON fuente_rezago_social_ageb (cve_ent, cve_mun);
+
+-- Sesión 28: instrumentos de planeación territorial del CNGMD 2025 (año 2024)
+-- (docs/fuentes/cngmd.md). La respuesta tal como la da el municipio.
+CREATE TABLE IF NOT EXISTS fuente_cngmd_planeacion (
+    cve_ent     TEXT NOT NULL,
+    cve_mun     TEXT NOT NULL,
+    instrumento INTEGER NOT NULL,   -- catálogo instmun_a, 1 a 17
+    nombre      TEXT NOT NULL,
+    existio     TEXT,               -- sí | no | no se sabe | no aplica | ...
+    publicado   TEXT,
+    vigencia    TEXT,
+    actualizado TIMESTAMPTZ NOT NULL DEFAULT now(),
+    PRIMARY KEY (cve_ent, cve_mun, instrumento)
+);
+
 CREATE TABLE IF NOT EXISTS descargas_checkpoint (
     clave         TEXT PRIMARY KEY,
     completado_en TIMESTAMPTZ NOT NULL DEFAULT now()

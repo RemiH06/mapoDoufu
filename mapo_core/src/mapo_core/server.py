@@ -14,12 +14,16 @@ from pydantic import BaseModel, Field
 from mapo_core import (
     accesibilidad,
     buscador,
+    censos_economicos,
+    cngmd,
     consultas,
     cruce,
     datos_geo,
     datos_propios,
+    efipem,
     imss_asegurados,
     localidades,
+    rezago_social,
     riesgos,
     transporte,
     vivienda_vista,
@@ -608,6 +612,11 @@ async def perfil_zona(cve_ent: str, cve_mun: str, pool: AsyncConnectionPool = De
         "seguridad": await _seguridad_de(pool, cve_ent, cve_mun),
         "laboral": await consultas.laboral_de(pool, cve_ent),
         "empleo_formal": await imss_asegurados.empleo_municipio(pool, cve_ent, cve_mun),
+        # Sesión 28: cada fuente aparte, con su año y su método.
+        "economia": await censos_economicos.municipio(pool, cve_ent, cve_mun),
+        "hacienda": await efipem.municipio(pool, cve_ent, cve_mun),
+        "rezago_social": await rezago_social.municipio(pool, cve_ent, cve_mun),
+        "planeacion": await cngmd.municipio(pool, cve_ent, cve_mun),
     }
 
 
@@ -814,6 +823,10 @@ TABLAS_CITABLES = {
     "envi": ("fuente_envi2020_entidad", False),
     "precio": ("fuente_precio_estimado", True),
     "imss": ("fuente_imss_asegurados", True),
+    "ce2024": ("fuente_ce2024_municipal", True),
+    "efipem": ("fuente_efipem_municipal", True),
+    "rezago": ("fuente_rezago_social_ageb", True),
+    "cngmd": ("fuente_cngmd_planeacion", True),
 }
 
 

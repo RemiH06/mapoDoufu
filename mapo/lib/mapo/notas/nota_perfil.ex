@@ -2,8 +2,8 @@ defmodule Mapo.Notas.NotaPerfil do
   use Ecto.Schema
   import Ecto.Changeset
 
-  # Los cinco documentos de /perfil, por su enfoque.
-  @documentos ~w(demografia comercio consumo seguridad laboral)
+  # Los seis documentos de /perfil, por su enfoque.
+  @documentos ~w(demografia comercio consumo seguridad laboral hacienda)
 
   schema "notas_perfil" do
     field :cve_ent, :string

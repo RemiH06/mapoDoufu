@@ -289,6 +289,18 @@ $C run --rm -v "$HOME/srv/mapo-crudos/transporte:/crudos:ro" mapo_core python -m
 $C run --rm mapo_core python -u -m mapo_core.cli accesibilidad --estado 14 --modos pie --servicios parada_transporte parada_frecuente
 ```
 
+## Fuentes municipales (sesión 28)
+
+Los archivos van en `~/srv/mapo-crudos/municipales/` (`fuentes/efipem.md`,
+`rezago-social.md`, `cngmd.md`); los Censos Económicos se bajan desde el contenedor:
+
+```bash
+$C run --rm -v "$HOME/srv/mapo-crudos/municipales:/crudos" mapo_core python -u -m mapo_core.cli censos_economicos --carpeta /crudos/ce2024
+$C run --rm -v "$HOME/srv/mapo-crudos/municipales:/crudos:ro" mapo_core python -m mapo_core.cli efipem /crudos/efipem_municipal_csv.zip
+$C run --rm -v "$HOME/srv/mapo-crudos/municipales:/crudos:ro" mapo_core python -m mapo_core.cli rezago_social /crudos/GRS_AGEB_urbana_2020.xlsx
+$C run --rm -v "$HOME/srv/mapo-crudos/municipales:/crudos:ro" mapo_core python -m mapo_core.cli cngmd /crudos/conjunto_de_datos_ins_plan_ord_jur_cngmd2025_csv.zip
+```
+
 ## Operación
 
 ```bash

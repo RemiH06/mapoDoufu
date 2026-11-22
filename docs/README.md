@@ -48,6 +48,10 @@ Una por fuente: de dónde sale, cómo se carga, sus problemas conocidos y las ci
 - [imss.md](fuentes/imss.md): empleo formal del IMSS por municipio y grupo de actividad (puestos, salario de cotización), con la equivalencia de claves IMSS a INEGI; validado al puesto contra el IMSS y el IIEG.
 - [envi.md](fuentes/envi.md): ENVI 2020, renta mensual y valor estimado de la vivienda por estado.
 - [gtfs.md](fuentes/gtfs.md): los 17 GTFS abiertos de México (dónde se buscaron, productor y licencia de cada uno), cómo se cuenta la frecuencia en hora pico, la frecuencia de relleno, y las rutas de OSM de todo el país como respaldo.
+- [censos-economicos.md](fuentes/censos-economicos.md): Censos Económicos 2024 por municipio y sector (unidades, personal, remuneraciones, ingresos, valor agregado de 2023), validados contra la monografía de INEGI.
+- [efipem.md](fuentes/efipem.md): finanzas públicas municipales de INEGI, ingresos y egresos por capítulo y predial, 2019 a 2023.
+- [rezago-social.md](fuentes/rezago-social.md): Grado de Rezago Social por AGEB urbana 2020 de CONEVAL, validado contra su comunicado.
+- [cngmd.md](fuentes/cngmd.md): Censo Nacional de Gobiernos Municipales 2025, por ahora los instrumentos de planeación territorial de cada municipio.
 - [especies.md](fuentes/especies.md): plantas vasculares registradas en GBIF alrededor de una zona, con su estatus en México (Enciclovida) y el cruce con GRIIS, para elegir árboles nativos.
 - [imagenes.md](fuentes/imagenes.md): compuestos de Sentinel-2 y Landsat y WorldCover por zona, desde el STAC de Planetary Computer.
 
@@ -101,6 +105,7 @@ Qué se construyó en cada etapa, por qué así y qué bugs reales aparecieron.
 - [Empleo formal del IMSS, noviembre 2026](historial/2026-11-empleo-imss.md)
 - [Accesibilidad a servicios, noviembre 2026](historial/2026-11-accesibilidad.md)
 - [Transporte público, noviembre 2026](historial/2026-11-transporte.md)
+- [Fuentes económicas y municipales, noviembre 2026](historial/2026-11-fuentes-municipales.md)
 
 ## Gaiarda
 

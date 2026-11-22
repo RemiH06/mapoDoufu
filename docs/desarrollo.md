@@ -105,6 +105,10 @@ docker compose exec mapo_core python -m mapo_core.cli imss data/imss   # empleo 
 docker compose exec mapo_core python -m mapo_core.cli precio_estimado --archivo /app/data/precio_estimado/precio_ageb_v1.csv   # valor de suelo por AGEB (estudios/precio_estimado)
 docker compose exec mapo_core python -m mapo_core.cli transporte --carpeta /app/data/transporte   # los GTFS de transporte.FEEDS (~4 min); en Git Bash, MSYS_NO_PATHCONV=1
 docker compose exec mapo_core python -m mapo_core.cli transporte_osm /app/data/transporte/rutas-261120.opl   # rutas de OSM (scripts/transporte/rutas_osm.sh)
+docker compose exec mapo_core python -m mapo_core.cli censos_economicos --estados 14 --carpeta /app/data/fuentes28   # Censos Económicos 2024 (baja el zip del estado)
+docker compose exec mapo_core python -m mapo_core.cli efipem /app/data/fuentes28/efipem_municipal_csv.zip      # finanzas municipales (zip de INEGI bajado a mano, 109 MB)
+docker compose exec mapo_core python -m mapo_core.cli rezago_social /app/data/fuentes28/GRS_AGEB_urbana_2020.xlsx   # CONEVAL
+docker compose exec mapo_core python -m mapo_core.cli cngmd /app/data/fuentes28/conjunto_de_datos_ins_plan_ord_jur_cngmd2025_csv.zip
 docker compose exec mapo_core python -m mapo_core.cli ambiental --crudos /app/data/crudos-ambiental [--fuente acuiferos,...]   # fuentes ambientales desde los crudos (docs/fuentes/ambientales.md)
 docker compose exec mapo_core python -m mapo_core.cli status
 ```

@@ -144,7 +144,7 @@ defmodule MapoWeb.PerfilLive.IndexTest do
     end)
   end
 
-  test "ver_perfil puts the query in the URL and renders the five documents", %{conn: conn} do
+  test "ver_perfil puts the query in the URL and renders the six documents", %{conn: conn} do
     stub_catalogo(perfil_con_demografia())
 
     {:ok, lv, _html} = live(conn, ~p"/perfil")
@@ -233,6 +233,77 @@ defmodule MapoWeb.PerfilLive.IndexTest do
     {:ok, lv, _html} = live(conn, ~p"/perfil?cve_ent=14&cve_mun=039")
 
     assert render_async(lv) =~ "El IMSS no asigna municipio a 3,479,354 puestos"
+  end
+
+  test "las fuentes de la sesión 28 van cada una con su año, y lo reservado no es cero", %{
+    conn: conn
+  } do
+    stub_catalogo(
+      Map.merge(perfil_con_demografia(), %{
+        "economia" => %{
+          "anio_datos" => 2023,
+          "total" => %{
+            "ue" => 89_635.0,
+            "personal" => 631_859.0,
+            "remuneraciones" => 74_677.3,
+            "ingresos" => 786_162.1,
+            "vacb" => 270_495.7
+          },
+          "sectores" => [
+            %{"sector" => "46", "nombre" => "Comercio al por menor", "personal" => 145_871.0},
+            %{"sector" => "55", "nombre" => "Corporativos", "personal" => nil}
+          ],
+          "reservados" => 1
+        },
+        "hacienda" => %{
+          "anio" => 2023,
+          "ultimo_publicado" => 2024,
+          "total_ingresos" => 11_358_708_621.0,
+          "total_egresos" => 11_358_708_621.0,
+          "predial" => 1_548_431_223.0,
+          "ingresos" => [["Participaciones federales", 5_178_362_442.0]],
+          "egresos" => [["Servicios personales", 4_896_167_882.0]],
+          "propios_pct" => 38.8,
+          "transferencias_pct" => 60.5,
+          "serie_propios" => [
+            %{"anio" => 2022, "propios_pct" => 39.2},
+            %{"anio" => 2023, "propios_pct" => 38.8}
+          ]
+        },
+        "rezago_social" => %{
+          "anio" => 2020,
+          "grados" => [%{"grado" => "Bajo", "agebs" => 265, "personas" => 956_112.0}]
+        },
+        "planeacion" => %{
+          "anio" => 2024,
+          "principales" => [
+            %{
+              "nombre" => "Plan o programa de desarrollo urbano",
+              "existio" => "sí",
+              "vigencia" => "2045"
+            },
+            %{"nombre" => "Atlas de riesgos", "existio" => "no se sabe", "vigencia" => "NA"}
+          ],
+          "otros" => []
+        }
+      })
+    )
+
+    {:ok, lv, _html} = live(conn, ~p"/perfil?cve_ent=14&cve_mun=039")
+    html = render_async(lv)
+
+    assert html =~ "631,859"
+    refute html =~ "631,859.0"
+    assert html =~ "Comercio al por menor (23.1 %)"
+    assert html =~ "reservado"
+    assert html =~ "INEGI reserva el personal de 1 sector"
+    assert html =~ "11,358.7"
+    assert html =~ "38.8 %"
+    assert html =~ "El municipio no reportó 2024"
+    assert html =~ "956,112"
+    assert html =~ "vigente hasta 2045"
+    assert html =~ "no se sabe"
+    assert has_element?(lv, "[data-piel=urbanismo] .notas")
   end
 
   describe "notas del equipo" do

@@ -267,6 +267,72 @@ async def _transporte_osm(args) -> None:
     print(json.dumps(resumen, ensure_ascii=False))
 
 
+async def _censos_economicos(args) -> None:
+    import json
+    from pathlib import Path
+
+    from mapo_core import censos_economicos as ce
+
+    estados = args.estados or list(ce.ABREVIATURAS)
+    desconocidos = [e for e in estados if e not in ce.ABREVIATURAS]
+    if desconocidos:
+        raise SystemExit(f"Estados desconocidos: {', '.join(desconocidos)}")
+    await inicializar_esquema()
+    pool = await get_pool()
+    fallidos = []
+    for e in estados:
+        try:
+            archivo = ce.descargar(e, Path(args.carpeta))
+            print(json.dumps(await ce.cargar(pool, e, archivo), ensure_ascii=False), flush=True)
+        except (ce.ArchivoInvalido, OSError) as exc:
+            fallidos.append(e)
+            print(json.dumps({"cve_ent": e, "error": str(exc)}, ensure_ascii=False), flush=True)
+    if fallidos:
+        raise SystemExit(f"No se cargaron: {', '.join(fallidos)} (se conserva lo anterior)")
+
+
+async def _efipem(args) -> None:
+    import json
+    from pathlib import Path
+
+    from mapo_core import efipem
+
+    await inicializar_esquema()
+    try:
+        resumen = await efipem.cargar(await get_pool(), Path(args.archivo))
+    except (efipem.ArchivoInvalido, OSError) as exc:
+        raise SystemExit(f"No se cargó nada: {exc}") from None
+    print(json.dumps(resumen, ensure_ascii=False))
+
+
+async def _rezago_social(args) -> None:
+    import json
+    from pathlib import Path
+
+    from mapo_core import rezago_social
+
+    await inicializar_esquema()
+    try:
+        resumen = await rezago_social.cargar(await get_pool(), Path(args.archivo))
+    except (rezago_social.ArchivoInvalido, OSError) as exc:
+        raise SystemExit(f"No se cargó nada: {exc}") from None
+    print(json.dumps(resumen, ensure_ascii=False))
+
+
+async def _cngmd(args) -> None:
+    import json
+    from pathlib import Path
+
+    from mapo_core import cngmd
+
+    await inicializar_esquema()
+    try:
+        resumen = await cngmd.cargar(await get_pool(), Path(args.archivo))
+    except (cngmd.ArchivoInvalido, OSError) as exc:
+        raise SystemExit(f"No se cargó nada: {exc}") from None
+    print(json.dumps(resumen, ensure_ascii=False))
+
+
 async def _precio_estimado(args) -> None:
     from pathlib import Path
 
@@ -520,6 +586,27 @@ def _construir_parser() -> argparse.ArgumentParser:
     )
     p_tr_osm.add_argument("archivo", help="rutas-AAMMDD.opl")
     p_tr_osm.set_defaults(fn=_transporte_osm)
+
+    p_ce = subparsers.add_parser(
+        "censos_economicos", help="Censos Económicos 2024 por municipio y sector (reemplaza cada estado)"
+    )
+    p_ce.add_argument("--estados", nargs="+", help="cve_ent de 2 dígitos (todos si no se dice)")
+    p_ce.add_argument("--carpeta", default="data/censos_economicos", help="donde se guardan los zip bajados")
+    p_ce.set_defaults(fn=_censos_economicos)
+
+    p_ef = subparsers.add_parser("efipem", help="Finanzas públicas municipales de INEGI (reemplaza todo)")
+    p_ef.add_argument("archivo", help="efipem_municipal_csv.zip de INEGI")
+    p_ef.set_defaults(fn=_efipem)
+
+    p_grs = subparsers.add_parser("rezago_social", help="Grado de Rezago Social por AGEB urbana 2020 (CONEVAL)")
+    p_grs.add_argument("archivo", help="GRS_AGEB_urbana_2020.xlsx")
+    p_grs.set_defaults(fn=_rezago_social)
+
+    p_cngmd = subparsers.add_parser(
+        "cngmd", help="Instrumentos de planeación territorial del CNGMD 2025 (reemplaza todo)"
+    )
+    p_cngmd.add_argument("archivo", help="conjunto_de_datos_ins_plan_ord_jur_cngmd2025_csv.zip")
+    p_cngmd.set_defaults(fn=_cngmd)
 
     p_precio = subparsers.add_parser(
         "precio_estimado", help="Precio por AGEB del estudio de precio estimado (reemplaza el de antes)"

@@ -172,8 +172,10 @@ la pantalla era un dashboard genérico.
   salir de la vista. Los cortes por quintil de la coropleta también los
   calcula el servidor, para que el mapa y la escala de la cinta usen los
   mismos números.
-- `/perfil` sigue el prototipo: los cinco documentos con su piel sobre el
-  plano de los AGEB del municipio, que el servidor arma como un solo
+- `/perfil` sigue el prototipo: los documentos con su piel sobre el
+  plano de los AGEB del municipio (cinco hasta la sesión 28, que sumó
+  "Hacienda municipal" y anexos de otras fuentes dentro de la cédula y
+  el libro mayor, cada uno con su fuente al pie), que el servidor arma como un solo
   trazo SVG (442 AGEB de Guadalajara son unos 30 KB). Si una fuente no
   cubre el municipio, su documento sigue en la mesa y lo dice. La
   consulta va en la URL (`/perfil?cve_ent=14&cve_mun=039`) para
