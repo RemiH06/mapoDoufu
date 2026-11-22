@@ -7,6 +7,9 @@ fuentes de vivienda por separado. Un indicador, el precio de oferta, va por AGEB
 (`plan-nacional.md`, "Vistas temáticas"), hecha como acetato y no como pantalla
 aparte: así se cruza con el censo, el DENUE o los datos del equipo en la misma mesa.
 
+Indicador, año, segmento y ficha abierta quedan en la URL (`viv`, `anio`, `seg`,
+`ficha`); la cita de la ficha trae una referencia por cada fuente (`citar.md`).
+
 ## Por qué no hay "precio de la zona"
 
 Ninguna de las fuentes cargadas da el precio de una vivienda en un lugar

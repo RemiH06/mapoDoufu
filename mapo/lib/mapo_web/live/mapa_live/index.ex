@@ -9,6 +9,7 @@ defmodule MapoWeb.MapaLive.Index do
   alias Mapo.MapoCore
   alias Mapo.Sesiones
   alias Mapo.Sesiones.Anotacion
+  alias MapoWeb.Cita
   alias MapoWeb.Marcas
 
   # Cada capa es un acetato sobre el plano (docs/arquitectura/decisiones.md,
@@ -47,6 +48,10 @@ defmodule MapoWeb.MapaLive.Index do
 
   @tonos ~w(consumo seguridad laboral)
 
+  # Los acetatos que se citan: los de fuentes públicas. "Tus datos" es del
+  # equipo y nunca va en un enlace permanente (docs/producto/citar.md).
+  @citables ~w(coropleta vivienda voronoi coloreado isocrona)
+
   @pieles [
     {"Urbanismo", "urbanismo"},
     {"Demografía", "demografia"},
@@ -59,7 +64,7 @@ defmodule MapoWeb.MapaLive.Index do
 
   @impl true
   def render(assigns) do
-    assigns = assign(assigns, capas: @capas, pieles: @pieles)
+    assigns = assign(assigns, capas: @capas, pieles: @pieles, citables: @citables)
 
     ~H"""
     <Layouts.app flash={@flash} current_scope={@current_scope} seccion="mapa" full_width?={true}>
@@ -195,6 +200,24 @@ defmodule MapoWeb.MapaLive.Index do
           ficha={@vivienda_ficha}
         />
         <.cinta_isocrona :if={id == "isocrona"} form={@isocrona_form} activa?={@isocrona_activa?} />
+        <div :if={id in @citables and activa?(assigns, id)} class="cinta-citar">
+          <button
+            type="button"
+            id={"citar-#{id}"}
+            class="enlace"
+            phx-click="citar"
+            phx-value-capa={id}
+            aria-expanded={to_string(@citando == id)}
+          >
+            {if @citando == id, do: "Cerrar la cita", else: "Cómo citar"}
+          </button>
+          <Cita.como_citar
+            :if={@citando == id}
+            id={"cita-#{id}"}
+            citas={@citas}
+            enlace={@cita_enlace}
+          />
+        </div>
         <div :if={activa?(assigns, id)} class="cinta-orden">
           <button
             type="button"
@@ -660,17 +683,21 @@ defmodule MapoWeb.MapaLive.Index do
 
   defp valor_envi(%{"valor" => v}), do: "#{cifra(v * 1.0)} %"
 
-  # El catálogo de la vista se pide la primera vez que se abre su cinta.
-  defp cargar_catalogo_vivienda(
-         %{assigns: %{elegida: "vivienda", vivienda_catalogo: nil}} = socket
-       ) do
+  # El catálogo de la vista se pide la primera vez que se abre su cinta (o
+  # cuando la URL trae un indicador de vivienda).
+  defp cargar_catalogo_vivienda(%{assigns: %{elegida: "vivienda"}} = socket),
+    do: catalogo_vivienda(socket)
+
+  defp cargar_catalogo_vivienda(socket), do: socket
+
+  defp catalogo_vivienda(%{assigns: %{vivienda_catalogo: nil}} = socket) do
     case MapoCore.vivienda_catalogo() do
       {:ok, catalogo} -> assign(socket, vivienda_catalogo: catalogo)
       {:error, _} -> socket
     end
   end
 
-  defp cargar_catalogo_vivienda(socket), do: socket
+  defp catalogo_vivienda(socket), do: socket
 
   attr :escala, :map, default: nil
   attr :tinta, :string, default: nil, doc: "enfoque del acetato; sin él, demografía"
@@ -949,16 +976,36 @@ defmodule MapoWeb.MapaLive.Index do
        sesiones: sesiones,
        sesion: nil,
        herramienta: "punto",
-       num_marcas: 0
+       num_marcas: 0,
+       isocrona_punto: nil,
+       isocrona_metodo: nil,
+       url_params: [],
+       reconstruida?: false,
+       citando: nil,
+       citas: [],
+       cita_enlace: nil
      )}
   end
 
   @impl true
   def handle_params(params, _uri, socket) do
-    {:noreply,
-     socket
-     |> cambiar_sesion(params["sesion"])
-     |> abrir_capa_de_la_url(params["capa"])}
+    socket =
+      socket
+      |> cambiar_sesion(params["sesion"])
+      |> abrir_capa_de_la_url(params["capa"])
+
+    # La vista se reconstruye de la URL una sola vez, al conectar: los
+    # cambios de después los escribe `sincronizar_url` y no hay que volver a
+    # aplicarlos. El render estático no llega al hook.
+    if connected?(socket) and not socket.assigns.reconstruida? do
+      {:noreply,
+       socket
+       |> assign(reconstruida?: true, url_params: leidos(params))
+       |> reconstruir(params)
+       |> sincronizar_url()}
+    else
+      {:noreply, socket}
+    end
   end
 
   @impl true
@@ -972,18 +1019,37 @@ defmodule MapoWeb.MapaLive.Index do
         socket
       end
 
-    {:noreply, assign(socket, form: to_form(params, as: "mapa"))}
+    {:noreply, socket |> assign(form: to_form(params, as: "mapa")) |> sincronizar_url()}
   end
 
   def handle_event("elegir", %{"capa" => capa}, socket)
       when is_map_key(@capas, capa) or capa == "marcas" do
     elegida = if socket.assigns.elegida == capa, do: nil, else: capa
-    {:noreply, socket |> assign(elegida: elegida) |> cargar_catalogo_vivienda() |> modo_marcas()}
+
+    {:noreply,
+     socket
+     |> assign(elegida: elegida)
+     |> cargar_catalogo_vivienda()
+     |> modo_marcas()
+     |> sincronizar_url()}
   end
 
   def handle_event("elegir_sesion", %{"sesion" => id}, socket) do
-    destino = if id == "", do: ~p"/mapa", else: ~p"/mapa?#{[sesion: id]}"
-    {:noreply, push_patch(socket, to: destino)}
+    {:noreply, socket |> cambiar_sesion(vacio_para_nil(id)) |> sincronizar_url()}
+  end
+
+  # La cita se arma al pedirla: así la fecha de consulta y el enlace son los
+  # de ese momento, y la fecha de carga de la tabla no se pide en cada capa.
+  def handle_event("citar", %{"capa" => capa}, socket) when capa in @citables do
+    if socket.assigns.citando == capa do
+      {:noreply, assign(socket, citando: nil)}
+    else
+      a = socket.assigns
+      enlace = Cita.enlace(ruta_mapa(params_url(%{a | elegida: capa})))
+
+      {:noreply,
+       assign(socket, citando: capa, citas: citas(a, capa, enlace), cita_enlace: enlace)}
+    end
   end
 
   def handle_event(evento, params, socket) when Marcas.evento_de_marca(evento) do
@@ -1007,8 +1073,7 @@ defmodule MapoWeb.MapaLive.Index do
   end
 
   def handle_event("fijar_piel", %{"piel" => piel}, socket) do
-    fijada = if Enum.any?(@pieles, fn {_, clave} -> clave == piel end), do: piel, else: nil
-    {:noreply, socket |> assign(piel_fijada: fijada) |> actualizar_mesa()}
+    {:noreply, socket |> fijar_piel(piel) |> actualizar_mesa() |> sincronizar_url()}
   end
 
   def handle_event(
@@ -1016,44 +1081,7 @@ defmodule MapoWeb.MapaLive.Index do
         %{"coropleta_capa" => %{"indicador" => indicador}},
         socket
       ) do
-    cve_ent = socket.assigns.form[:cve_ent].value
-    cve_mun = vacio_para_nil(socket.assigns.form[:cve_mun].value)
-
-    if cve_ent in [nil, ""] do
-      {:noreply, put_flash(socket, :error, "Selecciona un estado primero.")}
-    else
-      case MapoCore.coropleta_censo_poblacion(indicador, cve_ent, cve_mun) do
-        {:ok, %{"features" => []}} ->
-          {:noreply,
-           put_flash(
-             socket,
-             :error,
-             "Gaiarda no tiene AGEBs o censo descargados para ese estado/municipio todavía."
-           )}
-
-        {:ok, geojson} ->
-          etiqueta = etiqueta_indicador(indicador)
-          escala = escala_quintiles(geojson)
-
-          {:noreply,
-           socket
-           |> assign(
-             coropleta_activa?: true,
-             coropleta_escala: escala,
-             coropleta_form: to_form(%{"indicador" => indicador}, as: "coropleta_capa")
-           )
-           |> push_event("capa_coropleta", %{
-             activa: true,
-             geojson: geojson,
-             etiqueta: etiqueta,
-             cortes: escala && escala.cortes
-           })
-           |> actualizar_mesa()}
-
-        {:error, _} ->
-          {:noreply, put_flash(socket, :error, "mapo_core no está disponible ahorita mismo.")}
-      end
-    end
+    {:noreply, socket |> poner_coropleta(indicador) |> sincronizar_url()}
   end
 
   def handle_event("quitar_coropleta", _params, socket) do
@@ -1061,7 +1089,8 @@ defmodule MapoWeb.MapaLive.Index do
      socket
      |> assign(coropleta_activa?: false, coropleta_escala: nil)
      |> push_event("capa_coropleta", %{activa: false})
-     |> actualizar_mesa()}
+     |> actualizar_mesa()
+     |> sincronizar_url()}
   end
 
   def handle_event(
@@ -1069,37 +1098,7 @@ defmodule MapoWeb.MapaLive.Index do
         %{"voronoi_capa" => %{"clase_actividad" => clase_actividad}},
         socket
       ) do
-    cve_ent = socket.assigns.form[:cve_ent].value
-    cve_mun = vacio_para_nil(socket.assigns.form[:cve_mun].value)
-    clase_actividad = vacio_para_nil(clase_actividad)
-
-    cond do
-      cve_ent in [nil, ""] or is_nil(cve_mun) ->
-        {:noreply, put_flash(socket, :error, "Selecciona un estado y un municipio primero.")}
-
-      true ->
-        case MapoCore.voronoi_denue(cve_ent, cve_mun, clase_actividad) do
-          {:ok, %{"celdas" => geojson} = respuesta} ->
-            {:noreply,
-             socket
-             |> assign(voronoi_activa?: true, voronoi_resumen: resumen_voronoi(respuesta))
-             |> push_event("capa_voronoi", %{activa: true, geojson: geojson})
-             |> actualizar_mesa()}
-
-          {:error, {:status, 422, body}} ->
-            mensaje = if is_map(body), do: body["detail"], else: nil
-
-            {:noreply,
-             put_flash(socket, :error, mensaje || "No hay suficientes negocios con ese filtro.")}
-
-          {:error, {:status, 404, _}} ->
-            {:noreply,
-             put_flash(socket, :error, "Ese municipio no está descargado en Gaiarda todavía.")}
-
-          {:error, _} ->
-            {:noreply, put_flash(socket, :error, "mapo_core no está disponible ahorita mismo.")}
-        end
-    end
+    {:noreply, socket |> poner_voronoi(clase_actividad) |> sincronizar_url()}
   end
 
   def handle_event("quitar_voronoi", _params, socket) do
@@ -1107,7 +1106,8 @@ defmodule MapoWeb.MapaLive.Index do
      socket
      |> assign(voronoi_activa?: false, voronoi_resumen: nil)
      |> push_event("capa_voronoi", %{activa: false})
-     |> actualizar_mesa()}
+     |> actualizar_mesa()
+     |> sincronizar_url()}
   end
 
   def handle_event("agregar_capa", %{"capa" => id}, socket) do
@@ -1184,47 +1184,7 @@ defmodule MapoWeb.MapaLive.Index do
   end
 
   def handle_event("mostrar_vivienda", %{"vivienda_capa" => params}, socket) do
-    cve_ent = socket.assigns.form[:cve_ent].value
-    socket = assign(socket, vivienda_form: to_form(params, as: "vivienda_capa"))
-    sniiv? = String.starts_with?(params["indicador"] || "", "sniiv_")
-    anio = if sniiv?, do: vacio_para_nil(params["anio"])
-    segmento = if sniiv?, do: vacio_para_nil(params["segmento"])
-
-    if cve_ent in [nil, ""] do
-      {:noreply, put_flash(socket, :error, "Selecciona un estado primero.")}
-    else
-      case MapoCore.vivienda_municipios(cve_ent, params["indicador"], anio, segmento) do
-        {:ok, %{"features" => [], "nivel" => "AGEB"}} ->
-          {:noreply,
-           put_flash(socket, :error, "Todavía no hay precio de oferta por AGEB para ese estado.")}
-
-        {:ok, %{"features" => []}} ->
-          {:noreply,
-           put_flash(socket, :error, "No hay municipios cargados para ese estado todavía.")}
-
-        {:ok, geojson} ->
-          escala = escala_quintiles(geojson)
-          meta = Map.take(geojson, ~w(indicador nivel anio meses segmento metodo))
-
-          {:noreply,
-           socket
-           |> assign(vivienda_activa?: true, vivienda_escala: escala, vivienda_meta: meta)
-           |> push_event("capa_vivienda", %{
-             activa: true,
-             geojson: geojson,
-             cortes: escala && escala.cortes,
-             etiqueta: meta["indicador"]["etiqueta"],
-             unidad: meta["indicador"]["unidad"]
-           })
-           |> actualizar_mesa()}
-
-        {:error, {:status, 400, _}} ->
-          {:noreply, put_flash(socket, :error, "Ese indicador o segmento no existe.")}
-
-        {:error, _} ->
-          {:noreply, put_flash(socket, :error, "mapo_core no está disponible ahorita mismo.")}
-      end
-    end
+    {:noreply, socket |> poner_vivienda(params) |> sincronizar_url()}
   end
 
   def handle_event("quitar_vivienda", _params, socket) do
@@ -1237,50 +1197,21 @@ defmodule MapoWeb.MapaLive.Index do
        vivienda_ficha: nil
      )
      |> push_event("capa_vivienda", %{activa: false})
-     |> actualizar_mesa()}
+     |> actualizar_mesa()
+     |> sincronizar_url()}
   end
 
   # El clic en un municipio del acetato pide su ficha: las cuatro fuentes,
   # cada una con su nivel, en la cinta de la capa.
   def handle_event("ficha_vivienda", %{"cve_mun" => cve_mun}, socket) when is_binary(cve_mun) do
-    case MapoCore.vivienda_ficha(socket.assigns.form[:cve_ent].value, cve_mun) do
-      {:ok, ficha} ->
-        {:noreply, socket |> assign(vivienda_ficha: ficha, elegida: "vivienda") |> modo_marcas()}
-
-      {:error, _} ->
-        {:noreply, put_flash(socket, :error, "No se pudo leer la ficha de ese municipio.")}
-    end
+    {:noreply, socket |> abrir_ficha_vivienda(cve_mun) |> sincronizar_url()}
   end
 
   def handle_event("cerrar_ficha_vivienda", _params, socket),
-    do: {:noreply, assign(socket, vivienda_ficha: nil)}
+    do: {:noreply, socket |> assign(vivienda_ficha: nil) |> sincronizar_url()}
 
   def handle_event("mostrar_coloreado", _params, socket) do
-    cve_ent = socket.assigns.form[:cve_ent].value
-
-    if cve_ent in [nil, ""] do
-      {:noreply, put_flash(socket, :error, "Selecciona un estado primero.")}
-    else
-      case MapoCore.coloreado_municipios(cve_ent) do
-        {:ok, %{"features" => []}} ->
-          {:noreply,
-           put_flash(
-             socket,
-             :error,
-             "Gaiarda no tiene municipios descargados para ese estado todavía."
-           )}
-
-        {:ok, geojson} ->
-          {:noreply,
-           socket
-           |> assign(coloreado_activa?: true)
-           |> push_event("capa_coloreado", %{activa: true, geojson: geojson})
-           |> actualizar_mesa()}
-
-        {:error, _} ->
-          {:noreply, put_flash(socket, :error, "mapo_core no está disponible ahorita mismo.")}
-      end
-    end
+    {:noreply, socket |> poner_coloreado() |> sincronizar_url()}
   end
 
   def handle_event("quitar_coloreado", _params, socket) do
@@ -1288,7 +1219,8 @@ defmodule MapoWeb.MapaLive.Index do
      socket
      |> assign(coloreado_activa?: false)
      |> push_event("capa_coloreado", %{activa: false})
-     |> actualizar_mesa()}
+     |> actualizar_mesa()
+     |> sincronizar_url()}
   end
 
   def handle_event("activar_isocrona", %{"isocrona_capa" => %{"minutos" => minutos}}, socket) do
@@ -1305,13 +1237,15 @@ defmodule MapoWeb.MapaLive.Index do
   def handle_event("quitar_isocrona", _params, socket) do
     {:noreply,
      socket
-     |> assign(isocrona_activa?: false)
+     |> assign(isocrona_activa?: false, isocrona_punto: nil, isocrona_metodo: nil)
      |> push_event("modo_isocrona", %{activo: false})
      |> push_event("capa_isocrona", %{activa: false})
-     |> actualizar_mesa()}
+     |> actualizar_mesa()
+     |> sincronizar_url()}
   end
 
-  def handle_event("click_mapa", %{"lat" => lat, "lon" => lon}, socket) do
+  def handle_event("click_mapa", %{"lat" => lat, "lon" => lon}, socket)
+      when is_number(lat) and is_number(lon) do
     if socket.assigns.isocrona_activa? do
       minutos =
         case socket.assigns.isocrona_form[:minutos].value |> to_string() |> Float.parse() do
@@ -1319,14 +1253,7 @@ defmodule MapoWeb.MapaLive.Index do
           :error -> 10.0
         end
 
-      case MapoCore.isocrona_calcular(lat, lon, minutos) do
-        {:ok, %{"poligono" => poligono, "metodo" => metodo}} ->
-          {:noreply,
-           push_event(socket, "capa_isocrona", %{activa: true, poligono: poligono, metodo: metodo})}
-
-        {:error, _} ->
-          {:noreply, put_flash(socket, :error, "mapo_core no está disponible ahorita mismo.")}
-      end
+      {:noreply, socket |> calcular_isocrona(lat, lon, minutos) |> sincronizar_url()}
     else
       {:noreply, socket}
     end
@@ -1541,6 +1468,459 @@ defmodule MapoWeb.MapaLive.Index do
   # Sin redondear: la ficha muestra el dato de la persona, no una cifra de lectura.
   defp texto_celda(v) when is_integer(v), do: cifra(v)
   defp texto_celda(v), do: to_string(v)
+
+  ## Poner cada acetato. Sirven igual al botón de la cinta y a la URL.
+
+  defp poner_coropleta(socket, indicador) do
+    cve_ent = socket.assigns.form[:cve_ent].value
+    cve_mun = vacio_para_nil(socket.assigns.form[:cve_mun].value)
+
+    if cve_ent in [nil, ""] do
+      put_flash(socket, :error, "Selecciona un estado primero.")
+    else
+      case MapoCore.coropleta_censo_poblacion(indicador, cve_ent, cve_mun) do
+        {:ok, %{"features" => []}} ->
+          put_flash(
+            socket,
+            :error,
+            "Gaiarda no tiene AGEBs o censo descargados para ese estado/municipio todavía."
+          )
+
+        {:ok, geojson} ->
+          escala = escala_quintiles(geojson)
+
+          socket
+          |> assign(
+            coropleta_activa?: true,
+            coropleta_escala: escala,
+            coropleta_form: to_form(%{"indicador" => indicador}, as: "coropleta_capa")
+          )
+          |> push_event("capa_coropleta", %{
+            activa: true,
+            geojson: geojson,
+            etiqueta: etiqueta_indicador(indicador),
+            cortes: escala && escala.cortes
+          })
+          |> actualizar_mesa()
+
+        {:error, _} ->
+          put_flash(socket, :error, "mapo_core no está disponible ahorita mismo.")
+      end
+    end
+  end
+
+  defp poner_voronoi(socket, clase_actividad) do
+    cve_ent = socket.assigns.form[:cve_ent].value
+    cve_mun = vacio_para_nil(socket.assigns.form[:cve_mun].value)
+    clase_actividad = vacio_para_nil(clase_actividad)
+
+    if cve_ent in [nil, ""] or is_nil(cve_mun) do
+      put_flash(socket, :error, "Selecciona un estado y un municipio primero.")
+    else
+      case MapoCore.voronoi_denue(cve_ent, cve_mun, clase_actividad) do
+        {:ok, %{"celdas" => geojson} = respuesta} ->
+          socket
+          |> assign(
+            voronoi_activa?: true,
+            voronoi_resumen: resumen_voronoi(respuesta),
+            voronoi_form: to_form(%{"clase_actividad" => clase_actividad}, as: "voronoi_capa")
+          )
+          |> push_event("capa_voronoi", %{activa: true, geojson: geojson})
+          |> actualizar_mesa()
+
+        {:error, {:status, 422, body}} ->
+          mensaje = if is_map(body), do: body["detail"], else: nil
+          put_flash(socket, :error, mensaje || "No hay suficientes negocios con ese filtro.")
+
+        {:error, {:status, 404, _}} ->
+          put_flash(socket, :error, "Ese municipio no está descargado en Gaiarda todavía.")
+
+        {:error, _} ->
+          put_flash(socket, :error, "mapo_core no está disponible ahorita mismo.")
+      end
+    end
+  end
+
+  defp poner_vivienda(socket, params) do
+    cve_ent = socket.assigns.form[:cve_ent].value
+    socket = assign(socket, vivienda_form: to_form(params, as: "vivienda_capa"))
+    sniiv? = String.starts_with?(params["indicador"] || "", "sniiv_")
+    anio = if sniiv?, do: vacio_para_nil(params["anio"])
+    segmento = if sniiv?, do: vacio_para_nil(params["segmento"])
+
+    if cve_ent in [nil, ""] do
+      put_flash(socket, :error, "Selecciona un estado primero.")
+    else
+      case MapoCore.vivienda_municipios(cve_ent, params["indicador"], anio, segmento) do
+        {:ok, %{"features" => [], "nivel" => "AGEB"}} ->
+          put_flash(socket, :error, "Todavía no hay precio de oferta por AGEB para ese estado.")
+
+        {:ok, %{"features" => []}} ->
+          put_flash(socket, :error, "No hay municipios cargados para ese estado todavía.")
+
+        {:ok, geojson} ->
+          escala = escala_quintiles(geojson)
+          meta = Map.take(geojson, ~w(indicador nivel anio meses segmento metodo version))
+
+          socket
+          |> assign(vivienda_activa?: true, vivienda_escala: escala, vivienda_meta: meta)
+          |> push_event("capa_vivienda", %{
+            activa: true,
+            geojson: geojson,
+            cortes: escala && escala.cortes,
+            etiqueta: meta["indicador"]["etiqueta"],
+            unidad: meta["indicador"]["unidad"]
+          })
+          |> actualizar_mesa()
+
+        {:error, {:status, 400, _}} ->
+          put_flash(socket, :error, "Ese indicador o segmento no existe.")
+
+        {:error, _} ->
+          put_flash(socket, :error, "mapo_core no está disponible ahorita mismo.")
+      end
+    end
+  end
+
+  defp abrir_ficha_vivienda(socket, cve_mun) do
+    case MapoCore.vivienda_ficha(socket.assigns.form[:cve_ent].value, cve_mun) do
+      {:ok, ficha} ->
+        socket |> assign(vivienda_ficha: ficha, elegida: "vivienda") |> modo_marcas()
+
+      {:error, _} ->
+        put_flash(socket, :error, "No se pudo leer la ficha de ese municipio.")
+    end
+  end
+
+  defp poner_coloreado(socket) do
+    cve_ent = socket.assigns.form[:cve_ent].value
+
+    if cve_ent in [nil, ""] do
+      put_flash(socket, :error, "Selecciona un estado primero.")
+    else
+      case MapoCore.coloreado_municipios(cve_ent) do
+        {:ok, %{"features" => []}} ->
+          put_flash(
+            socket,
+            :error,
+            "Gaiarda no tiene municipios descargados para ese estado todavía."
+          )
+
+        {:ok, geojson} ->
+          socket
+          |> assign(coloreado_activa?: true)
+          |> push_event("capa_coloreado", %{activa: true, geojson: geojson})
+          |> actualizar_mesa()
+
+        {:error, _} ->
+          put_flash(socket, :error, "mapo_core no está disponible ahorita mismo.")
+      end
+    end
+  end
+
+  defp calcular_isocrona(socket, lat, lon, minutos) do
+    case MapoCore.isocrona_calcular(lat, lon, minutos) do
+      {:ok, %{"poligono" => poligono, "metodo" => metodo}} ->
+        socket
+        |> assign(isocrona_punto: %{lat: lat, lon: lon}, isocrona_metodo: metodo)
+        |> push_event("capa_isocrona", %{activa: true, poligono: poligono, metodo: metodo})
+
+      {:error, _} ->
+        put_flash(socket, :error, "mapo_core no está disponible ahorita mismo.")
+    end
+  end
+
+  defp fijar_piel(socket, piel) do
+    fijada = if Enum.any?(@pieles, fn {_, clave} -> clave == piel end), do: piel, else: nil
+    assign(socket, piel_fijada: fijada)
+  end
+
+  ## Enlace permanente (docs/producto/citar.md).
+  #
+  # La URL dice lo que se ve: estado, municipio, cada acetato público puesto
+  # con sus opciones, la cinta abierta y la piel fijada. Se escribe después de
+  # cada cambio (sin agregar entradas al historial) y se lee una vez al
+  # conectar. Al leerla, cada valor pasa por su catálogo cerrado; uno que no
+  # está se ignora sin error. "Tus datos" y las marcas son del equipo: la
+  # sesión va en la barra de direcciones (ya iba), nunca en el enlace de la cita.
+
+  defp params_url(a) do
+    vivienda = a.vivienda_activa? && a.vivienda_meta
+
+    [
+      ent: vacio_para_nil(a.form[:cve_ent].value),
+      mun: vacio_para_nil(a.form[:cve_mun].value),
+      censo: a.coropleta_activa? && a.coropleta_form[:indicador].value,
+      viv: vivienda && vivienda["indicador"]["clave"],
+      anio: vivienda && vivienda["anio"],
+      seg: vivienda && vivienda["segmento"],
+      ficha: vivienda && a.vivienda_ficha && a.vivienda_ficha["cve_mun"],
+      negocios: a.voronoi_activa? && (a.voronoi_form[:clase_actividad].value || ""),
+      municipios: a.coloreado_activa? && "1",
+      alcance: alcance_url(a),
+      ver: if(a.elegida in Map.keys(@capas) and a.elegida != "propios", do: a.elegida),
+      piel: a.piel_fijada
+    ]
+    |> Enum.reject(fn {_k, v} -> v in [nil, false] end)
+    |> Enum.map(fn {k, v} -> {k, to_string(v)} end)
+  end
+
+  @claves_url ~w(ent mun censo viv anio seg ficha negocios municipios alcance ver piel sesion)a
+
+  # Lo que trae la URL, en el orden de `params_url`: si lo reconstruido no es
+  # igual (un valor fuera de catálogo), la URL se corrige.
+  defp leidos(params) do
+    for k <- @claves_url, v = params[Atom.to_string(k)], is_binary(v), do: {k, v}
+  end
+
+  defp alcance_url(%{isocrona_activa?: true, isocrona_punto: %{lat: lat, lon: lon}} = a),
+    do: "#{Float.round(lat / 1, 5)},#{Float.round(lon / 1, 5)},#{a.isocrona_form[:minutos].value}"
+
+  defp alcance_url(_a), do: nil
+
+  defp ruta_mapa([]), do: ~p"/mapa"
+  # `~p` ordenaría las claves; así el enlace sale en el orden de la vista.
+  defp ruta_mapa(params), do: ~p"/mapa" <> "?" <> URI.encode_query(params)
+
+  defp sincronizar_url(socket) do
+    a = socket.assigns
+    params = params_url(a) ++ if(a.sesion, do: [sesion: to_string(a.sesion.id)], else: [])
+
+    if params == a.url_params do
+      socket
+    else
+      # Lo que se citaba ya no es lo que se ve.
+      socket
+      |> assign(url_params: params, citando: nil)
+      |> push_patch(to: ruta_mapa(params), replace: true)
+    end
+  end
+
+  defp reconstruir(socket, params) do
+    socket
+    |> ubicar_de_url(params["ent"], params["mun"])
+    |> coropleta_de_url(params["censo"])
+    |> vivienda_de_url(params)
+    |> voronoi_de_url(params["negocios"])
+    |> then(&if(params["municipios"] == "1", do: poner_coloreado(&1), else: &1))
+    |> isocrona_de_url(params["alcance"])
+    |> piel_de_url(params["piel"])
+    |> ver_de_url(params["ver"])
+  end
+
+  defp ubicar_de_url(socket, ent, mun) do
+    if Enum.any?(socket.assigns.estados, fn {_, c} -> c == ent end) do
+      municipios = municipios_de(ent)
+      mun = if Enum.any?(municipios, fn {_, c} -> c == mun end), do: mun, else: ""
+
+      socket
+      |> assign(
+        municipios: municipios,
+        form: to_form(%{"cve_ent" => ent, "cve_mun" => mun}, as: "mapa")
+      )
+      |> push_event("encuadrar_estado", %{cve_ent: ent})
+    else
+      socket
+    end
+  end
+
+  defp coropleta_de_url(socket, indicador) do
+    if Enum.any?(MapoCore.indicadores_censo(), fn {c, _} -> c == indicador end),
+      do: poner_coropleta(socket, indicador),
+      else: socket
+  end
+
+  defp vivienda_de_url(socket, %{"viv" => clave} = params) when is_binary(clave) do
+    socket = catalogo_vivienda(socket)
+
+    with %{"indicadores" => indicadores} = catalogo <- socket.assigns.vivienda_catalogo,
+         true <- Enum.any?(indicadores, &(&1["clave"] == clave)) do
+      anios = Enum.map(catalogo["anios_sniiv"] || [], &to_string(&1["anio"]))
+      anio = if params["anio"] in anios, do: params["anio"], else: ""
+      seg = if params["seg"] in (catalogo["segmentos"] || []), do: params["seg"], else: ""
+      socket = poner_vivienda(socket, %{"indicador" => clave, "anio" => anio, "segmento" => seg})
+
+      if socket.assigns.vivienda_activa? and is_binary(params["ficha"]) and
+           String.match?(params["ficha"], ~r/^\d{3}$/),
+         do: abrir_ficha_vivienda(socket, params["ficha"]),
+         else: socket
+    else
+      _ -> socket
+    end
+  end
+
+  defp vivienda_de_url(socket, _params), do: socket
+
+  # El giro es texto libre, como en la cinta: mapo_core lo pasa por la tabla
+  # de rubros o lo busca como texto con parámetros, nunca en el SQL.
+  defp voronoi_de_url(socket, giro) when is_binary(giro) do
+    giro = String.trim(giro)
+    if String.length(giro) <= 60, do: poner_voronoi(socket, giro), else: socket
+  end
+
+  defp voronoi_de_url(socket, _giro), do: socket
+
+  defp isocrona_de_url(socket, alcance) when is_binary(alcance) do
+    with [lat, lon, min] <- String.split(alcance, ","),
+         {lat, ""} when lat >= 14 and lat <= 33.5 <- Float.parse(lat),
+         {lon, ""} when lon >= -119 and lon <= -85 <- Float.parse(lon),
+         {min, ""} when min >= 1 and min <= 120 <- Float.parse(min) do
+      socket
+      |> assign(
+        isocrona_activa?: true,
+        isocrona_form: to_form(%{"minutos" => minutos_texto(min)}, as: "isocrona_capa")
+      )
+      |> push_event("modo_isocrona", %{activo: true})
+      |> actualizar_mesa()
+      |> calcular_isocrona(lat, lon, min)
+    else
+      _ -> socket
+    end
+  end
+
+  defp isocrona_de_url(socket, _alcance), do: socket
+
+  defp minutos_texto(min) when min == trunc(min), do: Integer.to_string(trunc(min))
+  defp minutos_texto(min), do: Float.to_string(min)
+
+  defp piel_de_url(socket, piel) when is_binary(piel),
+    do: socket |> fijar_piel(piel) |> actualizar_mesa()
+
+  defp piel_de_url(socket, _piel), do: socket
+
+  defp ver_de_url(socket, ver) do
+    if ver in Map.keys(@capas) and ver != "propios",
+      do: socket |> assign(elegida: ver) |> cargar_catalogo_vivienda() |> modo_marcas(),
+      else: socket
+  end
+
+  ## Cómo citar cada acetato.
+
+  defp citas(a, "coropleta", enlace) do
+    [
+      Cita.armar("censo",
+        que: "#{etiqueta_indicador(a.coropleta_form[:indicador].value)} por AGEB, #{lugar(a)}",
+        datos: "2020",
+        version: carga("censo", a),
+        enlace: enlace
+      )
+    ]
+  end
+
+  defp citas(a, "vivienda", enlace) do
+    meta = a.vivienda_meta
+    ind = meta["indicador"]
+    {fuente, tabla, datos} = fuente_vivienda(meta)
+
+    version =
+      case meta["version"] do
+        nil ->
+          carga(tabla, a)
+
+        v ->
+          Enum.join(
+            Enum.reject(["tabla #{v} del estudio de precio", carga(tabla, a)], &is_nil/1),
+            "; "
+          )
+      end
+
+    principal =
+      Cita.armar(fuente,
+        que: "#{ind["etiqueta"]} (#{ind["unidad"]}) por #{meta["nivel"]}, #{lugar(a)}",
+        datos: datos,
+        version: version,
+        enlace: enlace
+      )
+
+    # La ficha de un municipio junta cuatro fuentes: cada una con su cita.
+    ficha =
+      for {f, t, d} <- [
+            {"shf", "shf", nil},
+            {"sniiv", "sniiv", nil},
+            {"eic2025", "eic2025", "2025"},
+            {"envi", "envi", "2020, por estado"}
+          ],
+          a.vivienda_ficha,
+          f != fuente do
+        Cita.armar(f,
+          que: "ficha de vivienda de #{a.vivienda_ficha["nombre"]}",
+          datos: d,
+          version: carga(t, a),
+          enlace: enlace
+        )
+      end
+
+    [principal | ficha]
+  end
+
+  defp citas(a, "voronoi", enlace) do
+    giro = vacio_para_nil(a.voronoi_form[:clase_actividad].value)
+
+    [
+      Cita.armar("denue",
+        que: "área por negocio (Voronoi)#{if giro, do: " de \"#{giro}\""}, #{lugar(a)}",
+        version: edicion_denue(fecha_carga("denue", a)),
+        enlace: enlace
+      )
+    ]
+  end
+
+  defp citas(a, "coloreado", enlace) do
+    [
+      Cita.armar("marco",
+        que: "municipios de #{lugar(a)} coloreados sin dos vecinos del mismo tono",
+        version: carga("municipios", a),
+        enlace: enlace
+      )
+    ]
+  end
+
+  defp citas(a, "isocrona", enlace) do
+    que =
+      case a.isocrona_punto do
+        %{lat: lat, lon: lon} ->
+          "alcance en auto de #{a.isocrona_form[:minutos].value} minutos desde #{cifra(lat, 5)}, #{cifra(lon, 5)}"
+
+        nil ->
+          "alcance en auto"
+      end
+
+    [
+      Cita.armar("osm",
+        que: que,
+        version: a.isocrona_metodo && "método #{a.isocrona_metodo}",
+        enlace: enlace
+      )
+    ]
+  end
+
+  defp fuente_vivienda(%{"indicador" => %{"clave" => "eic_" <> _}}),
+    do: {"eic2025", "eic2025", "2025"}
+
+  defp fuente_vivienda(%{"indicador" => %{"clave" => "sniiv_" <> _}} = meta) do
+    meses =
+      if meta["meses"] && meta["meses"] < 12, do: " (#{meta["meses"]} de 12 meses)", else: ""
+
+    seg = if meta["segmento"], do: ", segmento #{meta["segmento"]}", else: ""
+    {"sniiv", "sniiv", "#{meta["anio"]}#{meses}#{seg}"}
+  end
+
+  defp fuente_vivienda(%{"indicador" => %{"clave" => "shf_" <> _}}), do: {"shf", "shf", nil}
+  defp fuente_vivienda(_meta), do: {"iieg", "precio", "julio de 2024"}
+
+  # La fecha de carga es la versión de las tablas que no traen una propia.
+  defp fecha_carga(tabla, a), do: MapoCore.carga(tabla, vacio_para_nil(a.form[:cve_ent].value))
+
+  defp carga(tabla, a) do
+    case fecha_carga(tabla, a) do
+      nil -> nil
+      fecha -> "tabla cargada en Mapo el #{fecha}"
+    end
+  end
+
+  # DENUE cambia cada semestre con el mismo nombre: la fecha dice cuál edición.
+  defp edicion_denue(nil), do: nil
+  defp edicion_denue(fecha), do: "edición vigente en INEGI al cargarla en Mapo el #{fecha}"
 
   # Con la cinta de "Tus marcas" abierta y una sesión elegida, el clic en el
   # plano pone marca (le gana a la isócrona).

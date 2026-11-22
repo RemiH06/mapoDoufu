@@ -75,6 +75,7 @@ async def test_precio_por_ageb_con_rango_y_sin_dato(conn, cliente):
     cuerpo = cliente.get("/vivienda/municipios", params={"cve_ent": "99", "indicador": "precio_ageb"}).json()
 
     assert cuerpo["nivel"] == "AGEB" and "no es precio de cierre" in cuerpo["metodo"]
+    assert cuerpo["version"] == "v2"  # la cita la lleva
     p = {f["properties"]["cvegeo"]: f["properties"] for f in cuerpo["features"]}
     assert len(p) == 3  # ninguna AGEB se pierde al simplificar
     assert p["9903900010010"]["valor_choropleth"] == 2704000 and p["9903900010010"]["fuente"] == "anuncios"

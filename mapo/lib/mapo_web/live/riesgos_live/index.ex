@@ -13,6 +13,7 @@ defmodule MapoWeb.RiesgosLive.Index do
 
   alias Mapo.Limite
   alias Mapo.MapoCore
+  alias MapoWeb.Cita
 
   # Un municipio grande cruza millones de focos y miles de polígonos.
   @max_consultas 30
@@ -25,6 +26,20 @@ defmodule MapoWeb.RiesgosLive.Index do
     {"5 km", "5000"}
   ]
   @cercas_validas Enum.map(@cercas, &elem(&1, 1))
+
+  # Cada bloque de mapo_core/riesgos.py con su referencia (docs/producto/citar.md).
+  @fuente_bloque %{
+    "poblacion" => "censo",
+    "descargas" => "repda",
+    "retc" => "retc",
+    "fuego" => "firms",
+    "acuifero" => "acuiferos",
+    "sequia" => "sequia",
+    "anp" => "anp",
+    "uso_suelo" => "uso_suelo",
+    "agricultura" => "siap",
+    "defunciones" => "defunciones"
+  }
 
   @impl true
   def render(assigns) do
@@ -130,7 +145,9 @@ defmodule MapoWeb.RiesgosLive.Index do
               titulo={titulo_poblacion(@resultado)}
               poblacion={@resultado["poblacion"]}
               metodo={@resultado["metodo_poblacion"]}
-            />
+            >
+              <.citar clave="poblacion" citando={@citando} citas={@citas} enlace={@cita_enlace} />
+            </.poblacion>
             <article :for={b <- @resultado["bloques"]} id={"bloque-#{b["clave"]}"} class="bloque">
               <h2>{b["titulo"]}</h2>
 
@@ -150,6 +167,7 @@ defmodule MapoWeb.RiesgosLive.Index do
               </p>
 
               <p class="metodo">Método: {b["metodo"]}</p>
+              <.citar clave={b["clave"]} citando={@citando} citas={@citas} enlace={@cita_enlace} />
             </article>
           </div>
         </div>
@@ -161,6 +179,7 @@ defmodule MapoWeb.RiesgosLive.Index do
   attr :titulo, :string, required: true
   attr :poblacion, :map, required: true
   attr :metodo, :string, required: true
+  slot :inner_block
 
   defp poblacion(assigns) do
     ~H"""
@@ -192,7 +211,31 @@ defmodule MapoWeb.RiesgosLive.Index do
       </p>
 
       <p class="metodo">Método: {@metodo}</p>
+      {render_slot(@inner_block)}
     </article>
+    """
+  end
+
+  attr :clave, :string, required: true
+  attr :citando, :string, default: nil
+  attr :citas, :list, default: []
+  attr :enlace, :string, default: nil
+
+  defp citar(assigns) do
+    ~H"""
+    <div class="cinta-citar">
+      <button
+        type="button"
+        id={"citar-#{@clave}"}
+        class="enlace"
+        phx-click="citar"
+        phx-value-clave={@clave}
+        aria-expanded={to_string(@citando == @clave)}
+      >
+        {if @citando == @clave, do: "Cerrar la cita", else: "Cómo citar"}
+      </button>
+      <Cita.como_citar :if={@citando == @clave} id={"cita-#{@clave}"} citas={@citas} enlace={@enlace} />
+    </div>
     """
   end
 
@@ -254,9 +297,82 @@ defmodule MapoWeb.RiesgosLive.Index do
        error: nil,
        consultando: false,
        plegada: false,
-       form: formulario(%{})
+       form: formulario(%{}),
+       consultada: nil,
+       pedida: nil,
+       citando: nil,
+       citas: [],
+       cita_enlace: nil
      )}
   end
+
+  # Enlace permanente: la zona y la cercanía de la última consulta. Al abrirlo
+  # se consulta igual que con el botón (con el mismo límite por hora). Cada
+  # valor pasa por la misma validación que el formulario; uno raro deja la
+  # hoja vacía, sin error.
+  @impl true
+  def handle_params(params, _uri, socket) do
+    if connected?(socket) and is_nil(socket.assigns.consultada) and params != %{} do
+      {:noreply, consultar_de_url(socket, params)}
+    else
+      {:noreply, socket}
+    end
+  end
+
+  defp consultar_de_url(socket, %{"modo" => "circulo"} = params) do
+    with {lat, ""} <- Float.parse(params["lat"] || ""),
+         {lon, ""} <- Float.parse(params["lon"] || "") do
+      form = %{
+        "modo" => "circulo",
+        "radio_km" => params["radio"] || "",
+        "cerca_m" => params["cerca"] || "1000"
+      }
+
+      socket
+      |> assign(punto: %{lat: lat, lon: lon}, form: formulario(form))
+      |> previa()
+      |> consultar(form)
+    else
+      _ -> socket
+    end
+  end
+
+  defp consultar_de_url(socket, %{"ent" => ent, "mun" => mun} = params)
+       when is_binary(ent) and is_binary(mun) do
+    municipios =
+      if Enum.any?(socket.assigns.estados, fn {_, c} -> c == ent end),
+        do: municipios_de(ent),
+        else: []
+
+    if Enum.any?(municipios, fn {_, c} -> c == mun end) do
+      form = %{
+        "modo" => "municipio",
+        "cve_ent" => ent,
+        "cve_mun" => mun,
+        "cerca_m" => params["cerca"] || "1000"
+      }
+
+      socket |> assign(municipios: municipios, form: formulario(form)) |> consultar(form)
+    else
+      socket
+    end
+  end
+
+  defp consultar_de_url(socket, _params), do: socket
+
+  defp params_url(%{lat: lat, lon: lon, radio_m: r}, cerca),
+    do: [
+      modo: "circulo",
+      lat: Float.round(lat / 1, 5),
+      lon: Float.round(lon / 1, 5),
+      radio: r / 1000,
+      cerca: cerca
+    ]
+
+  defp params_url(%{cve_ent: ent, cve_mun: mun}, cerca),
+    do: [modo: "municipio", ent: ent, mun: mun, cerca: cerca]
+
+  defp ruta_riesgos(params), do: ~p"/riesgos" <> "?" <> URI.encode_query(params)
 
   defp formulario(params) do
     base = %{
@@ -305,19 +421,75 @@ defmodule MapoWeb.RiesgosLive.Index do
     do: {:noreply, socket}
 
   def handle_event("consultar", %{"riesgos" => params}, socket) do
+    {:noreply, consultar(socket, params)}
+  end
+
+  def handle_event("citar", %{"clave" => clave}, socket) when is_binary(clave) do
+    a = socket.assigns
+
+    cond do
+      a.citando == clave ->
+        {:noreply, assign(socket, citando: nil)}
+
+      is_nil(a.resultado) or is_nil(fuente_bloque(clave)) or
+          (clave != "poblacion" and not Enum.any?(a.resultado["bloques"], &(&1["clave"] == clave))) ->
+        {:noreply, socket}
+
+      true ->
+        enlace = Cita.enlace(ruta_riesgos(a.consultada))
+
+        {:noreply,
+         assign(socket,
+           citando: clave,
+           citas: citas(a.resultado, clave, enlace),
+           cita_enlace: enlace
+         )}
+    end
+  end
+
+  defp consultar(socket, params) do
     socket = assign(socket, form: formulario(params))
 
     with {:ok, zona} <- zona(params, socket.assigns.punto),
          {:ok, cerca} <- cerca(params["cerca_m"]),
          :ok <- limite(socket) do
-      {:noreply,
-       socket
-       |> assign(consultando: true, error: nil)
-       |> start_async(:riesgos, fn -> MapoCore.riesgos_zona(zona, cerca) end)}
+      socket
+      |> assign(consultando: true, error: nil, pedida: params_url(zona, cerca))
+      |> start_async(:riesgos, fn -> MapoCore.riesgos_zona(zona, cerca) end)
     else
-      {:error, mensaje} -> {:noreply, assign(socket, error: mensaje)}
+      {:error, mensaje} -> assign(socket, error: mensaje)
     end
   end
+
+  defp citas(resultado, "poblacion", enlace) do
+    [
+      Cita.armar("censo",
+        que: "#{titulo_poblacion(resultado)} (AGEB urbanos y localidades)",
+        datos: "2020",
+        enlace: enlace
+      )
+    ]
+  end
+
+  defp citas(resultado, clave, enlace) do
+    b = Enum.find(resultado["bloques"], &(&1["clave"] == clave))
+
+    [
+      Cita.armar(fuente_bloque(clave),
+        que: "#{b["titulo"]}, #{lugar(resultado)}, por #{b["nivel"]}",
+        datos: b["fecha_dato"] not in [nil, ""] && b["fecha_dato"],
+        enlace: enlace
+      )
+    ]
+  end
+
+  defp fuente_bloque("agua_" <> _tipo), do: "renameca"
+  defp fuente_bloque(clave), do: @fuente_bloque[clave]
+
+  defp lugar(%{"zona" => %{"tipo" => "municipio", "municipios" => [m | _]}}),
+    do: m["nombre"] || "el municipio"
+
+  defp lugar(%{"zona" => z}), do: "círculo de #{cifra(z["radio_m"] / 1000, 1)} km"
 
   @impl true
   def handle_async(:riesgos, {:ok, {:ok, resultado}}, socket) do
@@ -328,8 +500,14 @@ defmodule MapoWeb.RiesgosLive.Index do
 
     {:noreply,
      socket
-     |> assign(consultando: false, resultado: resultado)
-     |> push_event("zona", %{zona: resultado["zona"]["geojson"], capas: capas})}
+     |> assign(
+       consultando: false,
+       resultado: resultado,
+       consultada: socket.assigns.pedida,
+       citando: nil
+     )
+     |> push_event("zona", %{zona: resultado["zona"]["geojson"], capas: capas})
+     |> push_patch(to: ruta_riesgos(socket.assigns.pedida), replace: true)}
   end
 
   def handle_async(:riesgos, {:ok, {:error, {:status, 422, %{"detail" => d}}}}, socket)

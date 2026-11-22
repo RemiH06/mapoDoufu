@@ -134,3 +134,18 @@ async def test_rechaza_indicador_segmento_y_claves_raras(conn, cliente):
     ).status_code == 400
     assert cliente.get("/vivienda/municipios", params={"cve_ent": "9;", "indicador": "eic_alqui"}).status_code == 422
     assert cliente.get("/vivienda/ficha", params={"cve_ent": "99", "cve_mun": "777"}).status_code == 404
+
+
+@pytest.mark.asyncio
+async def test_fecha_de_carga_por_estado_y_tabla_cerrada(conn, cliente):
+    await _municipios(conn)
+    await _fuentes(conn)
+    await conn.execute("UPDATE fuente_sniiv_financiamiento SET actualizado = '2026-11-02 23:00-06'")
+
+    hoy = cliente.get("/fuentes/carga", params={"tabla": "eic2025", "cve_ent": "99"}).json()
+    assert hoy["cargada"] is not None
+    # La fecha es la de la base (UTC), no la del reloj de quien consulta.
+    assert cliente.get("/fuentes/carga", params={"tabla": "sniiv", "cve_ent": "99"}).json()["cargada"] == "2026-11-03"
+    assert cliente.get("/fuentes/carga", params={"tabla": "eic2025", "cve_ent": "98"}).json()["cargada"] is None
+    assert cliente.get("/fuentes/carga", params={"tabla": "agebs; DROP"}).status_code == 400
+    assert cliente.get("/fuentes/carga", params={"tabla": "sniiv", "cve_ent": "9'"}).status_code == 422

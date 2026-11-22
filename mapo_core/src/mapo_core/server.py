@@ -788,6 +788,39 @@ async def vivienda_ficha(
     return ficha
 
 
+# Las tablas que se citan desde la app. Las que no traen versión propia se citan
+# por la fecha en que se cargaron: DENUE cambia cada semestre con el mismo
+# nombre (docs/producto/citar.md). La clave es lo único que llega de `mapo`.
+TABLAS_CITABLES = {
+    "censo": ("fuente_censo_poblacion", True),
+    "denue": ("fuente_denue_negocios", True),
+    "municipios": ("municipios", True),
+    "eic2025": ("fuente_eic2025_vivienda", True),
+    "sniiv": ("fuente_sniiv_financiamiento", True),
+    "shf": ("fuente_shf_ipv", False),
+    "envi": ("fuente_envi2020_entidad", False),
+    "precio": ("fuente_precio_estimado", True),
+}
+
+
+@app.get("/fuentes/carga")
+async def fuentes_carga(
+    tabla: str,
+    cve_ent: str | None = Query(default=None, pattern=r"^\d{2}$"),
+    pool: AsyncConnectionPool = Depends(get_pool),
+) -> dict:
+    """Fecha de la última carga de una tabla, del estado si la tabla es por
+    estado. `null` si la tabla está vacía."""
+    if tabla not in TABLAS_CITABLES:
+        raise HTTPException(400, f"tabla desconocida: {tabla}")
+    nombre, por_estado = TABLAS_CITABLES[tabla]
+    filtro = " WHERE cve_ent = %(e)s" if por_estado and cve_ent else ""
+    async with pool.connection() as conn:
+        cursor = await conn.execute(f"SELECT max(actualizado)::date::text FROM {nombre}{filtro}", {"e": cve_ent})
+        (fecha,) = await cursor.fetchone()
+    return {"tabla": tabla, "cargada": fecha}
+
+
 @app.get("/riesgos/zona")
 async def riesgos_zona(
     cve_ent: str | None = Query(default=None, pattern=r"^\d{2}$"),

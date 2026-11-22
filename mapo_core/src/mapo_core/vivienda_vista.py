@@ -232,15 +232,18 @@ async def municipios(
         raise ValueError(f"indicador inválido: {clave}")
     if clave == "precio_ageb":
         ind = INDICADORES[clave]
+        features = await _precio_agebs(pool, cve_ent)
         return {
             "type": "FeatureCollection",
-            "features": await _precio_agebs(pool, cve_ent),
+            "features": features,
             "indicador": {"clave": clave, **{c: ind[c] for c in ("fuente", "etiqueta", "unidad")}},
             "nivel": "AGEB",
             "anio": None,
             "meses": None,
             "segmento": None,
             "metodo": _metodo(clave, None, None, None, None),
+            # Versión de la tabla del estudio, para que la cita se pueda reproducir.
+            "version": ", ".join(sorted({f["properties"]["version"] for f in features})) or None,
         }
     if segmento is not None and segmento not in SEGMENTOS:
         raise ValueError(f"segmento inválido: {segmento}")

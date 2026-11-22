@@ -234,4 +234,99 @@ defmodule MapoWeb.RiesgosLive.IndexTest do
 
     assert render_async(lv) =~ "No se pudo consultar la zona"
   end
+
+  describe "enlace permanente y cómo citar" do
+    defp con_municipio do
+      stub(fn conn ->
+        Req.Test.json(
+          conn,
+          resultado(%{"tipo" => "municipio", "cve_ent" => "14", "cve_mun" => "015"})
+        )
+      end)
+    end
+
+    test "consultar escribe la zona en la URL", %{conn: conn} do
+      con_municipio()
+      {:ok, lv, _} = live(conn, ~p"/riesgos")
+      lv |> form("#riesgos_form", riesgos: %{cve_ent: "14"}) |> render_change()
+
+      lv
+      |> form("#riesgos_form", riesgos: %{cve_ent: "14", cve_mun: "015", cerca_m: "500"})
+      |> render_submit()
+
+      render_async(lv)
+      assert_patch(lv, "/riesgos?modo=municipio&ent=14&mun=015&cerca=500")
+    end
+
+    test "abrir el enlace vuelve a consultar la misma zona", %{conn: conn} do
+      yo = self()
+
+      stub(fn conn ->
+        conn = Plug.Conn.fetch_query_params(conn)
+        send(yo, {:zona, conn.query_params})
+
+        Req.Test.json(
+          conn,
+          resultado(%{"tipo" => "circulo", "lon" => -104.3, "lat" => 19.7, "radio_m" => 2500})
+        )
+      end)
+
+      {:ok, lv, _} = live(conn, "/riesgos?modo=circulo&lat=19.7&lon=-104.3&radio=2.5&cerca=250")
+
+      assert_receive {:zona,
+                      %{
+                        "lat" => "19.7",
+                        "lon" => "-104.3",
+                        "radio_m" => "2500",
+                        "cerca_m" => "250"
+                      }}
+
+      assert render_async(lv) =~ "Quién vive en el círculo de 2.5 km"
+
+      assert has_element?(
+               lv,
+               "#riesgos_form select[name='riesgos[cerca_m]'] option[selected][value='250']"
+             )
+    end
+
+    test "una zona rara en la URL deja la hoja vacía sin consultar", %{conn: conn} do
+      sin_consulta()
+
+      for url <- [
+            "/riesgos?modo=municipio&ent=14&mun=999",
+            "/riesgos?modo=municipio&ent=99&mun=015",
+            "/riesgos?modo=circulo&lat=abc&lon=-104&radio=2",
+            "/riesgos?modo=circulo&lat=19.7&lon=-104.3&radio=900",
+            "/riesgos?modo=municipio&ent=14&mun=015&cerca=7"
+          ] do
+        {:ok, lv, html} = live(conn, url)
+        refute html =~ "Quién vive"
+        refute render(lv) =~ "Quién vive"
+      end
+    end
+
+    test "cada bloque cita su fuente con la fecha del dato y el enlace", %{conn: conn} do
+      con_municipio()
+      {:ok, lv, _} = live(conn, "/riesgos?modo=municipio&ent=14&mun=015&cerca=1000")
+      render_async(lv)
+
+      lv |> element("#citar-sequia") |> render_click()
+      html = lv |> element("#cita-sequia") |> render()
+      assert html =~ "SMN, Conagua. (s. f.). Monitor de Sequía de México"
+      assert html =~ "Datos de 2003 a 2026-10-31."
+      assert html =~ "Procesado por Mapo: Sequía, Autlán de Navarro, por municipio."
+      assert html =~ "/riesgos?modo=municipio&amp;ent=14&amp;mun=015&amp;cerca=1000"
+
+      lv |> element("#citar-agua_superficial") |> render_click()
+      refute has_element?(lv, "#cita-sequia")
+      assert has_element?(lv, "#cita-agua_superficial", "RENAMECA")
+
+      lv |> element("#citar-poblacion") |> render_click()
+      assert has_element?(lv, "#cita-poblacion", "Censo de Población y Vivienda 2020")
+
+      # Una clave que no es de un bloque no tumba la vista.
+      render_click(lv, "citar", %{"clave" => "inventada"})
+      assert has_element?(lv, "#cita-poblacion")
+    end
+  end
 end

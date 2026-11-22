@@ -1071,4 +1071,244 @@ defmodule MapoWeb.MapaLive.IndexTest do
       assert html =~ "No se pudo leer la lista de indicadores"
     end
   end
+
+  describe "enlace permanente y cómo citar" do
+    defp stub_con_carga(extra) do
+      stub_estados_y_municipio(fn conn ->
+        case conn.request_path do
+          "/fuentes/carga" -> Req.Test.json(conn, %{"cargada" => "2026-11-17"})
+          _ -> extra.(conn)
+        end
+      end)
+    end
+
+    test "la URL reconstruye estado, municipio, acetato y cinta", %{conn: conn} do
+      yo = self()
+
+      stub_con_carga(fn conn ->
+        assert conn.request_path == "/censo/choropleth"
+        send(yo, {:censo, conn.query_string})
+        Req.Test.json(conn, coleccion_con_una_feature())
+      end)
+
+      {:ok, lv, _html} = live(conn, ~p"/mapa?ent=14&mun=039&censo=graproes&ver=coropleta")
+
+      assert_receive {:censo, consulta}
+      assert consulta =~ "indicador=graproes" and consulta =~ "cve_mun=039"
+      assert_push_event(lv, "encuadrar_estado", %{cve_ent: "14"})
+      assert_push_event(lv, "capa_coropleta", %{activa: true})
+      refute has_element?(lv, "#cinta-coropleta[hidden]")
+      assert has_element?(lv, ".rotulo-titulo", "Guadalajara, Jalisco")
+      assert has_element?(lv, "#coropleta_capa_form option[selected][value=graproes]")
+    end
+
+    test "parámetros raros caen al valor por defecto sin error", %{conn: conn} do
+      # El catálogo de vivienda se pide para saber que "nada" no está en él.
+      stub_con_carga(fn %{request_path: "/vivienda/catalogo"} = conn ->
+        Req.Test.json(conn, %{"indicadores" => [], "segmentos" => [], "anios_sniiv" => []})
+      end)
+
+      {:ok, lv, _html} =
+        live(
+          conn,
+          "/mapa?ent=99&mun=039&censo=x%27%3BDROP&viv=nada&alcance=a,b,c&piel=zzz&ver=propios&anio=1"
+        )
+
+      assert has_element?(lv, ".rotulo-titulo", "México")
+      assert has_element?(lv, ".rotulo dd", "sin acetatos")
+      refute render(lv) =~ "DROP"
+    end
+
+    test "un punto fuera de México o minutos de más no piden la isócrona", %{conn: conn} do
+      stub_con_carga(fn _ -> raise "no debería llamarse" end)
+      {:ok, lv, _html} = live(conn, "/mapa?alcance=40.7,-74.0,10")
+      assert has_element?(lv, ".pestana[aria-controls=cinta-isocrona]", "en la charola")
+      {:ok, lv, _html} = live(conn, "/mapa?alcance=20.67,-103.35,9999")
+      assert has_element?(lv, ".pestana[aria-controls=cinta-isocrona]", "en la charola")
+    end
+
+    test "poner un acetato escribe la URL sin agregar historial", %{conn: conn} do
+      stub_con_carga(fn conn -> Req.Test.json(conn, coleccion_con_una_feature()) end)
+      {:ok, lv, _html} = live(conn, ~p"/mapa")
+
+      lv
+      |> form("#ubicacion_form", mapa: %{"cve_ent" => "14", "cve_mun" => ""})
+      |> render_change()
+
+      assert_patch(lv, ~p"/mapa?ent=14")
+
+      lv
+      |> form("#ubicacion_form", mapa: %{"cve_ent" => "14", "cve_mun" => "039"})
+      |> render_change()
+
+      assert_patch(lv, ~p"/mapa?ent=14&mun=039")
+
+      lv
+      |> form("#coropleta_capa_form", coropleta_capa: %{"indicador" => "pobtot"})
+      |> render_submit()
+
+      assert_patch(lv, ~p"/mapa?ent=14&mun=039&censo=pobtot")
+
+      lv |> element("[phx-click='quitar_coropleta']") |> render_click()
+      assert_patch(lv, ~p"/mapa?ent=14&mun=039")
+    end
+
+    test "la isócrona guarda su punto y sus minutos", %{conn: conn} do
+      stub_con_carga(fn conn ->
+        Req.Test.json(conn, %{"poligono" => %{}, "metodo" => "carretera_real"})
+      end)
+
+      {:ok, lv, _html} = live(conn, ~p"/mapa?alcance=20.67,-103.35,15")
+
+      assert_push_event(lv, "modo_isocrona", %{activo: true})
+      assert_push_event(lv, "capa_isocrona", %{activa: true})
+      assert has_element?(lv, "#isocrona_capa_form input[value='15']")
+
+      lv |> element("#citar-isocrona") |> render_click()
+      assert has_element?(lv, "#cita-isocrona", "Colaboradores de OpenStreetMap")
+      assert has_element?(lv, "#cita-isocrona", "15 minutos desde 20.67000, -103.35000")
+      assert has_element?(lv, "#cita-isocrona", "método carretera_real")
+    end
+
+    test "la cita pone la fuente original primero, su versión y el enlace", %{conn: conn} do
+      yo = self()
+
+      stub_estados_y_municipio(fn
+        %{request_path: "/fuentes/carga"} = conn ->
+          send(yo, {:carga, conn.query_string})
+          Req.Test.json(conn, %{"cargada" => "2026-11-17"})
+
+        conn ->
+          Req.Test.json(conn, coleccion_con_una_feature())
+      end)
+
+      {:ok, lv, _html} = live(conn, ~p"/mapa?ent=14&censo=pobtot&ver=coropleta")
+
+      lv |> element("#citar-coropleta") |> render_click()
+
+      html = lv |> element("#cita-coropleta") |> render()
+      assert html =~ "INEGI. (2021). Censo de Población y Vivienda 2020"
+
+      assert html =~
+               "Procesado por Mapo: Población total por AGEB, Jalisco; tabla cargada en Mapo el 2026-11-17."
+
+      assert html =~ "@misc{inegi_censo2020_mapo_"
+      assert html =~ "author = {{Instituto Nacional de Estadística y Geografía}}"
+      assert html =~ "/mapa?ent=14&amp;censo=pobtot&amp;ver=coropleta"
+      assert_receive {:carga, consulta}
+      assert consulta =~ "tabla=censo" and consulta =~ "cve_ent=14"
+
+      # Otra vista ya no es lo que se citaba: la cita se cierra.
+      lv |> element("[phx-click='quitar_coropleta']") |> render_click()
+      refute has_element?(lv, "#cita-coropleta")
+    end
+
+    test "la sesión del equipo va en la barra pero no en el enlace de la cita", %{
+      conn: conn,
+      scope: scope
+    } do
+      team = Mapo.TeamsFixtures.team_fixture(scope, %{name: "Planeación"})
+      sesion = Mapo.SesionesFixtures.sesion_fixture(scope, team, %{"nombre" => "Recorrido"})
+      stub_con_carga(fn conn -> Req.Test.json(conn, coleccion_con_una_feature()) end)
+
+      {:ok, lv, _html} = live(conn, ~p"/mapa?ent=14&municipios=1&sesion=#{sesion.id}")
+
+      assert_push_event(lv, "capa_coloreado", %{activa: true})
+      lv |> element(".pestana[aria-controls=cinta-coloreado]") |> render_click()
+      lv |> element("#citar-coloreado") |> render_click()
+
+      enlace = lv |> element("#cita-coloreado-enlace") |> render()
+      assert enlace =~ "municipios=1"
+      refute enlace =~ "sesion"
+      assert has_element?(lv, "#cita-coloreado", "Marco Geoestadístico")
+    end
+
+    test "vivienda reconstruye indicador, año, segmento y ficha; la cita lleva las cuatro fuentes",
+         %{conn: conn} do
+      yo = self()
+
+      stub_con_carga(fn conn ->
+        case conn.request_path do
+          "/vivienda/catalogo" ->
+            Req.Test.json(conn, %{
+              "indicadores" => [
+                %{
+                  "clave" => "sniiv_acciones",
+                  "fuente" => "SNIIV",
+                  "etiqueta" => "Créditos",
+                  "unidad" => "acciones"
+                }
+              ],
+              "segmentos" => ["Media"],
+              "anios_sniiv" => [%{"anio" => 2025, "meses" => 12}]
+            })
+
+          "/vivienda/municipios" ->
+            send(yo, {:vivienda, conn.query_string})
+
+            Req.Test.json(conn, %{
+              "type" => "FeatureCollection",
+              "features" => [%{}],
+              "indicador" => %{
+                "clave" => "sniiv_acciones",
+                "etiqueta" => "Créditos",
+                "unidad" => "acciones"
+              },
+              "nivel" => "municipio",
+              "anio" => 2025,
+              "meses" => 12,
+              "segmento" => "Media",
+              "metodo" => "Suma de acciones."
+            })
+
+          "/vivienda/ficha" ->
+            Req.Test.json(conn, %{"cve_mun" => "039", "nombre" => "Guadalajara"})
+        end
+      end)
+
+      {:ok, lv, _html} =
+        live(conn, ~p"/mapa?ent=14&viv=sniiv_acciones&anio=2025&seg=Media&ficha=039&ver=vivienda")
+
+      assert_receive {:vivienda, consulta}
+      assert consulta =~ "anio=2025" and consulta =~ "segmento=Media"
+      assert has_element?(lv, "#ficha-vivienda", "Guadalajara")
+
+      lv |> element("#citar-vivienda") |> render_click()
+      html = lv |> element("#cita-vivienda") |> render()
+      assert html =~ "Datos de 2025, segmento Media."
+      assert html =~ "Índice SHF" and html =~ "Encuesta Intercensal 2025" and html =~ "ENVI"
+      assert html =~ "ficha de vivienda de Guadalajara"
+    end
+
+    test "un año o segmento fuera del catálogo no llega a mapo_core", %{conn: conn} do
+      yo = self()
+
+      stub_con_carga(fn conn ->
+        case conn.request_path do
+          "/vivienda/catalogo" ->
+            Req.Test.json(conn, %{
+              "indicadores" => [
+                %{
+                  "clave" => "sniiv_acciones",
+                  "fuente" => "SNIIV",
+                  "etiqueta" => "C",
+                  "unidad" => "a"
+                }
+              ],
+              "segmentos" => ["Media"],
+              "anios_sniiv" => [%{"anio" => 2025, "meses" => 12}]
+            })
+
+          "/vivienda/municipios" ->
+            send(yo, {:vivienda, conn.query_string})
+            Req.Test.json(conn, %{"type" => "FeatureCollection", "features" => []})
+        end
+      end)
+
+      {:ok, _lv, _html} = live(conn, "/mapa?ent=14&viv=sniiv_acciones&anio=1900&seg=%27x")
+
+      assert_receive {:vivienda, consulta}
+      refute consulta =~ "anio" or consulta =~ "segmento"
+    end
+  end
 end

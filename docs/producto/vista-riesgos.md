@@ -5,6 +5,9 @@ el plano) y se ve cada peligro por separado, con su fuente, fecha, nivel geográ
 método, y cuánta gente vive dentro de la zona y cerca de cada uno. Nunca un índice ni la
 palabra "expuesta": las frases son de lugar ("a menos de 1,000 m de un sitio en rojo").
 
+La zona consultada queda en la URL y cada bloque trae "Cómo citar" con su fuente y la
+fecha del dato (`citar.md`).
+
 ## Bloques
 
 | Bloque | Fuente (`../fuentes/`) | Qué dice |

@@ -15,6 +15,7 @@
 - [comparacion-ciudades.md](producto/comparacion-ciudades.md): calor, dosel, NDVI, censo y marginación (2020, y 2010 en tablas) por AGEB de la ZMG y seis metrópolis más, con la entrega para ArcGIS y Mapo y cómo comprobar cada número.
 - [vista-vivienda.md](producto/vista-vivienda.md): acetato de vivienda en `/mapa`, un indicador de una sola fuente a la vez (por municipio, o el valor de suelo por AGEB) y la ficha con SHF, SNIIV, Intercensal y ENVI por separado.
 - [precio-estimado.md](producto/precio-estimado.md): precio de vivienda estimado por AGEB como rango con cobertura medida; hecha la forma (catastro y rango conformal, validados por bloques), pendiente la escala de mercado.
+- [citar.md](producto/citar.md): enlace permanente de `/mapa` y `/riesgos` (qué parámetros guarda y cómo se validan) y "Cómo citar" con la fuente original primero, en APA y BibTeX, con la versión de la tabla.
 - [datos-propios.md](producto/datos-propios.md): archivos del equipo (tabla, vectorial, ráster) como acetato, su cruce con fuentes públicas, la distancia entre capas y el valor de un ráster: formatos, límites, ubicación, procedencia, permisos y qué se guarda.
 
 ## Arquitectura
@@ -91,6 +92,7 @@ Qué se construyó en cada etapa, por qué así y qué bugs reales aparecieron.
 - [Fuentes de vivienda, noviembre 2026](historial/2026-11-fuentes-vivienda.md)
 - [Vista de vivienda y especies nativas, noviembre 2026](historial/2026-11-vista-vivienda-especies.md)
 - [Precio estimado: forma y rango, noviembre 2026](historial/2026-11-precio-estimado.md)
+- [Cómo citar y enlaces permanentes, noviembre 2026](historial/2026-11-citar.md)
 
 ## Gaiarda
 

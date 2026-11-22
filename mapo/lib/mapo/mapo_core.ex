@@ -117,6 +117,18 @@ defmodule Mapo.MapoCore do
     get("/riesgos/zona", Enum.to_list(params), receive_timeout: 120_000)
   end
 
+  @doc """
+  Fecha (`"AAAA-MM-DD"`) de la última carga de una tabla citable, del estado
+  si la tabla es por estado; `nil` si no hay o mapo_core no responde. Es la
+  versión que lleva la cita de las tablas que no traen una propia.
+  """
+  def carga(tabla, cve_ent \\ nil) do
+    case get("/fuentes/carga", maybe_put([tabla: tabla], :cve_ent, cve_ent)) do
+      {:ok, %{"cargada" => fecha}} when is_binary(fecha) -> fecha
+      _ -> nil
+    end
+  end
+
   @doc "SHF, SNIIV, Intercensal 2025 y ENVI de un municipio, cada una con su nivel."
   def vivienda_ficha(cve_ent, cve_mun),
     do: get("/vivienda/ficha", cve_ent: cve_ent, cve_mun: cve_mun)

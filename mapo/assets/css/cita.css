@@ -1,0 +1,75 @@
+/* "Cómo citar" (docs/producto/citar.md): en las cintas de /mapa y en los
+   bloques de /riesgos. Papel con letra de máquina: es texto para copiar tal
+   cual, no para leer en la pantalla. */
+
+@layer components {
+  .cinta-citar .enlace {
+    color: var(--accent);
+    text-decoration: underline;
+    text-underline-offset: 2px;
+    font-size: 13px;
+    cursor: pointer;
+  }
+  .cinta > .cinta-citar {
+    align-self: center;
+  }
+  /* Abierta, la cita toma su renglón como la ficha de vivienda. */
+  .cinta > .cinta-citar:has(.cita) {
+    flex-basis: 100%;
+    border-left: 0;
+    border-top: 1px solid var(--line);
+  }
+  .bloque .cinta-citar {
+    margin-top: 4px;
+  }
+  .cita {
+    display: grid;
+    gap: 8px;
+    margin-top: 6px;
+    font-size: 13px;
+  }
+  .cita-aviso,
+  .cita-de {
+    color: var(--text2);
+  }
+  .cita-de {
+    font-family: var(--cond);
+    font-weight: 600;
+  }
+  .cita-ref + .cita-ref {
+    border-top: 1px dashed var(--line);
+    padding-top: 8px;
+  }
+  .cita-texto {
+    font-family: var(--mono);
+    font-size: 12px;
+    line-height: 1.45;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+    user-select: all;
+    background: var(--bg);
+    border: 1px solid var(--line);
+    padding: 6px 8px;
+    max-width: 78ch;
+  }
+  .cita-botones {
+    display: flex;
+    gap: 14px;
+    margin-top: 4px;
+  }
+  .cita-bib summary {
+    cursor: pointer;
+    font-size: 12px;
+    color: var(--text2);
+    margin-top: 4px;
+  }
+  .cita-enlace {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 4px 10px;
+  }
+  .cita-enlace a {
+    overflow-wrap: anywhere;
+  }
+}
