@@ -53,3 +53,13 @@ GTFS. Fuente en `../fuentes/gtfs.md`; producto en `../producto/transporte.md`.
   rara de su sistema de archivos. Con `MSYS_NO_PATHCONV=1` (anotado en `desarrollo.md`).
 - **OPL sin coordenadas:** `osmium cat` a OPL no escribe la ubicación de los nodos de cada
   vía si no se pide `locations_on_ways=true`; sin ella, ninguna ruta tenía trazo.
+
+## Despliegue
+
+Producción en `6c7cf21` el 2026-11-22 (revertir: `deploy-20261122b`; sin migración, las
+tablas las crea `mapo_core`; respaldo previo `mapo_prod-20261122-0342.dump`). Los 17 GTFS,
+las rutas de OSM del 2026-11-20 y los dos servicios de paradas de Jalisco, cargados el mismo
+día con las mismas cifras que en dev (14,003 paradas y 11,848 frecuentes en Jalisco).
+Comprobado contra el endpoint de producción en Cuauhtémoc (170 rutas, 136 cada 15 minutos o
+menos), Toluca (515, frecuencia de relleno), Monterrey (20 de OSM), Mérida (163) y
+Guadalajara (251).
