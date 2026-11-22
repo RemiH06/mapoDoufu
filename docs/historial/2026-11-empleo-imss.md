@@ -72,4 +72,5 @@ Producción en `3614827` el 2026-11-21 (revertir: `deploy-20261121c`; sin migrac
 tabla la crea `mapo_core`). Los dos meses se cargaron en producción desde
 `~/srv/mapo-crudos/imss/` con un contenedor aparte, como las fuentes ambientales, con
 las mismas cifras que en dev. Este despliegue también subió el correo por AhaSend
-(`03385cc`), inactivo sin llave.
+(`03385cc`), y como el `.env` ya trae su llave, el correo real queda activo desde aquí;
+falta comprobarlo como dice `../despliegue.md`, "Correo".
