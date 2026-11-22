@@ -143,13 +143,13 @@ if config_env() == :prod do
   #
   # Check `Plug.SSL` for all available options in `force_ssl`.
 
-  # Correo real por Scaleway TEM (API, con el Req de prod.exs) cuando hay
-  # llave; sin ella se queda el Logger de prod.exs. La llave es de una
-  # aplicación de IAM que solo puede enviar desde el proyecto de Mapo.
-  if (secret_key = System.get_env("MAPO_SCW_SECRET_KEY")) not in [nil, ""] do
+  # Correo real por AhaSend (API v2, con el Req de prod.exs) cuando hay
+  # llave; sin ella se queda el Logger de prod.exs. La llave solo puede
+  # enviar, y solo desde mail.mapo.remlam.dev.
+  if (api_key = System.get_env("MAPO_AHASEND_API_KEY")) not in [nil, ""] do
     config :mapo, Mapo.Mailer,
-      adapter: Swoosh.Adapters.Scaleway,
-      project_id: System.fetch_env!("MAPO_SCW_PROJECT_ID"),
-      secret_key: secret_key
+      adapter: Swoosh.Adapters.AhaSend,
+      api_key: api_key,
+      account_id: System.fetch_env!("MAPO_AHASEND_ACCOUNT_ID")
   end
 end

@@ -7,7 +7,7 @@ defmodule Mapo.Teams.TeamNotifier do
     email =
       new()
       |> to(recipient)
-      |> from({"Mapo", "no-reply@correo.mapo.remlam.dev"})
+      |> from({"Mapo", "no-reply@mail.mapo.remlam.dev"})
       |> subject(subject)
       |> text_body(body)
 

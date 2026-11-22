@@ -139,14 +139,13 @@ límite (código 28): es lo esperado.
 
 ## Correo
 
-Sale de `no-reply@correo.mapo.remlam.dev` por Scaleway TEM
-(`Swoosh.Adapters.Scaleway`, por su API) cuando el `.env` trae
-`MAPO_SCW_PROJECT_ID` y `MAPO_SCW_SECRET_KEY`. La llave es de una
-aplicación de IAM con `TransactionalEmailEmailFullAccess` solo en el
-proyecto de Scaleway de Mapo: envía, pero no toca dominios ni otros
-proyectos. El dominio y sus registros DNS se configuran desde Bakery
-(`publicacion/correo.md`). Nadie lee las respuestas: el MX del
-subdominio es el agujero negro de Scaleway.
+Sale de `no-reply@mail.mapo.remlam.dev` por AhaSend
+(`Swoosh.Adapters.AhaSend`, API v2) cuando el `.env` trae
+`MAPO_AHASEND_ACCOUNT_ID` y `MAPO_AHASEND_API_KEY`. La llave tiene el
+alcance `messages:send:mail.mapo.remlam.dev`: envía desde ese dominio
+y nada más (no administra la cuenta ni envía como Tabularium). El
+dominio y sus registros DNS se configuran desde Bakery
+(`publicacion/correo.md`). Nadie lee las respuestas a un no-reply.
 
 Para comprobarlo después de desplegar, pide un enlace de acceso con tu
 correo y revisa en el original del mensaje que SPF, DKIM y DMARC digan

@@ -13,7 +13,7 @@ detalle de lo ya construido vive en `../historial/`.
 
 | ID | Requerimiento | Estado |
 |---|---|---|
-| RF1 | Autenticación de cuentas personales (registro, login, recuperación de contraseña) | Listo (la recuperación es vía magic link por correo, no un flujo de "reset password" aparte). En producción, adaptador de Scaleway listo en código (`despliegue.md`, "Correo"); falta la llave |
+| RF1 | Autenticación de cuentas personales (registro, login, recuperación de contraseña) | Listo (la recuperación es vía magic link por correo, no un flujo de "reset password" aparte). En producción, adaptador de AhaSend listo en código (`despliegue.md`, "Correo"); falta la llave |
 | RF2 | Sesiones de equipo: varias personas autenticadas comparten una misma sesión de trabajo | Listo |
 | RF3 | Colaboración en tiempo real: anotaciones sobre el mismo mapa visibles para todo el equipo sin recargar la página | Listo |
 | RF4 | Modo técnico: mapas personalizables, con múltiples capas y estadísticas cruzadas de los enfoques disponibles | Listo (capas múltiples en `/mapa`, estadísticas cruzadas en `/perfil`, confirmado con datos reales de Jalisco) |

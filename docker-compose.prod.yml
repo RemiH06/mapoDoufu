@@ -87,8 +87,8 @@ services:
       PHX_PORT: ${PHX_PORT:-443}
       PHX_ORIGENES_EXTRA: ${PHX_ORIGENES_EXTRA:-}
       MAPO_CONTACTO: ${MAPO_CONTACTO:?falta MAPO_CONTACTO en .env}
-      MAPO_SCW_PROJECT_ID: ${MAPO_SCW_PROJECT_ID:-}
-      MAPO_SCW_SECRET_KEY: ${MAPO_SCW_SECRET_KEY:-}
+      MAPO_AHASEND_ACCOUNT_ID: ${MAPO_AHASEND_ACCOUNT_ID:-}
+      MAPO_AHASEND_API_KEY: ${MAPO_AHASEND_API_KEY:-}
       MAPO_OSRM_URL: http://osrm:5000
     networks: [interna, default]
     depends_on: !override
