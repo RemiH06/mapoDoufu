@@ -47,7 +47,7 @@ defmodule MapoWeb.Layouts do
   attr :seccion, :string,
     default: nil,
     doc:
-      "la sección del membrete que va marcada: \"buscador\", \"mapa\", \"perfil\", \"logistica\", \"riesgos\" o \"equipos\""
+      "la sección del membrete que va marcada: \"buscador\", \"mapa\", \"perfil\", \"logistica\", \"riesgos\", \"accesibilidad\" o \"equipos\""
 
   slot :inner_block, required: true
 
@@ -164,6 +164,7 @@ defmodule MapoWeb.Layouts do
       {"perfil", "Perfil", ~p"/perfil"},
       {"logistica", "Logística", ~p"/logistica"},
       {"riesgos", "Riesgos", ~p"/riesgos"},
+      {"accesibilidad", "Servicios", ~p"/accesibilidad"},
       {"equipos", "Equipos", ~p"/teams"}
     ]
   end

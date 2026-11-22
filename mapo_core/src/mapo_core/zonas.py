@@ -68,29 +68,45 @@ def plano(lat: np.ndarray, lon: np.ndarray, lat_media: float) -> np.ndarray:
     return np.column_stack([lat * 111.32, lon * 111.32 * math.cos(math.radians(lat_media))])
 
 
-async def _minutos_por_calle(
-    osrm: OSRMClient, origenes: list[tuple[float, float]], negocios: np.ndarray, vecinos: np.ndarray
-) -> list[float | None] | None:
-    """Minutos de cada origen a su negocio más cercano por calle, entre sus
-    `vecinos`. None si falla cualquier lote: no se mezclan métodos."""
-    limite = asyncio.Semaphore(LLAMADAS_A_LA_VEZ)
+async def minutos_por_calle(
+    osrm: OSRMClient,
+    origenes: list[tuple[float, float]],
+    destinos_latlon: np.ndarray,
+    vecinos: np.ndarray,
+    *,
+    a_la_vez: int = LLAMADAS_A_LA_VEZ,
+    reintentos: int = 0,
+    **opciones,
+) -> list[tuple[float | None, int | None]] | None:
+    """(minutos, índice del destino) de cada origen a su destino más cercano por
+    calle, entre sus `vecinos` en línea recta. (None, None) si ninguno tiene ruta.
+    None completo si falla cualquier lote tras `reintentos`: no se mezclan métodos.
+    `opciones` va tal cual a `duraciones_matriz`."""
+    limite = asyncio.Semaphore(a_la_vez)
 
-    async def lote(inicio: int) -> list[float | None] | None:
+    async def lote(inicio: int) -> list[tuple[float | None, int | None]] | None:
         filas = vecinos[inicio : inicio + AGEBS_POR_LOTE]
         destinos = sorted({int(i) for fila in filas for i in fila})
         posicion = {i: j for j, i in enumerate(destinos)}
-        async with limite:
-            matriz = await osrm.duraciones_matriz(
-                origenes[inicio : inicio + AGEBS_POR_LOTE],
-                [(float(negocios[i, 0]), float(negocios[i, 1])) for i in destinos],
-            )
+        matriz = None
+        for intento in range(reintentos + 1):
+            async with limite:
+                matriz = await osrm.duraciones_matriz(
+                    origenes[inicio : inicio + AGEBS_POR_LOTE],
+                    [(float(destinos_latlon[i, 0]), float(destinos_latlon[i, 1])) for i in destinos],
+                    **opciones,
+                )
+            if matriz is not None:
+                break
+            if intento < reintentos:
+                await asyncio.sleep(2**intento)
         if matriz is None:
             return None
-        tiempos = []
+        salida = []
         for fila_matriz, fila_vecinos in zip(matriz, filas):
-            alcanzables = [t for t in (fila_matriz[posicion[int(i)]] for i in fila_vecinos) if t is not None]
-            tiempos.append(min(alcanzables, default=None))
-        return tiempos
+            alcanzables = [(t, int(i)) for i in fila_vecinos if (t := fila_matriz[posicion[int(i)]]) is not None]
+            salida.append(min(alcanzables, default=(None, None)))
+        return salida
 
     lotes = await asyncio.gather(*(lote(i) for i in range(0, len(origenes), AGEBS_POR_LOTE)))
     if any(t is None for t in lotes):
@@ -113,13 +129,13 @@ async def minutos_a_negocios(
     distancias, vecinos = distancias.reshape(len(agebs), k), vecinos.reshape(len(agebs), k)
 
     origenes = list(zip(a_lat.tolist(), a_lon.tolist()))
-    tiempos = await _minutos_por_calle(osrm, origenes, puntos, vecinos)
+    tiempos = await minutos_por_calle(osrm, origenes, puntos, vecinos)
     cvegeos = [a[0] for a in agebs]
 
     if tiempos is None:
         en_linea = distancias[:, 0] / VELOCIDAD_FALLBACK_KMH * 60
         return dict(zip(cvegeos, en_linea.round(2).tolist())), "linea_recta_aproximada"
-    return dict(zip(cvegeos, tiempos)), "carretera_real"
+    return dict(zip(cvegeos, (t for t, _ in tiempos))), "carretera_real"
 
 
 def _para_mostrar(valor: float | None) -> float | None:

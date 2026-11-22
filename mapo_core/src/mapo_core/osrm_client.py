@@ -134,7 +134,10 @@ class OSRMClient:
         return [round(d / 60, 2) for d in fila[1:]]
 
     async def duraciones_matriz(
-        self, origenes: list[tuple[float, float]], destinos: list[tuple[float, float]]
+        self,
+        origenes: list[tuple[float, float]],
+        destinos: list[tuple[float, float]],
+        acercamiento_kmh: float | None = None,
     ) -> list[list[float | None]] | None:
         """Duracion (minutos) de cada origen a cada destino, en una llamada a
         `table` con `sources` y `destinations`: una fila por origen.
@@ -143,6 +146,11 @@ class OSRMClient:
         matriz: se queda `None` en su celda, porque aqui cada fila se lee por
         separado. `None` completo si el servicio no responde. `osrm-routed`
         rechaza mas de 10,000 celdas por llamada (`--max-table-size`).
+
+        OSRM mide desde el punto del camino más cercano a cada coordenada, no
+        desde la coordenada. Con `acercamiento_kmh`, ese tramo (de ida y de
+        llegada) se suma a esa velocidad: una ranchería a 2 km del camino no
+        queda a cero minutos de él.
         """
         indices = range(len(origenes) + len(destinos))
         try:
@@ -161,7 +169,20 @@ class OSRMClient:
 
         if datos.get("code") != "Ok" or not datos.get("durations"):
             return None
-        return [[None if d is None else round(d / 60, 2) for d in fila] for fila in datos["durations"]]
+        if acercamiento_kmh is None:
+            return [[None if d is None else round(d / 60, 2) for d in fila] for fila in datos["durations"]]
+
+        def tramo(puntos: list[dict] | None, n: int) -> list[float]:
+            # minutos = metros / (km/h * 1000 / 60)
+            metros = [float(p.get("distance") or 0) for p in (puntos or [])]
+            return [m / (acercamiento_kmh * 1000 / 60) for m in metros] if len(metros) == n else [0.0] * n
+
+        ida = tramo(datos.get("sources"), len(origenes))
+        llegada = tramo(datos.get("destinations"), len(destinos))
+        return [
+            [None if d is None else round(d / 60 + ida[i] + llegada[j], 2) for j, d in enumerate(fila)]
+            for i, fila in enumerate(datos["durations"])
+        ]
 
     async def geometria_ruta(self, coords_en_orden: list[tuple[float, float]]) -> dict | None:
         """GeoJSON LineString de la ruta real por carretera, siguiendo

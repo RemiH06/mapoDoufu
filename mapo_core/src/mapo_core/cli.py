@@ -176,6 +176,52 @@ async def _imss(args) -> None:
     print(json.dumps(resumen, ensure_ascii=False, indent=1))
 
 
+async def _clues(args) -> None:
+    import json
+    from pathlib import Path
+
+    from mapo_core import clues
+
+    await inicializar_esquema()
+    try:
+        resumen = await clues.cargar(Path(args.archivo))
+    except clues.ArchivoInvalido as exc:
+        raise SystemExit(f"No se cargó nada: {exc}") from None
+    print(json.dumps(resumen, ensure_ascii=False))
+
+
+async def _accesibilidad(args) -> None:
+    import os
+    from pathlib import Path
+
+    from mapo_core import accesibilidad
+    from mapo_core.osrm_client import OSRMClient
+
+    # Nunca el demo público: son cientos de miles de rutas, y no tiene perfil a pie.
+    urls = {"pie": args.osrm_pie or os.environ.get("MAPO_OSRM_PIE_URL"),
+            "auto": args.osrm_auto or os.environ.get("MAPO_OSRM_URL")}
+    modos = args.modos or list(urls)
+    faltan = [m for m in modos if not urls[m]]
+    if faltan:
+        raise SystemExit(f"Falta el OSRM propio para {', '.join(faltan)} (MAPO_OSRM_PIE_URL, MAPO_OSRM_URL"
+                         " o --osrm-pie/--osrm-auto); el demo público no sirve para esto.")
+    servicios = args.servicios or list(accesibilidad.SERVICIOS)
+    desconocidos = [s for s in servicios if s not in accesibilidad.SERVICIOS]
+    if desconocidos:
+        raise SystemExit(f"Servicios desconocidos: {', '.join(desconocidos)}")
+    await inicializar_esquema()
+    clientes = {m: OSRMClient(base_url=urls[m]) for m in modos}
+    try:
+        await accesibilidad.cargar_estado(
+            await get_pool(), args.estado, clientes, servicios=servicios,
+            estaciones=Path(args.estaciones) if args.estaciones else None)
+    except (accesibilidad.ErrorDeRed, accesibilidad.ConsultaInvalida) as exc:
+        raise SystemExit(str(exc)) from None
+    finally:
+        for c in clientes.values():
+            await c.aclose()
+
+
 async def _precio_estimado(args) -> None:
     from pathlib import Path
 
@@ -398,6 +444,23 @@ def _construir_parser() -> argparse.ArgumentParser:
         "archivo", nargs="+", help="asg-AAAA-MM-DD.csv o .csv.gz, o una carpeta con ellos (data/imss)"
     )
     p_imss.set_defaults(fn=_imss)
+
+    p_clues = subparsers.add_parser(
+        "clues", help="Establecimientos de salud del catálogo CLUES (reemplaza el catálogo completo)"
+    )
+    p_clues.add_argument("archivo", help="ESTABLECIMIENTO_SALUD_AAAAMM.xlsx de la DGIS (data/clues)")
+    p_clues.set_defaults(fn=_clues)
+
+    p_acc = subparsers.add_parser(
+        "accesibilidad", help="Minutos a pie y en auto de cada AGEB o localidad a cada servicio (reemplaza el estado)"
+    )
+    p_acc.add_argument("--estado", required=True, help="cve_ent de 2 dígitos")
+    p_acc.add_argument("--servicios", nargs="+", help="claves de accesibilidad.SERVICIOS (todas si no se dice)")
+    p_acc.add_argument("--modos", nargs="+", choices=["pie", "auto"])
+    p_acc.add_argument("--estaciones", help="CSV red,nombre,lon,lat (scripts/vivienda/transporte_masivo.py)")
+    p_acc.add_argument("--osrm-pie", help="URL del OSRM con foot.lua (si no, MAPO_OSRM_PIE_URL)")
+    p_acc.add_argument("--osrm-auto", help="URL del OSRM con car.lua (si no, MAPO_OSRM_URL)")
+    p_acc.set_defaults(fn=_accesibilidad)
 
     p_precio = subparsers.add_parser(
         "precio_estimado", help="Precio por AGEB del estudio de precio estimado (reemplaza el de antes)"

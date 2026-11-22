@@ -12,6 +12,7 @@ from psycopg_pool import AsyncConnectionPool
 from pydantic import BaseModel, Field
 
 from mapo_core import (
+    accesibilidad,
     buscador,
     consultas,
     cruce,
@@ -812,6 +813,8 @@ TABLAS_CITABLES = {
     "envi": ("fuente_envi2020_entidad", False),
     "precio": ("fuente_precio_estimado", True),
     "imss": ("fuente_imss_asegurados", True),
+    "clues": ("fuente_clues", True),
+    "accesibilidad": ("accesibilidad_cargas", True),
 }
 
 
@@ -831,6 +834,25 @@ async def fuentes_carga(
         cursor = await conn.execute(f"SELECT max(actualizado)::date::text FROM {nombre}{filtro}", {"e": cve_ent})
         (fecha,) = await cursor.fetchone()
     return {"tabla": tabla, "cargada": fecha}
+
+
+@app.get("/accesibilidad/zona")
+async def accesibilidad_zona(
+    cve_ent: str = Query(pattern=r"^\d{2}$"),
+    cve_mun: str = Query(pattern=r"^\d{3}$"),
+    modo: str = Query(default="pie"),
+    pool: AsyncConnectionPool = Depends(get_pool),
+) -> dict:
+    """Cuánta gente de un municipio vive a cada minuto de cada servicio, a pie o en
+    auto, y los minutos de cada lugar para el plano. Ver docs/producto/accesibilidad.md."""
+    try:
+        modo = accesibilidad.modo_valido(modo)
+    except accesibilidad.ConsultaInvalida as exc:
+        raise HTTPException(422, str(exc)) from None
+    resultado = await accesibilidad.zona(pool, cve_ent, cve_mun, modo)
+    if resultado is None:
+        raise HTTPException(404, "municipio no encontrado")
+    return resultado
 
 
 @app.get("/riesgos/zona")

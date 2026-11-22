@@ -88,6 +88,14 @@ defmodule MapoWeb.Cita do
       titulo: "OpenStreetMap (ODbL), ruteado con OSRM",
       url: "https://www.openstreetmap.org/copyright"
     },
+    "clues" => %{
+      clave: "dgis_clues",
+      autor: "DGIS, Secretaría de Salud",
+      autor_largo: "Dirección General de Información en Salud, Secretaría de Salud",
+      anio: nil,
+      titulo: "Catálogo de Clave Única de Establecimientos de Salud (CLUES)",
+      url: "http://www.dgis.salud.gob.mx/contenidos/intercambio/clues_gobmx.html"
+    },
     "renameca" => %{
       clave: "conagua_renameca",
       autor: "Conagua",

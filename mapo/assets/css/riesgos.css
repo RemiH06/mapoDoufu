@@ -1,5 +1,6 @@
-/* /riesgos: el plano ocupa la mesa y encima va la hoja de la zona (la misma
-   hoja de /logistica, más ancha). Cada peligro es un bloque aparte. */
+/* /riesgos y /accesibilidad: el plano ocupa la mesa y encima va la hoja de la
+   zona (la misma hoja de /logistica, más ancha). Cada peligro o servicio es un
+   bloque aparte. */
 
 @layer components {
   :root {
@@ -16,7 +17,8 @@
   #riesgos-map {
     cursor: crosshair;
   }
-  #riesgos-map .leaflet-top.leaflet-right {
+  #riesgos-map .leaflet-top.leaflet-right,
+  #accesibilidad-map .leaflet-top.leaflet-right {
     top: 64px;
     right: 10px;
   }
@@ -93,10 +95,69 @@
   .riesgos .aviso {
     margin-top: 8px;
   }
+  .bloque.activo {
+    border-top-color: var(--f-movilidad);
+    border-top-width: 3px;
+  }
+  .bloque .cinta-citar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px 14px;
+    margin-top: 6px;
+  }
+  .bloque .cinta-citar .cita {
+    flex-basis: 100%;
+  }
+
+  /* Leyenda del plano de /accesibilidad: abajo a la izquierda, fuera de la hoja
+     en pantallas anchas (la hoja va a la izquierda, así que se corre). */
+  .leyenda-acc {
+    font-family: var(--cond);
+    font-size: 13px;
+    line-height: 1.3;
+    background: var(--bg);
+    color: var(--text);
+    border: 1.5px solid var(--line);
+    padding: 6px 8px;
+    max-width: 220px;
+  }
+  .leyenda-acc p {
+    font-weight: 700;
+    margin-bottom: 4px;
+  }
+  .leyenda-acc li {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .leyenda-acc .muestra {
+    display: inline-block;
+    width: 14px;
+    height: 10px;
+    flex: none;
+  }
+  .leyenda-acc .muestra.vacia {
+    border: 1px dashed var(--line);
+  }
+  .leyenda-acc .muestra.punto {
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    background: var(--text);
+  }
+  @media (min-width: 761px) {
+    #accesibilidad-map .leaflet-bottom.leaflet-left {
+      left: 470px;
+    }
+  }
 
   @media (max-width: 760px) {
-    #riesgos-map .leaflet-top.leaflet-right {
+    #riesgos-map .leaflet-top.leaflet-right,
+    #accesibilidad-map .leaflet-top.leaflet-right {
       top: var(--alto-cabecera);
+    }
+    #accesibilidad-map .leyenda-acc {
+      display: none;
     }
     #riesgos-map .leaflet-control-layers {
       display: none;
@@ -116,7 +177,8 @@
       width: 290px;
       top: 64px;
     }
-    #riesgos-map .leaflet-control-layers {
+    #riesgos-map .leaflet-control-layers,
+    #accesibilidad-map .leyenda-acc {
       display: none;
     }
   }

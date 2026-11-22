@@ -481,6 +481,68 @@ CREATE TABLE IF NOT EXISTS fuente_imss_asegurados (
 );
 CREATE INDEX IF NOT EXISTS idx_imss_mun ON fuente_imss_asegurados (cve_ent, cve_mun, periodo);
 
+-- Establecimientos de salud (CLUES de la DGIS, sesión 26). Ver docs/fuentes/clues.md.
+CREATE TABLE IF NOT EXISTS fuente_clues (
+    clues           TEXT PRIMARY KEY,
+    cve_institucion TEXT NOT NULL,
+    institucion     TEXT NOT NULL,
+    cve_ent         TEXT NOT NULL,
+    cve_mun         TEXT NOT NULL,
+    cve_loc         TEXT NOT NULL,
+    tipo            TEXT NOT NULL,      -- DE CONSULTA EXTERNA, DE HOSPITALIZACIÓN, DE APOYO, DE ASISTENCIA SOCIAL
+    tipologia       TEXT NOT NULL,
+    subtipologia    TEXT NOT NULL,
+    nombre          TEXT NOT NULL,
+    estatus         TEXT NOT NULL,      -- EN OPERACION, FUERA DE OPERACION...
+    nivel           TEXT NOT NULL,
+    estrato         TEXT NOT NULL,
+    unidad_movil    TEXT NOT NULL,      -- '' si es fija
+    publica         BOOLEAN NOT NULL,
+    lat             DOUBLE PRECISION,
+    lon             DOUBLE PRECISION,
+    geom            geometry(Point, 4326),
+    corte           TEXT NOT NULL,      -- mes del catálogo, AAAA-MM
+    actualizado     TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS idx_clues_ent ON fuente_clues (cve_ent, tipo);
+
+-- Accesibilidad a servicios (sesión 26). Ver docs/producto/accesibilidad.md. Minutos
+-- de cada AGEB urbano o localidad sin AGEB a su servicio más cercano por calle.
+CREATE TABLE IF NOT EXISTS accesibilidad_destinos (
+    cve_ent   TEXT NOT NULL,
+    servicio  TEXT NOT NULL,
+    id        TEXT NOT NULL,      -- id de DENUE, CLUES o 'red|estación'
+    nombre    TEXT NOT NULL,
+    lat       DOUBLE PRECISION NOT NULL,
+    lon       DOUBLE PRECISION NOT NULL,
+    PRIMARY KEY (cve_ent, servicio, id)
+);
+CREATE TABLE IF NOT EXISTS accesibilidad_minutos (
+    cve_ent   TEXT NOT NULL,
+    servicio  TEXT NOT NULL,
+    modo      TEXT NOT NULL,      -- pie | auto
+    clave     TEXT NOT NULL,      -- cvegeo del AGEB (13) o de la localidad (9)
+    cve_mun   TEXT NOT NULL,
+    minutos   REAL,               -- null: ninguno de los vecinos tiene ruta
+    destino   TEXT,               -- id del más cercano por calle
+    linea_m   REAL NOT NULL,      -- metros en línea recta al más cercano en línea recta
+    PRIMARY KEY (cve_ent, servicio, modo, clave)
+);
+CREATE INDEX IF NOT EXISTS idx_acc_minutos_mun ON accesibilidad_minutos (cve_ent, cve_mun, modo);
+CREATE TABLE IF NOT EXISTS accesibilidad_cargas (
+    cve_ent     TEXT NOT NULL,
+    servicio    TEXT NOT NULL,
+    modo        TEXT NOT NULL,
+    origenes    INTEGER NOT NULL,
+    destinos    INTEGER NOT NULL,
+    sin_ruta    INTEGER NOT NULL,
+    fuente      TEXT NOT NULL,      -- de dónde salieron los destinos, con su fecha
+    red         TEXT NOT NULL,      -- datos de OSM y perfil de OSRM
+    segundos    REAL NOT NULL,
+    actualizado TIMESTAMPTZ NOT NULL DEFAULT now(),
+    PRIMARY KEY (cve_ent, servicio, modo)
+);
+
 CREATE TABLE IF NOT EXISTS descargas_checkpoint (
     clave         TEXT PRIMARY KEY,
     completado_en TIMESTAMPTZ NOT NULL DEFAULT now()

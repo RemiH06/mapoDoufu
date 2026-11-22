@@ -118,6 +118,17 @@ defmodule Mapo.MapoCore do
   end
 
   @doc """
+  Accesibilidad a servicios de un municipio, a pie o en auto: por servicio,
+  cuánta gente de su grupo vive a cada minuto o menos, y los minutos de cada
+  lugar para el plano (docs/producto/accesibilidad.md).
+  """
+  def accesibilidad_zona(cve_ent, cve_mun, modo) do
+    get("/accesibilidad/zona", [cve_ent: cve_ent, cve_mun: cve_mun, modo: modo],
+      receive_timeout: 60_000
+    )
+  end
+
+  @doc """
   Fecha (`"AAAA-MM-DD"`) de la última carga de una tabla citable, del estado
   si la tabla es por estado; `nil` si no hay o mapo_core no responde. Es la
   versión que lleva la cita de las tablas que no traen una propia.

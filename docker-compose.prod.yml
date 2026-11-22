@@ -42,6 +42,17 @@ services:
       - ${MAPO_OSRM_DATOS:?falta MAPO_OSRM_DATOS en .env}:/data:ro
     networks: [interna]
 
+  # A pie, solo Jalisco (scripts/osrm/pie.sh). Solo lo usa `cli accesibilidad`:
+  # se levanta con `--profile calculo` y se apaga al terminar.
+  osrm_pie:
+    <<: *comun
+    image: ghcr.io/project-osrm/osrm-backend:v26.7.3-debian
+    profiles: [calculo]
+    command: osrm-routed --algorithm mld /data/pie.osrm
+    volumes:
+      - ${MAPO_OSRM_PIE_DATOS:-./sin-osrm-pie}:/data:ro
+    networks: [interna]
+
   mapo_core:
     <<: *comun
     ports: !reset []
@@ -54,6 +65,7 @@ services:
       DATABASE_USER: mapo
       DATABASE_PASSWORD: ${POSTGRES_PASSWORD}
       MAPO_OSRM_URL: http://osrm:5000
+      MAPO_OSRM_PIE_URL: http://osrm_pie:5000
     # `default` da salida a internet para refrescar fuentes con el CLI
     networks: [interna, default]
     depends_on: !override
