@@ -65,3 +65,11 @@ formal en un municipio, en qué y cuánto cotiza. Ficha en `../fuentes/imss.md`.
 modos). La CDMX sin municipio no se puede ver mientras solo Jalisco tenga municipios
 cargados: la cubre una prueba de LiveView. Cuadre de diciembre de 2024 en la ficha de
 la fuente.
+
+## Despliegue
+
+Producción en `3614827` el 2026-11-21 (revertir: `deploy-20261121c`; sin migración, la
+tabla la crea `mapo_core`). Los dos meses se cargaron en producción desde
+`~/srv/mapo-crudos/imss/` con un contenedor aparte, como las fuentes ambientales, con
+las mismas cifras que en dev. Este despliegue también subió el correo por AhaSend
+(`03385cc`), inactivo sin llave.
