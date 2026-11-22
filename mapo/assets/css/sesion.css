@@ -6,7 +6,7 @@
   #mapa-colaborativo {
     cursor: crosshair;
   }
-  #mapa-colaborativo .leaflet-top.leaflet-right {
+  #mapa-colaborativo .maplibregl-ctrl-top-right {
     top: 64px;
     right: 10px;
   }
@@ -195,7 +195,7 @@
     text-underline-offset: 3px;
   }
 
-  .ficha-marca .leaflet-popup-content {
+  .ficha-marca .maplibregl-popup-content {
     margin: 12px 14px;
   }
   .ficha-marca .ficha {
@@ -222,7 +222,7 @@
   }
 
   @media (max-width: 760px) {
-    #mapa-colaborativo .leaflet-top.leaflet-right {
+    #mapa-colaborativo .maplibregl-ctrl-top-right {
       top: var(--alto-cabecera);
     }
     .hoja-sesion {
@@ -238,7 +238,7 @@
     .hoja-sesion .pista .corto {
       display: inline;
     }
-    #mapa-colaborativo .leaflet-bottom.leaflet-right {
+    #mapa-colaborativo .maplibregl-ctrl-bottom-right {
       bottom: 150px;
     }
   }

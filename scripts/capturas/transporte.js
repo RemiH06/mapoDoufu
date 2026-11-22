@@ -35,18 +35,18 @@ const ACCESIBILIDAD = "/accesibilidad?ent=14&mun=039&modo=pie&umbral=5&servicio=
           // El plano pinta en canvas: la ficha se abre con un clic donde pasan rutas.
           await p.mouse.click(640, 250);
           await quieto(p, 800);
-          textos.push("ficha: " + (await p.locator(".leaflet-popup-content").innerText().catch(() => "sin ficha")));
+          textos.push("ficha: " + (await p.locator(".maplibregl-popup-content").innerText().catch(() => "sin ficha")));
           await p.screenshot({ path: path.join(dir, `${nombre}-ficha.png`) });
           await p.keyboard.press("Escape");
           for (let i = 0; i < 3; i++) {
-            await p.locator(".leaflet-control-zoom-in").click();
+            await p.locator(".maplibregl-ctrl-zoom-in").click();
             await p.waitForTimeout(700);
           }
           await quieto(p, 2500);
           await p.screenshot({ path: path.join(dir, `${nombre}-cerca.png`) });
           await p.mouse.click(640, 250);
           await quieto(p, 800);
-          textos.push("ficha: " + (await p.locator(".leaflet-popup-content").innerText().catch(() => "sin ficha")));
+          textos.push("ficha: " + (await p.locator(".maplibregl-popup-content").innerText().catch(() => "sin ficha")));
           await p.screenshot({ path: path.join(dir, `${nombre}-ficha.png`) });
           await p.locator("#citar-transporte").click().catch(() => {});
           await quieto(p, 800);

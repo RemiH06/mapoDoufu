@@ -1,4 +1,6 @@
-import L from "../vendor/leaflet/leaflet"
+import {css, escapar, fuente, quitar, distancia, circulo, recuadroDePuntos} from "./plano"
+
+export {escapar}
 
 // Marcas del equipo sobre el plano: las dibujan /sesiones/:id (CollabMap) y la
 // capa "Tus marcas" de /mapa (MapaTecnico), y ambas escriben en la misma
@@ -8,38 +10,32 @@ import L from "../vendor/leaflet/leaflet"
 // evento, asi el dibujo es uno solo y no hay que deduplicar entre "mi marca"
 // y "la que me llega por broadcast".
 //
-// Van a mano y en lapiz rojo (--accent), nunca mezcladas con lo impreso. Una
-// forma nueva (trazo libre, flecha) agrega su caso en _dibujar y en _clic, y
-// su validacion en Mapo.Sesiones.Anotacion.
-
-export const escapar = t => String(t ?? "").replace(/[&<>"']/g, c =>
-  ({"&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"})[c])
+// Van a mano y en lapiz rojo (--accent), nunca mezcladas con lo impreso. Los
+// puntos y las notas son marcas del DOM (MapLibre las pone encima del lienzo);
+// el trazo de los circulos es una capa de lineas, siempre arriba de los
+// acetatos (alFrente). Una forma nueva (trazo libre, flecha) agrega su caso en
+// _dibujar y en clic, y su validacion en Mapo.Sesiones.Anotacion.
 
 const METROS_POR_GRADO = 111320
+const TRAZO = "marcas-trazo"
+const GUIA = "marcas-guia"
 
-function iconoPunto(anotacion, nueva) {
+function elementoPunto(anotacion, nueva) {
+  const el = document.createElement("div")
   const texto = anotacion.texto ? `<span class="marca-texto">${escapar(anotacion.texto)}</span>` : ""
-  return L.divIcon({
-    className: "",
-    html: `<span class="marca-mano${nueva ? " nueva" : ""}"><span class="marca-punto"></span>${texto}</span>`,
-    iconSize: [22, 22],
-    iconAnchor: [11, 11],
-    popupAnchor: [0, -10],
-  })
+  el.innerHTML = `<span class="marca-mano${nueva ? " nueva" : ""}"><span class="marca-punto"></span>${texto}</span>`
+  return el
 }
 
 // La nota de un circulo va junto a su orilla derecha. Es tambien su asa: ahi
 // se ancla la ficha y por ahi se llega con teclado (sin nota, queda un asa
 // chica).
-function iconoNota(anotacion) {
-  return L.divIcon({
-    className: "",
-    html: anotacion.texto
-      ? `<span class="marca-nota">${escapar(anotacion.texto)}</span>`
-      : `<span class="marca-nota vacia"></span>`,
-    iconSize: null,
-    iconAnchor: [-8, 10],
-  })
+function elementoNota(anotacion) {
+  const el = document.createElement("div")
+  el.innerHTML = anotacion.texto
+    ? `<span class="marca-nota">${escapar(anotacion.texto)}</span>`
+    : `<span class="marca-nota vacia"></span>`
+  return el
 }
 
 // Un circulo como trazado con lapiz: el radio ondula suave y siempre igual
@@ -54,54 +50,59 @@ function trazoCirculo(lat, lon, radio, semilla) {
     const t = i / pasos
     const a = semilla + t * vuelta
     const r = radio * (1 + 0.035 * Math.sin(2 * a + semilla) + 0.02 * Math.sin(3 * a + 2 * semilla) + 0.06 * t * t)
-    puntos.push([lat + Math.sin(a) * r / METROS_POR_GRADO, lon + Math.cos(a) * r / (METROS_POR_GRADO * k)])
+    puntos.push([lon + Math.cos(a) * r / (METROS_POR_GRADO * k), lat + Math.sin(a) * r / METROS_POR_GRADO])
   }
   return puntos
 }
 
 export class Marcas {
-  // push: el pushEvent del hook. pane: donde van los trazos (sobre los acetatos).
-  constructor(map, {push, pane}) {
+  // push: el pushEvent del hook. clic: el registro de clics del plano (plano.js).
+  constructor(map, ml, {push, clic}) {
     this.map = map
+    this.ml = ml
     this.push = push
-    this.pane = pane
-    this.renderer = L.svg({pane})
     this.datos = new Map()
     this.capas = new Map()
     this.herramienta = "punto"
     this.centro = null
     this.alTecla = e => { if (e.key === "Escape") this.cancelar() }
-    this.alMover = e => this._previa(e.latlng)
+    this.alMover = e => this._previa(e.lngLat)
     document.addEventListener("keydown", this.alTecla)
+    clic.en(TRAZO, f => this.capas.get(f.properties.id)?.principal.togglePopup())
+    this.repintar()
   }
 
   poner(anotaciones) {
-    [...this.capas.keys()].forEach(id => this.quitar(id))
+    [...this.capas.keys()].forEach(id => this._borrarCapa(id))
+    this.datos.clear()
     anotaciones.forEach(a => this.agregar(a, false))
   }
 
   bordes() {
-    const puntos = [...this.datos.values()].map(a => [a.lat, a.lon])
-    return puntos.length ? L.latLngBounds(puntos) : null
+    const puntos = [...this.datos.values()].map(a => [a.lon, a.lat])
+    return puntos.length ? recuadroDePuntos(puntos) : null
   }
 
   agregar(anotacion, nueva) {
     this.datos.set(anotacion.id, anotacion)
     if (this.capas.has(anotacion.id)) return
     this._dibujar(anotacion, nueva)
+    this._trazos()
   }
 
   actualizar(anotacion) {
-    const abierta = this.capas.get(anotacion.id)?.getLayers().some(l => l.isPopupOpen?.())
+    const abierta = this.capas.get(anotacion.id)?.principal.getPopup()?.isOpen()
     this.datos.set(anotacion.id, anotacion)
     this._borrarCapa(anotacion.id)
     this._dibujar(anotacion, false)
-    if (abierta) this._principal(anotacion.id).openPopup()
+    this._trazos()
+    if (abierta) this.capas.get(anotacion.id).principal.togglePopup()
   }
 
   quitar(id) {
     this._borrarCapa(id)
     this.datos.delete(id)
+    this._trazos()
   }
 
   usar(herramienta) {
@@ -109,30 +110,30 @@ export class Marcas {
     this.herramienta = herramienta
   }
 
-  // Un clic en el plano. El punto pide uno; el circulo, centro y orilla.
-  clic(latlng) {
+  // Un clic en el plano ({lng, lat}). El punto pide uno; el circulo, centro y orilla.
+  clic(lugar) {
     if (this.herramienta === "circulo") {
       if (!this.centro) {
-        this.centro = latlng
+        this.centro = lugar
         this.map.on("mousemove", this.alMover)
-        this._previa(latlng)
+        this._previa(lugar)
         return
       }
       const centro = this.centro
-      const radio = Math.round(this.map.distance(centro, latlng))
+      const radio = Math.round(distancia([centro.lng, centro.lat], [lugar.lng, lugar.lat]))
       this.cancelar()
       if (radio < 1) return
-      this._previa(latlng, centro, radio)
-      this._nueva(latlng, "Círculo nuevo", texto => ({lat: centro.lat, lon: centro.lng, forma: "circulo", radio_m: radio, texto}))
+      this._previa(lugar, centro, radio)
+      this._nueva(lugar, "Círculo nuevo", texto => ({lat: centro.lat, lon: centro.lng, forma: "circulo", radio_m: radio, texto}))
     } else {
-      this._nueva(latlng, "Marca nueva", texto => ({lat: latlng.lat, lon: latlng.lng, forma: "punto", texto}))
+      this._nueva(lugar, "Marca nueva", texto => ({lat: lugar.lat, lon: lugar.lng, forma: "punto", texto}))
     }
   }
 
   cancelar() {
     this.centro = null
     this.map.off("mousemove", this.alMover)
-    if (this.guia) { this.map.removeLayer(this.guia); this.guia = null }
+    if (this.map.getSource(GUIA)) fuente(this.map, GUIA)
   }
 
   destruir() {
@@ -141,64 +142,84 @@ export class Marcas {
     ;[...this.capas.keys()].forEach(id => this._borrarCapa(id))
   }
 
+  // El trazo de los circulos y la guia, con la tinta del tema en curso. Se
+  // llama al crear y despues de cada cambio de tema (el estilo se recarga).
+  repintar() {
+    const map = this.map
+    quitar(map, "marcas-")
+    fuente(map, GUIA)
+    map.addLayer({id: GUIA, type: "line", source: GUIA,
+      paint: {"line-color": css("--accent"), "line-width": 1.5, "line-dasharray": [2.7, 2.7]}})
+    this._trazos()
+    map.addLayer({id: TRAZO, type: "line", source: TRAZO, layout: {"line-cap": "round", "line-join": "round"},
+      paint: {"line-color": css("--accent"), "line-width": 2.6}})
+  }
+
+  // Las marcas van encima de todos los acetatos.
+  alFrente() {
+    for (const id of [GUIA, TRAZO]) if (this.map.getLayer(id)) this.map.moveLayer(id)
+  }
+
+  _trazos() {
+    const features = [...this.datos.values()].filter(a => a.forma === "circulo").map(a => ({
+      type: "Feature",
+      properties: {id: a.id},
+      geometry: {type: "LineString", coordinates: trazoCirculo(a.lat, a.lon, a.radio_m, a.id % 7)},
+    }))
+    fuente(this.map, TRAZO, {type: "FeatureCollection", features})
+  }
+
   // Mientras se elige la orilla: un circulo punteado que sigue al cursor.
-  _previa(latlng, centro = this.centro, radio = null) {
+  _previa(lugar, centro = this.centro, radio = null) {
     if (!centro) return
-    const r = radio ?? this.map.distance(centro, latlng)
-    if (!this.guia) {
-      this.guia = L.circle(centro, {radius: r, pane: this.pane, renderer: this.renderer, className: "guia-marca", interactive: false, fill: false, weight: 1.5, dashArray: "4 4"}).addTo(this.map)
-    } else {
-      this.guia.setRadius(r)
-    }
+    const r = radio ?? distancia([centro.lng, centro.lat], [lugar.lng, lugar.lat])
+    fuente(this.map, GUIA, circulo([centro.lng, centro.lat], r))
   }
 
   _dibujar(anotacion, nueva) {
-    // La primera parte lleva la ficha.
-    const partes = []
+    const ml = this.ml
+    const ficha = new ml.Popup({className: "ficha-marca", offset: 12, focusAfterOpen: false, maxWidth: "300px"})
+    ficha.on("open", () => ficha.setDOMContent(this._ficha(anotacion.id)))
+    let principal
     if (anotacion.forma === "circulo") {
-      const orilla = [anotacion.lat, anotacion.lon + anotacion.radio_m / (METROS_POR_GRADO * Math.cos(anotacion.lat * Math.PI / 180))]
-      const asa = L.marker(orilla, {icon: iconoNota(anotacion), keyboard: true, title: anotacion.texto || "Círculo sin nota"})
-      const trazo = L.polyline(trazoCirculo(anotacion.lat, anotacion.lon, anotacion.radio_m, anotacion.id % 7), {
-        pane: this.pane, renderer: this.renderer, className: `trazo-marca${nueva ? " nueva" : ""}`,
-        weight: 2.6, lineCap: "round", lineJoin: "round", bubblingMouseEvents: false,
-      }).on("click", () => asa.openPopup())
-      partes.push(asa, trazo)
+      const orilla = [anotacion.lon + anotacion.radio_m / (METROS_POR_GRADO * Math.cos(anotacion.lat * Math.PI / 180)), anotacion.lat]
+      principal = new ml.Marker({element: elementoNota(anotacion), anchor: "left", offset: [8, 0]}).setLngLat(orilla)
+      principal.getElement().title = anotacion.texto || "Círculo sin nota"
     } else {
-      partes.push(L.marker([anotacion.lat, anotacion.lon], {
-        icon: iconoPunto(anotacion, nueva),
-        keyboard: true,
-        title: anotacion.texto || "Marca sin texto",
-      }))
+      principal = new ml.Marker({element: elementoPunto(anotacion, nueva)}).setLngLat([anotacion.lon, anotacion.lat])
+      principal.getElement().title = anotacion.texto || "Marca sin texto"
     }
-    partes[0].bindPopup(() => this._ficha(anotacion.id), {className: "ficha-marca"})
-    this.capas.set(anotacion.id, L.layerGroup(partes).addTo(this.map))
-  }
-
-  _principal(id) {
-    return this.capas.get(id)?.getLayers()[0]
+    const el = principal.getElement()
+    el.tabIndex = 0
+    el.setAttribute("role", "button")
+    el.setAttribute("aria-label", el.title)
+    principal.setPopup(ficha).addTo(this.map)
+    this.capas.set(anotacion.id, {principal})
   }
 
   _borrarCapa(id) {
     const capa = this.capas.get(id)
     if (capa) {
-      this.map.removeLayer(capa)
+      capa.principal.getPopup()?.remove()
+      capa.principal.remove()
       this.capas.delete(id)
     }
   }
 
   // Una ficha para escribir la nota antes de mandar la marca. Cerrarla sin
   // guardar no deja marca.
-  _nueva(latlng, titulo, armar) {
+  _nueva(lugar, titulo, armar) {
     const {forma, input} = this._forma("", "Poner marca", texto => {
       this.push("crear_anotacion", armar(texto))
-      this.map.closePopup()
+      popup.remove()
     })
     const cab = document.createElement("b")
     cab.textContent = titulo
     forma.prepend(cab)
-    L.popup({className: "ficha-marca"}).setLatLng(latlng).setContent(forma)
-      .on("remove", () => this.cancelar())
-      .openOn(this.map)
+    const popup = new this.ml.Popup({className: "ficha-marca", focusAfterOpen: false, maxWidth: "300px"})
+      .setLngLat(lugar).setDOMContent(forma)
+    popup.on("close", () => this.cancelar())
+    popup.addTo(this.map)
     input.focus()
   }
 
@@ -247,8 +268,6 @@ export class Marcas {
     mandar.className = "chico primario"
     botones.appendChild(mandar)
     forma.append(input, botones)
-    // Leaflet no debe tomar el clic dentro de la ficha como un clic en el plano
-    L.DomEvent.disableClickPropagation(forma)
     forma.addEventListener("submit", e => {
       e.preventDefault()
       alMandar(input.value.trim())

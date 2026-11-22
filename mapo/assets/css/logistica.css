@@ -5,7 +5,7 @@
   #logistica-map {
     cursor: crosshair;
   }
-  #logistica-map .leaflet-top.leaflet-right {
+  #logistica-map .maplibregl-ctrl-top-right {
     top: 64px;
     right: 10px;
   }
@@ -316,7 +316,7 @@
   }
 
   @media (max-width: 760px) {
-    #logistica-map .leaflet-top.leaflet-right {
+    #logistica-map .maplibregl-ctrl-top-right {
       top: var(--alto-cabecera);
     }
     /* La hoja baja al borde como una charola; plegada solo asoma su
@@ -385,7 +385,7 @@
     .pista .corto {
       display: inline;
     }
-    #logistica-map .leaflet-control-zoom {
+    #logistica-map .maplibregl-ctrl-group {
       display: none;
     }
     .pie {

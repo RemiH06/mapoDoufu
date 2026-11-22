@@ -3,50 +3,45 @@
    elegida y el rótulo de la lámina son papeles pegados encima. */
 
 @layer components {
-  /* Plano y acetatos. .plano-leaflet también lo usa /logistica. */
-  .plano-leaflet,
-  .plano-leaflet.leaflet-container {
+  /* El plano de todas las vistas (plano.js, MapLibre). Los controles son
+     papeles: borde de tinta, sin sombra ni esquinas redondas. */
+  .plano-gl {
     background: var(--bg);
     font-family: var(--sans);
   }
-  .plano-leaflet .leaflet-tile-pane {
-    filter: url(#plano-tinta);
-  }
-  .acetato {
-    mix-blend-mode: var(--blend);
-  }
-  .acetato.entra {
-    animation: deslizar 0.42s cubic-bezier(0.2, 0.7, 0.2, 1);
-  }
-  @keyframes deslizar {
-    from {
-      clip-path: inset(100% 0 0 0);
-    }
-    to {
-      clip-path: inset(0 0 0 0);
-    }
-  }
-  .plano-leaflet .leaflet-bar {
+  .plano-gl .maplibregl-ctrl-group {
     border: 1.5px solid var(--text);
     border-radius: 0;
     box-shadow: none;
-  }
-  .plano-leaflet .leaflet-bar a {
     background: var(--bg);
-    color: var(--text);
-    border-color: var(--line);
-    border-radius: 0;
-    font-family: var(--mono);
   }
-  .plano-leaflet .leaflet-control-attribution {
+  .plano-gl .maplibregl-ctrl-group button {
+    width: 32px;
+    height: 32px;
+    background-color: var(--bg);
+    border-radius: 0;
+  }
+  .plano-gl .maplibregl-ctrl-group button + button {
+    border-top: 1px solid var(--line);
+  }
+  .plano-gl .maplibregl-ctrl-group button .maplibregl-ctrl-icon {
+    filter: var(--icono-plano, none);
+  }
+  [data-theme="dark"] .plano-gl {
+    --icono-plano: invert(1);
+  }
+  .plano-gl .maplibregl-ctrl-attrib {
     background: color-mix(in srgb, var(--bg) 85%, transparent);
     color: var(--text2);
     font-size: 11px;
   }
-  .plano-leaflet .leaflet-control-attribution a {
+  .plano-gl .maplibregl-ctrl-attrib a {
     color: var(--text2);
   }
-  .plano-leaflet .leaflet-control-scale-line {
+  .plano-gl .maplibregl-ctrl-attrib-button {
+    filter: var(--icono-plano, none);
+  }
+  .plano-gl .maplibregl-ctrl-scale {
     background: var(--bg);
     color: var(--text);
     border: 1.5px solid var(--text);
@@ -54,19 +49,70 @@
     font-family: var(--mono);
     font-size: 11px;
   }
-  .plano-leaflet .leaflet-popup-content-wrapper,
-  .plano-leaflet .leaflet-popup-tip {
+  .plano-gl .maplibregl-popup-content {
     background: var(--bg);
     color: var(--text);
     border-radius: 0;
     box-shadow: none;
     border: 1.5px solid var(--text);
+    padding: 12px 26px 12px 14px;
+    font-size: 15px;
+    line-height: 1.35;
   }
-  #mapa-tecnico .leaflet-top.leaflet-right {
+  .plano-gl .maplibregl-popup-close-button {
+    color: var(--text2);
+    font-size: 20px;
+    width: 26px;
+    height: 26px;
+  }
+  .plano-gl .maplibregl-popup-anchor-bottom .maplibregl-popup-tip,
+  .plano-gl .maplibregl-popup-anchor-bottom-left .maplibregl-popup-tip,
+  .plano-gl .maplibregl-popup-anchor-bottom-right .maplibregl-popup-tip {
+    border-top-color: var(--text);
+  }
+  .plano-gl .maplibregl-popup-anchor-top .maplibregl-popup-tip,
+  .plano-gl .maplibregl-popup-anchor-top-left .maplibregl-popup-tip,
+  .plano-gl .maplibregl-popup-anchor-top-right .maplibregl-popup-tip {
+    border-bottom-color: var(--text);
+  }
+  .plano-gl .maplibregl-popup-anchor-left .maplibregl-popup-tip {
+    border-right-color: var(--text);
+  }
+  .plano-gl .maplibregl-popup-anchor-right .maplibregl-popup-tip {
+    border-left-color: var(--text);
+  }
+  /* La ficha de un renglón propio puede ser larga: se desplaza adentro */
+  .plano-gl .ficha-alta {
+    max-height: 260px;
+    overflow-y: auto;
+  }
+  /* Casillas de capas (riesgos) */
+  .plano-gl .control-capas {
+    display: grid;
+    gap: 4px;
+    margin: 10px 10px 0 0;
+    padding: 8px 10px;
+    font-family: var(--cond);
+    font-size: 14px;
+    max-width: 260px;
+    background: var(--bg);
+    color: var(--text);
+    border: 1.5px solid var(--line);
+  }
+  .plano-gl .control-capas legend {
+    float: left;
+    font-weight: 700;
+  }
+  .plano-gl .control-capas label {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+  }
+  #mapa-tecnico .maplibregl-ctrl-top-right {
     top: 64px;
     right: 10px;
   }
-  #mapa-tecnico .leaflet-bottom.leaflet-left {
+  #mapa-tecnico .maplibregl-ctrl-bottom-left {
     bottom: 56px;
   }
 
@@ -691,7 +737,7 @@
     }
   }
   @media (max-width: 760px) {
-    #mapa-tecnico .leaflet-top.leaflet-right {
+    #mapa-tecnico .maplibregl-ctrl-top-right {
       top: var(--alto-cabecera);
     }
     /* Estado y municipio en un solo renglón, a partes iguales */

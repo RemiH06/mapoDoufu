@@ -43,6 +43,8 @@ services:
       - ./mapo:/app
       - mapo_build:/app/_build
       - mapo_deps:/app/deps
+      # Mapa base (scripts/plano/extraer.sh); sin él, el plano sale vacío
+      - ${MAPO_PLANO_DATOS:-./plano}:/plano:ro
 
 volumes:
   mapo_db_data:

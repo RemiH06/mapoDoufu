@@ -1,6 +1,5 @@
-import L from "../vendor/leaflet/leaflet"
-import {entintar} from "./plano_tinta"
-import {Marcas, escapar} from "./marcas"
+import {crearPlano, alListo, clics, css, oscuro, escapar, fuente, quitar, indexar, bordes, recuadroDePuntos, relleno, ficha} from "./plano"
+import {Marcas} from "./marcas"
 import {ESTADOS_BBOX} from "./estados_bbox"
 
 // La url viene del archivo de alguien: solo se vuelve liga si es http(s).
@@ -25,44 +24,35 @@ const valorPrecio = ({fuente, valor, rango_bajo, rango_alto, anio_tabla, cobertu
 // Mapa tecnico: cada capa (coropleta, Voronoi, coloreado, isocrona) es un
 // acetato sobre el plano. El servidor las prende y apaga por push_event y
 // dice el orden de la pila y la piel de la mesa; aqui se pintan con la
-// pelicula de su enfoque y el mapa base se reentinta con la piel activa
-// (docs/arquitectura/decisiones.md, "Concepto visual"). El contenedor tiene
-// phx-update="ignore": lo dibujado vive aqui, nunca en el DOM de LiveView.
+// pelicula de su enfoque. El contenedor tiene phx-update="ignore": lo
+// dibujado vive aqui, nunca en el DOM de LiveView.
 //
-// Canvas en vez de SVG: una coropleta de estado son ~5 mil poligonos y en
-// SVG arrastrar el mapa baja a 30 o 40 fps. Cada acetato tiene su propio
-// canvas, para que se mezcle con el plano (mix-blend-mode) por separado.
+// Cada acetato es un grupo de capas de MapLibre con el prefijo `a-<id>:`;
+// el orden de la pila se aplica moviendo los grupos (_ordenar). Todo va en el
+// mismo lienzo de WebGL: ya no hay mezcla por acetato (mix-blend-mode), la
+// película se ve por su opacidad.
 //
-// "Tus marcas" no es un acetato: va encima de todos, sin mezclarse, y sus
-// marcas son las de la sesion elegida (marcas.js, compartido con
-// /sesiones/:id). Con su cinta abierta, el clic en el plano pone marca; si
-// no, y hay isocrona activa, elige el punto de salida.
+// "Tus marcas" no es un acetato: va encima de todos y sus marcas son las de
+// la sesion elegida (marcas.js, compartido con /sesiones/:id). Con su cinta
+// abierta, el clic en el plano pone marca; si no, y hay isocrona activa,
+// elige el punto de salida. Mientras se dibuja, los acetatos no toman clics.
 //
 // /buscador usa este mismo hook: le manda las mismas capas, mas "puntos"
 // (un punto por negocio) y "pedir_ubicacion" para el punto de partida.
 
-const CENTRO_MEXICO = [23.6345, -102.5528]
-const ZOOM_MEXICO = 5
 const ENFOQUE = {propios: "consumo", puntos: "comercio", zonas: "comercio", focos: "comercio", coropleta: "demografia", vivienda: "urbanismo", voronoi: "comercio", coloreado: "urbanismo", isocrona: "movilidad", transporte: "movilidad"}
 // Opacidad de la pelicula por clase: mas valor, mas tinta.
 const TINTA_QUINTIL = [0.12, 0.26, 0.42, 0.6, 0.8]
 const TINTA_COLOREADO = [0.14, 0.32, 0.5, 0.68]
-const ZOOM_PUNTOS = 14
-const ZOOM_PARADAS = 14
+// Un nivel abajo que en Leaflet (MapLibre usa mosaicos de 512 px).
+const ZOOM_PUNTOS = 13
+const ZOOM_PARADAS = 13
 // Transporte: más seguido, más tinta y más grueso; sin horario, punteado.
-const TRAZO_CLASE = {
-  "10": {opacity: 1, weight: 3},
-  "15": {opacity: 0.8, weight: 2.4},
-  "30": {opacity: 0.55, weight: 1.8},
-  mas: {opacity: 0.35, weight: 1.4},
-  sin_dato: {opacity: 0.6, weight: 1.4, dashArray: "4 4"},
-}
-const MASIVO = new Set(["metro", "tren", "tren_ligero", "monorriel", "cable", "funicular"])
-const PIXEL_VACIO = "data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw=="
+const CLASES_CON_HORARIO = ["10", "15", "30", "mas"]
+const MASIVO = ["metro", "tren", "tren_ligero", "monorriel", "cable", "funicular"]
 
 const raiz = document.documentElement
-const tinta = nombre => getComputedStyle(raiz).getPropertyValue(nombre).trim()
-const oscuro = () => raiz.dataset.theme === "dark"
+const tinta = nombre => css(nombre)
 
 function clase(valor, cortes) {
   if (valor === null || valor === undefined) return -1
@@ -75,130 +65,126 @@ const caja = sel => {
   return r && r.width > 0 ? r : null
 }
 
+const porClase = (valores, otro = 0) => ["match", ["get", "k"], ...valores.flatMap((v, k) => [k, v]), otro]
+
 export const MapaTecnico = {
   mounted() {
-    entintar()
-    this.map = L.map(this.el, {zoomControl: false}).setView(CENTRO_MEXICO, ZOOM_MEXICO)
-    L.control.zoom({position: "topright"}).addTo(this.map)
-    L.control.scale({imperial: false, position: "bottomleft"}).addTo(this.map)
-    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-      attribution: "&copy; colaboradores de OpenStreetMap",
-      maxZoom: 19,
-    }).addTo(this.map)
-
-    this.renderers = {}
-    Object.keys(ENFOQUE).forEach((id, i) => {
-      const pane = this.map.createPane(`p-${id}`)
-      pane.classList.add("acetato")
-      pane.style.zIndex = 460 - i
-      this.renderers[id] = L.canvas({pane: `p-${id}`})
-    })
-    this.map.createPane("p-marcas").style.zIndex = 480
-    this.marcas = new Marcas(this.map, {push: (e, p) => this.pushEvent(e, p), pane: "p-marcas"})
-    this.modoMarcas = false
-
-    this.capas = Object.fromEntries(Object.keys(ENFOQUE).map(id => [id, null]))
-    this.datos = {...this.capas}
+    this.datos = Object.fromEntries(Object.keys(ENFOQUE).map(id => [id, null]))
+    this.orden = Object.keys(ENFOQUE)
     this.propias = []
+    this.rasters = []
     this.modoIsocrona = false
-    this.interactivas = true
+    this.modoMarcas = false
     this.origen = null
 
-    this.map.on("click", e => {
-      if (this.modoMarcas) {
-        this.marcas.clic(e.latlng)
-      } else if (this.modoIsocrona) {
-        this.origen = e.latlng
-        this.pushEvent("click_mapa", {lat: e.latlng.lat, lon: e.latlng.lng})
-      }
-    })
-    this.map.on("zoomend", () => { this._puntosVoronoi(); this._paradas() })
+    this.listo = crearPlano(this.el, {escala: "bottom-left", alTema: () => this._repintar(), margen: () => this._margen()})
+      .then(({map, ml}) => {
+        this.map = map
+        this.ml = ml
+        this.clic = clics(map, {
+          activo: () => !this._dibujando(),
+          cursor: () => this._dibujando() ? "crosshair" : "",
+          vacio: lugar => this._clicVacio(lugar),
+        })
+        this.marcas = new Marcas(map, ml, {push: (e, p) => this.pushEvent(e, p), clic: this.clic})
+      })
+    const cuando = alListo(this, this.listo)
 
-    this.handleEvent("capa_coropleta", datos => this._recibir("coropleta", datos))
-    this.handleEvent("capa_voronoi", datos => this._recibir("voronoi", datos))
-    this.handleEvent("capa_vivienda", datos => this._recibir("vivienda", datos))
-    this.handleEvent("capa_coloreado", datos => this._recibir("coloreado", datos))
-    this.handleEvent("capa_isocrona", datos => this._recibir("isocrona", datos))
-    this.handleEvent("capa_transporte", datos => this._recibir("transporte", datos))
-    this.handleEvent("capa_puntos", datos => this._recibir("puntos", datos))
-    this.handleEvent("capa_propios", capa => {
+    this.handleEvent("capa_coropleta", cuando(datos => this._recibir("coropleta", datos)))
+    this.handleEvent("capa_voronoi", cuando(datos => this._recibir("voronoi", datos)))
+    this.handleEvent("capa_vivienda", cuando(datos => this._recibir("vivienda", datos)))
+    this.handleEvent("capa_coloreado", cuando(datos => this._recibir("coloreado", datos)))
+    this.handleEvent("capa_isocrona", cuando(datos => this._recibir("isocrona", datos)))
+    this.handleEvent("capa_transporte", cuando(datos => this._recibir("transporte", datos)))
+    this.handleEvent("capa_puntos", cuando(datos => this._recibir("puntos", datos)))
+    this.handleEvent("capa_propios", cuando(capa => {
       this.propias = [...this.propias.filter(c => c.id !== capa.id), capa]
       this._recibirPropias()
-    })
-    this.handleEvent("capa_propios_fuera", ({id}) => {
+    }))
+    this.handleEvent("capa_propios_fuera", cuando(({id}) => {
       this.propias = this.propias.filter(c => c.id !== id)
       this._recibirPropias()
-    })
-    this.handleEvent("capa_zonas", datos => {
+    }))
+    this.handleEvent("capa_zonas", cuando(datos => {
       this.datos.zonas = datos.activa ? datos : null
       this._dibujar("zonas")
-    })
+    }))
     // Los focos llegan después de la respuesta, como las zonas: no reencuadran.
-    this.handleEvent("capa_focos", datos => {
+    this.handleEvent("capa_focos", cuando(datos => {
       this.datos.focos = datos.activa ? datos : null
       this._dibujar("focos")
-    })
-    this.handleEvent("pedir_ubicacion", () => this._ubicacion())
-    this.handleEvent("encuadrar_estado", ({cve_ent}) => {
+    }))
+    this.handleEvent("pedir_ubicacion", cuando(() => this._ubicacion()))
+    this.handleEvent("encuadrar_estado", cuando(({cve_ent}) => {
       const bbox = ESTADOS_BBOX[cve_ent]
-      // Sin animación: al reconstruir de la URL llega justo antes del acetato, y
-      // Leaflet ignora un encuadre animado mientras otro sigue en curso.
-      if (bbox) this.map.fitBounds(bbox, {...this._margen(), animate: false})
-    })
-    this.handleEvent("centrar", ({lat, lon, zoom}) => {
-      this.map.setView([lat, lon], Math.max(this.map.getZoom(), zoom))
-    })
-    this.handleEvent("modo_isocrona", ({activo}) => {
+      // Sin animación: al reconstruir de la URL llega justo antes del acetato.
+      if (bbox) this.map.fitBounds([[bbox[0][1], bbox[0][0]], [bbox[1][1], bbox[1][0]]], {padding: this._margen(), animate: false})
+    }))
+    // El servidor manda zooms de Leaflet: en MapLibre van un nivel abajo.
+    this.handleEvent("centrar", cuando(({lat, lon, zoom}) => {
+      this.map.jumpTo({center: [lon, lat], zoom: Math.max(this.map.getZoom(), zoom - 1)})
+    }))
+    this.handleEvent("modo_isocrona", cuando(({activo}) => {
       this.modoIsocrona = activo
-      this._cambioModo()
-    })
-    this.handleEvent("modo_marcas", ({activo}) => {
+      this.clic.cursor()
+    }))
+    this.handleEvent("modo_marcas", cuando(({activo}) => {
       this.modoMarcas = activo
       if (!activo) this.marcas.cancelar()
-      this._cambioModo()
-    })
-    this.handleEvent("marcas", ({anotaciones}) => {
+      this.clic.cursor()
+    }))
+    this.handleEvent("marcas", cuando(({anotaciones}) => {
       this.marcas.poner(anotaciones)
-      const bordes = this.marcas.bordes()
-      if (bordes) this.map.fitBounds(bordes, {...this._margen(), maxZoom: 15})
-    })
-    this.handleEvent("nueva_anotacion", anotacion => this.marcas.agregar(anotacion, true))
-    this.handleEvent("anotacion_actualizada", anotacion => this.marcas.actualizar(anotacion))
-    this.handleEvent("anotacion_borrada", ({id}) => this.marcas.quitar(id))
-    this.handleEvent("herramienta", ({herramienta}) => this.marcas.usar(herramienta))
-    this.handleEvent("orden_capas", ({orden}) => {
-      orden.forEach((id, i) => { this.map.getPane(`p-${id}`).style.zIndex = 460 - i })
-    })
-    this.handleEvent("piel", ({piel}) => {
+      const bordesMarcas = this.marcas.bordes()
+      if (bordesMarcas) this.map.fitBounds(bordesMarcas, {padding: this._margen(), maxZoom: 14})
+    }))
+    this.handleEvent("nueva_anotacion", cuando(anotacion => this.marcas.agregar(anotacion, true)))
+    this.handleEvent("anotacion_actualizada", cuando(anotacion => this.marcas.actualizar(anotacion)))
+    this.handleEvent("anotacion_borrada", cuando(({id}) => this.marcas.quitar(id)))
+    this.handleEvent("herramienta", cuando(({herramienta}) => this.marcas.usar(herramienta)))
+    this.handleEvent("orden_capas", cuando(({orden}) => {
+      this.orden = [...orden, ...this.orden.filter(id => !orden.includes(id))]
+      this._ordenar()
+    }))
+    this.handleEvent("piel", cuando(({piel}) => {
       raiz.dataset.piel = piel
       this._repintar()
-    })
-    this.alCambiarTema = () => this._repintar()
-    window.addEventListener("mapo:tema", this.alCambiarTema)
+    }))
   },
 
   _dibujando() {
     return this.modoMarcas || this.modoIsocrona
   },
 
-  // Mientras se dibuja, los acetatos no toman clics: en canvas, la ficha de
-  // una celda detiene el clic y nunca llega al plano, asi que la marca o el
-  // origen de la isocrona no se ponian encima del Voronoi o la coropleta.
-  _cambioModo() {
-    this.el.style.cursor = this._dibujando() ? "crosshair" : ""
-    if (this.interactivas === !this._dibujando()) return
-    this.interactivas = !this._dibujando()
-    Object.keys(this.datos).forEach(id => this._dibujar(id))
+  _clicVacio(lugar) {
+    if (this.modoMarcas) return this.marcas.clic(lugar)
+    if (this.modoIsocrona) {
+      this.origen = lugar
+      return this.pushEvent("click_mapa", {lat: lugar.lat, lon: lugar.lng})
+    }
+    // Un ráster propio no es una capa con objetos: su clic se reconoce aquí.
+    const r = this.rasters.find(({oeste, sur, este, norte}) => lugar.lng >= oeste && lugar.lng <= este && lugar.lat >= sur && lugar.lat <= norte)
+    if (r) this._ficha(lugar, {capa: r.capa, lat: lugar.lat, lon: lugar.lng})
   },
 
   _recibir(id, datos) {
-    const nueva = !this.datos[id] && datos.activa
     this.datos[id] = datos.activa ? datos : null
     this._dibujar(id)
-    if (nueva) this._deslizar(id)
-    const capa = this.capas[id]
-    const bordes = capa && capa.getBounds && capa.getBounds()
-    if (bordes && bordes.isValid()) this.map.fitBounds(bordes, this._margen())
+    const recuadro = this.datos[id] && this._recuadro(id, this.datos[id])
+    if (recuadro) this.map.fitBounds(recuadro, {padding: this._margen()})
+  },
+
+  _recuadro(id, d) {
+    switch (id) {
+      case "puntos": return recuadroDePuntos(d.puntos.map(p => [p.lon, p.lat]))
+      case "isocrona": return bordes(d.poligono)
+      case "transporte": return bordes(d.rutas)
+      case "propios": return bordes(...d.capas.map(c =>
+        c.raster ? {type: "MultiPoint", coordinates: [[c.raster.oeste, c.raster.sur], [c.raster.este, c.raster.norte]]}
+          : c.puntos ? {type: "MultiPoint", coordinates: c.puntos.map(p => [p.lon, p.lat])}
+            : c.geojson))
+      default: return d.geojson ? bordes(d.geojson) : null
+    }
   },
 
   // /buscador (data-margen) trae papeles fijos encima del plano: la pregunta
@@ -215,7 +201,7 @@ export const MapaTecnico = {
       const tope = pregunta ? pregunta.bottom + 12 : arriba
       let abajo = respuesta ? H - respuesta.top + 12 : 20
       if (H - tope - abajo < 160) abajo = 20
-      return {paddingTopLeft: [20, tope], paddingBottomRight: [20, abajo]}
+      return relleno([20, tope], [20, abajo])
     }
     // Cada papel empuja el margen del lado donde está su centro.
     let izq = 20, der = 20
@@ -225,7 +211,7 @@ export const MapaTecnico = {
       else der = Math.max(der, W - r.left + 20)
     }
     if (W - izq - der < 200) der = 20
-    return {paddingTopLeft: [izq, arriba], paddingBottomRight: [der, 20]}
+    return relleno([izq, arriba], [der, 20])
   },
 
   // /mapa: lo encuadrado queda entre la cabecera y la cinta abierta (o la
@@ -241,55 +227,53 @@ export const MapaTecnico = {
     else if (cinta) abajo = H - cinta.top + 20
     if (H - tope - abajo < 120) abajo = 20
     if (W - izq - 60 < 200) izq = 20
-    return {paddingTopLeft: [izq, tope], paddingBottomRight: [60, abajo]}
-  },
-
-  // El acetato entra deslizandose sobre el plano.
-  _deslizar(id) {
-    const pane = this.map.getPane(`p-${id}`)
-    pane.classList.remove("entra")
-    void pane.offsetWidth
-    pane.classList.add("entra")
+    return relleno([izq, tope], [60, abajo])
   },
 
   _repintar() {
-    entintar()
     Object.keys(this.datos).forEach(id => this._dibujar(id))
+    this.marcas.repintar()
+    this._ordenar()
   },
 
   _quitar(id) {
-    if (this.capas[id]) {
-      this.map.removeLayer(this.capas[id])
-      this.capas[id] = null
-    }
-    if (id === "voronoi" && this.puntos) {
-      this.map.removeLayer(this.puntos)
-      this.puntos = null
-    }
-    if (id === "transporte" && this.capaParadas) {
-      this.map.removeLayer(this.capaParadas)
-      this.capaParadas = null
+    quitar(this.map, `a-${id}:`)
+    this.clic.fuera(`a-${id}:`)
+    if (id === "propios") {
+      this.rasters = []
+      this.vueltaPropios = (this.vueltaPropios || 0) + 1
     }
   },
 
   _dibujar(id) {
     this._quitar(id)
     const datos = this.datos[id]
-    if (!datos) return
-    const color = tinta(`--f-${ENFOQUE[id]}`)
-    const opciones = {pane: `p-${id}`, renderer: this.renderers[id], interactive: this.interactivas}
-    this.capas[id] = this[`_${id}`](datos, color, opciones)
-    this.capas[id].addTo(this.map)
-    if (id === "voronoi") this._puntosVoronoi()
-    if (id === "transporte") this._paradas()
+    if (datos) this[`_${id}`](datos, tinta(`--f-${ENFOQUE[id]}`), `a-${id}:`)
+    this._ordenar()
   },
 
-  _estiloQuintil(f, cortes, color) {
+  // La pila: el primero de `orden` va arriba. Se mueven los grupos de abajo
+  // hacia arriba, cada uno con sus capas en su orden, y al final las marcas.
+  _ordenar() {
+    const capas = this.map.getStyle().layers.map(l => l.id)
+    for (const id of [...this.orden].reverse()) {
+      for (const capa of capas) if (capa.startsWith(`a-${id}:`)) this.map.moveLayer(capa)
+    }
+    this.marcas.alFrente()
+  },
+
+  // Coropleta por quintiles: más valor, más tinta; sin dato, solo el borde punteado.
+  _quintiles(p, geojson, cortes, color, extra = () => ({})) {
+    const map = this.map
     const factor = oscuro() ? 0.85 : 1
-    const k = clase(f.properties.valor_choropleth, cortes || [])
-    return k < 0
-      ? {color: tinta("--line"), weight: 0.6, dashArray: "3 3", fillOpacity: 0}
-      : {color, weight: 0.5, opacity: 0.6, fillColor: color, fillOpacity: TINTA_QUINTIL[k] * factor}
+    fuente(map, `${p}f`, indexar(geojson, (props, f) => ({k: clase(props.valor_choropleth, cortes || []), ...extra(props, f)})))
+    map.addLayer({id: `${p}relleno`, type: "fill", source: `${p}f`,
+      paint: {"fill-color": color, "fill-opacity": porClase(TINTA_QUINTIL.map(t => t * factor), 0)}})
+    map.addLayer({id: `${p}borde`, type: "line", source: `${p}f`, filter: [">=", ["get", "k"], 0],
+      paint: {"line-color": color, "line-width": 0.5, "line-opacity": 0.6}})
+    map.addLayer({id: `${p}sin-dato`, type: "line", source: `${p}f`, filter: ["<", ["get", "k"], 0],
+      paint: {"line-color": tinta("--line"), "line-width": 0.6, "line-dasharray": [5, 5]}})
+    return `${p}relleno`
   },
 
   _recibirPropias() {
@@ -299,35 +283,52 @@ export const MapaTecnico = {
   // Datos propios: hasta tres capas en el mismo acetato, cada una con su tinta.
   // Los lugares viajan solos y la ficha se pide al abrirla. Lo que llega de un
   // archivo se escapa siempre: la ficha es HTML.
-  _propios({capas}, _color, opciones) {
-    return L.featureGroup(capas.map(c => this._capaPropia(c, tinta(`--f-${c.tono}`), opciones)))
+  _propios({capas}, _color, p) {
+    capas.forEach(c => this._capaPropia(c, tinta(`--f-${c.tono}`), `${p}${c.id}-`))
   },
 
-  _capaPropia({id: capa, puntos, geojson, cortes, raster}, color, opciones) {
-    if (raster) return this._raster(raster, color, opciones, capa)
-    const circulo = (lugar, extra) => L.circleMarker(lugar, {
-      ...opciones, ...extra, radius: 3.5, weight: 1, color: tinta("--bg"), fillColor: color, fillOpacity: 0.9,
-    })
+  _capaPropia({id: capa, puntos, geojson, cortes, raster}, color, p) {
+    const map = this.map
+    if (raster) return this._raster(raster, color, p, capa)
+    const circulo = {"circle-radius": 3.5, "circle-color": color, "circle-opacity": 0.9, "circle-stroke-color": tinta("--bg"), "circle-stroke-width": 1}
     if (puntos) {
-      return L.featureGroup(puntos.map(p => circulo([p.lat, p.lon]).on("click", e => this._ficha(e.latlng, {capa, id: p.id}))))
+      fuente(map, `${p}f`, {type: "FeatureCollection", features: puntos.map(pt => ({type: "Feature", properties: {id: pt.id}, geometry: {type: "Point", coordinates: [pt.lon, pt.lat]}}))})
+      map.addLayer({id: `${p}puntos`, type: "circle", source: `${p}f`, paint: circulo})
+      this.clic.en(`${p}puntos`, (f, lugar) => this._ficha(lugar, {capa, id: f.properties.id}))
+      return
     }
-    return L.geoJSON(geojson, {
-      ...opciones,
-      pointToLayer: (_f, lugar) => circulo(lugar),
-      style: f => cortes
-        ? this._estiloQuintil(f, cortes, color)
-        : {color, weight: 0.8, opacity: 0.8, fillColor: color, fillOpacity: 0.3},
-      onEachFeature: (f, c) => c.on("click", e => this._ficha(e.latlng, f.properties.cvegeo ? {capa, clave: f.properties.cvegeo} : {capa, id: f.properties.id})),
-    })
+    const llave = i => {
+      const props = geojson.features[i].properties || {}
+      return props.cvegeo ? {capa, clave: props.cvegeo} : {capa, id: props.id}
+    }
+    const abrir = (f, lugar) => this._ficha(lugar, llave(f.properties._i))
+    const esPunto = ["==", ["geometry-type"], "Point"]
+    if (cortes) {
+      const relleno = this._quintiles(p, geojson, cortes, color)
+      map.setFilter(relleno, ["!", esPunto])
+      this.clic.en(relleno, abrir)
+    } else {
+      fuente(map, `${p}f`, indexar(geojson))
+      map.addLayer({id: `${p}relleno`, type: "fill", source: `${p}f`, filter: ["!", esPunto],
+        paint: {"fill-color": color, "fill-opacity": 0.3}})
+      map.addLayer({id: `${p}borde`, type: "line", source: `${p}f`, filter: ["!", esPunto],
+        paint: {"line-color": color, "line-width": 0.8, "line-opacity": 0.8}})
+      this.clic.en(`${p}relleno`, abrir)
+      this.clic.en(`${p}borde`, abrir)
+    }
+    map.addLayer({id: `${p}puntos`, type: "circle", source: `${p}f`, filter: esPunto, paint: circulo})
+    this.clic.en(`${p}puntos`, abrir)
   },
 
   // La imagen trae solo la transparencia de cada quintil: aqui recibe la tinta,
   // para que siga al tema. El clic pide el valor del pixel al servidor.
-  _raster({url, oeste, sur, este, norte}, color, {pane}, id) {
-    const capa = L.imageOverlay(PIXEL_VACIO, [[sur, oeste], [norte, este]], {pane, interactive: id !== undefined})
-    if (id !== undefined) capa.on("click", e => this._ficha(e.latlng, {capa: id, lat: e.latlng.lat, lon: e.latlng.lng}))
+  _raster({url, oeste, sur, este, norte}, color, p, capa) {
+    if (capa !== undefined) this.rasters.push({capa, oeste, sur, este, norte})
+    const vuelta = this.vueltaPropios
     const imagen = new Image()
     imagen.onload = () => {
+      // El acetato se quitó o se redibujó mientras cargaba la imagen.
+      if (vuelta !== this.vueltaPropios) return
       const lienzo = document.createElement("canvas")
       lienzo.width = imagen.width
       lienzo.height = imagen.height
@@ -336,10 +337,11 @@ export const MapaTecnico = {
       c.globalCompositeOperation = "source-in"
       c.fillStyle = color
       c.fillRect(0, 0, lienzo.width, lienzo.height)
-      capa.setUrl(lienzo.toDataURL())
+      this.map.addSource(`${p}imagen`, {type: "image", url: lienzo.toDataURL(), coordinates: [[oeste, norte], [este, norte], [este, sur], [oeste, sur]]})
+      this.map.addLayer({id: `${p}raster`, type: "raster", source: `${p}imagen`, paint: {"raster-fade-duration": 0}})
+      this._ordenar()
     }
     imagen.src = url
-    return capa
   },
 
   _ficha(lugar, llave) {
@@ -351,116 +353,113 @@ export const MapaTecnico = {
         ? `<p class="ficha-procedencia">Procedencia</p><dl class="ficha-datos">${procedencia.map(par).join("")}</dl>`
         : ""
       const mas = otras > 0 ? `<p>y ${otras} renglones más en esta zona</p>` : ""
-      L.popup({maxHeight: 260}).setLatLng(lugar).setContent(`<dl class="ficha-datos">${filas}</dl>${origen}${mas}`).openOn(this.map)
+      ficha(this.map, this.ml, lugar, `<div class="ficha-alta"><dl class="ficha-datos">${filas}</dl>${origen}${mas}</div>`)
     })
   },
 
-  _coropleta({geojson, etiqueta, cortes}, color, opciones) {
-    return L.geoJSON(geojson, {
-      ...opciones,
-      style: f => this._estiloQuintil(f, cortes, color),
-      onEachFeature: (f, capa) => {
-        const valor = f.properties.valor_choropleth
-        capa.bindPopup(`<strong>${escapar(etiqueta)}</strong><br>${valor === null || valor === undefined ? "sin dato" : valor.toLocaleString("es-MX")}`)
-      },
+  _coropleta({geojson, etiqueta, cortes}, color, p) {
+    const relleno = this._quintiles(p, geojson, cortes, color)
+    this.clic.en(relleno, (f, lugar) => {
+      const valor = geojson.features[f.properties._i].properties.valor_choropleth
+      ficha(this.map, this.ml, lugar, `<strong>${escapar(etiqueta)}</strong><br>${valor === null || valor === undefined ? "sin dato" : valor.toLocaleString("es-MX")}`)
     })
   },
 
   // Vivienda: un indicador de una sola fuente, por municipio o por AGEB. El clic abre la
   // ficha del municipio (las cuatro fuentes) en la cinta de la capa.
-  _vivienda({geojson, etiqueta, unidad, cortes}, color, opciones) {
-    return L.geoJSON(geojson, {
-      ...opciones,
-      // Precio por AGEB: las estimadas por rango van con borde punteado.
-      style: f => ({
-        ...this._estiloQuintil(f, cortes, color),
-        ...(f.properties.fuente === "modelo" ? {dashArray: "4 3", weight: 1.2, opacity: 0.9} : {}),
-      }),
-      onEachFeature: (f, capa) => {
-        const {nomgeo, valor_choropleth: valor, cv, nota, cve_mun} = f.properties
-        // Por AGEB solo la ventana: la ficha del municipio agranda la cinta y la tapaba.
-        if (f.properties.fuente) {
-          capa.bindPopup(`<strong>${escapar(nomgeo)}</strong><br>${valorPrecio(f.properties)}`)
-          return
-        }
-        const cifra = valor === null || valor === undefined
-          ? `sin dato${nota ? ` (${escapar(nota)})` : ""}`
-          : `${valor.toLocaleString("es-MX", {maximumFractionDigits: 1})} ${escapar(unidad)}${cv != null ? ` · CV ${cv.toLocaleString("es-MX", {maximumFractionDigits: 1})}` : ""}`
-        capa.bindPopup(`<strong>${escapar(nomgeo)}</strong><br>${escapar(etiqueta)}: ${cifra}`)
-        capa.on("click", () => this.pushEvent("ficha_vivienda", {cve_mun}))
-      },
+  _vivienda({geojson, etiqueta, unidad, cortes}, color, p) {
+    const relleno = this._quintiles(p, geojson, cortes, color, props => ({modelo: props.fuente === "modelo"}))
+    // Precio por AGEB: las estimadas por rango van con borde punteado.
+    this.map.setFilter(`${p}borde`, ["all", [">=", ["get", "k"], 0], ["!", ["get", "modelo"]]])
+    this.map.addLayer({id: `${p}estimada`, type: "line", source: `${p}f`, filter: ["all", [">=", ["get", "k"], 0], ["get", "modelo"]],
+      paint: {"line-color": color, "line-width": 1.2, "line-opacity": 0.9, "line-dasharray": [3.3, 2.5]}})
+    this.clic.en(relleno, (f, lugar) => {
+      const props = geojson.features[f.properties._i].properties
+      const {nomgeo, valor_choropleth: valor, cv, nota, cve_mun} = props
+      // Por AGEB solo la ventana: la ficha del municipio agranda la cinta y la tapaba.
+      if (props.fuente) {
+        ficha(this.map, this.ml, lugar, `<strong>${escapar(nomgeo)}</strong><br>${valorPrecio(props)}`)
+        return
+      }
+      const cifra = valor === null || valor === undefined
+        ? `sin dato${nota ? ` (${escapar(nota)})` : ""}`
+        : `${valor.toLocaleString("es-MX", {maximumFractionDigits: 1})} ${escapar(unidad)}${cv != null ? ` · CV ${cv.toLocaleString("es-MX", {maximumFractionDigits: 1})}` : ""}`
+      ficha(this.map, this.ml, lugar, `<strong>${escapar(nomgeo)}</strong><br>${escapar(etiqueta)}: ${cifra}`)
+      this.pushEvent("ficha_vivienda", {cve_mun})
     })
   },
 
   // Las zonas candidatas son AGEB que ya estan en la coropleta: viaja solo la
   // lista de claves, y mover un criterio no reencuadra el plano.
-  _zonas({cvegeos}, _color, opciones) {
+  _zonas({cvegeos}, _color, p) {
     const elegidas = new Set(cvegeos)
     const features = (this.datos.coropleta?.geojson.features || []).filter(f => elegidas.has(f.properties.cvegeo))
-    const trazo = style => L.geoJSON({type: "FeatureCollection", features}, {...opciones, interactive: false, style})
+    fuente(this.map, `${p}f`, {type: "FeatureCollection", features: features.map(f => ({type: "Feature", geometry: f.geometry, properties: {}}))})
     // Linea de texto con halo de papel: se lee sobre cualquier tinta y tema.
-    return L.featureGroup([
-      trazo({color: tinta("--bg"), weight: 4, opacity: 0.95, fill: false}),
-      trazo({color: tinta("--text"), weight: 1.8, opacity: 1, fill: false}),
-    ])
+    this.map.addLayer({id: `${p}halo`, type: "line", source: `${p}f`, paint: {"line-color": tinta("--bg"), "line-width": 4, "line-opacity": 0.95}})
+    this.map.addLayer({id: `${p}linea`, type: "line", source: `${p}f`, paint: {"line-color": tinta("--text"), "line-width": 1.8}})
   },
 
   // Focos de un rubro que se agrupa (patrones.py): contorno punteado, sin
   // relleno, para no tapar la coropleta ni las zonas.
-  _focos({focos}, color, opciones) {
-    return L.featureGroup(focos.map(f => L.geoJSON(JSON.parse(f.geojson), {
-      ...opciones,
-      style: {color, weight: 2, dashArray: "4 3", opacity: 1, fillColor: color, fillOpacity: 0.08},
-    }).bindPopup(`${escapar(f.colonia || "Sin colonia")}<br>${f.negocios} del rubro`)))
-  },
-
-  _voronoi({geojson}, color, opciones) {
-    this.datosPuntos = geojson.features
-    return L.geoJSON(geojson, {
-      ...opciones,
-      style: {color, weight: 0.8, opacity: 0.9, fill: true, fillOpacity: 0},
-      onEachFeature: (f, capa) => {
-        const nombre = escapar(f.properties.nombre || `Negocio ${f.properties.id}`)
-        const otros = f.properties.num_puntos - 1
-        capa.bindPopup(otros > 0 ? `${nombre}<br>y ${otros} más en el mismo punto` : nombre)
-      },
+  _focos({focos}, color, p) {
+    const features = focos.map((f, i) => ({type: "Feature", properties: {i}, geometry: JSON.parse(f.geojson)}))
+    fuente(this.map, `${p}f`, {type: "FeatureCollection", features})
+    this.map.addLayer({id: `${p}relleno`, type: "fill", source: `${p}f`, paint: {"fill-color": color, "fill-opacity": 0.08}})
+    this.map.addLayer({id: `${p}borde`, type: "line", source: `${p}f`, paint: {"line-color": color, "line-width": 2, "line-dasharray": [2, 1.5]}})
+    this.clic.en(`${p}relleno`, (f, lugar) => {
+      const foco = focos[f.properties.i]
+      ficha(this.map, this.ml, lugar, `${escapar(foco.colonia || "Sin colonia")}<br>${foco.negocios} del rubro`)
     })
   },
 
   // De lejos solo las celdas: miles de puntos a escala de ciudad son una mancha.
-  _puntosVoronoi() {
-    const ver = this.capas.voronoi && this.map.getZoom() >= ZOOM_PUNTOS
-    if (!ver) {
-      if (this.puntos) { this.map.removeLayer(this.puntos); this.puntos = null }
-      return
-    }
-    if (this.puntos) return
-    const color = tinta("--f-comercio")
-    this.puntos = L.layerGroup(this.datosPuntos
-      .filter(f => f.properties.lat !== undefined)
-      .map(f => L.circleMarker([f.properties.lat, f.properties.lon], {
-        pane: "p-voronoi", renderer: this.renderers.voronoi, radius: 2.2, stroke: false, fillColor: color, fillOpacity: 1,
-      }))).addTo(this.map)
+  _voronoi({geojson}, color, p) {
+    const map = this.map
+    fuente(map, `${p}f`, indexar(geojson))
+    map.addLayer({id: `${p}relleno`, type: "fill", source: `${p}f`, paint: {"fill-color": color, "fill-opacity": 0}})
+    map.addLayer({id: `${p}borde`, type: "line", source: `${p}f`, paint: {"line-color": color, "line-width": 0.8, "line-opacity": 0.9}})
+    const puntos = geojson.features.filter(f => f.properties.lat !== undefined)
+      .map(f => ({type: "Feature", properties: {}, geometry: {type: "Point", coordinates: [f.properties.lon, f.properties.lat]}}))
+    fuente(map, `${p}puntos-f`, {type: "FeatureCollection", features: puntos})
+    map.addLayer({id: `${p}puntos`, type: "circle", source: `${p}puntos-f`, minzoom: ZOOM_PUNTOS,
+      paint: {"circle-radius": 2.2, "circle-color": color}})
+    this.clic.en(`${p}relleno`, (f, lugar) => {
+      const props = geojson.features[f.properties._i].properties
+      const nombre = escapar(props.nombre || `Negocio ${props.id}`)
+      const otros = props.num_puntos - 1
+      ficha(map, this.ml, lugar, otros > 0 ? `${nombre}<br>y ${otros} más en el mismo punto` : nombre)
+    })
   },
 
   // Rutas del GTFS (o de OSM, sin horarios). Lo masivo lleva un halo de papel
   // para leerse encima de los camiones. Las paradas, solo de cerca.
-  _transporte({rutas, origen, modos}, color, opciones) {
-    const estilo = f => {
-      const {c, modo} = f.properties
-      const base = TRAZO_CLASE[c] || TRAZO_CLASE.sin_dato
-      return {...base, color, weight: base.weight + (MASIVO.has(modo) ? 2.5 : 0), fill: false}
-    }
-    const halo = L.geoJSON({type: "FeatureCollection", features: rutas.features.filter(f => MASIVO.has(f.properties.modo))}, {
-      ...opciones, interactive: false,
-      style: f => ({color: tinta("--bg"), weight: estilo(f).weight + 3, opacity: 0.9, fill: false}),
+  _transporte({rutas, paradas, clases, origen, modos}, color, p) {
+    const map = this.map
+    const c = ["to-string", ["get", "c"]]
+    const conHorario = ["in", c, ["literal", CLASES_CON_HORARIO]]
+    const masivo = ["in", ["get", "modo"], ["literal", MASIVO]]
+    const ancho = ["+", ["match", c, "10", 3, "15", 2.4, "30", 1.8, 1.4], ["case", masivo, 2.5, 0]]
+    const opacidad = ["match", c, "10", 1, "15", 0.8, "30", 0.55, "mas", 0.35, 0.6]
+    fuente(map, `${p}f`, indexar(rutas, props => ({c: props.c ?? "sin_dato", modo: props.modo ?? ""})))
+    map.addLayer({id: `${p}halo`, type: "line", source: `${p}f`, filter: masivo,
+      paint: {"line-color": tinta("--bg"), "line-width": ["+", ancho, 3], "line-opacity": 0.9}})
+    map.addLayer({id: `${p}lineas`, type: "line", source: `${p}f`, filter: conHorario,
+      layout: {"line-join": "round"}, paint: {"line-color": color, "line-width": ancho, "line-opacity": opacidad}})
+    map.addLayer({id: `${p}sin-horario`, type: "line", source: `${p}f`, filter: ["!", conHorario],
+      paint: {"line-color": color, "line-width": ancho, "line-opacity": opacidad, "line-dasharray": [2.9, 2.9]}})
+    const abrirRuta = (f, lugar) => ficha(map, this.ml, lugar, this._fichaRuta(rutas.features[f.properties._i].properties, origen, modos))
+    this.clic.en(`${p}lineas`, abrirRuta)
+    this.clic.en(`${p}sin-horario`, abrirRuta)
+
+    if (!paradas) return
+    fuente(map, `${p}paradas-f`, indexar(paradas, props => ({c: props.c ?? "sin_dato"})))
+    map.addLayer({id: `${p}paradas`, type: "circle", source: `${p}paradas-f`, minzoom: ZOOM_PARADAS,
+      paint: {"circle-radius": 3, "circle-color": color, "circle-opacity": opacidad, "circle-stroke-color": tinta("--bg"), "circle-stroke-width": 1}})
+    this.clic.en(`${p}paradas`, (f, lugar) => {
+      const props = paradas.features[f.properties._i].properties
+      ficha(map, this.ml, lugar, `<strong>${escapar(props.n || "Parada")}</strong><br>${clases[props.c] || ""}`)
     })
-    const lineas = L.geoJSON(rutas, {
-      ...opciones,
-      style: estilo,
-      onEachFeature: (f, capa) => capa.bindPopup(this._fichaRuta(f.properties, origen, modos)),
-    })
-    return L.featureGroup([halo, lineas])
   },
 
   _fichaRuta({n, l, a, modo, int: cada, vd, est}, origen, modos) {
@@ -475,41 +474,21 @@ export const MapaTecnico = {
     return `<strong>${nombre}</strong><br>${quien}<br>${paso}${dia}`
   },
 
-  _paradas() {
-    const datos = this.datos.transporte
-    const ver = this.capas.transporte && datos && this.map.getZoom() >= ZOOM_PARADAS
-    if (!ver) {
-      if (this.capaParadas) { this.map.removeLayer(this.capaParadas); this.capaParadas = null }
-      return
-    }
-    if (this.capaParadas) return
-    const color = tinta("--f-movilidad")
-    this.capaParadas = L.geoJSON(datos.paradas, {
-      pointToLayer: (f, lugar) => L.circleMarker(lugar, {
-        pane: "p-transporte", renderer: this.renderers.transporte, interactive: this.interactivas,
-        radius: 3, weight: 1, color: tinta("--bg"), fillColor: color,
-        fillOpacity: (TRAZO_CLASE[f.properties.c] || TRAZO_CLASE.sin_dato).opacity,
-      }),
-      onEachFeature: (f, capa) => capa.bindPopup(
-        `<strong>${escapar(f.properties.n || "Parada")}</strong><br>${datos.clases[f.properties.c] || ""}`),
-    }).addTo(this.map)
-  },
-
-  _coloreado({geojson}, color, opciones) {
-    return L.geoJSON(geojson, {
-      ...opciones,
-      style: f => ({
-        color, weight: 0.8, opacity: 0.7, fillColor: color,
-        fillOpacity: TINTA_COLOREADO[(f.properties.color_indice ?? 0) % TINTA_COLOREADO.length],
-      }),
-      onEachFeature: (f, capa) => capa.bindPopup(escapar(f.properties.nomgeo || f.properties.cvegeo)),
+  _coloreado({geojson}, color, p) {
+    fuente(this.map, `${p}f`, indexar(geojson, props => ({k: (props.color_indice ?? 0) % TINTA_COLOREADO.length})))
+    this.map.addLayer({id: `${p}relleno`, type: "fill", source: `${p}f`, paint: {"fill-color": color, "fill-opacity": porClase(TINTA_COLOREADO)}})
+    this.map.addLayer({id: `${p}borde`, type: "line", source: `${p}f`, paint: {"line-color": color, "line-width": 0.8, "line-opacity": 0.7}})
+    this.clic.en(`${p}relleno`, (f, lugar) => {
+      const props = geojson.features[f.properties._i].properties
+      ficha(this.map, this.ml, lugar, escapar(props.nomgeo || props.cvegeo))
     })
   },
 
-  _puntos({puntos}, color, opciones) {
-    return L.featureGroup(puntos.map(p => L.circleMarker([p.lat, p.lon], {
-      ...opciones, radius: 3.5, weight: 1, color: tinta("--bg"), fillColor: color, fillOpacity: 0.9,
-    }).bindPopup(escapar(p.nombre || "Negocio sin nombre"))))
+  _puntos({puntos}, color, p) {
+    fuente(this.map, `${p}f`, {type: "FeatureCollection", features: puntos.map((pt, i) => ({type: "Feature", properties: {i}, geometry: {type: "Point", coordinates: [pt.lon, pt.lat]}}))})
+    this.map.addLayer({id: `${p}puntos`, type: "circle", source: `${p}f`,
+      paint: {"circle-radius": 3.5, "circle-color": color, "circle-opacity": 0.9, "circle-stroke-color": tinta("--bg"), "circle-stroke-width": 1}})
+    this.clic.en(`${p}puntos`, (f, lugar) => ficha(this.map, this.ml, lugar, escapar(puntos[f.properties.i].nombre || "Negocio sin nombre")))
   },
 
   // El navegador pregunta antes de dar la ubicacion; si la niega o no hay
@@ -518,8 +497,8 @@ export const MapaTecnico = {
     if (!navigator.geolocation) return this.pushEvent("ubicacion_fallida", {})
     navigator.geolocation.getCurrentPosition(
       ({coords}) => {
-        this.origen = L.latLng(coords.latitude, coords.longitude)
-        this.map.setView(this.origen, Math.max(this.map.getZoom(), 13))
+        this.origen = {lat: coords.latitude, lng: coords.longitude}
+        this.map.jumpTo({center: [coords.longitude, coords.latitude], zoom: Math.max(this.map.getZoom(), 12)})
         this.pushEvent("click_mapa", {lat: coords.latitude, lon: coords.longitude})
       },
       () => this.pushEvent("ubicacion_fallida", {}),
@@ -527,24 +506,24 @@ export const MapaTecnico = {
     )
   },
 
-  _isocrona({poligono, metodo, origen: zona}, color, opciones) {
-    const area = L.geoJSON({type: "Feature", properties: {}, geometry: poligono}, {
-      ...opciones,
-      style: {color, weight: 2, dashArray: "6 4", fillColor: color, fillOpacity: 0.2},
-    }).bindPopup(metodo === "osrm_real" ? "Por carretera real" : "Círculo aproximado: OSRM no respondió")
-    const partes = [area]
-    const origen = zona ? [zona.lat, zona.lon] : this.origen
-    if (origen) {
-      [4, 9, 14].forEach(r => partes.push(L.circleMarker(origen, {...opciones, radius: r, color, weight: 1.3, fill: false})))
-    }
-    const grupo = L.featureGroup(partes)
-    return grupo
+  _isocrona({poligono, metodo, origen: zona}, color, p) {
+    const map = this.map
+    fuente(map, `${p}f`, {type: "Feature", properties: {}, geometry: poligono})
+    map.addLayer({id: `${p}area`, type: "fill", source: `${p}f`, paint: {"fill-color": color, "fill-opacity": 0.2}})
+    map.addLayer({id: `${p}borde`, type: "line", source: `${p}f`, paint: {"line-color": color, "line-width": 2, "line-dasharray": [3, 2]}})
+    this.clic.en(`${p}area`, (_f, lugar) =>
+      ficha(map, this.ml, lugar, metodo === "osrm_real" ? "Por carretera real" : "Círculo aproximado: OSRM no respondió"))
+    const origen = zona ? [zona.lon, zona.lat] : this.origen && [this.origen.lng, this.origen.lat]
+    if (!origen) return
+    fuente(map, `${p}origen-f`, {type: "Feature", properties: {}, geometry: {type: "Point", coordinates: origen}})
+    ;[4, 9, 14].forEach(r => map.addLayer({id: `${p}origen-${r}`, type: "circle", source: `${p}origen-f`,
+      paint: {"circle-radius": r, "circle-opacity": 0, "circle-stroke-color": color, "circle-stroke-width": 1.3}}))
   },
 
   destroyed() {
-    window.removeEventListener("mapo:tema", this.alCambiarTema)
+    this.cerrado = true
     raiz.dataset.piel = "urbanismo"
-    this.marcas.destruir()
-    this.map.remove()
+    this.marcas?.destruir()
+    this.map?.remove()
   },
 }

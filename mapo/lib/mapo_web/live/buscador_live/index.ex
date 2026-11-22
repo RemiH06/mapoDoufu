@@ -75,7 +75,7 @@ defmodule MapoWeb.BuscadorLive.Index do
         phx-hook="MapaTecnico"
         phx-update="ignore"
         data-margen
-        class="plano-leaflet flex-1 min-h-0 w-full"
+        class="plano-gl flex-1 min-h-0 w-full"
       >
       </div>
 

@@ -31,7 +31,7 @@ defmodule MapoWeb.LogisticaLive.Index do
         id="logistica-map"
         phx-hook="LogisticaMap"
         phx-update="ignore"
-        class="plano-leaflet flex-1 min-h-0 w-full"
+        class="plano-gl flex-1 min-h-0 w-full"
         role="region"
         aria-label="Plano para poner paradas"
       >

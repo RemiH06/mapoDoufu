@@ -22,7 +22,7 @@ defmodule MapoWeb.SesionLive.Show do
         phx-update="ignore"
         data-sesion-id={@sesion.id}
         data-anotaciones={Jason.encode!(@anotaciones_json)}
-        class="plano-leaflet flex-1 min-h-0 w-full"
+        class="plano-gl flex-1 min-h-0 w-full"
         role="region"
         aria-label="Plano compartido de la sesión"
       >

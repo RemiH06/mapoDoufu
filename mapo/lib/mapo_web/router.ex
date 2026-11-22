@@ -15,7 +15,8 @@ defmodule MapoWeb.Router do
 
   # CSP que solo deja correr los scripts propios. El único en línea es el del
   # modo claro u oscuro del layout raíz, que lleva este nonce. `style-src`
-  # necesita 'unsafe-inline': Leaflet y LiveView ponen `style` en elementos.
+  # necesita 'unsafe-inline': MapLibre y LiveView ponen `style` en elementos.
+  # El mapa base, sus letras y su worker salen de Mapo mismo (`'self'`).
   defp cabeceras_seguras(conn, _opts) do
     nonce = 18 |> :crypto.strong_rand_bytes() |> Base.encode64()
 
@@ -24,7 +25,7 @@ defmodule MapoWeb.Router do
       "default-src 'self'; script-src 'self' 'nonce-#{nonce}'; " <>
         "style-src 'self' 'unsafe-inline' https://fonts.bunny.net; " <>
         "font-src 'self' https://fonts.bunny.net https://cdn.jsdelivr.net; " <>
-        "img-src 'self' data: blob: https://*.tile.openstreetmap.org; " <>
+        "img-src 'self' data: blob:; worker-src 'self'; " <>
         "connect-src 'self'; object-src 'none'; base-uri 'self'; " <>
         "form-action 'self'; frame-ancestors 'self'"
 

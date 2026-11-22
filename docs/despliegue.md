@@ -256,6 +256,19 @@ Para volver la base real a un respaldo: `docker compose -p mapo-prod
 stop mapo mapo_core` y luego `pg_restore --clean --if-exists
 --no-owner --role=mapo -d mapo_prod` contra el servicio `db`.
 
+## Mapa base
+
+`mapo` sirve el mapa base desde la carpeta de `MAPO_PLANO_DATOS`
+(montada de lectura en `/plano`; sin ella el compose no arranca). En
+Pixilate, una vez y luego cuando se quiera refrescar (no es urgente):
+
+```bash
+scripts/plano/extraer.sh ~/srv/mapo-plano
+```
+
+El script escribe a un `.parcial` y renombra al final, así que se puede
+correr con Mapo arriba. Detalle en `docs/fuentes/plano.md`.
+
 ## OSRM
 
 Sirve el mapa de México ya preprocesado (algoritmo MLD). Ocupa unos

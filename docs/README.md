@@ -30,6 +30,7 @@
 
 Una por fuente: de dónde sale, cómo se carga, sus problemas conocidos y las cifras reales con que se validó.
 
+- [plano.md](fuentes/plano.md): el mapa base de todas las vistas (Protomaps recortado a México, servido por Mapo), cómo se extrae y sus licencias.
 - [geo-censo.md](fuentes/geo-censo.md): marco geoestadístico (estados, municipios, AGEBs) y censo de población.
 - [denue.md](fuentes/denue.md): negocios (comercio), desde la descarga masiva por estado.
 - [enigh.md](fuentes/enigh.md): ingreso y gasto de hogares (consumo).
@@ -106,6 +107,7 @@ Qué se construyó en cada etapa, por qué así y qué bugs reales aparecieron.
 - [Accesibilidad a servicios, noviembre 2026](historial/2026-11-accesibilidad.md)
 - [Transporte público, noviembre 2026](historial/2026-11-transporte.md)
 - [Fuentes económicas y municipales, noviembre 2026](historial/2026-11-fuentes-municipales.md)
+- [Plano común con MapLibre y mapa base propio, noviembre 2026](historial/2026-11-plano-maplibre.md)
 
 ## Gaiarda
 

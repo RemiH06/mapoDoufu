@@ -46,7 +46,7 @@ defmodule MapoWeb.AccesibilidadLive.Index do
         id="accesibilidad-map"
         phx-hook="AccesibilidadMapa"
         phx-update="ignore"
-        class="plano-leaflet flex-1 min-h-0 w-full"
+        class="plano-gl flex-1 min-h-0 w-full"
         role="region"
         aria-label="Plano del municipio por minutos al servicio elegido"
       >

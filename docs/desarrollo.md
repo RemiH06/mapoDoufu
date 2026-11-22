@@ -29,6 +29,20 @@ el puerto interno 4000.
 Correos en desarrollo: `http://localhost:1864/dev/mailbox` (no hay
 adapter de correo real todavía, ver `producto/requisitos.md`).
 
+## Mapa base en dev
+
+El plano de todas las vistas lee `plano/mexico.pmtiles` (en la raíz del
+repo, gitignorada; `MAPO_PLANO_DATOS` la cambia). Sin el archivo el
+plano sale vacío, pero las capas encima funcionan. Para tenerlo (1.2 GB,
+unos minutos):
+
+```bash
+scripts/plano/extraer.sh plano
+```
+
+En Windows, `pmtiles.exe` se baja a mano de las releases de go-pmtiles y
+se pone en el PATH. Detalle y licencias en `docs/fuentes/plano.md`.
+
 ## OSRM en dev
 
 El compose de dev no trae OSRM y `mapo_core` usa el demo público, que sirve para

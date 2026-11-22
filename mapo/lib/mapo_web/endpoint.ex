@@ -37,6 +37,14 @@ defmodule MapoWeb.Endpoint do
     only: MapoWeb.static_paths(),
     raise_on_missing_only: code_reloading?
 
+  # El mapa base (PMTiles de Protomaps recortado a México, docs/fuentes/plano.md)
+  # vive fuera de la imagen, montado en un volumen. El navegador lo lee por
+  # pedazos con Range, que Plug.Static ya atiende; sin archivo, da 404.
+  plug Plug.Static,
+    at: "/mosaicos",
+    from: {Application, :get_env, [:mapo, :plano_dir, "/plano"]},
+    only: ~w(mexico.pmtiles)
+
   # Code reloading can be explicitly enabled under the
   # :code_reloader configuration of your endpoint.
   if code_reloading? do

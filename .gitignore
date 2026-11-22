@@ -49,3 +49,6 @@ scripts/capturas/salida/
 
 # Notebooks
 .ipynb_checkpoints/
+
+# Mapa base (PMTiles de México, 1.2 GB; scripts/plano/extraer.sh)
+/plano/

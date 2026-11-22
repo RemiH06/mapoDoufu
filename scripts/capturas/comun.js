@@ -65,8 +65,13 @@ async function descubrir(p) {
   return ids;
 }
 
+// El plano es WebGL (MapLibre). Con el WebGL por software de Chromium sin
+// cabeza, un papel fijo encima del lienzo deja una copia volteada en la
+// captura; en Windows se usa la GPU de verdad (ANGLE sobre D3D11).
+const ARGS_GPU = process.platform === "win32" ? ["--use-angle=d3d11", "--enable-gpu", "--ignore-gpu-blocklist"] : [];
+
 async function iniciar() {
-  const browser = await chromium.launch();
+  const browser = await chromium.launch({ args: ARGS_GPU });
   const { ctx, p } = await entrar(browser);
   const ids = await descubrir(p);
   const estado = await ctx.storageState();

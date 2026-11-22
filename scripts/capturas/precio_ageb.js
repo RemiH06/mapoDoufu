@@ -47,25 +47,18 @@ const abrirCharola = async (p) => {
     }
 
     // Una AGEB estimada de Guadalajara (1403900013016, 96 ha). El plano es canvas:
-    // se ubica en pantalla con la posición de un mosaico del mapa base (z/x/y).
+    // se ubica en pantalla con el mapa de MapLibre (planoMapo, de plano.js).
     const ubicar = () => p.evaluate(([lat, lon]) => {
-      for (const img of document.querySelectorAll("img.leaflet-tile")) {
-        const m = img.src.match(/\/(\d+)\/(\d+)\/(\d+)(?:@2x)?\.\w+/);
-        if (!m) continue;
-        const [z, tx, ty] = m.slice(1).map(Number);
-        const n = 2 ** z, r = img.getBoundingClientRect();
-        const wx = ((lon + 180) / 360) * n;
-        const s = Math.sin((lat * Math.PI) / 180);
-        const wy = (0.5 - Math.log((1 + s) / (1 - s)) / (4 * Math.PI)) * n;
-        return { x: r.left + (wx - tx) * r.width, y: r.top + (wy - ty) * r.height };
-      }
-      return null;
+      const m = document.querySelector("#mapa-tecnico")?.planoMapo;
+      if (!m) return null;
+      const r = m.getContainer().getBoundingClientRect(), q = m.project([lon, lat]);
+      return { x: r.left + q.x, y: r.top + q.y };
     }, [20.726751, -103.295323]);
     // Si la cinta o un membrete tapan la AGEB, se arrastra el mapa hasta un hueco
     // libre (arriba a la derecha) antes de acercar: el clic caería en el panel.
     const libre = (q) => p.evaluate(({x, y}) => {
       const e = document.elementFromPoint(x, y);
-      return !!e && !!e.closest(".leaflet-container") && !e.closest(".leaflet-control, .leaflet-popup");
+      return !!e && !!e.closest(".maplibregl-map") && !e.closest(".maplibregl-ctrl, .maplibregl-popup");
     }, q);
     const destino = await p.evaluate(() => ({x: innerWidth * 0.75, y: innerHeight * 0.3}));
     const despejar = async (punto) => {
@@ -98,7 +91,7 @@ const abrirCharola = async (p) => {
       await p.mouse.click(punto.x, punto.y);
       await quieto(p, 1500);
       await p.screenshot({ path: path.join(dir, `estimada-${tn}-${modo}.png`) });
-      const ventana = await p.locator(".leaflet-popup-content").innerText().catch(() => "");
+      const ventana = await p.locator(".maplibregl-popup-content").innerText().catch(() => "");
       if (!ventana.includes("Estimado")) errores.push(`${tn} ${modo}: la ventana no es de una estimada: ${ventana}`);
       if (tn === "escritorio" && modo === "light") fs.writeFileSync(path.join(dir, "estimada.txt"), ventana);
     } else errores.push(`${tn} ${modo}: sin mosaicos para ubicar la AGEB`);

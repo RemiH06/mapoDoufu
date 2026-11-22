@@ -90,7 +90,9 @@ services:
     # `tailscale serve` no publica /dev/mailbox ni el dashboard.
     ports: !override
       - "127.0.0.1:1865:4000"
-    volumes: !reset []
+    # Solo el mapa base (scripts/plano/extraer.sh), de lectura
+    volumes: !override
+      - ${MAPO_PLANO_DATOS:?falta MAPO_PLANO_DATOS en .env}:/plano:ro
     init: true
     environment:
       DATABASE_URL: ecto://mapo:${POSTGRES_PASSWORD}@db/mapo_prod

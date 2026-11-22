@@ -104,10 +104,11 @@ la pantalla era un dashboard genérico.
   mano (Architects Daughter) y en lápiz rojo: la capa "Tus marcas", el
   rótulo, la ubicación. Las marcas nunca se mezclan con lo impreso.
 - **Dos modos:** claro (papel) y oscuro (en urbanismo, una cianotipia
-  profunda `#0F2444`, ya no el azul medio de la segunda versión). El mapa
-  base de OSM se reimprime con las tintas de la piel activa mediante un
-  filtro SVG de duotono (la idea del retinte por filtro viene de tanGo),
-  así no hace falta servidor de teselas.
+  profunda `#0F2444`, ya no el azul medio de la segunda versión). Hasta
+  la sesión 29a el mapa base (mosaicos de OSM) se reimprimía con las
+  tintas de la piel mediante un filtro SVG de duotono; desde la 29a es un
+  mapa base vectorial propio, neutro, blanco en claro y negro en oscuro
+  (ver "Plano común" abajo): el color es de los datos.
 - **Pieles por enfoque, como los biomas de tarot.** La mesa (membrete,
   rótulo, charola, impreso contra anotado) es la base; cada enfoque trae
   su documento, sus tintas de día y de noche, su motivo de papel, su letra
@@ -205,14 +206,12 @@ la pantalla era un dashboard genérico.
   que si la persona siguió editando, llega ya marcado como no vigente.
   Las rutas vacías que regresa el solver (un vehículo sin paradas) no se
   muestran. Hasta 50 paradas y 10 vehículos por cálculo.
-- `leaflet.css` va en su propia capa CSS, declarada entre `base` y
-  `components` al inicio de `app.css`. Sin capa le ganaba a todo lo de
-  `@layer components` sin importar la especificidad: en `/mapa` el zoom
-  quedaba detrás de la esquina y los bordes de Leaflet no eran los de la
-  mesa. Como primera capa perdía contra el reset de Tailwind (los
-  popups se quedaban sin margen). Los estilos de Leaflet de la mesa van
-  en la clase `.plano-leaflet` y el entintado del plano en
-  `assets/js/plano_tinta.js`, compartidos por `/mapa` y `/logistica`.
+- `maplibre-gl.css` va en su propia capa CSS (`plano`), declarada entre
+  `base` y `components` al inicio de `app.css`, por lo mismo que antes
+  `leaflet.css`: sin capa le ganaba a todo lo de `@layer components` sin
+  importar la especificidad, y como primera capa perdía contra el reset de
+  Tailwind. Los estilos de la mesa para el plano van en la clase
+  `.plano-gl` (`mapa.css`).
 - El display grid de `.fieldset` (daisyUI) vive en `utilities` y le
   gana a `components`; la regla que deja los selects de ubicación en
   línea va fuera de capa al final de `mapa.css`.
@@ -332,3 +331,47 @@ por fecha. Remi decidió que Mapo no los hospeda. Cada equipo sube los que usa
 como capa propia; `imagenes.py` y la guía de replicar sirven para producirlos
 por zona con su procedencia.
 
+## Plano común: MapLibre y mapa base propio (sesión 29a)
+
+Los cinco mapas (`/mapa` y `/buscador`, `/logistica`, `/riesgos`,
+`/accesibilidad` y `/sesiones/:id`) repetían cada uno su Leaflet con
+mosaicos ráster de `tile.openstreetmap.org`. Desde la 29a comparten
+`assets/js/plano.js`, sobre MapLibre GL 6 y el mapa base de Protomaps
+recortado a México (`docs/fuentes/plano.md`). Por qué:
+
+- **Modo oscuro de verdad.** Un mosaico ráster solo se podía retintar con
+  un filtro; el vectorial se pinta con otro estilo (blanco o negro de
+  Protomaps). El tema se sigue con un `MutationObserver` sobre
+  `data-theme`, no con el evento del botón: así cambia también cuando lo
+  cambia otra pestaña o el sistema, que antes no movía el mapa.
+- **Privacidad y política de uso.** Ni mosaicos, ni letras, ni íconos de
+  terceros: OSM ya no ve cada visita y su servidor de mosaicos no está
+  pensado para una app en producción. La CSP quedó en `'self'` para
+  imágenes, conexiones y el worker.
+- **Limitado a México.** `maxBounds` un poco más allá del país y un velo
+  del color del fondo sobre lo que no es México (`priv/static/plano/frontera.geojson`):
+  de lejos los mosaicos traen el país vecino entero y Mapo no tiene datos
+  de allá.
+- **Lo que viene** (29d y 29e): capas arrastrables, dos indicadores a la
+  vez, extrusión y miles de polígonos fluidos son más simples en WebGL.
+
+Cómo se usa: el hook llama `crearPlano(el, {alTema, margen})` y registra
+sus eventos de inmediato con `alListo` (LiveView no espera a un `mounted`
+asíncrono). Cada vista guarda sus datos y los vuelve a pintar en
+`alTema`, porque el cambio de tema recarga el estilo entero: llevarse las
+capas al estilo nuevo con `transformStyle` tronaba el render a medio
+cambio. Los clics van por `clics()`: uno solo por plano, gana la capa de
+más arriba (como en Leaflet) y, mientras se dibuja, todo es clic en el
+plano vacío. Cada acetato de `/mapa` es un grupo de capas con prefijo
+`a-<id>:` y la pila se ordena moviendo grupos.
+
+Lo que se perdió y por qué no importa: la mezcla por acetato
+(`mix-blend-mode`, cada acetato tenía su canvas) y la entrada deslizada de
+la película. Todo vive en un lienzo WebGL; la película se ve por su
+opacidad. La 29d rehace la mesa con interfaz neutra.
+
+MapLibre pesa 1.1 MB: se baja con `import()` solo en las páginas con
+mapa. Su worker se sirve desde `/plano/` (mismo origen, sin `blob:`). Los
+zooms de MapLibre van un nivel abajo de los de Leaflet (mosaicos de 512
+px): los topes de zoom, la vista guardada de la sesión y el evento
+`centrar` del servidor ya lo descuentan.

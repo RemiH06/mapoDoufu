@@ -36,7 +36,16 @@ const CASOS = [
         await quieto(p, 2000);
         await p.screenshot({ path: path.join(dir, `${nombre}-supermercado-10min.png`) });
         // La ficha de un lugar al tocarlo (el primero que se ve del plano).
-        await p.locator("#accesibilidad-map path.leaflet-interactive").nth(5).click({ force: true }).catch(() => {});
+        const lugar = await p.evaluate(() => {
+          const m = document.querySelector("#accesibilidad-map").planoMapo;
+          const f = m.queryRenderedFeatures({ layers: ["acc-lugares"] })[5];
+          if (!f) return null;
+          const anillo = f.geometry.type === "Polygon" ? f.geometry.coordinates[0] : f.geometry.coordinates[0][0];
+          const c = anillo.reduce(([x, y], [a, b]) => [x + a / anillo.length, y + b / anillo.length], [0, 0]);
+          const r = m.getContainer().getBoundingClientRect(), q = m.project(c);
+          return { x: r.left + q.x, y: r.top + q.y };
+        });
+        if (lugar) await p.mouse.click(lugar.x, lugar.y);
         await quieto(p, 1000);
         await p.screenshot({ path: path.join(dir, `${nombre}-ficha.png`) });
         textos.push(`url: ${p.url()}`);

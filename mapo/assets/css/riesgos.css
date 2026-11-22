@@ -17,20 +17,11 @@
   #riesgos-map {
     cursor: crosshair;
   }
-  #riesgos-map .leaflet-top.leaflet-right,
-  #accesibilidad-map .leaflet-top.leaflet-right {
+  #riesgos-map .maplibregl-ctrl-top-right,
+  #accesibilidad-map .maplibregl-ctrl-top-right {
     top: 64px;
     right: 10px;
   }
-  #riesgos-map .leaflet-control-layers {
-    font-family: var(--cond);
-    font-size: 14px;
-    max-width: 260px;
-    background: var(--bg);
-    color: var(--text);
-    border: 1.5px solid var(--line);
-  }
-
   .hoja.riesgos {
     width: 440px;
   }
@@ -146,20 +137,20 @@
     background: var(--text);
   }
   @media (min-width: 761px) {
-    #accesibilidad-map .leaflet-bottom.leaflet-left {
+    #accesibilidad-map .maplibregl-ctrl-bottom-left {
       left: 470px;
     }
   }
 
   @media (max-width: 760px) {
-    #riesgos-map .leaflet-top.leaflet-right,
-    #accesibilidad-map .leaflet-top.leaflet-right {
+    #riesgos-map .maplibregl-ctrl-top-right,
+    #accesibilidad-map .maplibregl-ctrl-top-right {
       top: var(--alto-cabecera);
     }
     #accesibilidad-map .leyenda-acc {
       display: none;
     }
-    #riesgos-map .leaflet-control-layers {
+    #riesgos-map .control-capas {
       display: none;
     }
     .hoja.riesgos {
@@ -177,7 +168,7 @@
       width: 290px;
       top: 64px;
     }
-    #riesgos-map .leaflet-control-layers,
+    #riesgos-map .control-capas,
     #accesibilidad-map .leyenda-acc {
       display: none;
     }

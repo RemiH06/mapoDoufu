@@ -21,7 +21,7 @@ defmodule MapoWeb.PerfilLive.Index do
     ~H"""
     <Layouts.app flash={@flash} current_scope={@current_scope} seccion="perfil" amplio?={true}>
       <:membrete><span class="mano">Perfil de zona</span></:membrete>
-      
+
       <div :if={@plano} class="plano" aria-hidden="true">
         <svg viewBox={@plano.caja} preserveAspectRatio="xMidYMid slice">
           <path
@@ -33,7 +33,7 @@ defmodule MapoWeb.PerfilLive.Index do
           />
         </svg>
       </div>
-      
+
       <.form
         for={@form}
         id="perfil_form"
@@ -42,7 +42,7 @@ defmodule MapoWeb.PerfilLive.Index do
         class="consulta pegado"
       >
         <h1>{@lugar || "Elige un municipio"}</h1>
-        
+
         <div class="ubicacion">
           <.input
             field={@form[:cve_ent]}
@@ -61,7 +61,7 @@ defmodule MapoWeb.PerfilLive.Index do
             aria-label="Municipio"
           />
         </div>
-        
+
         <label :if={length(@equipos) > 1} class="notas-de">
           <span>Notas de</span>
           <select name="perfil[equipo]" class="membrete-select">
@@ -71,22 +71,22 @@ defmodule MapoWeb.PerfilLive.Index do
             )}
           </select>
         </label>
-         <.button class="boton primario" phx-disable-with="Consultando...">Ver perfil</.button>
+        <.button class="boton primario" phx-disable-with="Consultando...">Ver perfil</.button>
         <p>
           Seis documentos, uno por enfoque. Ninguno se resume en un puntaje. Si una fuente no
           cubre el municipio, el documento lo dice.
         </p>
-        
+
         <p :if={@estados == []} class="aviso">
           No se pudo cargar la lista de estados: mapo_core no responde o todavía no hay estados
           descargados.
         </p>
       </.form>
-      
+
       <p :if={@consultando} class="consultando pegado sin-cinta">
         Consultando las fuentes, tarda unos segundos.
       </p>
-      
+
       <div :if={@consultando} class="documentos" aria-hidden="true">
         <article
           :for={{piel, titulo, tipo} <- esqueleto()}
@@ -95,12 +95,12 @@ defmodule MapoWeb.PerfilLive.Index do
         >
           <header>
             <h2>{titulo}</h2>
-             <span class="tipo">{tipo}</span>
+            <span class="tipo">{tipo}</span>
           </header>
-           <span :for={_ <- 1..4} class="renglon-vacio"></span>
+          <span :for={_ <- 1..4} class="renglon-vacio"></span>
         </article>
       </div>
-      
+
       <div :if={@perfil} class="documentos">
         <.cedula datos={@perfil["demografia"]} rezago={@perfil["rezago_social"]}>
           <.notas
@@ -110,7 +110,7 @@ defmodule MapoWeb.PerfilLive.Index do
             ronda={@nota_ronda}
           />
         </.cedula>
-        
+
         <.libro datos={@perfil["comercio"]} economia={@perfil["economia"]}>
           <.notas
             documento="comercio"
@@ -119,7 +119,7 @@ defmodule MapoWeb.PerfilLive.Index do
             ronda={@nota_ronda}
           />
         </.libro>
-        
+
         <.ticket datos={@perfil["consumo"]}>
           <.notas
             documento="consumo"
@@ -128,7 +128,7 @@ defmodule MapoWeb.PerfilLive.Index do
             ronda={@nota_ronda}
           />
         </.ticket>
-        
+
         <.expediente datos={@perfil["seguridad"]}>
           <.notas
             documento="seguridad"
@@ -137,7 +137,7 @@ defmodule MapoWeb.PerfilLive.Index do
             ronda={@nota_ronda}
           />
         </.expediente>
-        
+
         <.tarjeta datos={@perfil["laboral"]} empleo={@perfil["empleo_formal"]}>
           <.notas
             documento="laboral"
@@ -146,7 +146,7 @@ defmodule MapoWeb.PerfilLive.Index do
             ronda={@nota_ronda}
           />
         </.tarjeta>
-        
+
         <.cuenta datos={@perfil["hacienda"]} planeacion={@perfil["planeacion"]}>
           <.notas
             documento="hacienda"
@@ -184,15 +184,15 @@ defmodule MapoWeb.PerfilLive.Index do
     <article class="documento pegado d-demografia" data-piel="demografia" aria-labelledby="t-dem">
       <header>
         <h2 id="t-dem">Población</h2>
-         <span class="tipo">Cédula censal</span>
+        <span class="tipo">Cédula censal</span>
       </header>
-      
+
       <dl :if={@datos} class="casillas">
         <div class="casilla ancha">
           <dt>Población total</dt>
-          
+
           <dd>{dato(@datos["pobtot"])}</dd>
-          
+
           <div
             :if={@reparto}
             class="reparto"
@@ -202,96 +202,96 @@ defmodule MapoWeb.PerfilLive.Index do
             <span style={"width: #{@reparto}%"}></span><span class="flex-1"></span>
           </div>
         </div>
-        
+
         <div class="casilla">
           <dt>Mujeres</dt>
-          
+
           <dd>{dato(@datos["pobfem"])}</dd>
         </div>
-        
+
         <div class="casilla">
           <dt>Hombres</dt>
-          
+
           <dd>{dato(@datos["pobmas"])}</dd>
         </div>
-        
+
         <div class="casilla">
           <dt>Escolaridad promedio</dt>
-          
+
           <dd>{dato(@datos["graproes"], 2)} años</dd>
         </div>
-        
+
         <div class="casilla">
           <dt>Económicamente activa</dt>
-          
+
           <dd>{dato(@datos["pea"])}</dd>
         </div>
-        
+
         <div class="casilla">
           <dt>Ocupada</dt>
-          
+
           <dd>{dato(@datos["pocupada"])}</dd>
         </div>
-        
+
         <div class="casilla">
           <dt>Desocupada</dt>
-          
+
           <dd>{dato(@datos["pdesocup"])}</dd>
         </div>
-        
+
         <div class="casilla">
           <dt>Hogares</dt>
-          
+
           <dd>{dato(@datos["tothog"])}</dd>
         </div>
-        
+
         <div class="casilla">
           <dt>Viviendas</dt>
-          
+
           <dd>{dato(@datos["vivtot"])}</dd>
         </div>
       </dl>
-      
+
       <p :if={!@datos} class="falta">El censo no tiene datos de este municipio.</p>
-      
+
       <p class="fuente">INEGI · Censo de Población y Vivienda 2020</p>
-      
+
       <section :if={@rezago} class="anexo" aria-labelledby="t-rezago">
         <h3 id="t-rezago">Rezago social por AGEB urbana</h3>
-        
+
         <%= if @rezago["grados"] do %>
           <table class="libro">
             <thead>
               <tr>
                 <th>Grado</th>
-                
+
                 <th class="n">AGEB</th>
-                
+
                 <th class="n">Personas</th>
               </tr>
             </thead>
-            
+
             <tbody>
               <tr :for={g <- @rezago["grados"]}>
                 <td>{g["grado"]}</td>
-                
+
                 <td class="n">{cifra(g["agebs"])}</td>
-                
+
                 <td class="n">{entero(g["personas"])}</td>
               </tr>
             </tbody>
           </table>
-          
+
           <p class="falta">
             Grado de CONEVAL con 17 indicadores del censo 2020 (educación, salud, vivienda y bienes); no mide pobreza ni ingreso. Solo AGEB urbanas: la gente del campo no entra.
           </p>
         <% else %>
           <p class="falta">CONEVAL no publica AGEB urbanas de este municipio.</p>
         <% end %>
-        
+
         <p class="fuente">CONEVAL · Grado de Rezago Social 2020</p>
       </section>
-       {render_slot(@inner_block)}
+      {render_slot(@inner_block)}
     </article>
     """
   end
@@ -315,109 +315,109 @@ defmodule MapoWeb.PerfilLive.Index do
     <article class="documento pegado d-comercio" data-piel="comercio" aria-labelledby="t-com">
       <header>
         <h2 id="t-com">Negocios por giro</h2>
-         <span class="tipo">Libro mayor</span>
+        <span class="tipo">Libro mayor</span>
       </header>
-      
+
       <table :if={@total > 0} class="libro">
         <thead>
           <tr>
             <th>Clase de actividad</th>
-            
+
             <th class="n">Negocios</th>
-            
+
             <th class="n">del total</th>
           </tr>
         </thead>
-        
+
         <tbody>
           <tr :for={[clase, n] <- @clases}>
             <td>{clase}</td>
-            
+
             <td class="n">{cifra(n)}</td>
-            
+
             <td class="n">{cifra(n / @total * 100)}%</td>
           </tr>
         </tbody>
-        
+
         <tfoot>
           <tr class="resto">
             <td>Las demás clases</td>
-            
+
             <td class="n">{cifra(@resto)}</td>
-            
+
             <td class="n">{cifra(@resto / @total * 100)}%</td>
           </tr>
-          
+
           <tr class="total">
             <td>Total registrado</td>
-            
+
             <td class="n">{cifra(@total)}</td>
-            
+
             <td></td>
           </tr>
         </tfoot>
       </table>
-      
+
       <p :if={@total == 0} class="falta">El DENUE no registra negocios en este municipio.</p>
-      
+
       <p class="fuente">INEGI · DENUE</p>
-      
+
       <section :if={@economia} class="anexo" aria-labelledby="t-ce">
         <h3 id="t-ce">Tamaño de la economía, {@economia["anio_datos"] || 2023}</h3>
-        
+
         <%= if t = @economia["total"] do %>
           <table class="libro">
             <tbody>
               <tr>
                 <td>Unidades económicas</td>
-                
+
                 <td class="n">{entero(t["ue"])}</td>
               </tr>
-              
+
               <tr>
                 <td>Personal ocupado</td>
-                
+
                 <td class="n">{entero(t["personal"])}</td>
               </tr>
-              
+
               <tr>
                 <td>Remuneraciones (millones de pesos)</td>
-                
+
                 <td class="n">{entero(t["remuneraciones"])}</td>
               </tr>
-              
+
               <tr>
                 <td>Ingresos (millones de pesos)</td>
-                
+
                 <td class="n">{entero(t["ingresos"])}</td>
               </tr>
-              
+
               <tr>
                 <td>Valor agregado (millones de pesos)</td>
-                
+
                 <td class="n">{entero(t["vacb"])}</td>
               </tr>
             </tbody>
           </table>
-          
+
           <table :if={@economia["sectores"] != []} class="libro">
             <thead>
               <tr>
                 <th>Sector (parte del personal)</th>
-                
+
                 <th class="n">Personal</th>
               </tr>
             </thead>
-            
+
             <tbody>
               <tr :for={s <- Enum.take(@economia["sectores"], 5)}>
                 <td>{s["nombre"]} ({parte(s["personal"], t["personal"])})</td>
-                
+
                 <td class="n">{entero(s["personal"])}</td>
               </tr>
             </tbody>
           </table>
-          
+
           <p :if={@economia["reservados"] > 0} class="falta">
             INEGI reserva el personal de {@economia["reservados"]} {if @economia["reservados"] == 1,
               do: "sector",
@@ -426,10 +426,10 @@ defmodule MapoWeb.PerfilLive.Index do
         <% else %>
           <p class="falta">Los Censos Económicos no publican este municipio.</p>
         <% end %>
-        
+
         <p class="fuente">INEGI · Censos Económicos 2024</p>
       </section>
-       {render_slot(@inner_block)}
+      {render_slot(@inner_block)}
     </article>
     """
   end
@@ -444,21 +444,21 @@ defmodule MapoWeb.PerfilLive.Index do
         <span class="tipo">Ticket de caja</span>
         <h2 id="t-con">Gasto de los hogares</h2>
       </header>
-      
+
       <%= if @datos do %>
         <p>Gasto {@datos["periodo"]} promedio por hogar</p>
-        
+
         <p class="grande num">${dato(@datos["promedio_ponderado"], 2)}</p>
-        
+
         <div class="renglon">
           <span>Mediana</span><span></span><b class="num">${dato(@datos["mediana"], 2)}</b>
         </div>
-        
+
         <div class="renglon">
           <span>Hogares en la muestra</span><span></span>
           <b class="num">{dato(@datos["n_hogares_muestra"])}</b>
         </div>
-         <hr />
+        <hr />
         <p class="falta">
           La ENIGH no es representativa por municipio, solo por estado. Úsalo como referencia
           regional.
@@ -466,9 +466,9 @@ defmodule MapoWeb.PerfilLive.Index do
       <% else %>
         <p class="falta">La muestra de la ENIGH no llegó a este municipio.</p>
       <% end %>
-      
+
       <p class="fuente">INEGI · ENIGH</p>
-       {render_slot(@inner_block)}
+      {render_slot(@inner_block)}
       <div class="dientes" aria-hidden="true"></div>
     </article>
     """
@@ -491,27 +491,27 @@ defmodule MapoWeb.PerfilLive.Index do
       <span class="pestana-carpeta">SESNSP{@datos && " · #{@datos["anio"]}"}</span>
       <header>
         <h2 id="t-seg">Incidencia delictiva</h2>
-         <span class="tipo">Expediente</span>
+        <span class="tipo">Expediente</span>
       </header>
-      
+
       <%= if @datos do %>
         <p>
           <span class="num total">{dato(@datos["total_delitos"])}</span>
           delitos registrados en {@datos["anio"]}
         </p>
-         <.barras tipos={Enum.take(@tipos, 8)} maximo={@maximo} />
+        <.barras tipos={Enum.take(@tipos, 8)} maximo={@maximo} />
         <details :if={length(@tipos) > 8}>
           <summary>Ver los {length(@tipos)} tipos, incluidos los de cero</summary>
-           <.barras tipos={Enum.drop(@tipos, 8)} maximo={@maximo} />
+          <.barras tipos={Enum.drop(@tipos, 8)} maximo={@maximo} />
         </details>
       <% else %>
         <p class="falta">
           No hay incidencia del SESNSP cargada para este municipio. La fuente se carga a mano.
         </p>
       <% end %>
-      
+
       <p class="fuente">SESNSP · incidencia del fuero común, carga manual</p>
-       {render_slot(@inner_block)}
+      {render_slot(@inner_block)}
     </article>
     """
   end
@@ -544,7 +544,7 @@ defmodule MapoWeb.PerfilLive.Index do
           </button>
         </li>
       </ul>
-      
+
       <%= if @equipo? do %>
         <button
           type="button"
@@ -554,7 +554,7 @@ defmodule MapoWeb.PerfilLive.Index do
         >
           + nota del equipo
         </button>
-        
+
         <form id={@forma} phx-submit="crear_nota" class="nota-forma" style="display: none">
           <input type="hidden" name="documento" value={@documento} />
           <input
@@ -607,47 +607,47 @@ defmodule MapoWeb.PerfilLive.Index do
     <article class="documento pegado d-hacienda" data-piel="urbanismo" aria-labelledby="t-hac">
       <header>
         <h2 id="t-hac">Hacienda municipal</h2>
-         <span class="tipo">Cuenta pública</span>
+        <span class="tipo">Cuenta pública</span>
       </header>
-      
+
       <%= cond do %>
         <% @datos && @datos["total_ingresos"] -> %>
           <p>Ingresos de {@datos["anio"]}, millones de pesos</p>
-          
+
           <p class="sello num">{dato(@datos["total_ingresos"] / 1_000_000)}</p>
-          
+
           <dl>
             <dt>Recauda el municipio</dt>
-            
+
             <dd>
               {dato(@datos["propios_pct"], 1)} % (impuestos, derechos, productos, aprovechamientos)
             </dd>
-            
+
             <dt>Le transfieren</dt>
-            
+
             <dd>{dato(@datos["transferencias_pct"], 1)} % (participaciones y aportaciones)</dd>
-            
+
             <dt>Predial</dt>
-            
+
             <dd>
               {if @datos["predial"],
                 do: "#{dato(@datos["predial"] / 1_000_000)} millones",
                 else: "sin dato"}
             </dd>
-            
+
             <dt>Recauda, por año</dt>
-            
+
             <dd>
               {Enum.map_join(@datos["serie_propios"], " · ", fn a ->
                 "#{a["anio"]}: #{if a["propios_pct"], do: "#{dato(a["propios_pct"], 1)} %", else: "sin dato"}"
               end)}
             </dd>
           </dl>
-          
+
           <h3>Ingresos por capítulo</h3>
-           <.barras tipos={@ingresos} maximo={maximo(@ingresos)} />
+          <.barras tipos={@ingresos} maximo={maximo(@ingresos)} />
           <h3>Egresos por capítulo</h3>
-           <.barras tipos={@egresos} maximo={maximo(@egresos)} />
+          <.barras tipos={@egresos} maximo={maximo(@egresos)} />
           <p class="falta">
             Pesos de cada año, sin ajustar por inflación.
             <span :if={@datos["anio"] < @datos["ultimo_publicado"]}>
@@ -665,35 +665,35 @@ defmodule MapoWeb.PerfilLive.Index do
         <% true -> %>
           <p class="falta">No hay finanzas municipales cargadas.</p>
       <% end %>
-      
+
       <p class="fuente">INEGI · Finanzas Públicas Estatales y Municipales (EFIPEM)</p>
-      
+
       <section :if={@planeacion} class="anexo" aria-labelledby="t-plan">
         <h3 id="t-plan">Instrumentos de planeación, {@planeacion["anio"] || 2024}</h3>
-        
+
         <%= if @planeacion["principales"] do %>
           <table class="libro">
             <tbody>
               <tr :for={i <- @planeacion["principales"]}>
                 <td>{corto(i["nombre"])}</td>
-                
+
                 <td class="n">{i["existio"] || "sin respuesta"}{vigencia(i)}</td>
               </tr>
             </tbody>
           </table>
-          
+
           <p :if={@planeacion["otros"] != []} class="falta">
             También tenía: {Enum.map_join(@planeacion["otros"], "; ", &corto(&1["nombre"]))}.
           </p>
-          
+
           <p class="falta">Lo que respondió el municipio; "no se sabe" no es "no".</p>
         <% else %>
           <p class="falta">El municipio no aparece en el censo de gobiernos municipales.</p>
         <% end %>
-        
+
         <p class="fuente">INEGI · Censo Nacional de Gobiernos Municipales 2025</p>
       </section>
-       {render_slot(@inner_block)}
+      {render_slot(@inner_block)}
     </article>
     """
   end
@@ -747,37 +747,37 @@ defmodule MapoWeb.PerfilLive.Index do
     <article class="documento pegado d-laboral" data-piel="laboral" aria-labelledby="t-lab">
       <header>
         <h2 id="t-lab">Empleo</h2>
-         <span class="tipo">Tarjeta de checador</span>
+        <span class="tipo">Tarjeta de checador</span>
       </header>
-      
+
       <%= cond do %>
         <% @empleo && @empleo["puestos"] > 0 -> %>
           <p>Puestos de trabajo registrados en el IMSS, {mes(@empleo["periodo"])}</p>
-          
+
           <p class="sello num">{cifra(@empleo["puestos"])}</p>
-          
+
           <dl>
             <dt>Permanentes</dt>
-            
+
             <dd>{cifra(@empleo["permanentes"])}</dd>
-            
+
             <dt>Eventuales</dt>
-            
+
             <dd>{cifra(@empleo["eventuales"])}</dd>
-            
+
             <dt>Salario diario promedio</dt>
-            
+
             <dd>${dato(@empleo["salario_diario"], 2)}</dd>
-            
+
             <dt>Contra un año antes</dt>
-            
+
             <dd :if={@empleo["anual"]}>
               {cifra(@empleo["anual"]["variacion"], 2)} % (desde {mes(@empleo["anual"]["periodo"])})
             </dd>
-            
+
             <dd :if={!@empleo["anual"]}>sin dato: falta el mismo mes del año anterior</dd>
           </dl>
-           <.barras tipos={@divisiones} maximo={@maximo} />
+          <.barras tipos={@divisiones} maximo={@maximo} />
           <p class="falta">
             Solo empleo formal, en el municipio donde está registrado el patrón (no donde vive
             ni donde trabaja cada persona). El salario es el de cotización, con tope de 25 UMA: {dato(
@@ -797,25 +797,25 @@ defmodule MapoWeb.PerfilLive.Index do
         <% true -> %>
           <p class="falta">No hay datos del IMSS cargados para este estado.</p>
       <% end %>
-      
+
       <dl :if={@datos}>
         <dt>Desocupación del estado</dt>
-        
+
         <dd>
           {dato(@datos["tasa_desocupacion"], 2)} % ({trimestre(@datos["trimestre"])} trimestre de {@datos[
             "anio"
           ]})
         </dd>
       </dl>
-      
+
       <p :if={@datos} class="falta">
         La desocupación es del estado entero: la ENOE no es representativa por municipio.
       </p>
-      
+
       <p :if={!@datos} class="falta">No hay datos de la ENOE cargados para este estado.</p>
-      
+
       <p class="fuente">IMSS · datos abiertos de asegurados · INEGI · ENOE</p>
-       {render_slot(@inner_block)}
+      {render_slot(@inner_block)}
     </article>
     """
   end

@@ -54,7 +54,9 @@ const medir = () => {
       p.on("pageerror", (e) => errores.push("pageerror: " + e.message.slice(0, 160)));
       await p.goto(BASE + url, { waitUntil: "networkidle", timeout: 90000 }).catch((e) => errores.push("goto: " + e.message.slice(0, 120)));
       // Sin teselas cargadas la captura de un plano sale en blanco.
-      if (await p.locator(".leaflet-container").count()) await p.waitForSelector(".leaflet-tile-loaded", { timeout: 30000 }).catch(() => errores.push("sin teselas"));
+      if (await p.locator(".maplibregl-map").count())
+        await p.waitForFunction(() => [...document.querySelectorAll(".maplibregl-map")].every((e) => e.planoMapo?.areTilesLoaded()), null, { timeout: 30000 })
+          .catch(() => errores.push("sin mosaicos"));
       await p.waitForTimeout(n.startsWith("buscador-") ? 6000 : 1500);
       const m = await p.evaluate(medir).catch(() => ({ scrollX: 0, alto: 0, fuera: [] }));
       await p.screenshot({ path: path.join(dir, `${n}_${tn}_${modo}.png`), fullPage: tn !== "acostado" && m.alto < 4000 });
