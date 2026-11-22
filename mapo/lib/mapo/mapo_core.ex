@@ -118,6 +118,15 @@ defmodule Mapo.MapoCore do
   end
 
   @doc """
+  Rutas y paradas de transporte público de un municipio (docs/fuentes/gtfs.md):
+  las del GTFS con su frecuencia en hora pico o, si ningún GTFS lo toca, las de
+  OSM sin horarios (`"origen"` dice cuál).
+  """
+  def transporte_zona(cve_ent, cve_mun) do
+    get("/transporte/zona", [cve_ent: cve_ent, cve_mun: cve_mun], receive_timeout: 60_000)
+  end
+
+  @doc """
   Accesibilidad a servicios de un municipio, a pie o en auto: por servicio,
   cuánta gente de su grupo vive a cada minuto o menos, y los minutos de cada
   lugar para el plano (docs/producto/accesibilidad.md).

@@ -107,9 +107,11 @@ export const AccesibilidadMapa = {
 
     this.capaDestinos?.remove()
     const puntos = {...this.destinos, features: this.destinos.features.filter(f => f.properties.s === this.servicio)}
+    // Miles de paradas de camión taparían el plano: con muchos destinos, puntos chicos.
+    const muchos = puntos.features.length > 400
     this.capaDestinos = L.geoJSON(puntos, {
       pointToLayer: (_f, latlng) => L.circleMarker(latlng, {
-        radius: 4.5, color: css("--bg"), weight: 1.5, fillColor: css("--text"), fillOpacity: 1,
+        radius: muchos ? 2 : 4.5, color: css("--bg"), weight: muchos ? 0.5 : 1.5, fillColor: css("--text"), fillOpacity: 1,
       }),
       onEachFeature: (f, capa) => capa.bindPopup(`<b>${escapar(f.properties.n || "Sin nombre")}</b>`),
     }).addTo(this.map)

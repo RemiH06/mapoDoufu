@@ -16,6 +16,8 @@ servicio va por separado, con su grupo de población, su fuente y su método.
 | Preescolar, primaria, secundaria y bachillerato públicos | DENUE: escuelas del sector público de cada nivel (secundaria general y técnica; media superior y técnica terminal) | Personas de 3 a 5, 6 a 11, 12 a 14 y 15 a 17 años | pie, auto; solo AGEB |
 | Supermercado | DENUE: "Comercio al por menor en supermercados" | Personas | pie, auto |
 | Estación de transporte masivo | OSM: Mi Tren y Mi Macro (`transporte_masivo_zmg.csv`, de `scripts/vivienda/transporte_masivo.py`) | Personas | solo a pie |
+| Parada de transporte público | GTFS: toda parada con rutas (sesión 27, `transporte.md`) | Personas | solo a pie; solo municipios con GTFS |
+| Parada con paso cada 15 minutos o menos | GTFS: alguna ruta pasa 8 veces o más de 7 a 9 de un día hábil | Personas | solo a pie; solo municipios con GTFS |
 
 La clínica del IMSS cuenta solo a sus afiliados porque solo a ellos atiende; el centro de
 salud cuenta a todos porque atiende a quien llegue. Sedena, Marina, Pemex, forenses y la
@@ -139,7 +141,7 @@ México), más de los 16 GB del WSL de Pixilate: por estado sí cabe, nacional n
 - Escuelas del campo con la SEP por localidad (arriba).
 - Otros estados: necesitan su OSRM a pie (`scripts/osrm/pie.sh` con otra caja), y DENUE,
   censo y AGEB cargados.
-- Transporte: solo las redes de la ZMG. La sesión 27 (GTFS) puede dar paradas de
-  camión y de otras ciudades.
+- Transporte: las paradas del GTFS ya entran (sesión 27, `transporte.md`), solo donde
+  hay GTFS; las de OSM no, porque OSM no dice si la ruta opera.
 - Destinos de otro estado: hoy solo cuentan los del mismo estado; en las orillas el
   más cercano puede estar del otro lado.

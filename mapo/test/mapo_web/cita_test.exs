@@ -44,6 +44,27 @@ defmodule MapoWeb.CitaTest do
     assert c.bibtex =~ ~S(50\% \& más\_\#1" \{x\} \textbackslash{} \~{}\^{})
   end
 
+  test "un GTFS se cita con su productor, su página y su licencia tal como la declara" do
+    feed = %{
+      "feed" => "jal-setran",
+      "titulo" => "Jalisco",
+      "productor" => "SETRAN",
+      "pagina" => "https://mobilitydatabase.org/feeds/gtfs/mdb-3632",
+      "licencia" => nil
+    }
+
+    c = Cita.gtfs(feed, datos: "frecuencias del 2026-11-25", hoy: @hoy)
+
+    assert c.apa ==
+             "SETRAN. (s. f.). GTFS de transporte público: Jalisco (sin licencia declarada) " <>
+               "[Conjunto de datos]. https://mobilitydatabase.org/feeds/gtfs/mdb-3632 " <>
+               "Datos de frecuencias del 2026-11-25. Procesado por Mapo. " <>
+               "Consultado el 21 de noviembre de 2026."
+
+    assert c.clave == "gtfs_jal_setran_mapo_20261121"
+    assert Cita.gtfs(%{feed | "licencia" => "CC-BY-4.0"}, hoy: @hoy).titulo =~ "(CC BY 4.0)"
+  end
+
   test "una fuente fuera del catálogo no da cita" do
     assert Cita.armar("wikipedia") == nil
   end

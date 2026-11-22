@@ -230,6 +230,74 @@ defmodule MapoWeb.MapaLive.IndexTest do
     assert mostrar_voronoi(lv) =~ "no está descargado en Gaiarda"
   end
 
+  describe "transporte" do
+    defp respuesta_transporte(origen, feeds) do
+      %{
+        "zona" => %{"cve_ent" => "14", "cve_mun" => "039", "nombre" => "Guadalajara"},
+        "origen" => origen,
+        "rutas" => %{"type" => "FeatureCollection", "features" => []},
+        "paradas" => %{"type" => "FeatureCollection", "features" => []},
+        "resumen" => %{
+          "rutas" => 3,
+          "por_modo" => %{},
+          "por_clase" => %{"10" => 2, "mas" => 1},
+          "paradas" => 0
+        },
+        "clases" => %{"10" => "cada 10 min o menos", "mas" => "más de 30 min"},
+        "modos" => %{"autobus" => "Autobús"},
+        "frecuente_min" => 15,
+        "pico" => "de 7:00 a 9:00 de un día hábil",
+        "feeds" => feeds
+      }
+    end
+
+    test "necesita un municipio", %{conn: conn} do
+      lv = montar_con_ubicacion(conn, fn _conn -> raise "no debería llamarse" end)
+      assert render_click(lv, "mostrar_transporte", %{}) =~ "Selecciona un estado y un municipio"
+    end
+
+    test "pone las rutas, dice cuántas son frecuentes y la licencia de cada feed", %{conn: conn} do
+      feed = %{
+        "feed" => "jal-setran",
+        "titulo" => "Jalisco",
+        "productor" => "SETRAN",
+        "licencia" => nil,
+        "pagina" => "https://x.test",
+        "fecha_ref" => "2026-11-25",
+        "vencido" => false,
+        "frecuencia_util" => true,
+        "cargado" => "2026-11-22"
+      }
+
+      lv =
+        montar_con_municipio(conn, fn conn ->
+          assert conn.request_path == "/transporte/zona"
+          assert conn.params["cve_mun"] == "039"
+          Req.Test.json(conn, respuesta_transporte("gtfs", [feed]))
+        end)
+
+      html = render_click(lv, "mostrar_transporte", %{})
+      assert_push_event(lv, "capa_transporte", %{activa: true, origen: "gtfs"})
+      assert html =~ "3 rutas pasan por Guadalajara; 2 pasan cada 15 minutos o menos"
+      assert html =~ "Sin licencia declarada"
+      assert html =~ "frecuencias del 2026-11-25"
+      assert_patch(lv) =~ "transporte=1"
+
+      render_click(lv, "quitar_transporte", %{})
+      assert_push_event(lv, "capa_transporte", %{activa: false})
+    end
+
+    test "sin GTFS ni OSM lo dice en vez de pintar nada", %{conn: conn} do
+      lv =
+        montar_con_municipio(conn, fn conn ->
+          Req.Test.json(conn, put_in(respuesta_transporte("osm", []), ["resumen", "rutas"], 0))
+        end)
+
+      assert render_click(lv, "mostrar_transporte", %{}) =~
+               "Ningún GTFS ni OpenStreetMap tiene rutas que pasen por Guadalajara"
+    end
+  end
+
   test "mostrar_coloreado pushes the layer event", %{conn: conn} do
     lv =
       montar_con_ubicacion(conn, fn conn ->
@@ -363,7 +431,15 @@ defmodule MapoWeb.MapaLive.IndexTest do
       |> render_click()
 
       assert_push_event(lv, "orden_capas", %{
-        orden: ["propios", "isocrona", "voronoi", "vivienda", "coloreado", "coropleta"]
+        orden: [
+          "propios",
+          "isocrona",
+          "transporte",
+          "voronoi",
+          "vivienda",
+          "coloreado",
+          "coropleta"
+        ]
       })
 
       assert_push_event(lv, "piel", %{piel: "urbanismo"})

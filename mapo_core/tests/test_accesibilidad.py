@@ -222,3 +222,49 @@ async def test_clues_descarta_coordenadas_fuera_de_su_municipio_salvo_por_nombre
     assert avisos == ["1 con la coordenada fuera de su lugar, descartados: JCSSA2"]
     assert "corte 2026-10" in fuente
     assert [d["id"] for d in imss] == ["JCIMS82"]
+
+
+async def _paradas(conn):
+    """Un GTFS con dos paradas en Zapopan, en el mismo punto (como los feeds que dan
+    una por ruta), una frecuente y otra no, y una de un feed de frecuencia de relleno."""
+    for feed, util in (("jal-setran", True), ("relleno", False)):
+        await conn.execute(
+            "INSERT INTO transporte_feeds (feed, titulo, productor, pagina, url, via, sha256, bytes, fecha_ref,"
+            " viajes_dia, rutas, paradas, frecuencia_util) VALUES (%s, 't', 'p', 'x', 'x', 'x', 'x', 1, '2026-11-25',"
+            " 1, 1, 1, %s)", (feed, util))
+    await conn.execute(
+        "INSERT INTO transporte_paradas (feed, stop_id, nombre, lat, lon, cve_ent, cve_mun, pasadas_ruta_max,"
+        " pasadas, rutas) VALUES"
+        " ('jal-setran', 'a', 'Parada', 5.0, 0.005, '14', '120', 12, 12, 1),"
+        " ('jal-setran', 'b', 'Parada', 5.00001, 0.00501, '14', '120', 2, 2, 1),"
+        " ('jal-setran', 'c', 'Lenta', 6.0, 0.005, '14', '120', 2, 2, 1),"
+        " ('relleno', 'd', 'Relleno', 3.0, 0.005, '14', '120', 24, 24, 1)")
+
+
+@pytest.mark.asyncio
+async def test_paradas_del_gtfs_juntan_el_mismo_punto_y_solo_frecuentes_utiles(conn, pool_de_una_conexion):
+    await _estado(conn)
+    await _paradas(conn)
+    todas, fuente, _ = await acc.destinos(pool_de_una_conexion, "14", acc.SERVICIOS["parada_transporte"])
+    frecuentes, _, _ = await acc.destinos(pool_de_una_conexion, "14", acc.SERVICIOS["parada_frecuente"])
+    # a y b son el mismo punto a ~10 m; la de relleno cuenta como parada, no como frecuente.
+    assert sorted(d["nombre"] for d in todas) == ["Lenta", "Parada", "Relleno"]
+    assert [d["nombre"] for d in frecuentes] == ["Parada"]
+    assert "jal-setran (frecuencias del 2026-11-25)" in fuente
+    assert await acc.cobertura(pool_de_una_conexion, "14") == {"120"}
+
+
+@pytest.mark.asyncio
+async def test_sin_gtfs_en_el_municipio_no_se_calcula_y_se_dice(conn, pool_de_una_conexion):
+    await _estado(conn)
+    avisos = []
+    resumen = await acc.cargar_estado(pool_de_una_conexion, "14", {"pie": OSRMFalso({})},
+                                      servicios=["parada_transporte"], avisar=avisos.append)
+    assert resumen == [] and "ningún municipio del estado tiene paradas" in avisos[0]
+    app.dependency_overrides[get_pool] = lambda: pool_de_una_conexion
+    try:
+        datos = TestClient(app).get("/accesibilidad/zona", params={"cve_ent": "14", "cve_mun": "120"}).json()
+    finally:
+        app.dependency_overrides.clear()
+    parada = next(s for s in datos["servicios"] if s["clave"] == "parada_transporte")
+    assert (parada["calculado"], parada["sin_cobertura"]) == (False, True)

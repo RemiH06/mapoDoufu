@@ -222,6 +222,51 @@ async def _accesibilidad(args) -> None:
             await c.aclose()
 
 
+async def _transporte(args) -> None:
+    import json
+    from pathlib import Path
+
+    from mapo_core import transporte
+
+    claves = args.feeds or list(transporte.FEEDS)
+    desconocidos = [c for c in claves if c not in transporte.FEEDS]
+    if desconocidos:
+        raise SystemExit(f"Feeds desconocidos: {', '.join(desconocidos)} (ver transporte.FEEDS)")
+    if args.archivo and len(claves) != 1:
+        raise SystemExit("--archivo va con un solo --feeds")
+    await inicializar_esquema()
+    pool = await get_pool()
+    fallidos = []
+    for clave in claves:
+        feed = transporte.FEEDS[clave]
+        try:
+            if args.archivo:
+                archivo, url = Path(args.archivo), f"archivo local ({Path(args.archivo).name})"
+            else:
+                archivo, url = transporte.descargar(feed, Path(args.carpeta))
+            print(json.dumps(await transporte.cargar_feed(pool, feed, archivo, url), ensure_ascii=False), flush=True)
+        except transporte.ArchivoInvalido as exc:
+            # Uno que falla no tumba a los demás; el anterior de ese feed se queda.
+            fallidos.append(clave)
+            print(json.dumps({"feed": clave, "error": str(exc)}, ensure_ascii=False), flush=True)
+    if fallidos:
+        raise SystemExit(f"No se cargaron: {', '.join(fallidos)} (se conserva lo anterior)")
+
+
+async def _transporte_osm(args) -> None:
+    import json
+    from pathlib import Path
+
+    from mapo_core import transporte_osm
+
+    await inicializar_esquema()
+    try:
+        resumen = await transporte_osm.cargar(await get_pool(), Path(args.archivo))
+    except transporte_osm.ArchivoInvalido as exc:
+        raise SystemExit(f"No se cargó nada: {exc}") from None
+    print(json.dumps(resumen, ensure_ascii=False))
+
+
 async def _precio_estimado(args) -> None:
     from pathlib import Path
 
@@ -461,6 +506,20 @@ def _construir_parser() -> argparse.ArgumentParser:
     p_acc.add_argument("--osrm-pie", help="URL del OSRM con foot.lua (si no, MAPO_OSRM_PIE_URL)")
     p_acc.add_argument("--osrm-auto", help="URL del OSRM con car.lua (si no, MAPO_OSRM_URL)")
     p_acc.set_defaults(fn=_accesibilidad)
+
+    p_tr = subparsers.add_parser(
+        "transporte", help="GTFS de transporte público de transporte.FEEDS (reemplaza cada feed cargado)"
+    )
+    p_tr.add_argument("--feeds", nargs="+", help="claves de transporte.FEEDS (todas si no se dice)")
+    p_tr.add_argument("--carpeta", default="data/transporte", help="donde se guardan los zip bajados")
+    p_tr.add_argument("--archivo", help="zip local en vez de bajarlo (con un solo --feeds)")
+    p_tr.set_defaults(fn=_transporte)
+
+    p_tr_osm = subparsers.add_parser(
+        "transporte_osm", help="Rutas de transporte de OSM de todo el país (scripts/transporte/rutas_osm.sh)"
+    )
+    p_tr_osm.add_argument("archivo", help="rutas-AAMMDD.opl")
+    p_tr_osm.set_defaults(fn=_transporte_osm)
 
     p_precio = subparsers.add_parser(
         "precio_estimado", help="Precio por AGEB del estudio de precio estimado (reemplaza el de antes)"

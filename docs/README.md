@@ -17,6 +17,7 @@
 - [precio-estimado.md](producto/precio-estimado.md): precio de vivienda estimado por AGEB como rango con cobertura medida; hecha la forma (catastro y rango conformal, validados por bloques), pendiente la escala de mercado.
 - [citar.md](producto/citar.md): enlace permanente de `/mapa` y `/riesgos` (qué parámetros guarda y cómo se validan) y "Cómo citar" con la fuente original primero, en APA y BibTeX, con la versión de la tabla.
 - [accesibilidad.md](producto/accesibilidad.md): `/accesibilidad`, cuánta gente vive a más de N minutos a pie o en auto de cada servicio (salud, escuelas por nivel, supermercado, transporte masivo), cada uno con su grupo de población; cómo se calcula por estado y por qué las escuelas solo desde AGEB.
+- [transporte.md](producto/transporte.md): acetato "Transporte público" en `/mapa` (rutas del GTFS con cada cuánto pasan en hora pico, o de OSM sin horarios) y las paradas como servicio en `/accesibilidad`.
 - [datos-propios.md](producto/datos-propios.md): archivos del equipo (tabla, vectorial, ráster) como acetato, su cruce con fuentes públicas, la distancia entre capas y el valor de un ráster: formatos, límites, ubicación, procedencia, permisos y qué se guarda.
 
 ## Arquitectura
@@ -46,6 +47,7 @@ Una por fuente: de dónde sale, cómo se carga, sus problemas conocidos y las ci
 - [clues.md](fuentes/clues.md): establecimientos de salud de la DGIS con institución, tipo, estatus y coordenadas; qué es público y a quién atiende, y las coordenadas y claves mal capturadas.
 - [imss.md](fuentes/imss.md): empleo formal del IMSS por municipio y grupo de actividad (puestos, salario de cotización), con la equivalencia de claves IMSS a INEGI; validado al puesto contra el IMSS y el IIEG.
 - [envi.md](fuentes/envi.md): ENVI 2020, renta mensual y valor estimado de la vivienda por estado.
+- [gtfs.md](fuentes/gtfs.md): los 17 GTFS abiertos de México (dónde se buscaron, productor y licencia de cada uno), cómo se cuenta la frecuencia en hora pico, la frecuencia de relleno, y las rutas de OSM de todo el país como respaldo.
 - [especies.md](fuentes/especies.md): plantas vasculares registradas en GBIF alrededor de una zona, con su estatus en México (Enciclovida) y el cruce con GRIIS, para elegir árboles nativos.
 - [imagenes.md](fuentes/imagenes.md): compuestos de Sentinel-2 y Landsat y WorldCover por zona, desde el STAC de Planetary Computer.
 
@@ -97,6 +99,8 @@ Qué se construyó en cada etapa, por qué así y qué bugs reales aparecieron.
 - [Precio estimado: forma y rango, noviembre 2026](historial/2026-11-precio-estimado.md)
 - [Cómo citar y enlaces permanentes, noviembre 2026](historial/2026-11-citar.md)
 - [Empleo formal del IMSS, noviembre 2026](historial/2026-11-empleo-imss.md)
+- [Accesibilidad a servicios, noviembre 2026](historial/2026-11-accesibilidad.md)
+- [Transporte público, noviembre 2026](historial/2026-11-transporte.md)
 
 ## Gaiarda
 

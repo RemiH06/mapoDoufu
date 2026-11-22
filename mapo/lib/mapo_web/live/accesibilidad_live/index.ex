@@ -51,7 +51,6 @@ defmodule MapoWeb.AccesibilidadLive.Index do
         aria-label="Plano del municipio por minutos al servicio elegido"
       >
       </div>
-
       <%!-- Misma hoja que /riesgos: comparten la forma de una consulta por zona. --%>
       <section
         id="hoja"
@@ -61,6 +60,7 @@ defmodule MapoWeb.AccesibilidadLive.Index do
       >
         <div class="hoja-cab">
           <h1 id="t-hoja">Servicios del municipio</h1>
+
           <button
             type="button"
             class="chico plegar"
@@ -91,8 +91,7 @@ defmodule MapoWeb.AccesibilidadLive.Index do
               label="Municipio"
               prompt="Elige un municipio"
               options={@municipios}
-            />
-            <.input field={@form[:modo]} type="select" label="Cómo se llega" options={@modos} />
+            /> <.input field={@form[:modo]} type="select" label="Cómo se llega" options={@modos} />
             <.input
               field={@form[:umbral]}
               type="number"
@@ -123,41 +122,49 @@ defmodule MapoWeb.AccesibilidadLive.Index do
               class={["bloque", @servicio == s["clave"] && "activo"]}
             >
               <h2>{s["titulo"]}</h2>
+
               <%= if s["calculado"] do %>
                 <% r = resumen(s, @umbral) %>
                 <p class="procedencia">{s["fuente"]}</p>
+
                 <p class="cerca">
-                  <span class="num">{cifra(r.fuera)}</span>
-                  {s["grupo_etiqueta"]}{porcentaje(r)} viven a más de {@umbral} minutos {@frase_modo[
+                  <span class="num">{cifra(r.fuera)}</span> {s["grupo_etiqueta"]}{porcentaje(r)} viven a más de {@umbral} minutos {@frase_modo[
                     @resultado["modo"]
                   ]}.
                 </p>
+
                 <ul>
                   <li>
                     <span class="num">{cifra(r.dentro)}</span> a {@umbral} minutos o menos.
                   </li>
+
                   <li :if={s["sin_ruta"] > 0}>
                     <span class="num">{cifra(s["sin_ruta"])}</span>
                     sin ruta por calle a los más cercanos: no se cuentan ni cerca ni lejos.
                   </li>
+
                   <li :if={(s["sin_calcular_lugares"] || 0) > 0}>
                     <span class="num">{cifra(s["sin_calcular"])}</span>
                     viven en {cifra(s["sin_calcular_lugares"])} {if s["sin_calcular_lugares"] == 1,
                       do: "localidad",
                       else: "localidades"} sin AGEB: no se calculan, porque DENUE casi no registra las escuelas del campo.
                   </li>
+
                   <li :if={s["reservados"] > 0}>
                     INEGI reserva el dato en {cifra(s["reservados"])} {if s["reservados"] == 1,
                       do: "lugar",
                       else: "lugares"} con pocas viviendas: no se cuentan como cero.
                   </li>
+
                   <li>
                     {cifra(s["destinos_zona"])} en el municipio, {cifra(s["destinos_estado"])} en el estado.
                   </li>
                 </ul>
+
                 <p class="metodo">
                   Red: {s["red"]}. Método: {s["metodo"]} Calculado el {s["fecha"]}.
                 </p>
+
                 <div class="cinta-citar">
                   <button
                     type="button"
@@ -169,6 +176,7 @@ defmodule MapoWeb.AccesibilidadLive.Index do
                   >
                     {if @servicio == s["clave"], do: "En el plano", else: "Ver en el plano"}
                   </button>
+
                   <button
                     type="button"
                     id={"citar-#{s["clave"]}"}
@@ -179,6 +187,7 @@ defmodule MapoWeb.AccesibilidadLive.Index do
                   >
                     {if @citando == s["clave"], do: "Cerrar la cita", else: "Cómo citar"}
                   </button>
+
                   <Cita.como_citar
                     :if={@citando == s["clave"]}
                     id={"cita-#{s["clave"]}"}
@@ -187,7 +196,11 @@ defmodule MapoWeb.AccesibilidadLive.Index do
                   />
                 </div>
               <% else %>
-                <p class="secundario">
+                <p :if={s["sin_cobertura"]} class="secundario">
+                  Ningún GTFS cargado tiene paradas en este municipio: no se calcula. Fuera de las ciudades con GTFS sí hay camiones, pero nadie publica sus paradas.
+                </p>
+
+                <p :if={!s["sin_cobertura"]} class="secundario">
                   Todavía no se calcula {@frase_modo[@resultado["modo"]]} para este estado.
                 </p>
               <% end %>
@@ -461,24 +474,43 @@ defmodule MapoWeb.AccesibilidadLive.Index do
     lugar = resultado["zona"]["nombre"]
     version = "calculado el #{s["fecha"]}"
 
-    [
-      Cita.armar(@fuente_destinos[clave] || "denue",
-        que:
-          "#{s["titulo"]}: #{s["grupo_etiqueta"]} a más de #{umbral} minutos #{modo}, #{lugar}",
-        version: version,
-        enlace: enlace
-      ),
-      Cita.armar("censo",
-        que: "#{s["grupo_etiqueta"]} por AGEB urbano y localidad, #{lugar}",
-        datos: "2020",
-        enlace: enlace
-      ),
-      Cita.armar("osm",
-        que: "minutos #{modo} por calle; #{s["red"]}",
-        version: version,
-        enlace: enlace
-      )
-    ]
+    que = "#{s["titulo"]}: #{s["grupo_etiqueta"]} a más de #{umbral} minutos #{modo}, #{lugar}"
+
+    destinos =
+      case s["feeds"] do
+        [_ | _] = feeds ->
+          for f <- feeds,
+              do:
+                Cita.gtfs(f,
+                  que: que,
+                  datos: "frecuencias del #{f["fecha_ref"]}",
+                  version: version,
+                  enlace: enlace
+                )
+
+        _ ->
+          [
+            Cita.armar(@fuente_destinos[clave] || "denue",
+              que: que,
+              version: version,
+              enlace: enlace
+            )
+          ]
+      end
+
+    destinos ++
+      [
+        Cita.armar("censo",
+          que: "#{s["grupo_etiqueta"]} por AGEB urbano y localidad, #{lugar}",
+          datos: "2020",
+          enlace: enlace
+        ),
+        Cita.armar("osm",
+          que: "minutos #{modo} por calle; #{s["red"]}",
+          version: version,
+          enlace: enlace
+        )
+      ]
   end
 
   defp zona(params) do

@@ -21,6 +21,7 @@ from mapo_core import (
     imss_asegurados,
     localidades,
     riesgos,
+    transporte,
     vivienda_vista,
 )
 from mapo_core.coloreado_mapa import PoligonoColoreable, colorear_mapa
@@ -848,6 +849,20 @@ async def accesibilidad_zona(
     except accesibilidad.ConsultaInvalida as exc:
         raise HTTPException(422, str(exc)) from None
     resultado = await accesibilidad.zona(pool, cve_ent, cve_mun, modo)
+    if resultado is None:
+        raise HTTPException(404, "municipio no encontrado")
+    return resultado
+
+
+@app.get("/transporte/zona")
+async def transporte_zona(
+    cve_ent: str = Query(pattern=r"^\d{2}$"),
+    cve_mun: str = Query(pattern=r"^\d{3}$"),
+    pool: AsyncConnectionPool = Depends(get_pool),
+) -> dict:
+    """Rutas y paradas de transporte público que pasan por un municipio: las del GTFS
+    con su frecuencia en hora pico o, si no hay GTFS, las de OSM. Ver docs/fuentes/gtfs.md."""
+    resultado = await transporte.zona(pool, cve_ent, cve_mun)
     if resultado is None:
         raise HTTPException(404, "municipio no encontrado")
     return resultado

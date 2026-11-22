@@ -435,6 +435,40 @@
     font-family: var(--cond);
     font-size: 15px;
   }
+  /* Transporte: la muestra de cada clase es el mismo trazo que en el plano. */
+  .cinta-clases {
+    display: grid;
+    gap: 2px;
+    align-content: center;
+    list-style: none;
+    font-size: 13px;
+    color: var(--text2);
+  }
+  .cinta-clases li {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+    white-space: nowrap;
+  }
+  .muestra-linea {
+    flex: none;
+    width: 26px;
+    border-top: 3px solid var(--f-movilidad);
+  }
+  .muestra-linea.linea-15 { border-top-width: 2.4px; opacity: 0.8; }
+  .muestra-linea.linea-30 { border-top-width: 2px; opacity: 0.55; }
+  .muestra-linea.linea-mas { border-top-width: 1.5px; opacity: 0.35; }
+  .muestra-linea.linea-sin_dato { border-top: 1.5px dashed var(--f-movilidad); opacity: 0.6; }
+  .cinta-fuentes {
+    max-width: 46ch;
+    list-style: none;
+    font-size: 12px;
+    color: var(--text2);
+    align-self: center;
+  }
+  .cinta-fuentes li + li {
+    margin-top: 3px;
+  }
   .cinta-orden button:disabled {
     opacity: 0.45;
     cursor: default;

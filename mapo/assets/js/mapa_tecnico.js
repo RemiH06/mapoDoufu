@@ -43,11 +43,21 @@ const valorPrecio = ({fuente, valor, rango_bajo, rango_alto, anio_tabla, cobertu
 
 const CENTRO_MEXICO = [23.6345, -102.5528]
 const ZOOM_MEXICO = 5
-const ENFOQUE = {propios: "consumo", puntos: "comercio", zonas: "comercio", focos: "comercio", coropleta: "demografia", vivienda: "urbanismo", voronoi: "comercio", coloreado: "urbanismo", isocrona: "movilidad"}
+const ENFOQUE = {propios: "consumo", puntos: "comercio", zonas: "comercio", focos: "comercio", coropleta: "demografia", vivienda: "urbanismo", voronoi: "comercio", coloreado: "urbanismo", isocrona: "movilidad", transporte: "movilidad"}
 // Opacidad de la pelicula por clase: mas valor, mas tinta.
 const TINTA_QUINTIL = [0.12, 0.26, 0.42, 0.6, 0.8]
 const TINTA_COLOREADO = [0.14, 0.32, 0.5, 0.68]
 const ZOOM_PUNTOS = 14
+const ZOOM_PARADAS = 14
+// Transporte: más seguido, más tinta y más grueso; sin horario, punteado.
+const TRAZO_CLASE = {
+  "10": {opacity: 1, weight: 3},
+  "15": {opacity: 0.8, weight: 2.4},
+  "30": {opacity: 0.55, weight: 1.8},
+  mas: {opacity: 0.35, weight: 1.4},
+  sin_dato: {opacity: 0.6, weight: 1.4, dashArray: "4 4"},
+}
+const MASIVO = new Set(["metro", "tren", "tren_ligero", "monorriel", "cable", "funicular"])
 const PIXEL_VACIO = "data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw=="
 
 const raiz = document.documentElement
@@ -102,13 +112,14 @@ export const MapaTecnico = {
         this.pushEvent("click_mapa", {lat: e.latlng.lat, lon: e.latlng.lng})
       }
     })
-    this.map.on("zoomend", () => this._puntosVoronoi())
+    this.map.on("zoomend", () => { this._puntosVoronoi(); this._paradas() })
 
     this.handleEvent("capa_coropleta", datos => this._recibir("coropleta", datos))
     this.handleEvent("capa_voronoi", datos => this._recibir("voronoi", datos))
     this.handleEvent("capa_vivienda", datos => this._recibir("vivienda", datos))
     this.handleEvent("capa_coloreado", datos => this._recibir("coloreado", datos))
     this.handleEvent("capa_isocrona", datos => this._recibir("isocrona", datos))
+    this.handleEvent("capa_transporte", datos => this._recibir("transporte", datos))
     this.handleEvent("capa_puntos", datos => this._recibir("puntos", datos))
     this.handleEvent("capa_propios", capa => {
       this.propias = [...this.propias.filter(c => c.id !== capa.id), capa]
@@ -130,7 +141,9 @@ export const MapaTecnico = {
     this.handleEvent("pedir_ubicacion", () => this._ubicacion())
     this.handleEvent("encuadrar_estado", ({cve_ent}) => {
       const bbox = ESTADOS_BBOX[cve_ent]
-      if (bbox) this.map.fitBounds(bbox, this._margen())
+      // Sin animación: al reconstruir de la URL llega justo antes del acetato, y
+      // Leaflet ignora un encuadre animado mientras otro sigue en curso.
+      if (bbox) this.map.fitBounds(bbox, {...this._margen(), animate: false})
     })
     this.handleEvent("centrar", ({lat, lon, zoom}) => {
       this.map.setView([lat, lon], Math.max(this.map.getZoom(), zoom))
@@ -253,6 +266,10 @@ export const MapaTecnico = {
       this.map.removeLayer(this.puntos)
       this.puntos = null
     }
+    if (id === "transporte" && this.capaParadas) {
+      this.map.removeLayer(this.capaParadas)
+      this.capaParadas = null
+    }
   },
 
   _dibujar(id) {
@@ -264,6 +281,7 @@ export const MapaTecnico = {
     this.capas[id] = this[`_${id}`](datos, color, opciones)
     this.capas[id].addTo(this.map)
     if (id === "voronoi") this._puntosVoronoi()
+    if (id === "transporte") this._paradas()
   },
 
   _estiloQuintil(f, cortes, color) {
@@ -423,6 +441,58 @@ export const MapaTecnico = {
       .map(f => L.circleMarker([f.properties.lat, f.properties.lon], {
         pane: "p-voronoi", renderer: this.renderers.voronoi, radius: 2.2, stroke: false, fillColor: color, fillOpacity: 1,
       }))).addTo(this.map)
+  },
+
+  // Rutas del GTFS (o de OSM, sin horarios). Lo masivo lleva un halo de papel
+  // para leerse encima de los camiones. Las paradas, solo de cerca.
+  _transporte({rutas, origen, modos}, color, opciones) {
+    const estilo = f => {
+      const {c, modo} = f.properties
+      const base = TRAZO_CLASE[c] || TRAZO_CLASE.sin_dato
+      return {...base, color, weight: base.weight + (MASIVO.has(modo) ? 2.5 : 0), fill: false}
+    }
+    const halo = L.geoJSON({type: "FeatureCollection", features: rutas.features.filter(f => MASIVO.has(f.properties.modo))}, {
+      ...opciones, interactive: false,
+      style: f => ({color: tinta("--bg"), weight: estilo(f).weight + 3, opacity: 0.9, fill: false}),
+    })
+    const lineas = L.geoJSON(rutas, {
+      ...opciones,
+      style: estilo,
+      onEachFeature: (f, capa) => capa.bindPopup(this._fichaRuta(f.properties, origen, modos)),
+    })
+    return L.featureGroup([halo, lineas])
+  },
+
+  _fichaRuta({n, l, a, modo, int: cada, vd, est}, origen, modos) {
+    const nombre = [n, l].filter(Boolean).map(escapar).join(" · ") || "Ruta sin nombre"
+    const quien = [escapar(modos[modo] || modo), a && escapar(a)].filter(Boolean).join(" · ")
+    const paso = origen === "osm"
+      ? "De OpenStreetMap: sin horarios"
+      : cada
+        ? `Pasa cada ${cada.toLocaleString("es-MX")} min de 7 a 9 de un día hábil${est ? " (frecuencia del feed, no horario exacto)" : ""}`
+        : "Sin pasadas útiles de 7 a 9 de un día hábil"
+    const dia = vd ? `<br>${vd.toLocaleString("es-MX")} viajes en el día` : ""
+    return `<strong>${nombre}</strong><br>${quien}<br>${paso}${dia}`
+  },
+
+  _paradas() {
+    const datos = this.datos.transporte
+    const ver = this.capas.transporte && datos && this.map.getZoom() >= ZOOM_PARADAS
+    if (!ver) {
+      if (this.capaParadas) { this.map.removeLayer(this.capaParadas); this.capaParadas = null }
+      return
+    }
+    if (this.capaParadas) return
+    const color = tinta("--f-movilidad")
+    this.capaParadas = L.geoJSON(datos.paradas, {
+      pointToLayer: (f, lugar) => L.circleMarker(lugar, {
+        pane: "p-transporte", renderer: this.renderers.transporte, interactive: this.interactivas,
+        radius: 3, weight: 1, color: tinta("--bg"), fillColor: color,
+        fillOpacity: (TRAZO_CLASE[f.properties.c] || TRAZO_CLASE.sin_dato).opacity,
+      }),
+      onEachFeature: (f, capa) => capa.bindPopup(
+        `<strong>${escapar(f.properties.n || "Parada")}</strong><br>${datos.clases[f.properties.c] || ""}`),
+    }).addTo(this.map)
   },
 
   _coloreado({geojson}, color, opciones) {

@@ -543,6 +543,60 @@ CREATE TABLE IF NOT EXISTS accesibilidad_cargas (
     PRIMARY KEY (cve_ent, servicio, modo)
 );
 
+-- Transporte público (sesión 27). Ver docs/fuentes/gtfs.md. Un feed GTFS por ciudad u
+-- operador, o 'osm' para las rutas de OpenStreetMap (sin horarios).
+CREATE TABLE IF NOT EXISTS transporte_feeds (
+    feed          TEXT PRIMARY KEY,
+    titulo        TEXT NOT NULL,
+    productor     TEXT NOT NULL,
+    licencia      TEXT,               -- clave de transporte.LICENCIAS; null: el feed no declara
+    pagina        TEXT NOT NULL,
+    url           TEXT NOT NULL,      -- de donde se bajó esta vez
+    via           TEXT NOT NULL,      -- catálogo donde se encontró
+    sha256        TEXT NOT NULL,
+    bytes         BIGINT NOT NULL,
+    vigencia_ini  DATE,
+    vigencia_fin  DATE,
+    fecha_ref     DATE,               -- miércoles con que se contaron las frecuencias
+    viajes_dia    INTEGER NOT NULL,
+    rutas         INTEGER NOT NULL,
+    paradas       INTEGER NOT NULL,
+    avisos        JSONB NOT NULL DEFAULT '[]',
+    nota          TEXT NOT NULL DEFAULT '',
+    frecuencia_util BOOLEAN NOT NULL DEFAULT true,  -- false: la misma en casi todas las rutas (relleno)
+    actualizado   TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE TABLE IF NOT EXISTS transporte_rutas (
+    feed                TEXT NOT NULL,
+    route_id            TEXT NOT NULL,
+    agencia             TEXT NOT NULL,
+    nombre_corto        TEXT NOT NULL,
+    nombre_largo        TEXT NOT NULL,
+    modo                TEXT NOT NULL,      -- transporte.MODOS
+    color               TEXT NOT NULL,
+    viajes_dia          INTEGER,            -- null en OSM
+    salidas_pico        INTEGER,            -- pasadas de 7 a 9 del sentido más servido; null en OSM
+    frecuencia_estimada BOOLEAN NOT NULL DEFAULT false,
+    geom                geometry(MultiLineString, 4326) NOT NULL,
+    PRIMARY KEY (feed, route_id)
+);
+CREATE INDEX IF NOT EXISTS idx_transporte_rutas_geom ON transporte_rutas USING gist (geom);
+CREATE TABLE IF NOT EXISTS transporte_paradas (
+    feed              TEXT NOT NULL,
+    stop_id           TEXT NOT NULL,
+    nombre            TEXT NOT NULL,
+    lat               DOUBLE PRECISION NOT NULL,
+    lon               DOUBLE PRECISION NOT NULL,
+    geom              geometry(Point, 4326),
+    cve_ent           TEXT,
+    cve_mun           TEXT,
+    pasadas_ruta_max  INTEGER,          -- de 7 a 9, de la ruta y sentido que más pasa; null en OSM
+    pasadas           INTEGER,          -- de 7 a 9, todas las rutas
+    rutas             INTEGER NOT NULL,
+    PRIMARY KEY (feed, stop_id)
+);
+CREATE INDEX IF NOT EXISTS idx_transporte_paradas_mun ON transporte_paradas (cve_ent, cve_mun);
+
 CREATE TABLE IF NOT EXISTS descargas_checkpoint (
     clave         TEXT PRIMARY KEY,
     completado_en TIMESTAMPTZ NOT NULL DEFAULT now()

@@ -39,6 +39,7 @@ defmodule MapoWeb.MapaLive.Index do
     },
     "voronoi" => %{nombre: "Área por negocio", fuente: "INEGI · DENUE", enfoque: "comercio"},
     "isocrona" => %{nombre: "Alcance en auto", fuente: "OSRM", enfoque: "movilidad"},
+    "transporte" => %{nombre: "Transporte público", fuente: "GTFS · OSM", enfoque: "movilidad"},
     "coloreado" => %{
       nombre: "Municipios",
       fuente: "INEGI · Marco Geoestadístico",
@@ -50,7 +51,7 @@ defmodule MapoWeb.MapaLive.Index do
 
   # Los acetatos que se citan: los de fuentes públicas. "Tus datos" es del
   # equipo y nunca va en un enlace permanente (docs/producto/citar.md).
-  @citables ~w(coropleta vivienda voronoi coloreado isocrona)
+  @citables ~w(coropleta vivienda voronoi coloreado isocrona transporte)
 
   @pieles [
     {"Urbanismo", "urbanismo"},
@@ -200,6 +201,11 @@ defmodule MapoWeb.MapaLive.Index do
           ficha={@vivienda_ficha}
         />
         <.cinta_isocrona :if={id == "isocrona"} form={@isocrona_form} activa?={@isocrona_activa?} />
+        <.cinta_transporte
+          :if={id == "transporte"}
+          activa?={@transporte_activa?}
+          meta={@transporte_meta}
+        />
         <div :if={id in @citables and activa?(assigns, id)} class="cinta-citar">
           <button
             type="button"
@@ -211,6 +217,7 @@ defmodule MapoWeb.MapaLive.Index do
           >
             {if @citando == id, do: "Cerrar la cita", else: "Cómo citar"}
           </button>
+
           <Cita.como_citar
             :if={@citando == id}
             id={"cita-#{id}"}
@@ -218,6 +225,7 @@ defmodule MapoWeb.MapaLive.Index do
             enlace={@cita_enlace}
           />
         </div>
+
         <div :if={activa?(assigns, id)} class="cinta-orden">
           <button
             type="button"
@@ -847,6 +855,79 @@ defmodule MapoWeb.MapaLive.Index do
     """
   end
 
+  attr :activa?, :boolean, required: true
+  attr :meta, :map, default: nil
+
+  # Las rutas del GTFS con su frecuencia en hora pico; si ningún GTFS toca el
+  # municipio, las de OSM, dichas como tales. Cada feed con su productor, su
+  # licencia tal como la declara y la fecha con que se contaron las frecuencias.
+  defp cinta_transporte(assigns) do
+    ~H"""
+    <div class="cinta-campos">
+      <div class="cinta-botones">
+        <.button
+          type="button"
+          phx-click="mostrar_transporte"
+          phx-disable-with="Poniendo..."
+          class="boton primario"
+        >
+          {if @activa?, do: "Actualizar", else: "Poner"}
+        </.button>
+
+        <.button :if={@activa?} type="button" phx-click="quitar_transporte" class="boton">
+          Quitar
+        </.button>
+      </div>
+    </div>
+
+    <%= cond do %>
+      <% is_nil(@meta) -> %>
+        <p class="cinta-texto">
+          Rutas y paradas del municipio, con cada cuánto pasan de 7 a 9 de la mañana de un día hábil. Necesita un municipio.
+        </p>
+      <% @meta["origen"] == "osm" and @meta["resumen"]["rutas"] == 0 -> %>
+        <p class="cinta-texto">
+          Ningún GTFS ni OpenStreetMap tiene rutas que pasen por {@meta["zona"]["nombre"]}.
+        </p>
+      <% @meta["origen"] == "osm" -> %>
+        <p class="cinta-texto">
+          {cifra(@meta["resumen"]["rutas"])} rutas de OpenStreetMap: ninguna ciudad cercana publica GTFS, así que no hay horarios ni frecuencias, solo el trazo que alguien mapeó.
+        </p>
+      <% true -> %>
+        <p class="cinta-texto">
+          {cifra(@meta["resumen"]["rutas"])} rutas pasan por {@meta["zona"]["nombre"]}; {frecuentes(
+            @meta
+          )} pasan cada {@meta["frecuente_min"]} minutos o menos {@meta["pico"]}.
+        </p>
+
+        <ul class="cinta-clases" aria-label="Cada cuánto pasa">
+          <li :for={c <- ~w(10 15 30 mas sin_dato)} :if={@meta["resumen"]["por_clase"][c]}>
+            <span class={"muestra-linea linea-#{c}"} aria-hidden="true"></span> {@meta["clases"][c]}: {cifra(
+              @meta["resumen"]["por_clase"][c]
+            )}
+          </li>
+        </ul>
+    <% end %>
+
+    <ul :if={@meta && @meta["feeds"] != []} class="cinta-fuentes">
+      <li :for={f <- @meta["feeds"]}>
+        <b>{f["productor"]}</b>: {f["titulo"]}. {licencia_feed(f)}<span :if={f["fecha_ref"]}>; frecuencias del {f[
+          "fecha_ref"
+        ]}</span><span :if={f["vencido"]}>; vencido el {f["vigencia_fin"]}</span>.
+        <span :if={!f["frecuencia_util"] and f["feed"] != "osm"}>
+          Trae la misma frecuencia en casi todas sus rutas (de relleno): no se usa.
+        </span>
+      </li>
+    </ul>
+    """
+  end
+
+  defp frecuentes(%{"resumen" => %{"por_clase" => c}}),
+    do: cifra((c["10"] || 0) + (c["15"] || 0))
+
+  defp licencia_feed(%{"licencia" => nil}), do: "Sin licencia declarada"
+  defp licencia_feed(%{"licencia" => l}), do: "Licencia #{String.replace(l, "-", " ")}"
+
   attr :form, :any, required: true
   attr :activa?, :boolean, required: true
   attr :resumen, :string, default: nil
@@ -957,6 +1038,8 @@ defmodule MapoWeb.MapaLive.Index do
        voronoi_resumen: nil,
        coloreado_activa?: false,
        isocrona_activa?: false,
+       transporte_activa?: false,
+       transporte_meta: nil,
        coropleta_escala: nil,
        vivienda_form:
          to_form(%{"indicador" => "eic_alqui", "anio" => "", "segmento" => ""},
@@ -969,7 +1052,15 @@ defmodule MapoWeb.MapaLive.Index do
        vivienda_ficha: nil,
        capas_propias: Capas.list_capas_del_usuario(socket.assigns.current_scope),
        abiertas: [],
-       orden: ["propios", "isocrona", "voronoi", "vivienda", "coropleta", "coloreado"],
+       orden: [
+         "propios",
+         "isocrona",
+         "transporte",
+         "voronoi",
+         "vivienda",
+         "coropleta",
+         "coloreado"
+       ],
        elegida: nil,
        piel_fijada: nil,
        piel_pintada: "urbanismo",
@@ -1099,6 +1190,19 @@ defmodule MapoWeb.MapaLive.Index do
         socket
       ) do
     {:noreply, socket |> poner_voronoi(clase_actividad) |> sincronizar_url()}
+  end
+
+  def handle_event("mostrar_transporte", _params, socket) do
+    {:noreply, socket |> poner_transporte() |> sincronizar_url()}
+  end
+
+  def handle_event("quitar_transporte", _params, socket) do
+    {:noreply,
+     socket
+     |> assign(transporte_activa?: false, transporte_meta: nil)
+     |> push_event("capa_transporte", %{activa: false})
+     |> actualizar_mesa()
+     |> sincronizar_url()}
   end
 
   def handle_event("quitar_voronoi", _params, socket) do
@@ -1541,6 +1645,39 @@ defmodule MapoWeb.MapaLive.Index do
     end
   end
 
+  defp poner_transporte(socket) do
+    cve_ent = socket.assigns.form[:cve_ent].value
+    cve_mun = vacio_para_nil(socket.assigns.form[:cve_mun].value)
+
+    if cve_ent in [nil, ""] or is_nil(cve_mun) do
+      put_flash(socket, :error, "Selecciona un estado y un municipio primero.")
+    else
+      case MapoCore.transporte_zona(cve_ent, cve_mun) do
+        {:ok, %{"rutas" => rutas, "paradas" => paradas} = respuesta} ->
+          socket
+          |> assign(
+            transporte_activa?: true,
+            transporte_meta: Map.drop(respuesta, ["rutas", "paradas"])
+          )
+          |> push_event("capa_transporte", %{
+            activa: true,
+            rutas: rutas,
+            paradas: paradas,
+            origen: respuesta["origen"],
+            modos: respuesta["modos"],
+            clases: respuesta["clases"]
+          })
+          |> actualizar_mesa()
+
+        {:error, {:status, 404, _}} ->
+          put_flash(socket, :error, "Ese municipio no está descargado todavía.")
+
+        {:error, _} ->
+          put_flash(socket, :error, "mapo_core no está disponible ahorita mismo.")
+      end
+    end
+  end
+
   defp poner_vivienda(socket, params) do
     cve_ent = socket.assigns.form[:cve_ent].value
     socket = assign(socket, vivienda_form: to_form(params, as: "vivienda_capa"))
@@ -1657,6 +1794,7 @@ defmodule MapoWeb.MapaLive.Index do
       ficha: vivienda && a.vivienda_ficha && a.vivienda_ficha["cve_mun"],
       negocios: a.voronoi_activa? && (a.voronoi_form[:clase_actividad].value || ""),
       municipios: a.coloreado_activa? && "1",
+      transporte: a.transporte_activa? && "1",
       alcance: alcance_url(a),
       ver: if(a.elegida in Map.keys(@capas) and a.elegida != "propios", do: a.elegida),
       piel: a.piel_fijada
@@ -1665,7 +1803,7 @@ defmodule MapoWeb.MapaLive.Index do
     |> Enum.map(fn {k, v} -> {k, to_string(v)} end)
   end
 
-  @claves_url ~w(ent mun censo viv anio seg ficha negocios municipios alcance ver piel sesion)a
+  @claves_url ~w(ent mun censo viv anio seg ficha negocios municipios transporte alcance ver piel sesion)a
 
   # Lo que trae la URL, en el orden de `params_url`: si lo reconstruido no es
   # igual (un valor fuera de catálogo), la URL se corrige.
@@ -1703,6 +1841,7 @@ defmodule MapoWeb.MapaLive.Index do
     |> vivienda_de_url(params)
     |> voronoi_de_url(params["negocios"])
     |> then(&if(params["municipios"] == "1", do: poner_coloreado(&1), else: &1))
+    |> then(&if(params["transporte"] == "1", do: poner_transporte(&1), else: &1))
     |> isocrona_de_url(params["alcance"])
     |> piel_de_url(params["piel"])
     |> ver_de_url(params["ver"])
@@ -1865,6 +2004,28 @@ defmodule MapoWeb.MapaLive.Index do
     ]
   end
 
+  defp citas(a, "transporte", enlace) do
+    que = "rutas de transporte público que pasan por #{lugar(a)}"
+
+    for f <- (a.transporte_meta || %{})["feeds"] || [] do
+      if f["feed"] == "osm" do
+        Cita.armar("osm",
+          que: que,
+          datos: f["nota"],
+          version: "cargado el #{f["cargado"]}",
+          enlace: enlace
+        )
+      else
+        Cita.gtfs(f,
+          que: "#{que}, con su frecuencia de 7 a 9 de un día hábil",
+          datos: f["fecha_ref"] && "frecuencias del #{f["fecha_ref"]}",
+          version: "cargado el #{f["cargado"]}",
+          enlace: enlace
+        )
+      end
+    end
+  end
+
   defp citas(a, "coloreado", enlace) do
     [
       Cita.armar("marco",
@@ -1957,6 +2118,7 @@ defmodule MapoWeb.MapaLive.Index do
   defp activa?(assigns, "coloreado"), do: assigns.coloreado_activa?
   defp activa?(assigns, "vivienda"), do: assigns.vivienda_activa?
   defp activa?(assigns, "isocrona"), do: assigns.isocrona_activa?
+  defp activa?(assigns, "transporte"), do: assigns.transporte_activa?
 
   defp activas(assigns), do: Enum.filter(assigns.orden, &activa?(assigns, &1))
 

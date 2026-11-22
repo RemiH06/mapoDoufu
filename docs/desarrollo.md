@@ -103,6 +103,8 @@ docker compose exec mapo_core python -m mapo_core.cli eic2025   # Intercensal 20
 docker compose exec mapo_core python -m mapo_core.cli envi      # renta y valor por estado (ENVI 2020)
 docker compose exec mapo_core python -m mapo_core.cli imss data/imss   # empleo formal, archivos asg-*.csv(.gz) bajados a mano (~3 min por mes)
 docker compose exec mapo_core python -m mapo_core.cli precio_estimado --archivo /app/data/precio_estimado/precio_ageb_v1.csv   # valor de suelo por AGEB (estudios/precio_estimado)
+docker compose exec mapo_core python -m mapo_core.cli transporte --carpeta /app/data/transporte   # los GTFS de transporte.FEEDS (~4 min); en Git Bash, MSYS_NO_PATHCONV=1
+docker compose exec mapo_core python -m mapo_core.cli transporte_osm /app/data/transporte/rutas-261120.opl   # rutas de OSM (scripts/transporte/rutas_osm.sh)
 docker compose exec mapo_core python -m mapo_core.cli ambiental --crudos /app/data/crudos-ambiental [--fuente acuiferos,...]   # fuentes ambientales desde los crudos (docs/fuentes/ambientales.md)
 docker compose exec mapo_core python -m mapo_core.cli status
 ```

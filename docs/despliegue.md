@@ -278,6 +278,17 @@ $C --profile calculo stop osrm_pie && $C --profile calculo rm -f osrm_pie
 Así quedó en `~/srv/calcular-accesibilidad.sh` (trabajo `mapo-accesibilidad` de
 `job.ps1`).
 
+Transporte público (`fuentes/gtfs.md`): los GTFS se bajan desde el contenedor (necesita la
+red `default`) a `~/srv/mapo-crudos/transporte/`, donde también queda el OPL de OSM. Las
+paradas como servicio de accesibilidad se calculan después, con `osrm_pie` arriba:
+
+```bash
+bash scripts/transporte/rutas_osm.sh     # ~/srv/mapo-crudos/transporte/rutas-AAMMDD.opl
+$C run --rm -v "$HOME/srv/mapo-crudos/transporte:/crudos" mapo_core python -u -m mapo_core.cli transporte --carpeta /crudos
+$C run --rm -v "$HOME/srv/mapo-crudos/transporte:/crudos:ro" mapo_core python -m mapo_core.cli transporte_osm /crudos/rutas-261120.opl
+$C run --rm mapo_core python -u -m mapo_core.cli accesibilidad --estado 14 --modos pie --servicios parada_transporte parada_frecuente
+```
+
 ## Operación
 
 ```bash

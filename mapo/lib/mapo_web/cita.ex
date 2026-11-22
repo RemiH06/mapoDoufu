@@ -210,11 +210,45 @@ defmodule MapoWeb.Cita do
   Regresa `%{clave, titulo, apa, bibtex}`; `nil` si la fuente no está en el
   catálogo.
   """
-  def armar(fuente, opts \\ []) do
+  def armar(fuente, opts \\ [])
+
+  # Una fuente que no cabe en el catálogo cerrado porque cambia por renglón (cada
+  # GTFS tiene su productor y su página): la arma quien la conoce, con las mismas
+  # llaves que una referencia del catálogo.
+  def armar(%{clave: _, autor: _, titulo: _} = ref, opts),
+    do: armar_ref(Map.merge(%{anio: nil, url: nil, autor_largo: ref.autor}, ref), Map.new(opts))
+
+  def armar(fuente, opts) do
     case @referencias[fuente] do
       nil -> nil
       ref -> armar_ref(ref, Map.new(opts))
     end
+  end
+
+  @licencias %{
+    "CC-BY-4.0" => "CC BY 4.0",
+    "CC-BY-SA-4.0" => "CC BY-SA 4.0",
+    "ODC-BY-1.0" => "ODC-BY 1.0",
+    "ODbL-1.0" => "ODbL 1.0"
+  }
+
+  @doc """
+  Cita de un GTFS como lo manda mapo_core (`transporte_feeds`): su productor es
+  el autor, su página de origen la liga y su licencia va en el título tal como
+  la declara (o "sin licencia declarada").
+  """
+  def gtfs(feed, opts \\ []) do
+    licencia = @licencias[feed["licencia"]] || "sin licencia declarada"
+
+    armar(
+      %{
+        clave: "gtfs_" <> String.replace(feed["feed"] || "", ~r/[^a-z0-9]/, "_"),
+        autor: feed["productor"],
+        titulo: "GTFS de transporte público: #{feed["titulo"]} (#{licencia})",
+        url: feed["pagina"]
+      },
+      opts
+    )
   end
 
   defp armar_ref(ref, opts) do

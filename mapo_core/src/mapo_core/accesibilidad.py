@@ -28,7 +28,7 @@ from psycopg.rows import dict_row
 from psycopg_pool import AsyncConnectionPool
 from scipy.spatial import cKDTree
 
-from mapo_core import rubros
+from mapo_core import rubros, transporte
 from mapo_core.osrm_client import OSRMClient
 from mapo_core.zonas import minutos_por_calle, plano
 
@@ -51,11 +51,14 @@ class Servicio:
     titulo: str
     grupo: str  # variable del censo y del ITER
     grupo_etiqueta: str
-    fuente: str  # clues | denue | estaciones
+    fuente: str  # clues | denue | estaciones | gtfs
     filtro: dict = field(default_factory=dict)
     modos: tuple[str, ...] = ("pie", "auto")
     # Solo desde AGEB urbanos: la fuente no registra el servicio fuera de ellos.
     solo_agebs: bool = False
+    # Solo en los municipios donde la fuente tiene destinos: un GTFS cubre unas
+    # ciudades, y fuera de ellas sí hay camiones que no están en ningún feed.
+    solo_cobertura: bool = False
 
 
 def _clases(rubros_publicos: tuple[str, ...]) -> list[str]:
@@ -89,6 +92,12 @@ SERVICIOS = {s.clave: s for s in (
     # A una estación se llega a pie: en auto no dice nada que sirva.
     Servicio("transporte_masivo", "Estación de transporte masivo", "POBTOT", "personas", "estaciones",
              modos=("pie",)),
+    # Sesión 27: paradas de los GTFS (docs/fuentes/gtfs.md). La frecuente es donde
+    # alguna ruta pasa cada 15 minutos o menos de 7 a 9 de un día hábil.
+    Servicio("parada_transporte", "Parada de transporte público", "POBTOT", "personas", "gtfs",
+             {"frecuente": False}, modos=("pie",), solo_cobertura=True),
+    Servicio("parada_frecuente", "Parada con paso cada 15 minutos o menos", "POBTOT", "personas", "gtfs",
+             {"frecuente": True}, modos=("pie",), solo_cobertura=True),
 )}
 
 
@@ -169,6 +178,23 @@ async def destinos(pool: AsyncConnectionPool, cve_ent: str, s: Servicio,
                 {"e": cve_ent, "clases": clases})
             filas = await cur.fetchall()
             fuente = f"DENUE de INEGI, cargado el {filas[0]['cargado'] if filas else 'sin cargar'}"
+        elif s.fuente == "gtfs":
+            # Los feeds que dan una parada por ruta repiten el punto: se juntan a ~10 m.
+            await cur.execute(
+                """SELECT 'p' || round(p.lat::numeric, 4) || ',' || round(p.lon::numeric, 4) AS id,
+                          min(p.nombre) AS nombre, avg(p.lat) AS lat, avg(p.lon) AS lon, true AS dentro,
+                          string_agg(DISTINCT p.feed, ',') AS feeds
+                   FROM transporte_paradas p JOIN transporte_feeds f USING (feed)
+                   WHERE p.cve_ent = %(e)s AND p.feed <> 'osm'
+                     AND (NOT %(frecuente)s OR (f.frecuencia_util AND p.pasadas_ruta_max >= %(minimo)s))
+                   GROUP BY 1""",
+                {"e": cve_ent, "frecuente": s.filtro["frecuente"], "minimo": transporte.pasadas_frecuente()})
+            filas = await cur.fetchall()
+            feeds = sorted({f for r in filas for f in r["feeds"].split(",")})
+            await cur.execute(
+                "SELECT feed, fecha_ref::text AS ref FROM transporte_feeds WHERE feed = ANY(%(f)s) ORDER BY feed",
+                {"f": feeds})
+            fuente = "GTFS " + "; ".join(f"{r['feed']} (frecuencias del {r['ref']})" for r in await cur.fetchall())
         else:
             if estaciones is None:
                 return [], "", ["sin archivo de estaciones (--estaciones)"]
@@ -193,6 +219,15 @@ async def destinos(pool: AsyncConnectionPool, cve_ent: str, s: Servicio,
     # Un mismo id puede repetirse en las estaciones (dos líneas en la misma parada).
     unicos = {f["id"]: f for f in filas if f["dentro"]}
     return list(unicos.values()), fuente, avisos
+
+
+async def cobertura(pool: AsyncConnectionPool, cve_ent: str) -> set[str]:
+    """Municipios del estado con paradas de algún GTFS."""
+    async with pool.connection() as conn:
+        cur = await conn.execute(
+            "SELECT DISTINCT cve_mun FROM transporte_paradas WHERE cve_ent = %s AND feed <> 'osm' AND cve_mun IS NOT NULL",
+            (cve_ent,))
+        return {r[0] for r in await cur.fetchall()}
 
 
 def vecinos_en_linea(origenes: list[dict], dest: list[dict], k: int = VECINOS) -> tuple[np.ndarray, np.ndarray]:
@@ -228,6 +263,12 @@ async def cargar_estado(
     for clave in servicios or list(SERVICIOS):
         s = SERVICIOS[clave]
         origenes = [o for o in todos if o["tipo"] == "ageb"] if s.solo_agebs else todos
+        if s.solo_cobertura:
+            cubiertos = await cobertura(pool, cve_ent)
+            origenes = [o for o in origenes if o["cve_mun"] in cubiertos]
+            if not origenes:
+                avisar(f"{clave}: ningún municipio del estado tiene paradas de un GTFS, no se calcula")
+                continue
         coords = [(o["lat"], o["lon"]) for o in origenes]
         dest, fuente, avisos = await destinos(pool, cve_ent, s, estaciones)
         if not dest:
@@ -314,13 +355,20 @@ def curva(filas: list[tuple[int | None, float | None]]) -> dict:
 
 
 def metodo(s: Servicio, modo: str) -> str:
+    extra = ""
+    if s.fuente == "gtfs":
+        extra = (" Las paradas del GTFS en el mismo punto (a unos 10 m) cuentan como una."
+                 + (f" Frecuente: alguna ruta pasa {transporte.pasadas_frecuente()} veces o más de 7 a 9 de la mañana"
+                    f" de un miércoles (cada {transporte.FRECUENTE_MIN} minutos o menos); los feeds con frecuencia de"
+                    " relleno no cuentan." if s.filtro.get("frecuente") else "")
+                 + " Solo en los municipios con paradas en algún GTFS.")
     origen = ("Toda la gente de un AGEB urbano cuenta en un punto dentro de él (censo 2020); las localidades sin"
               " AGEB no se calculan, porque DENUE casi no registra sus escuelas." if s.solo_agebs else
               "Toda la gente de un AGEB urbano cuenta en un punto dentro de él; donde no hay AGEB, en el punto"
               " de su localidad (censo 2020).")
     return (f"Minutos {MODOS[modo]} por calle con OSRM desde ese punto a los {VECINOS} destinos más cercanos en"
             f" línea recta; se toma el menor. El tramo del punto al camino se suma a {ACERCAMIENTO_KMH:.0f} km/h."
-            f" {origen} Solo destinos del mismo estado.")
+            f" {origen} Solo destinos del mismo estado.{extra}")
 
 
 async def zona(pool: AsyncConnectionPool, cve_ent: str, cve_mun: str, modo: str) -> dict | None:
@@ -357,6 +405,16 @@ async def zona(pool: AsyncConnectionPool, cve_ent: str, cve_mun: str, modo: str)
             """SELECT servicio, origenes, destinos, sin_ruta, fuente, red, actualizado::date::text AS calculado
                FROM accesibilidad_cargas WHERE cve_ent = %(e)s AND modo = %(modo)s""", {"e": cve_ent, "modo": modo})
         cargas = {r["servicio"]: r for r in await cur.fetchall()}
+        await cur.execute(
+            """SELECT EXISTS (SELECT 1 FROM transporte_paradas WHERE cve_ent = %(e)s AND cve_mun = %(m)s
+                              AND feed <> 'osm') AS hay""", {"e": cve_ent, "m": cve_mun})
+        con_gtfs = (await cur.fetchone())["hay"]
+        # Para citar al productor de cada GTFS, no a Mapo.
+        await cur.execute(
+            """SELECT DISTINCT f.feed, f.titulo, f.productor, f.pagina, f.licencia, f.fecha_ref::text AS fecha_ref
+               FROM transporte_feeds f JOIN transporte_paradas p USING (feed)
+               WHERE p.cve_ent = %(e)s AND f.feed <> 'osm' ORDER BY f.feed""", {"e": cve_ent})
+        feeds_gtfs = await cur.fetchall()
         usados = sorted({d for por_lugar in minutos.values() for _, d in por_lugar.values() if d})
         await cur.execute(
             """SELECT * FROM (
@@ -373,9 +431,10 @@ async def zona(pool: AsyncConnectionPool, cve_ent: str, cve_mun: str, modo: str)
         if modo not in s.modos:
             continue
         carga = cargas.get(s.clave)
+        sin_cobertura = s.solo_cobertura and not con_gtfs
         base = {"clave": s.clave, "titulo": s.titulo, "grupo": s.grupo, "grupo_etiqueta": s.grupo_etiqueta,
-                "calculado": carga is not None}
-        if carga is None:
+                "calculado": carga is not None and not sin_cobertura, "sin_cobertura": sin_cobertura}
+        if carga is None or sin_cobertura:
             servicios.append(base)
             continue
         por_lugar = minutos.get(s.clave, {})
@@ -388,7 +447,8 @@ async def zona(pool: AsyncConnectionPool, cve_ent: str, cve_mun: str, modo: str)
                           "sin_calcular_lugares": len(fuera),
                           "fecha": carga["calculado"], "destinos_estado": carga["destinos"],
                           "metodo": metodo(s, modo),
-                          "destinos_zona": sum(1 for p in puntos if p["servicio"] == s.clave and p["en_zona"])})
+                          "destinos_zona": sum(1 for p in puntos if p["servicio"] == s.clave and p["en_zona"]),
+                          **({"feeds": feeds_gtfs} if s.fuente == "gtfs" else {})})
 
     lugares_gj = {"type": "FeatureCollection", "features": [
         {"type": "Feature", "geometry": json.loads(u["gj"]),
