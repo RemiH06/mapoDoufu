@@ -95,3 +95,14 @@ está en `docs/arquitectura/decisiones.md` ("Plano común"); la fuente, en
   marcas. Cambio de tema en caliente en `/riesgos` y `/logistica`: el
   mapa base cambia y las capas regresan. `pantallas.js` en los tres
   tamaños sin errores de página ni scroll lateral.
+
+## Despliegue
+
+Producción en `338af51` el 2026-11-22 (revertir: `deploy-20261122d`; sin
+migración). Antes: `scripts/plano/extraer.sh ~/srv/mapo-plano 20261122`
+en Pixilate (31 s, 1.2 GB) y `MAPO_PLANO_DATOS` en el `.env`. El script
+terminaba con `pmtiles show | head`, y con `pipefail` el SIGPIPE de `head`
+lo daba por fallido aunque el archivo ya estaba completo: se cambió a
+`sed -n 1,12p`. Comprobado en `127.0.0.1:1865` y por el dominio: el
+PMTiles responde 206 y el worker, las letras y la frontera, 200; la CSP
+nueva ya sale.

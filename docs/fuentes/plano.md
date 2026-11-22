@@ -80,6 +80,11 @@ bytes; un archivo que no está en la lista (`/mosaicos/otro.pmtiles`), 404.
 - **Lenguas con otros alfabetos.** Un nombre con glifos fuera de los
   rangos copiados sale sin esas letras (MapLibre avisa en consola). Si
   pasa, se copia el rango que falte de basemaps-assets.
-- **Cloudflare y archivos grandes.** Por verificar en producción si
-  Cloudflare guarda en caché pedazos de un archivo de 1.2 GB; si no, cada
-  pedazo llega hasta Pixilate (son pocos KB y Phoenix los sirve del disco).
+- **Cloudflare no lo guarda en caché.** Medido el 2026-11-22: los pedazos
+  responden `cf-cache-status: DYNAMIC` y tardan ~0.45 s desde fuera (el
+  túnel hasta Pixilate y de regreso); cada uno llega hasta Phoenix, que lo
+  lee del disco. La extensión `.pmtiles` no está en las que Cloudflare
+  guarda por omisión, y el plan gratuito no guarda archivos de más de
+  512 MB. Si el plano se siente lento, la salida es servir mosaicos
+  sueltos (`/z/x/y.mvt`, unos KB cada uno) con una regla de caché, no
+  partir el PMTiles.

@@ -40,4 +40,5 @@ pmtiles extract "https://build.protomaps.com/${fecha}.pmtiles" "$temporal" \
 # Se cambia de una vez: Mapo nunca sirve un archivo a medias.
 mv -f "$temporal" "$destino/mexico.pmtiles"
 echo "$fecha" > "$destino/BUILD"
-pmtiles show "$destino/mexico.pmtiles" | head -12
+# sed y no head: head corta el tubo y, con pipefail, el script daría error.
+pmtiles show "$destino/mexico.pmtiles" | sed -n 1,12p
