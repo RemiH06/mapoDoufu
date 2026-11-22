@@ -438,6 +438,11 @@ defmodule MapoWeb.BuscadorLive.Index do
             </tfoot>
           </table>
 
+          <.empleo_formal
+            :if={@resultado["cifras"]["empleo_formal"]}
+            empleo={@resultado["cifras"]["empleo_formal"]}
+            municipios={@resultado["cifras"]["municipios"]}
+          />
           <details
             :if={@resultado["cifras"]["formula"] || intencion == "donde_poner"}
             class="como-se-lee"
@@ -492,6 +497,70 @@ defmodule MapoWeb.BuscadorLive.Index do
     </section>
     """
   end
+
+  attr :empleo, :map, required: true
+  attr :municipios, :list, required: true
+
+  # Contexto del rubro en el municipio con el IMSS: los grupos del IMSS más
+  # cercanos al rubro, no sus clases de DENUE (docs/fuentes/imss.md).
+  defp empleo_formal(assigns) do
+    nombres = Map.new(assigns.municipios, &{&1["cve_mun"], &1["nombre"]})
+    assigns = assign(assigns, nombres: nombres)
+
+    ~H"""
+    <section class="empleo-formal" aria-labelledby="t-empleo">
+      <h3 id="t-empleo">Empleo formal en {Enum.map_join(@empleo["grupos"], ", ", & &1["nombre"])}</h3>
+
+      <table class="cifras">
+        <thead>
+          <tr>
+            <th>Municipio</th>
+
+            <th class="num">Puestos</th>
+
+            <th class="num">del municipio</th>
+
+            <th class="num">Salario diario</th>
+
+            <th :if={@empleo["periodo_anual"]} class="num">Contra un año antes</th>
+          </tr>
+        </thead>
+
+        <tbody>
+          <tr :for={m <- @empleo["municipios"]}>
+            <td>{@nombres[m["cve_mun"]] || m["cve_mun"]}</td>
+
+            <td class="num">{cifra(m["puestos_rubro"])}</td>
+
+            <td class="num">
+              {if m["puestos_total"] > 0,
+                do: "#{cifra(m["puestos_rubro"] / m["puestos_total"] * 100)} %",
+                else: "sin dato"}
+            </td>
+
+            <td class="num">{dato_pesos(m["salario_diario_rubro"])}</td>
+
+            <td :if={@empleo["periodo_anual"]} class="num">
+              {if v = m["variacion_anual_rubro"], do: "#{cifra(v, 2)} %", else: "sin dato"}
+            </td>
+          </tr>
+        </tbody>
+      </table>
+
+      <p class="leyenda">
+        IMSS, {mes(@empleo["periodo"])}. Solo empleo formal, en el municipio del registro
+        patronal; el salario es el de cotización, con tope. El IMSS no clasifica como DENUE:
+        el grupo es lo más cercano al rubro.
+        <span :if={!@empleo["periodo_anual"]}>
+          Sin variación anual: falta el mismo mes del año anterior.
+        </span>
+      </p>
+    </section>
+    """
+  end
+
+  defp dato_pesos(nil), do: "sin dato"
+  defp dato_pesos(v), do: "$#{cifra(v, 2)}"
 
   attr :patron, :map, default: nil
   attr :error, :string, default: nil

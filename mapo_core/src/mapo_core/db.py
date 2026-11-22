@@ -459,6 +459,28 @@ CREATE TABLE IF NOT EXISTS fuente_defunciones_municipal (
 );
 CREATE INDEX IF NOT EXISTS idx_defun_mun ON fuente_defunciones_municipal (cve_ent, cve_mun);
 
+-- Empleo formal del IMSS (sesión 25). Ver docs/fuentes/imss.md. Un renglón por
+-- mes, clave de municipio del IMSS y grupo de actividad.
+CREATE TABLE IF NOT EXISTS fuente_imss_asegurados (
+    periodo             DATE NOT NULL,      -- último día del mes
+    cve_ent             TEXT NOT NULL,
+    cve_mun             TEXT NOT NULL,      -- '000': sin municipio (CDMX entera, claves sin equivalencia)
+    clave_imss          TEXT NOT NULL,      -- cve_municipio del IMSS ('NA' en la CDMX)
+    division            TEXT NOT NULL,      -- sector_economico_1; '' asegurados sin empleo
+    grupo               TEXT NOT NULL,      -- sector_economico_2
+    asegurados          INTEGER NOT NULL,
+    sin_empleo          INTEGER NOT NULL,   -- no_trabajadores
+    puestos             INTEGER NOT NULL,   -- ta
+    permanentes         INTEGER NOT NULL,   -- tpu + tpc
+    eventuales          INTEGER NOT NULL,   -- teu + tec
+    puestos_con_salario INTEGER NOT NULL,   -- ta_sal
+    masa_salarial       DOUBLE PRECISION NOT NULL,  -- masa_sal_ta, pesos diarios
+    puestos_rango_tope  INTEGER NOT NULL,   -- ta en rango_uma W25 (más de 24 y hasta 25 UMA)
+    actualizado         TIMESTAMPTZ NOT NULL DEFAULT now(),
+    PRIMARY KEY (periodo, cve_ent, clave_imss, division, grupo)
+);
+CREATE INDEX IF NOT EXISTS idx_imss_mun ON fuente_imss_asegurados (cve_ent, cve_mun, periodo);
+
 CREATE TABLE IF NOT EXISTS descargas_checkpoint (
     clave         TEXT PRIMARY KEY,
     completado_en TIMESTAMPTZ NOT NULL DEFAULT now()

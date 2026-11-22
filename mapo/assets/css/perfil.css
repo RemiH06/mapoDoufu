@@ -330,18 +330,24 @@
   .d-seguridad .total {
     font-size: 28px;
   }
+  /* Una sola rejilla para todos los renglones: las barras arrancan juntas
+     aunque una etiqueta ocupe dos líneas. */
   .barras {
     list-style: none;
     display: grid;
-    gap: 5px;
+    grid-template-columns: minmax(0, 15em) 1fr auto;
+    gap: 5px 10px;
     margin-top: 10px;
   }
   .barras li {
+    grid-column: 1 / -1;
     display: grid;
-    grid-template-columns: minmax(0, 15em) 1fr auto;
-    gap: 10px;
+    grid-template-columns: subgrid;
     align-items: center;
     font-size: 13px;
+  }
+  .barras .num {
+    text-align: right;
   }
   .barra {
     height: 10px;
@@ -463,7 +469,7 @@
       justify-self: center;
       width: 100%;
     }
-    .barras li {
+    .barras {
       grid-template-columns: minmax(0, 1fr) 30% auto;
     }
     .consulta h1 {

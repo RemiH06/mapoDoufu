@@ -1,0 +1,63 @@
+grupo,division,nombre
+1,0,Agricultura
+2,0,Ganadería
+3,0,Silvicultura
+4,0,Pesca
+5,0,Caza
+11,1,"Extracción y beneficio de carbón mineral, grafito y minerales no metálicos; excepto sal"
+12,1,Exploración y extracción de petróleo crudo y gas natural (no incluye a Pemex)
+13,1,Extracción y beneficio de minerales metálicos
+14,1,Explotación de sal
+20,3,Fabricación de alimentos
+21,3,Elaboración de bebidas
+22,3,Beneficio y fabricación de productos de tabaco
+23,3,Industria textil
+24,3,Confección de prendas de vestir y otros artículos confeccionados con textiles y otros materiales; excepto calzado
+25,3,Fabricación de calzado e industria del cuero
+26,3,Industria y productos de madera y corcho; excepto muebles
+27,3,Fabricación y reparación de muebles de madera y sus partes; excepto los de metal y plástico moldeado
+28,3,Industria del papel
+29,3,"Industrias editorial, de impresión y conexas"
+30,3,Industria química
+31,3,Refinación del petróleo y derivados del carbón mineral (no incluye Pemex)
+32,3,Fabricación de productos de hule y plástico
+33,3,Fabricación de productos de minerales no metálicos; excepto del petróleo y del carbón mineral
+34,3,Industrias metálicas básicas
+35,3,Fabricación de productos metálicos; excepto maquinaria y equipo
+36,3,"Fabricación, ensamble y reparación de maquinaria, equipo y sus partes; excepto los eléctricos"
+37,3,"Fabricación y ensamble de maquinaria, equipos, aparatos, accesorios y artículos eléctricos, electrónicos y sus partes"
+38,3,"Construcción, reconstrucción y ensamble de equipo de transporte y sus partes"
+39,3,Otras industrias manufactureras
+41,4,Construcción de edificaciones y de obras de ingeniería civil
+42,4,Trabajos realizados por contratistas especializados
+50,5,"Generación, transmisión y distribución de energía eléctrica"
+51,5,Captación y suministro de agua potable
+61,6,"Compraventa de alimentos, bebidas y productos del tabaco"
+62,6,Compraventa de prendas de vestir y otros artículos de uso personal
+63,6,Compraventa de artículos para el hogar
+64,6,Compraventa en tiendas de autoservicio y de departamentos especializados por línea de mercancías
+65,6,"Compraventa de gases, combustibles y lubricantes"
+66,6,"Compraventa de materias primas, materiales y auxiliares"
+67,6,"Compraventa de maquinaria, equipo, instrumentos, aparatos, herramientas; sus refacciones y accesorios"
+68,6,Compraventa de equipo de transporte; sus refacciones y accesorios
+69,6,Compraventa de inmuebles y artículos diversos
+71,7,Transporte terrestre
+72,7,Transporte por agua
+73,7,Transporte aéreo
+74,7,Servicios conexos al transporte
+75,7,Servicios relacionados con el transporte en general
+76,7,Comunicaciones
+81,8,"Servicios financieros y de seguros (bancos, financieras, compañías de seguros, etc.)"
+82,8,Servicios colaterales a las instituciones financieras y de seguros
+83,8,Servicios relacionados con inmuebles
+84,8,Servicios profesionales y técnicos
+85,8,Servicios de alquiler; excepto de inmuebles
+86,8,Servicios de alojamiento temporal
+87,8,Preparación y servicio de alimentos y bebidas
+88,8,Servicios recreativos y de esparcimiento
+89,8,Servicios personales para el hogar y diversos
+91,9,"Servicios de enseñanza, investigación científica y difusión cultural"
+92,9,"Servicios médicos, asistencia social y veterinarios"
+93,9,"Agrupaciones mercantiles, profesionales, cívicas, políticas, laborales y religiosas"
+94,9,Servicios de administración pública y seguridad social
+99,9,Servicios de organizaciones internacionales y otros organismos extraterritoriales

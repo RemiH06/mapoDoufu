@@ -40,6 +40,17 @@ defmodule MapoWeb.Cifras do
     signo <> Enum.join([entero | decimales], ".")
   end
 
+  @meses ~w(enero febrero marzo abril mayo junio julio agosto septiembre octubre noviembre diciembre)
+
+  @doc """
+  El mes de una fecha ISO, como se dice: "diciembre de 2024".
+
+      iex> MapoWeb.Cifras.mes("2024-12-31")
+      "diciembre de 2024"
+  """
+  def mes(<<anio::binary-size(4), "-", m::binary-size(2), _::binary>>),
+    do: "#{Enum.at(@meses, String.to_integer(m) - 1)} de #{anio}"
+
   @doc """
   Quintiles de los valores con dato de una coropleta: los mismos cortes
   pintan el mapa (en el hook) y la escala de la cinta. Los AGEB sin dato se

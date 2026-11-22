@@ -42,6 +42,7 @@ Una por fuente: de dónde sale, cómo se carga, sus problemas conocidos y las ci
 - [sniiv.md](fuentes/sniiv.md): créditos y subsidios para vivienda por municipio y año (SNIIV), por organismo, destino y segmento de valor.
 - [eic2025.md](fuentes/eic2025.md): Intercensal 2025, bloque de vivienda por municipio (tenencia, escrituras, servicios) con su precisión.
 - [acuiferos.md](fuentes/acuiferos.md), [renameca.md](fuentes/renameca.md), [repda.md](fuentes/repda.md), [retc.md](fuentes/retc.md), [siap.md](fuentes/siap.md), [firms.md](fuentes/firms.md), [uso-suelo.md](fuentes/uso-suelo.md), [anp.md](fuentes/anp.md), [sequia.md](fuentes/sequia.md), [defunciones.md](fuentes/defunciones.md): fuentes ambientales cargadas (sesión 22).
+- [imss.md](fuentes/imss.md): empleo formal del IMSS por municipio y grupo de actividad (puestos, salario de cotización), con la equivalencia de claves IMSS a INEGI; validado al puesto contra el IMSS y el IIEG.
 - [envi.md](fuentes/envi.md): ENVI 2020, renta mensual y valor estimado de la vivienda por estado.
 - [especies.md](fuentes/especies.md): plantas vasculares registradas en GBIF alrededor de una zona, con su estatus en México (Enciclovida) y el cruce con GRIIS, para elegir árboles nativos.
 - [imagenes.md](fuentes/imagenes.md): compuestos de Sentinel-2 y Landsat y WorldCover por zona, desde el STAC de Planetary Computer.
@@ -93,6 +94,7 @@ Qué se construyó en cada etapa, por qué así y qué bugs reales aparecieron.
 - [Vista de vivienda y especies nativas, noviembre 2026](historial/2026-11-vista-vivienda-especies.md)
 - [Precio estimado: forma y rango, noviembre 2026](historial/2026-11-precio-estimado.md)
 - [Cómo citar y enlaces permanentes, noviembre 2026](historial/2026-11-citar.md)
+- [Empleo formal del IMSS, noviembre 2026](historial/2026-11-empleo-imss.md)
 
 ## Gaiarda
 

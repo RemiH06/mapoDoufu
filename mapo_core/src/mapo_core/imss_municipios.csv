@@ -1,0 +1,2472 @@
+clave_imss,cve_ent,cve_mun,nombre_imss,metodo
+A01,01,001,Aguascalientes,nombre
+Y45,01,001,Aguascalientes,nombre
+H83,01,002,Asientos,nombre
+H46,01,003,Calvillo,nombre
+H84,01,004,Cosío,nombre
+A02,01,005,Jesús María,nombre
+A03,01,006,Pabellón de Arteaga,nombre
+A04,01,007,Rincón de Romos,nombre
+H85,01,008,San José de Gracia,nombre
+H86,01,009,Tepezalá,nombre
+Y49,01,010,El Llano,nombre
+Y48,01,011,San Francisco de los Romo,nombre
+A05,02,001,Ensenada,nombre
+Y35,02,001,Isla de Cedros,localidad de Ensenada
+A06,02,002,Mexicali,nombre
+Z32,02,002,Mexicali,nombre
+A07,02,003,Tecate,nombre
+A08,02,004,Tijuana,nombre
+Z31,02,004,Tijuana,nombre
+Y94,02,005,Playas de Rosarito,nombre
+M47,03,001,Comondú,nombre
+H81,03,002,Mulegé,nombre
+A09,03,003,La Paz,nombre
+M62,03,008,Los Cabos,nombre
+Y71,03,009,Loreto,nombre
+A13,04,001,Calkiní,nombre
+A10,04,002,Campeche,nombre
+A11,04,003,Carmen,nombre
+A12,04,004,Champotón,nombre
+A14,04,005,Hecelchakán,nombre
+A15,04,006,Hopelchén,nombre
+A16,04,007,Palizada,nombre
+A17,04,008,Tenabo,nombre
+X69,04,009,Escárcega,nombre
+Y98,04,010,Calakmul,nombre
+Y99,04,011,Candelaria,nombre
+L67,05,001,Abasolo,nombre
+A18,05,002,Acuña,nombre
+A19,05,003,Allende,nombre
+A20,05,004,Arteaga,nombre
+L68,05,005,Candela,nombre
+A21,05,006,Castaños,nombre
+H82,05,007,Cuatro Ciénegas,nombre
+L69,05,008,Escobedo,nombre
+A22,05,009,Francisco I. Madero,nombre
+A23,05,010,Frontera,nombre
+M67,05,011,General Cepeda,nombre
+A24,05,012,Guerrero,nombre
+M68,05,013,Hidalgo,nombre
+A25,05,014,Jiménez,nombre
+L70,05,015,Juárez,nombre
+L71,05,016,Lamadrid,nombre
+A26,05,017,Matamoros,nombre
+A27,05,018,Monclova,nombre
+A28,05,019,Morelos,nombre
+A29,05,020,Múzquiz,nombre
+L72,05,021,Nadadores,nombre
+A30,05,022,Nava,nombre
+L73,05,023,Ocampo,nombre
+A31,05,024,Parras,nombre
+A32,05,025,Piedras Negras,nombre
+A33,05,026,Progreso,nombre
+A34,05,027,Ramos Arizpe,nombre
+A35,05,028,Sabinas,nombre
+L74,05,029,Sacramento,nombre
+A36,05,030,Saltillo,nombre
+A37,05,031,San Buenaventura,nombre
+A38,05,032,San Juan de Sabinas,nombre
+A39,05,033,San Pedro,nombre
+M66,05,034,Sierra Mojada,nombre
+A40,05,035,Torreón,nombre
+A41,05,036,Viesca,nombre
+A42,05,037,Villa Unión,nombre
+A43,05,038,Zaragoza,nombre
+A44,06,001,Armería,nombre
+A45,06,002,Colima,nombre
+H26,06,003,Comala,nombre
+A46,06,004,Coquimatlán,nombre
+A47,06,005,Cuauhtémoc,nombre
+A66,06,006,Ixtlahuacán,nombre
+A48,06,007,Manzanillo,nombre
+A50,06,008,Minatitlán,nombre
+A49,06,009,Tecomán,nombre
+H27,06,010,Villa de Álvarez,nombre
+M76,07,001,Acacoyagua,nombre
+A51,07,002,Acala,nombre
+M77,07,003,Acapetahua,nombre
+O58,07,004,Altamirano,nombre
+K99,07,005,Amatán,nombre
+M91,07,006,Amatenango de la Frontera,nombre
+J96,07,007,Amatenango del Valle,nombre
+M73,07,008,Angel Albino Corzo,nombre
+A52,07,009,Arriaga,nombre
+M89,07,010,Bejucal de Ocampo,nombre
+Q52,07,011,Bella Vista,nombre
+M81,07,012,Berriozábal,nombre
+J97,07,013,Bochil,nombre
+J98,07,014,El Bosque,nombre
+A53,07,015,Cacahoatán,nombre
+Q10,07,016,Catazajá,nombre
+H28,07,017,Cintalapa,nombre oficial: Cintalapa de Figueroa
+J99,07,018,Coapilla,nombre
+A54,07,019,Comitán de Domínguez,nombre
+Q53,07,020,La Concordia,nombre
+K01,07,021,Copainalá,nombre
+K02,07,022,Chalchihuitán,nombre
+K03,07,023,Chamula,nombre
+K04,07,024,Chanal,nombre
+K11,07,025,Chapultenango,nombre
+K05,07,026,Chenalhó,nombre
+A55,07,027,Chiapa de Corzo,nombre
+M82,07,028,Chiapilla,nombre
+K06,07,029,Chicoasén,nombre
+Q65,07,030,Chicomuselo,nombre
+K07,07,031,Chilón,nombre
+M75,07,032,Escuintla,nombre
+Q68,07,033,Francisco León,nombre
+M71,07,034,Frontera Comalapa,nombre
+A56,07,035,Frontera Hidalgo,nombre
+R16,07,036,La Grandeza,nombre
+A57,07,037,Huehuetán,nombre
+K08,07,038,Huixtán,nombre
+K09,07,039,Huitiupán,nombre
+A58,07,040,Huixtla,nombre
+R18,07,041,La Independencia,nombre
+M79,07,042,Ixhuatán,nombre
+Q12,07,043,Ixtacomitán,nombre
+K10,07,044,Ixtapa,nombre
+K24,07,045,Ixtapangajoya,nombre
+M74,07,046,Jiquipilas,nombre
+N82,07,047,Jitotol,nombre
+Q13,07,048,Juárez,nombre
+K12,07,049,Larráinzar,nombre
+Q09,07,050,La Libertad,nombre
+M70,07,051,Mapastepec,nombre
+M83,07,052,Las Margaritas,nombre
+M90,07,053,Mazapa de Madero,nombre
+A60,07,054,Mazatán,nombre
+A61,07,055,Metapa,nombre
+K13,07,056,Mitontic,nombre
+M87,07,057,Motozintla,nombre
+R19,07,058,Nicolás Ruíz,nombre
+K14,07,059,Ocosingo,nombre
+R20,07,060,Ocotepec,nombre
+M86,07,061,Ocozocoautla de Espinosa,nombre
+Q15,07,062,Ostuacán,nombre
+K15,07,063,Osumacinta,nombre
+K16,07,064,Oxchuc,nombre
+Q16,07,065,Palenque,nombre
+K17,07,066,Pantelhó,nombre
+R21,07,067,Pantepec,nombre
+Q11,07,068,Pichucalco,nombre
+M69,07,069,Pijijiapan,nombre
+M88,07,070,El Porvenir,nombre
+M85,07,071,Villa Comaltitlán,nombre
+K18,07,072,Pueblo Nuevo Solistahuacán,nombre
+M80,07,073,Rayón,nombre
+M52,07,074,Reforma,nombre
+A59,07,075,Las Rosas,nombre
+L53,07,076,Sabanilla,nombre
+L99,07,077,Salto de Agua,nombre
+A62,07,078,San Cristóbal de las Casas,nombre
+L20,07,079,San Fernando,nombre
+R22,07,080,Siltepec,nombre
+K19,07,081,Simojovel,nombre
+K20,07,082,Sitalá,nombre
+A63,07,083,Socoltenango,nombre
+Q14,07,084,Solosuchiapa,nombre
+K21,07,085,Soyaló,nombre
+R23,07,086,Suchiapa,nombre
+A64,07,087,Suchiate,nombre
+O38,07,088,Sunuapa,nombre
+A65,07,089,Tapachula,nombre
+R24,07,090,Tapalapa,nombre
+M78,07,091,Tapilula,nombre
+M56,07,092,Tecpatán,nombre
+K22,07,093,Tenejapa,nombre
+K23,07,094,Teopisca,nombre
+M65,07,096,Tila,nombre
+A67,07,097,Tonalá,nombre
+R25,07,098,Totolapa,nombre
+M84,07,099,La Trinitaria,nombre
+K25,07,100,Tumbalá,nombre
+A68,07,101,Tuxtla Gutiérrez,nombre
+A69,07,102,Tuxtla Chico,nombre
+A70,07,103,Tuzantán,nombre
+R26,07,104,Tzimol,nombre
+A71,07,105,Unión Juárez,nombre
+A72,07,106,Venustiano Carranza,nombre
+Z11,07,107,Villa Corzo,nombre
+M72,07,108,Villaflores,nombre
+K26,07,109,Yajalón,nombre
+R27,07,110,San Lucas,nombre
+K27,07,111,Zinacantán,nombre
+Y47,07,112,San Juan Cancuc,nombre
+V31,07,113,Aldama,nombre
+V32,07,114,Benemérito de las Américas,nombre
+Z22,07,115,Maravilla Tenejapa,nombre
+Z23,07,116,Marqués de Comillas,nombre
+Z24,07,117,Montecristo de Guerrero,nombre
+Z09,07,118,San Andrés Duraznal,nombre
+Z10,07,119,Santiago el Pinar,nombre
+A73,08,001,Ahumada,nombre
+A74,08,002,Aldama,nombre
+N01,08,003,Allende,nombre
+A75,08,004,Aquiles Serdán,nombre
+A90,08,005,Ascensión,nombre
+A76,08,006,Bachíniva,nombre
+M25,08,007,Balleza,nombre
+R41,08,008,Batopilas,nombre oficial: Batopilas de Manuel Gómez Morín
+R28,08,009,Bocoyna,nombre
+N02,08,010,Buenaventura,nombre
+A77,08,011,Camargo,nombre
+A91,08,012,Carichí,nombre
+M92,08,013,Casas Grandes,nombre
+L97,08,014,Coronado,nombre
+R39,08,015,Coyame del Sotol,nombre
+M98,08,016,La Cruz,nombre
+A78,08,017,Cuauhtémoc,nombre
+A79,08,018,Cusihuiriachi,nombre
+A80,08,019,Chihuahua,nombre
+Z42,08,019,Chihuahua,nombre
+R29,08,020,Chínipas,nombre
+A81,08,021,Delicias,nombre
+R42,08,022,Dr. Belisario Domínguez,nombre
+M93,08,023,Galeana,nombre
+A92,08,024,Santa Isabel,nombre
+M97,08,025,Gómez Farías,nombre
+A93,08,026,Gran Morelos,nombre
+R43,08,027,Guachochi,nombre
+A94,08,028,Guadalupe,nombre
+R30,08,029,Guadalupe y Calvo,nombre
+R31,08,030,Guazapares,nombre
+M55,08,031,Guerrero,nombre
+A95,08,032,Hidalgo del Parral,nombre
+M02,08,033,Huejotitán,nombre
+R47,08,034,Ignacio Zaragoza,nombre
+M94,08,035,Janos,nombre
+A82,08,036,Jiménez,nombre
+A83,08,037,Juárez,nombre
+Y77,08,037,Juárez,nombre
+A84,08,038,Julimes,nombre
+L62,08,039,López,nombre
+A96,08,040,Madera,nombre
+R32,08,041,Maguarichi,nombre
+R40,08,042,Manuel Benavides,nombre
+M95,08,043,Matachí,nombre
+L63,08,044,Matamoros,nombre
+A85,08,045,Meoqui,nombre
+R33,08,046,Morelos,nombre
+R34,08,047,Moris,nombre
+M96,08,048,Namiquipa,nombre
+R44,08,049,Nonoava,nombre
+A86,08,050,Nuevo Casas Grandes,nombre
+R35,08,051,Ocampo,nombre
+H80,08,052,Ojinaga,nombre
+A97,08,053,Praxedis G. Guerrero,nombre
+A87,08,054,Riva Palacio,nombre
+A88,08,055,Rosales,nombre
+M26,08,056,Rosario,hoy se llama Valle del Rosario
+R45,08,057,San Francisco de Borja,nombre
+M99,08,058,San Francisco de Conchos,nombre
+A98,08,059,San Francisco del Oro,nombre
+A99,08,060,Santa Bárbara,nombre
+R46,08,061,Satevó,nombre
+A89,08,062,Saucillo,nombre
+R36,08,063,Temósachic,nombre
+M01,08,064,El Tule,nombre
+R37,08,065,Urique,nombre
+R38,08,066,Uruachi,nombre
+M03,08,067,Valle de Zaragoza,nombre
+B24,10,001,Canatlán,nombre
+R48,10,002,Canelas,nombre
+R49,10,003,Coneto de Comonfort,nombre
+B25,10,004,Cuencamé,nombre
+B26,10,005,Durango,nombre
+R60,10,006,General Simón Bolívar,nombre
+B28,10,007,Gómez Palacio,nombre
+B29,10,008,Guadalupe Victoria,nombre
+B30,10,009,Guanaceví,nombre
+R50,10,010,Hidalgo,nombre
+M40,10,011,Indé,nombre
+B31,10,012,Lerdo,nombre
+B32,10,013,Mapimí,nombre
+B33,10,014,Mezquital,nombre
+R51,10,015,Nazas,nombre
+N03,10,016,Nombre de Dios,nombre
+B34,10,017,Ocampo,nombre
+B27,10,018,El Oro,nombre
+R52,10,019,Otáez,nombre
+N08,10,020,Pánuco de Coronado,nombre
+R53,10,021,Peñón Blanco,nombre
+B35,10,022,Poanas,nombre
+B36,10,023,Pueblo Nuevo,nombre
+N04,10,024,Rodeo,nombre
+R54,10,025,San Bernardo,nombre
+B37,10,026,San Dimas,nombre
+R61,10,027,San Juan de Guadalupe,nombre
+N05,10,028,San Juan del Río,nombre
+R55,10,029,San Luis del Cordero,nombre
+R56,10,030,San Pedro del Gallo,nombre
+R62,10,031,Santa Clara,nombre
+N06,10,032,Santiago Papasquiaro,nombre
+R59,10,033,Súchil,nombre
+R57,10,034,Tamazula,nombre
+N07,10,035,Tepehuanes,nombre
+B38,10,036,Tlahualilo,nombre
+R58,10,037,Topia,nombre
+B39,10,038,Vicente Guerrero,nombre
+Y42,10,039,Nuevo Ideal,nombre
+H29,11,001,Abasolo,nombre
+B40,11,002,Acámbaro,nombre
+B41,11,003,San Miguel de Allende,nombre
+H87,11,004,Apaseo el Alto,nombre
+H34,11,005,Apaseo el Grande,nombre
+N11,11,006,Atarjea,nombre
+B42,11,007,Celaya,nombre
+N13,11,008,Manuel Doblado,nombre
+B43,11,009,Comonfort,nombre
+N17,11,010,Coroneo,nombre
+B44,11,011,Cortazar,nombre
+N15,11,012,Cuerámaro,nombre
+H88,11,013,Doctor Mora,nombre
+B45,11,014,Dolores Hidalgo Cuna de la Independencia,nombre oficial: ... Independencia Nacional
+B46,11,015,Guanajuato,nombre
+N19,11,016,Huanímaro,nombre
+B47,11,017,Irapuato,nombre
+N18,11,018,Jaral del Progreso,nombre
+N16,11,019,Jerécuaro,nombre
+B48,11,020,León,nombre
+Z06,11,020,León,nombre
+B49,11,021,Moroleón,nombre
+N09,11,022,Ocampo,nombre
+B50,11,023,Pénjamo,nombre
+M48,11,023,Santa Ana Pacueco,localidad de Pénjamo
+N22,11,024,Pueblo Nuevo,nombre
+B51,11,025,Purísima del Rincón,nombre
+N14,11,026,Romita,nombre
+B52,11,027,Salamanca,nombre
+B53,11,028,Salvatierra,nombre
+H89,11,029,San Diego de la Unión,nombre
+H43,11,030,San Felipe,nombre
+B54,11,031,San Francisco del Rincón,nombre
+H56,11,032,San José Iturbide,nombre oficial: San José de Iturbide
+B55,11,033,San Luis de la Paz,nombre
+H90,11,034,Santa Catarina,nombre
+B56,11,035,Santa Cruz de Juventino Rosas,nombre
+N21,11,036,Santiago Maravatío,nombre
+B57,11,037,Silao de la Victoria,nombre
+N20,11,038,Tarandacuao,nombre
+N12,11,039,Tarimoro,nombre
+H91,11,040,Tierra Blanca,nombre
+B58,11,041,Uriangato,nombre
+B60,11,042,Valle de Santiago,nombre
+H92,11,043,Victoria,nombre
+B59,11,044,Villagrán,nombre
+N10,11,045,Xichú,nombre
+H57,11,046,Yuriria,nombre
+B61,12,001,Acapulco de Juárez,nombre
+R88,12,002,Ahuacuotzingo,nombre
+R63,12,003,Ajuchitlán del Progreso,nombre
+H93,12,004,Alcozauca de Guerrero,nombre
+H94,12,005,Alpoyeca,nombre
+L66,12,006,Apaxtla,nombre oficial: Apaxtla de Castrejón
+N31,12,007,Arcelia,nombre
+R64,12,008,Atenango del Río,nombre
+L48,12,009,Atlamajalcingo del Monte,nombre
+H95,12,010,Atlixtac,nombre
+H30,12,011,Atoyac de Álvarez,nombre
+R81,12,012,Ayutla de los Libres,nombre
+R82,12,013,Azoyú,nombre
+N27,12,014,Benito Juárez,nombre
+R65,12,015,Buenavista de Cuéllar,nombre
+R66,12,016,Coahuayutla de José María Izazaga,nombre
+B62,12,017,Cocula,nombre
+R83,12,018,Copala,nombre
+R67,12,019,Copalillo,nombre
+H96,12,020,Copanatoyac,nombre
+H35,12,021,Coyuca de Benítez,nombre
+N29,12,022,Coyuca de Catalán,nombre
+R84,12,023,Cuajinicuilapa,nombre
+H97,12,024,Cualác,nombre
+N26,12,025,Cuautepec,nombre
+R68,12,026,Cuetzala del Progreso,nombre
+N30,12,027,Cutzamala de Pinzón,nombre
+H98,12,028,Chilapa de Álvarez,nombre
+B63,12,029,Chilpancingo de los Bravo,nombre
+N25,12,030,Florencio Villarreal,nombre
+R69,12,031,General Canuto A. Neri,nombre
+R80,12,032,General Heliodoro Castillo,nombre
+H99,12,033,Huamuxtitlán,nombre
+N36,12,034,Huitzuco de los Figueroa,nombre
+B64,12,035,Iguala de la Independencia,nombre
+R85,12,036,Igualapa,nombre
+R70,12,037,Ixcateopan de Cuauhtémoc,nombre
+L43,12,038,Zihuatanejo de Azueta,nombre
+H31,12,039,Juan R. Escudero,nombre
+N34,12,040,Leonardo Bravo,nombre
+L49,12,041,Malinaltepec,nombre
+R71,12,042,Mártir de Cuilapan,nombre
+R89,12,043,Metlatónoc,nombre
+R72,12,044,Mochitlán,nombre
+I01,12,045,Olinalá,nombre
+N33,12,046,Ometepec,nombre
+R73,12,047,Pedro Ascencio Alquisiras,nombre
+N23,12,048,Petatlán,nombre
+R74,12,049,Pilcaya,nombre
+N28,12,050,Pungarabato,nombre
+R75,12,051,Quechultenango,nombre
+R86,12,052,San Luis Acatlán,nombre
+H47,12,053,San Marcos,nombre
+R76,12,054,San Miguel Totolapan,nombre
+B65,12,055,Taxco de Alarcón,nombre
+R87,12,056,Tecoanapa,nombre
+N24,12,057,Técpan de Galeana,nombre
+N37,12,058,Teloloapan,nombre
+R77,12,059,Tepecoacuilco de Trujano,nombre
+R78,12,060,Tetipac,nombre
+I02,12,061,Tixtla de Guerrero,nombre
+R90,12,062,Tlacoachistlahuaca,nombre
+I03,12,063,Tlacoapa,nombre
+R79,12,064,Tlalchapa,nombre
+I04,12,065,Tlalixtaquilla de Maldonado,nombre
+I05,12,066,Tlapa de Comonfort,nombre
+N32,12,067,Tlapehuala,nombre
+P31,12,068,La Unión de Isidoro Montes de Oca,nombre
+I06,12,069,Xalpatláhuac,nombre
+I07,12,070,Xochihuehuetlán,nombre
+R91,12,071,Xochistlahuaca,nombre
+I08,12,072,Zapotitlán Tablas,nombre
+N83,12,073,Zirándaro,nombre
+I09,12,074,Zitlala,nombre
+N35,12,075,Eduardo Neri,nombre
+Z12,12,076,Acatepec,nombre
+Z13,12,077,Marquelia,nombre
+Z14,12,078,Cochoapa el Grande,nombre
+Z15,12,079,José Joaquín de Herrera,nombre
+Z27,12,080,Juchitán,nombre
+Z26,12,081,Iliatenco,nombre
+L75,13,001,Acatlán,nombre
+L76,13,002,Acaxochitlán,nombre
+H32,13,003,Actopan,nombre
+L77,13,004,Agua Blanca de Iturbide,nombre
+N44,13,005,Ajacuba,nombre
+R92,13,006,Alfajayucan,nombre
+L78,13,007,Almoloya,nombre
+B67,13,008,Apan,nombre
+R93,13,009,El Arenal,nombre
+N41,13,010,Atitalaquia,nombre
+K87,13,011,Atlapexco,nombre
+M27,13,012,Atotonilco el Grande,nombre
+B66,13,013,Atotonilco de Tula,nombre
+M28,13,014,Calnali,nombre
+R94,13,015,Cardonal,nombre
+B68,13,016,Cuautepec de Hinojosa,nombre
+R95,13,017,Chapantongo,nombre
+R96,13,018,Chapulhuacán,nombre
+R97,13,019,Chilcuautla,nombre
+M29,13,020,Eloxochitlán,nombre
+L79,13,021,Emiliano Zapata,nombre
+L80,13,022,Epazoyucan,nombre
+R98,13,023,Francisco I. Madero,nombre
+M30,13,024,Huasca de Ocampo,nombre
+K88,13,025,Huautla,nombre
+K89,13,026,Huazalingo,nombre
+L81,13,027,Huehuetla,nombre
+K90,13,028,Huejutla de Reyes,nombre
+R99,13,029,Huichapan,nombre
+N45,13,030,Ixmiquilpan,nombre
+S01,13,031,Jacala de Ledezma,nombre
+K91,13,032,Jaltocán,nombre
+M31,13,033,Juárez Hidalgo,nombre
+M32,13,034,Lolotla,nombre
+L82,13,035,Metepec,nombre
+M33,13,036,San Agustín Metzquititlán,nombre
+M34,13,037,Metztitlán,nombre
+M35,13,038,Mineral del Chico,nombre
+H42,13,039,Mineral del Monte,nombre
+S02,13,040,La Misión,nombre
+N38,13,041,Mixquiahuala de Juárez,nombre
+M36,13,042,Molango de Escamilla,nombre
+S03,13,043,Nicolás Flores,nombre
+S04,13,044,Nopala de Villagrán,nombre
+M41,13,045,Omitlán de Juárez,nombre
+K92,13,046,San Felipe Orizatlán,nombre
+S05,13,047,Pacula,nombre
+B70,13,048,Pachuca de Soto,nombre
+S06,13,049,Pisaflores,nombre
+N39,13,050,Progreso de Obregón,nombre
+B69,13,051,Mineral de la Reforma,nombre
+S07,13,052,San Agustín Tlaxiaca,nombre
+L83,13,053,San Bartolo Tutotepec,nombre
+S08,13,054,San Salvador,nombre
+S09,13,055,Santiago de Anaya,nombre
+B71,13,056,Santiago Tulantepec de Lugo Guerrero,nombre
+L84,13,057,Singuilucan,nombre
+N46,13,058,Tasquillo,nombre
+S10,13,059,Tecozautla,nombre
+L85,13,060,Tenango de Doria,nombre
+B72,13,061,Tepeapulco,nombre
+K93,13,062,Tepehuacán de Guerrero,nombre
+B73,13,063,Tepeji del Río de Ocampo,nombre
+S11,13,064,Tepetitlán,nombre
+N43,13,065,Tetepango,nombre
+S12,13,066,Villa de Tezontepec,nombre
+M54,13,067,Tezontepec de Aldama,nombre
+M37,13,068,Tianguistengo,nombre
+H48,13,069,Tizayuca,nombre
+N40,13,070,Tlahuelilpan,nombre
+M44,13,071,Tlahuiltepa,nombre
+L86,13,072,Tlanalapa,nombre
+K94,13,073,Tlanchinol,nombre
+N42,13,074,Tlaxcoapan,nombre
+S13,13,075,Tolcayuca,nombre
+B74,13,076,Tula de Allende,nombre
+B75,13,077,Tulancingo de Bravo,nombre
+K95,13,078,Xochiatipan,nombre
+M38,13,079,Xochicoatlán,nombre
+K96,13,080,Yahualica,nombre
+M39,13,081,Zacualtipán de Ángeles,nombre
+S14,13,082,Zapotlán de Juárez,nombre
+L87,13,083,Zempoala,nombre
+S15,13,084,Zimapán,nombre
+S16,14,001,Acatic,nombre
+B76,14,002,Acatlán de Juárez,nombre
+B77,14,003,Ahualulco de Mercado,nombre
+N56,14,004,Amacueca,nombre
+B78,14,005,Amatitán,nombre
+B79,14,006,Ameca,nombre
+L29,14,007,San Juanito de Escobedo,nombre
+B80,14,008,Arandas,nombre
+B87,14,009,El Arenal,nombre
+S25,14,010,Atemajac de Brizuela,nombre
+S26,14,011,Atengo,nombre
+S27,14,012,Atenguillo,nombre
+B81,14,013,Atotonilco el Alto,nombre
+N57,14,014,Atoyac,nombre
+B82,14,015,Autlán de Navarro,nombre
+H59,14,016,Ayotlán,nombre
+N71,14,017,Ayutla,nombre
+B92,14,018,La Barca,nombre
+N81,14,019,Bolaños,nombre
+S28,14,020,Cabo Corrientes,nombre
+B83,14,021,Casimiro Castillo,nombre
+H60,14,022,Cihuatlán,nombre
+B84,14,023,Zapotlán el Grande,nombre
+B85,14,024,Cocula,nombre
+N64,14,025,Colotlán,nombre
+N54,14,026,Concepción de Buenos Aires,nombre
+N77,14,027,Cuautitlán de García Barragán,nombre
+N62,14,028,Cuautla,nombre
+L30,14,029,Cuquío,nombre
+B86,14,030,Chapala,nombre
+S17,14,031,Chimaltitán,nombre
+S29,14,032,Chiquilistlán,nombre
+O57,14,033,Degollado,nombre
+N61,14,034,Ejutla,nombre
+H61,14,035,Encarnación de Díaz,nombre
+H62,14,036,Etzatlán,nombre
+H63,14,037,El Grullo,nombre
+B89,14,038,Guachinango,nombre
+B90,14,039,Guadalajara,nombre
+R12,14,039,Guadalajara,nombre
+R13,14,039,Guadalajara,nombre
+R14,14,039,Guadalajara,nombre
+R15,14,039,Guadalajara,nombre
+Z62,14,039,Guadalajara,"cifra del IIEG, diciembre de 2024"
+L31,14,040,Hostotipaquillo,nombre
+S18,14,041,Huejúcar,nombre
+S19,14,042,Huejuquilla el Alto,nombre
+B93,14,043,La Huerta,nombre
+B91,14,044,Ixtlahuacán de los Membrillos,nombre
+L46,14,045,Ixtlahuacán del Río,nombre
+H64,14,046,Jalostotitlán,nombre
+N75,14,047,Jamay,nombre
+N78,14,048,Jesús María,nombre
+S30,14,049,Jilotlán de los Dolores,nombre
+H65,14,050,Jocotepec,nombre
+N74,14,051,Juanacatlán,nombre
+N59,14,052,Juchitlán,nombre
+B94,14,053,Lagos de Moreno,nombre
+N79,14,054,El Limón,nombre
+H66,14,055,Magdalena,nombre
+S31,14,056,Santa María del Oro,nombre
+N66,14,057,La Manzanilla de la Paz,nombre
+N72,14,058,Mascota,nombre
+N73,14,059,Mazamitla,nombre
+L32,14,060,Mexticacán,nombre
+L41,14,061,Mezquitic,nombre
+S32,14,062,Mixtlán,nombre
+B95,14,063,Ocotlán,nombre
+S20,14,064,Ojuelos de Jalisco,nombre
+B96,14,065,Pihuamo,nombre
+B97,14,066,Poncitlán,nombre
+B98,14,067,Puerto Vallarta,nombre
+N76,14,068,Villa Purificación,nombre
+N52,14,069,Quitupan,nombre
+B88,14,070,El Salto,nombre
+S21,14,071,San Cristóbal de la Barranca,nombre
+S22,14,072,San Diego de Alejandría,nombre
+B99,14,073,San Juan de los Lagos,nombre
+S23,14,074,San Julián,nombre
+L33,14,075,San Marcos,nombre
+S24,14,076,San Martín de Bolaños,nombre
+C01,14,077,San Martín Hidalgo,nombre
+N49,14,078,San Miguel el Alto,nombre
+C02,14,079,Gómez Farías,nombre
+S33,14,080,San Sebastián del Oeste,nombre
+N47,14,081,Santa María de los Ángeles,nombre
+C03,14,082,Sayula,nombre
+C04,14,083,Tala,nombre
+N63,14,084,Talpa de Allende,nombre
+C05,14,085,Tamazula de Gordiano,nombre
+N58,14,086,Tapalpa,nombre
+C06,14,087,Tecalitlán,nombre
+C07,14,088,Tecolotlán,nombre
+N68,14,089,Techaluta de Montenegro,nombre
+N60,14,090,Tenamaxtlán,nombre
+C08,14,091,Teocaltiche,nombre
+N55,14,092,Teocuitatlán de Corona,nombre
+C09,14,093,Tepatitlán de Morelos,nombre
+C10,14,094,Tequila,nombre
+C11,14,095,Teuchitlán,nombre
+N53,14,096,Tizapán el Alto,nombre
+H68,14,097,Tlajomulco de Zúñiga,nombre
+C12,14,098,San Pedro Tlaquepaque,nombre
+S34,14,099,Tolimán,nombre
+H16,14,100,Tomatlán,nombre
+H67,14,101,Tonalá,nombre
+S35,14,102,Tonaya,nombre
+C13,14,103,Tonila,nombre
+N65,14,104,Totatiche,nombre
+N80,14,105,Tototlán,nombre
+S36,14,106,Tuxcacuesco,nombre
+N67,14,107,Tuxcueca,nombre
+C14,14,108,Tuxpan,nombre
+N50,14,109,Unión de San Antonio,nombre
+N70,14,110,Unión de Tula,nombre
+L34,14,111,Valle de Guadalupe,nombre
+N51,14,112,Valle de Juárez,nombre
+N69,14,113,San Gabriel,nombre
+C15,14,114,Villa Corona,nombre
+N48,14,115,Villa Guerrero,nombre
+I10,14,116,Villa Hidalgo,nombre
+L35,14,117,Cañadas de Obregón,nombre
+H69,14,118,Yahualica de González Gallo,nombre
+H70,14,119,Zacoalco de Torres,nombre
+C16,14,120,Zapopan,nombre
+Z29,14,120,Zapopan,nombre
+Z60,14,120,Zapopan,"cifra del IIEG, diciembre de 2024"
+C17,14,121,Zapotiltic,nombre
+S37,14,122,Zapotitlán de Vadillo,nombre
+S38,14,123,Zapotlán del Rey,nombre
+H71,14,124,Zapotlanejo,nombre
+Z36,14,125,San Ignacio Cerro Gordo,nombre
+L98,15,001,Acambay de Ruíz Castañeda,nombre
+C19,15,002,Acolman,nombre
+S39,15,003,Aculco,nombre
+O03,15,004,Almoloya de Alquisiras,nombre
+O11,15,005,Almoloya de Juárez,nombre
+L44,15,006,Almoloya del Río,nombre
+O09,15,007,Amanalco,nombre
+S42,15,008,Amatepec,nombre
+C20,15,009,Amecameca,nombre
+C70,15,010,Apaxco,nombre
+C21,15,011,Atenco,nombre
+R11,15,012,Atizapán,nombre
+C22,15,013,Atizapán de Zaragoza,nombre
+N85,15,014,Atlacomulco,nombre
+C23,15,015,Atlautla,nombre
+L88,15,016,Axapusco,nombre
+C24,15,017,Ayapango,nombre
+N92,15,018,Calimaya,nombre
+L45,15,019,Capulhuac,nombre
+C25,15,020,Coacalco de Berriozábal,nombre
+O19,15,021,Coatepec Harinas,nombre
+C26,15,022,Cocotitlán,nombre
+C27,15,023,Coyotepec,nombre
+C28,15,024,Cuautitlán,nombre
+C29,15,025,Chalco,nombre
+C30,15,026,Chapa de Mota,nombre
+O14,15,027,Chapultepec,nombre
+C31,15,028,Chiautla,nombre
+C32,15,029,Chicoloapan,nombre
+C33,15,030,Chiconcuac,nombre
+C34,15,031,Chimalhuacán,nombre
+O08,15,032,Donato Guerra,nombre
+C35,15,033,Ecatepec de Morelos,nombre
+C57,15,034,Ecatzingo,nombre
+C36,15,035,Huehuetoca,nombre
+S49,15,036,Hueypoxtla,nombre
+C37,15,037,Huixquilucan,nombre
+M64,15,038,Isidro Fabela,nombre
+C38,15,039,Ixtapaluca,nombre
+C71,15,040,Ixtapan de la Sal,nombre
+S43,15,041,Ixtapan del Oro,nombre
+C72,15,042,Ixtlahuaca,nombre
+O12,15,043,Xalatlaco,nombre
+S50,15,044,Jaltenco,nombre
+H50,15,045,Jilotepec,nombre
+M63,15,046,Jilotzingo,nombre
+N90,15,047,Jiquipilco,nombre
+C73,15,048,Jocotitlán,nombre
+O17,15,049,Joquicingo,nombre
+C58,15,050,Juchitepec,nombre
+C59,15,051,Lerma,nombre
+O06,15,052,Malinalco,nombre
+C40,15,053,Melchor Ocampo,nombre
+C60,15,054,Metepec,nombre
+N93,15,055,Mexicaltzingo,nombre
+N88,15,056,Morelos,nombre
+C41,15,057,Naucalpan de Juárez,nombre
+C42,15,058,Nezahualcóyotl,nombre
+S51,15,059,Nextlalpan,nombre
+C43,15,060,Nicolás Romero,nombre
+L89,15,061,Nopaltepec,nombre
+C69,15,062,Ocoyoacac,nombre
+O07,15,063,Ocuilan,nombre
+N96,15,064,El Oro,nombre
+L90,15,065,Otumba,nombre
+S44,15,066,Otzoloapan,nombre
+C61,15,067,Otzolotepec,nombre
+C44,15,068,Ozumba,nombre
+C45,15,069,Papalotla,nombre
+C39,15,070,La Paz,nombre
+S48,15,071,Polotitlán,nombre
+N94,15,072,Rayón,nombre
+N95,15,073,San Antonio la Isla,nombre
+O20,15,074,San Felipe del Progreso,nombre
+L91,15,075,San Martín de las Pirámides,nombre
+C62,15,076,San Mateo Atenco,nombre
+O05,15,077,San Simón de Guerrero,nombre
+S45,15,078,Santo Tomás,nombre
+S41,15,079,Soyaniquilpan de Juárez,nombre
+O01,15,080,Sultepec,nombre
+C46,15,081,Tecámac,nombre
+N84,15,082,Tejupilco,nombre
+C63,15,083,Temamatla,nombre
+S52,15,084,Temascalapa,nombre
+N86,15,085,Temascalcingo,nombre
+O04,15,086,Temascaltepec,nombre
+N89,15,087,Temoaya,nombre
+C74,15,088,Tenancingo,nombre
+C64,15,089,Tenango del Aire,nombre
+N91,15,090,Tenango del Valle,nombre
+C47,15,091,Teoloyucan,nombre
+C48,15,092,Teotihuacán,nombre
+C49,15,093,Tepetlaoxtoc,nombre
+C65,15,094,Tepetlixpa,nombre
+C66,15,095,Tepotzotlán,nombre
+S53,15,096,Tequixquiac,nombre
+O02,15,097,Texcaltitlán,nombre
+O13,15,098,Texcalyacac,nombre
+C50,15,099,Texcoco,nombre
+C51,15,100,Tezoyuca,nombre
+H25,15,101,Tianguistenco,nombre
+N87,15,102,Timilpan,nombre
+C52,15,103,Tlalmanalco,nombre
+C53,15,104,Tlalnepantla de Baz,nombre
+S46,15,105,Tlatlaya,nombre
+C67,15,106,Toluca,nombre
+O18,15,107,Tonatico,nombre
+C54,15,108,Tultepec,nombre
+C55,15,109,Tultitlán,nombre
+H51,15,110,Valle de Bravo,nombre
+N99,15,111,Villa de Allende,nombre
+C56,15,112,Villa del Carbón,nombre
+O15,15,113,Villa Guerrero,nombre
+N98,15,114,Villa Victoria,nombre
+O10,15,115,Xonacatlán,nombre
+S47,15,116,Zacazonapan,nombre
+S40,15,117,Zacualpan,nombre
+C68,15,118,Zinacantepec,nombre
+O16,15,119,Zumpahuacán,nombre
+H49,15,120,Zumpango,nombre
+M49,15,121,Cuautitlán Izcalli,nombre
+Y74,15,122,Valle de Chalco Solidaridad,nombre
+Z03,15,123,Luvianos,nombre
+Z04,15,124,San José del Rincón,nombre
+Z16,15,125,Tonanitla,nombre
+K77,16,001,Acuitzio,nombre
+O67,16,002,Aguililla,nombre
+O49,16,003,Álvaro Obregón,nombre
+L22,16,004,Angamacutiro,nombre
+H44,16,005,Angangueo,nombre
+C75,16,006,Apatzingán,nombre
+O45,16,007,Aporo,nombre
+O82,16,008,Aquila,nombre
+K78,16,009,Ario,nombre
+C76,16,010,Arteaga,nombre
+O30,16,011,Briseñas,nombre
+O22,16,012,Buenavista,nombre
+O71,16,013,Carácuaro,nombre
+O81,16,014,Coahuayana,nombre
+O63,16,015,Coalcomán de Vázquez Pallares,nombre
+O54,16,016,Coeneo,nombre
+O35,16,017,Contepec,nombre
+O76,16,018,Copándaro,nombre
+C77,16,019,Cotija,nombre
+O72,16,020,Cuitzeo,nombre
+C78,16,021,Charapan,nombre
+O48,16,022,Charo,nombre
+O50,16,023,Chavinda,nombre
+C79,16,024,Cherán,nombre
+C80,16,025,Chilchota,nombre
+O61,16,026,Chinicuila,nombre
+O73,16,027,Chucándiro,nombre
+O32,16,028,Churintzio,nombre
+M45,16,029,Churumuco,nombre
+O60,16,030,Ecuandureo,nombre
+S54,16,031,Epitacio Huerta,nombre
+K79,16,032,Erongarícuaro,nombre
+C81,16,033,Gabriel Zamora,nombre
+C82,16,034,Hidalgo,nombre
+K80,16,035,La Huacana,nombre
+O75,16,036,Huandacareo,nombre
+O68,16,037,Huaniqueo,nombre
+O36,16,038,Huetamo,nombre
+K81,16,039,Huiramba,nombre
+O26,16,040,Indaparapeo,nombre
+O44,16,041,Irimbo,nombre
+O69,16,042,Ixtlán,nombre
+C83,16,043,Jacona,nombre
+O55,16,044,Jiménez,nombre
+C84,16,045,Jiquilpan,nombre
+O79,16,046,Juárez,nombre
+C85,16,047,Jungapeo,nombre
+K82,16,048,Lagunillas,nombre
+K83,16,049,Madero,nombre
+O34,16,050,Maravatío,nombre
+O78,16,051,Marcos Castellanos,nombre
+C87,16,052,Lázaro Cárdenas,nombre
+C89,16,053,Morelia,nombre
+L24,16,054,Morelos,nombre
+C90,16,055,Múgica,nombre
+O59,16,056,Nahuatzen,nombre
+C91,16,057,Nocupétaro,nombre
+O53,16,058,Nuevo Parangaricutiro,nombre
+C92,16,059,Nuevo Urecho,nombre
+O33,16,060,Numarán,nombre
+O27,16,061,Ocampo,nombre
+O23,16,062,Pajacuarán,nombre
+L25,16,063,Panindícuaro,nombre
+C93,16,064,Parácuaro,nombre
+C94,16,065,Paracho,nombre
+C95,16,066,Pátzcuaro,nombre
+L26,16,067,Penjamillo,nombre
+C96,16,068,Peribán,nombre
+C86,16,069,La Piedad,nombre
+O40,16,070,Purépero,nombre
+L27,16,071,Puruándiro,nombre
+O25,16,072,Queréndaro,nombre
+C97,16,073,Quiroga,nombre
+O43,16,074,Cojumatlán de Régules,nombre
+C88,16,075,Los Reyes,nombre
+C98,16,076,Sahuayo,nombre
+O37,16,077,San Lucas,nombre
+O74,16,078,Santa Ana Maya,nombre
+K84,16,079,Salvador Escalante,nombre
+O47,16,080,Senguio,nombre
+O80,16,081,Susupuato,nombre
+C99,16,082,Tacámbaro,nombre
+O70,16,083,Tancítaro,nombre
+O51,16,084,Tangamandapio,nombre
+O39,16,085,Tangancícuaro,nombre
+O29,16,086,Tanhuato,nombre
+D01,16,087,Taretan,nombre
+D10,16,088,Tarímbaro,nombre
+O21,16,089,Tepalcatepec,nombre
+K85,16,090,Tingambato,nombre
+D02,16,091,Tingüindín,nombre
+O64,16,092,Tiquicheo de Nicolás Romero,nombre
+N97,16,093,Tlalpujahua,nombre
+O41,16,094,Tlazazalca,nombre
+D03,16,095,Tocumbo,nombre
+O65,16,096,Tumbiscatío,nombre
+D04,16,097,Turicato,nombre
+O46,16,098,Tuxpan,nombre
+O66,16,099,Tuzantla,nombre
+K86,16,100,Tzintzuntzan,nombre
+O77,16,101,Tzitzio,nombre
+D05,16,102,Uruapan,nombre
+D06,16,103,Venustiano Carranza,nombre
+O62,16,104,Villamar,nombre
+O28,16,105,Vista Hermosa,nombre
+O56,16,106,Yurécuaro,nombre
+D07,16,107,Zacapu,nombre
+D08,16,108,Zamora,nombre
+O31,16,109,Zináparo,nombre
+O24,16,110,Zinapécuaro,nombre
+O52,16,111,Ziracuaretiro,nombre
+D09,16,112,Zitácuaro,nombre
+L23,16,113,José Sixto Verduzco,nombre
+D11,17,001,Amacuzac,nombre
+L54,17,002,Atlatlahucan,nombre
+L55,17,003,Axochiapan,nombre
+D12,17,004,Ayala,nombre
+D13,17,005,Coatlán del Río,nombre
+D14,17,006,Cuautla,nombre
+D15,17,007,Cuernavaca,nombre
+D16,17,008,Emiliano Zapata,nombre
+S55,17,009,Huitzilac,nombre
+L56,17,010,Jantetelco,nombre
+D17,17,011,Jiutepec,nombre
+D18,17,012,Jojutla,nombre
+D19,17,013,Jonacatepec,nombre oficial: Jonacatepec de Leandro Valle
+D20,17,014,Mazatepec,nombre
+D21,17,015,Miacatlán,nombre
+L57,17,016,Ocuituco,nombre
+D22,17,017,Puente de Ixtla,nombre
+D23,17,018,Temixco,nombre
+L58,17,019,Tepalcingo,nombre
+D24,17,020,Tepoztlán,nombre
+D25,17,021,Tetecala,nombre
+L59,17,022,Tetela del Volcán,nombre
+L60,17,023,Tlalnepantla,nombre
+D26,17,024,Tlaltizapán de Zapata,nombre
+D27,17,025,Tlaquiltenango,nombre
+D28,17,026,Tlayacapan,nombre
+L61,17,027,Totolapan,nombre
+D29,17,028,Xochitepec,nombre
+D30,17,029,Yautepec,nombre
+L64,17,030,Yecapixtla,nombre
+D31,17,031,Zacatepec,nombre
+L65,17,032,Zacualpan de Amilpas,nombre
+P07,17,033,Temoac,nombre
+H13,18,001,Acaponeta,nombre
+L36,18,002,Ahuacatlán,nombre
+L37,18,003,Amatlán de Cañas,nombre
+H11,18,004,Compostela,nombre
+S56,18,005,Huajicori,nombre
+L38,18,006,Ixtlán del Río,nombre
+L47,18,007,Jala,nombre
+D32,18,008,Xalisco,nombre
+S57,18,009,Del Nayar,nombre
+H15,18,010,Rosamorada,nombre
+H10,18,011,Ruíz,nombre
+H12,18,012,San Blas,nombre
+P09,18,013,San Pedro Lagunillas,nombre
+D33,18,014,Santa María del Oro,nombre
+D34,18,015,Santiago Ixcuintla,nombre
+H14,18,016,Tecuala,nombre
+D35,18,017,Tepic,nombre
+D36,18,018,Tuxpan,nombre
+S58,18,019,La Yesca,nombre
+Y43,18,020,Bahía de Banderas,nombre
+P32,19,001,Abasolo,nombre
+P13,19,002,Agualeguas,nombre
+P28,19,003,Los Aldamas,nombre
+D37,19,004,Allende,nombre
+P10,19,005,Anáhuac,nombre
+D38,19,006,Apodaca,nombre
+P15,19,007,Aramberri,nombre
+P35,19,008,Bustamante,nombre
+D39,19,009,Cadereyta Jiménez,nombre
+D40,19,010,El Carmen,nombre
+P17,19,011,Cerralvo,nombre
+P20,19,012,Ciénega de Flores,nombre
+P25,19,013,China,nombre
+P37,19,014,Doctor Arroyo,nombre
+P27,19,015,Doctor Coss,nombre
+P23,19,016,Doctor González,nombre
+P39,19,017,Galeana,nombre
+D41,19,018,García,nombre
+D42,19,019,San Pedro Garza García,nombre
+P26,19,020,General Bravo,nombre
+D43,19,021,General Escobedo,nombre
+D44,19,022,General Terán,nombre
+P19,19,023,General Treviño,nombre
+P16,19,024,General Zaragoza,nombre
+P21,19,025,General Zuazua,nombre
+D45,19,026,Guadalupe,nombre
+Y78,19,026,Guadalupe,nombre
+P30,19,027,Los Herreras,nombre
+P24,19,028,Higueras,nombre
+D46,19,029,Hualahuises,nombre
+P40,19,030,Iturbide,nombre
+D47,19,031,Juárez,nombre
+P12,19,032,Lampazos de Naranjo,nombre
+D48,19,033,Linares,nombre
+P22,19,034,Marín,nombre
+P18,19,035,Melchor Ocampo,nombre
+P38,19,036,Mier y Noriega,nombre
+P33,19,037,Mina,nombre
+D49,19,038,Montemorelos,nombre
+D50,19,039,Monterrey,nombre
+Y37,19,039,Monterrey,nombre
+Y38,19,039,Monterrey,nombre
+Y39,19,039,Monterrey,nombre
+Y40,19,039,Monterrey,nombre
+P14,19,040,Parás,nombre
+D51,19,041,Pesquería,nombre
+P29,19,042,Los Ramones,nombre
+P41,19,043,Rayones,nombre
+D52,19,044,Sabinas Hidalgo,nombre
+D53,19,045,Salinas Victoria,nombre
+D54,19,046,San Nicolás de los Garza,nombre
+Y79,19,046,San Nicolás de los Garza,nombre
+H45,19,047,Hidalgo,nombre
+D55,19,048,Santa Catarina,nombre
+D56,19,049,Santiago,nombre
+P36,19,050,Vallecillo,nombre
+P34,19,051,Villaldama,nombre
+T46,20,001,Abejones,nombre
+D57,20,002,Acatlán de Pérez Figueroa,nombre
+T62,20,003,Asunción Cacalotepec,nombre
+T30,20,004,Asunción Cuyotepeji,nombre
+H58,20,005,Asunción Ixtaltepec,nombre
+T77,20,006,Asunción Nochixtlán,nombre
+V33,20,007,Asunción Ocotlán,nombre
+V52,20,008,Asunción Tlacolulita,nombre
+S90,20,009,Ayotzintepec,nombre
+D61,20,010,El Barrio de la Soledad,nombre
+L17,20,011,Calihualá,nombre
+J79,20,012,Candelaria Loxicha,nombre
+I11,20,013,Ciénega de Zimatlán,nombre
+D58,20,014,Ciudad Ixtepec,nombre
+I12,20,015,Coatecas Altas,nombre
+T56,20,016,Coicoyán de las Flores,nombre
+I13,20,017,La Compañía,nombre
+M04,20,018,Concepción Buenavista,nombre
+D59,20,019,Concepción Pápalo,nombre
+U10,20,020,Constancia del Rosario,nombre
+D60,20,021,Cosolapa,nombre
+M05,20,022,Cosoltepec,nombre
+I14,20,023,Cuilápam de Guerrero,nombre
+T08,20,024,Cuyamecalco Villa de Zaragoza,nombre
+P48,20,025,Chahuites,nombre
+U69,20,026,Chalcatongo de Hidalgo,nombre
+T09,20,027,Chiquihuitlán de Benito Juárez,nombre
+I15,20,028,Heroica Ciudad de Ejutla de Crespo,nombre
+U32,20,029,Eloxochitlán de Flores Magón,nombre
+M57,20,030,El Espinal,nombre
+T63,20,031,Tamazulápam del Espíritu Santo,nombre
+T31,20,032,Fresnillo de Trujano,nombre
+I16,20,033,Guadalupe Etla,nombre
+U20,20,034,Guadalupe de Ramírez,nombre
+I17,20,035,Guelatao de Juárez,nombre
+V74,20,036,Guevea de Humboldt,nombre
+U11,20,037,Mesones Hidalgo,nombre
+V02,20,038,Villa Hidalgo,nombre oficial: Villa Hidalgo Yalálag
+L15,20,039,Heroica Ciudad de Huajuapan de León,nombre
+U44,20,040,Huautepec,nombre
+U30,20,041,Huautla de Jiménez,nombre
+D62,20,042,Ixtlán de Juárez,nombre
+D63,20,043,Heroica Ciudad de Juchitán de Zaragoza,nombre
+D64,20,044,Loma Bonita,nombre
+D65,20,045,Magdalena Apasco,nombre oficial: Magdalena Apazco
+T78,20,046,Magdalena Jaltepec,nombre
+S97,20,047,Santa Magdalena Jicotlán,nombre
+I18,20,048,Magdalena Mixtepec,nombre
+I19,20,049,Magdalena Ocotlán,nombre
+U70,20,050,Magdalena Peñasco,nombre
+I20,20,051,Magdalena Teitipac,nombre
+D66,20,052,Magdalena Tequisistlán,nombre
+V75,20,053,Magdalena Tlacotepec,nombre
+T79,20,054,Magdalena Zahuatlán,nombre
+T32,20,055,Mariscala de Juárez,nombre
+S59,20,056,Mártires de Tacubaya,nombre
+D67,20,057,Matías Romero Avendaño,nombre
+U31,20,058,Mazatlán Villa de Flores,nombre
+I21,20,059,Miahuatlán de Porfirio Díaz,nombre oficial: Heroica Ciudad de Miahuatlán...
+T70,20,060,Mixistlán de la Reforma,nombre
+I22,20,061,Monjas,nombre
+I23,20,062,Natividad,nombre
+I24,20,063,Nazareno Etla,nombre
+V53,20,064,Nejapa de Madero,nombre
+U21,20,065,Ixpantepec Nieves,nombre
+P49,20,066,Santiago Niltepec,nombre
+D68,20,067,Oaxaca de Juárez,nombre
+I25,20,068,Ocotlán de Morelos,nombre
+I26,20,069,La Pe,nombre
+S60,20,070,Pinotepa de Don Luis,nombre
+I27,20,071,Pluma Hidalgo,nombre
+I28,20,072,San José del Progreso,nombre
+U12,20,073,Putla Villa de Guerrero,nombre
+V54,20,074,Santa Catarina Quioquitani,nombre
+V67,20,075,Reforma de Pineda,nombre
+U13,20,076,La Reforma,nombre
+I29,20,077,Reyes Etla,nombre
+I30,20,078,Rojas de Cuauhtémoc,nombre
+D69,20,079,Salina Cruz,nombre
+I31,20,080,San Agustín Amatengo,nombre
+M06,20,081,San Agustín Atenango,nombre
+S61,20,082,San Agustín Chayuco,nombre
+D70,20,083,San Agustín de las Juntas,nombre
+D71,20,084,San Agustín Etla,nombre
+I32,20,085,San Agustín Loxicha,nombre
+U71,20,086,San Agustín Tlacotepec,nombre
+I33,20,087,San Agustín Yatareni,nombre
+U14,20,088,San Andrés Cabecera Nueva,nombre
+T33,20,089,San Andrés Dinicuiti,nombre
+P61,20,090,San Andrés Huaxpaltepec,nombre
+I34,20,091,San Andrés Huayápam,nombre
+I35,20,092,San Andrés Ixtlahuaca,nombre
+U53,20,093,San Andrés Lagunas,nombre
+T80,20,094,San Andrés Nuxiño,nombre
+I36,20,095,San Andrés Paxtlán,nombre
+T81,20,096,San Andrés Sinaxtla,nombre
+V03,20,097,San Andrés Solaga,nombre
+T10,20,098,San Andrés Teotilálpam,nombre
+I37,20,099,San Andrés Tepetlapa,nombre
+V04,20,100,San Andrés Yaá,nombre
+I38,20,101,San Andrés Zabache,nombre
+I39,20,102,San Andrés Zautla,nombre
+I40,20,103,San Antonino Castillo Velasco,nombre
+V65,20,104,San Antonino el Alto,nombre
+U54,20,105,San Antonino Monte Verde,nombre
+U55,20,106,San Antonio Acutla,nombre
+I41,20,107,San Antonio de la Cal,nombre
+V64,20,108,San Antonio Huitepec,nombre
+U33,20,109,San Antonio Nanahuatípam,nombre
+U72,20,110,San Antonio Sinicahua,nombre
+S62,20,111,San Antonio Tepetlapa,nombre
+P42,20,112,San Baltazar Chichicápam,nombre
+I42,20,113,San Baltazar Loxicha,nombre
+V05,20,114,San Baltazar Yatzachi el Bajo,nombre
+I43,20,115,San Bartolo Coyotepec,nombre
+U34,20,116,San Bartolomé Ayautla,nombre
+I44,20,117,San Bartolomé Loxicha,nombre
+I45,20,118,San Bartolomé Quialana,nombre
+U73,20,119,San Bartolomé Yucuañe,nombre
+V06,20,120,San Bartolomé Zoogocho,nombre
+U56,20,121,San Bartolo Soyaltepec,nombre
+V55,20,122,San Bartolo Yautepec,nombre
+I46,20,123,San Bernardo Mixtepec,nombre
+P63,20,124,San Blas Atempa,nombre oficial: Heroica Villa de San Blas Atempa
+V56,20,125,San Carlos Yautepec,nombre
+I47,20,126,San Cristóbal Amatlán,nombre
+P59,20,127,San Cristóbal Amoltepec,nombre
+V07,20,128,San Cristóbal Lachirioag,nombre
+S98,20,129,San Cristóbal Suchixtlahuaca,nombre
+V68,20,130,San Dionisio del Mar,nombre
+I48,20,131,San Dionisio Ocotepec,nombre
+I49,20,132,San Dionisio Ocotlán,nombre
+U74,20,133,San Esteban Atatlahuca,nombre
+S91,20,134,San Felipe Jalapa de Díaz,nombre
+I50,20,135,San Felipe Tejalápam,nombre
+S92,20,136,San Felipe Usila,nombre
+V34,20,137,San Francisco Cahuacuá,nombre
+V08,20,138,San Francisco Cajonos,nombre
+T11,20,139,San Francisco Chapulapa,nombre
+T82,20,140,San Francisco Chindúa,nombre
+V69,20,141,San Francisco del Mar,nombre
+U35,20,142,San Francisco Huehuetlán,nombre
+V70,20,143,San Francisco Ixhuatán,nombre
+T83,20,144,San Francisco Jaltepetongo,nombre
+I51,20,145,San Francisco Lachigoló,nombre
+J80,20,146,San Francisco Logueche,nombre
+T84,20,147,San Francisco Nuxaño,nombre
+J81,20,148,San Francisco Ozolotepec,nombre
+I52,20,149,San Francisco Sola,nombre
+C18,20,150,San Francisco Telixtlahuaca,nombre
+S99,20,151,San Francisco Teopan,nombre
+U22,20,152,San Francisco Tlapancingo,nombre
+S79,20,153,San Gabriel Mixtepec,nombre
+J82,20,154,San Ildefonso Amatlán,nombre
+V35,20,155,San Ildefonso Sola,nombre
+V09,20,156,San Ildefonso Villa Alta,nombre
+I53,20,157,San Jacinto Amilpas,nombre
+V36,20,158,San Jacinto Tlacotepec,nombre
+I54,20,159,San Jerónimo Coatlán,nombre
+P53,20,160,San Jerónimo Silacayoapilla,nombre
+V27,20,161,San Jerónimo Sosola,nombre
+I55,20,162,San Jerónimo Taviche,nombre
+U36,20,163,San Jerónimo Tecóatl,nombre
+M07,20,164,San Jorge Nuchita,nombre
+T34,20,165,San José Ayuquila,nombre
+D72,20,166,San José Chiltepec,nombre
+I56,20,167,San José del Peñasco,nombre
+S63,20,168,San José Estancia Grande,nombre
+S93,20,169,San José Independencia,nombre
+J83,20,170,San José Lachiguiri,nombre
+U37,20,171,San José Tenango,nombre
+U75,20,172,San Juan Achiutla,nombre
+D73,20,173,San Juan Atepec,nombre
+I57,20,174,Ánimas Trujano,nombre
+D74,20,175,San Juan Bautista Atatlahuca,nombre
+M08,20,176,San Juan Bautista Coixtlahuaca,nombre
+D75,20,177,San Juan Bautista Cuicatlán,nombre
+I58,20,178,San Juan Bautista Guelache,nombre
+V28,20,179,San Juan Bautista Jayacatlán,nombre
+S64,20,180,San Juan Bautista Lo de Soto,nombre
+M09,20,181,San Juan Bautista Suchitepec,nombre
+T12,20,182,San Juan Bautista Tlacoatzintepec,nombre
+I59,20,183,San Juan Bautista Tlachichilco,nombre
+D76,20,184,San Juan Bautista Tuxtepec,nombre
+S65,20,185,San Juan Cacahuatepec,nombre
+U23,20,186,San Juan Cieneguilla,nombre
+U38,20,187,San Juan Coatzóspam,nombre
+S66,20,188,San Juan Colorado,nombre
+T24,20,189,San Juan Comaltepec,nombre
+T64,20,190,San Juan Cotzocón,nombre
+I60,20,191,San Juan Chicomezúchil,nombre
+I61,20,192,San Juan Chilateca,nombre
+D77,20,193,San Juan del Estado,nombre
+I62,20,194,San Juan del Río,nombre
+T85,20,195,San Juan Diuxi,nombre
+I63,20,196,San Juan Evangelista Analco,nombre
+I64,20,197,San Juan Guelavía,nombre
+P43,20,198,San Juan Guichicovi,nombre
+U24,20,199,San Juan Ihualtepec,nombre
+V57,20,200,San Juan Juquila Mixes,nombre
+V10,20,201,San Juan Juquila Vijanos,nombre
+S80,20,202,San Juan Lachao,nombre
+J84,20,203,San Juan Lachigalla,nombre
+V58,20,204,San Juan Lajarcia,nombre
+T25,20,205,San Juan Lalana,nombre
+U39,20,206,San Juan de los Cués,nombre
+T65,20,207,San Juan Mazatlán,nombre
+I65,20,209,San Juan Mixtepec,nombre
+Z17,20,209,San Juan Mixtepec,nombre
+U76,20,210,San Juan Ñumí,nombre
+J85,20,211,San Juan Ozolotepec,nombre
+T26,20,212,San Juan Petlapa,nombre
+S81,20,213,San Juan Quiahije,nombre
+T47,20,214,San Juan Quiotepec,nombre
+T86,20,215,San Juan Sayultepec,nombre
+V11,20,216,San Juan Tabaá,nombre
+T87,20,217,San Juan Tamazola,nombre
+U77,20,218,San Juan Teita,nombre
+I66,20,219,San Juan Teitipac,nombre
+T13,20,220,San Juan Tepeuxila,nombre
+P55,20,221,San Juan Teposcolula,nombre
+V12,20,222,San Juan Yaeé,nombre
+V13,20,223,San Juan Yatzona,nombre
+T88,20,224,San Juan Yucuita,nombre
+S67,20,225,San Lorenzo,nombre
+I67,20,226,San Lorenzo Albarradas,nombre
+I68,20,227,San Lorenzo Cacaotepec,nombre
+U40,20,228,San Lorenzo Cuaunecuiltitla,nombre
+V37,20,229,San Lorenzo Texmelúcan,nombre
+M10,20,230,San Lorenzo Victoria,nombre
+T66,20,231,San Lucas Camotlán,nombre
+D78,20,232,San Lucas Ojitlán,nombre
+I69,20,233,San Lucas Quiaviní,nombre
+U41,20,234,San Lucas Zoquiápam,nombre
+J86,20,235,San Luis Amatlán,nombre
+J87,20,236,San Marcial Ozolotepec,nombre
+T35,20,237,San Marcos Arteaga,nombre
+I70,20,238,San Martín de los Cansecos,nombre oficial: Heroico San Martín de los Cansecos
+U78,20,239,San Martín Huamelúlpam,nombre
+U79,20,240,San Martín Itunyoso,nombre
+I71,20,241,San Martín Lachilá,nombre
+T57,20,242,San Martín Peras,nombre
+I72,20,243,San Martín Tilcajete,nombre
+U42,20,244,San Martín Toxpalan,nombre
+T36,20,245,San Martín Zacatepec,nombre
+V14,20,246,San Mateo Cajonos,nombre
+I73,20,247,Capulálpam de Méndez,nombre
+V76,20,248,San Mateo del Mar,nombre
+U43,20,249,San Mateo Yoloxochitlán,nombre
+T89,20,250,San Mateo Etlatongo,nombre
+I74,20,251,San Mateo Nejápam,nombre
+U80,20,252,San Mateo Peñasco,nombre
+I75,20,253,San Mateo Piñas,nombre
+I76,20,254,San Mateo Río Hondo,nombre
+T90,20,255,San Mateo Sindihui,nombre
+T01,20,256,San Mateo Tlapiltepec,nombre
+V15,20,257,San Melchor Betaza,nombre
+U81,20,258,San Miguel Achiutla,nombre
+U25,20,259,San Miguel Ahuehuetitlán,nombre
+D79,20,260,San Miguel Aloápam,nombre
+M11,20,261,San Miguel Amatitlán,nombre
+I77,20,262,San Miguel Amatlán,nombre
+I78,20,263,San Miguel Coatlán,nombre
+T91,20,264,San Miguel Chicahua,nombre
+V71,20,265,San Miguel Chimalapa,nombre
+J88,20,266,San Miguel del Puerto,nombre
+I79,20,267,San Miguel del Río,nombre
+I80,20,268,San Miguel Ejutla,nombre
+U82,20,269,San Miguel el Grande,nombre
+T92,20,270,San Miguel Huautla,nombre
+V66,20,271,San Miguel Mixtepec,nombre
+S82,20,272,San Miguel Panixtlahuaca,nombre
+I81,20,273,San Miguel Peras,nombre
+T93,20,274,San Miguel Piedras,nombre
+T67,20,275,San Miguel Quetzaltepec,nombre
+T14,20,276,San Miguel Santa Flor,nombre
+I82,20,277,Villa Sola de Vega,nombre
+D80,20,278,San Miguel Soyaltepec,nombre
+I83,20,279,San Miguel Suchixtepec,nombre
+V16,20,280,Villa Talea de Castro,nombre
+T94,20,281,San Miguel Tecomatlán,nombre
+V77,20,282,San Miguel Tenango,nombre
+T02,20,283,San Miguel Tequixtepec,nombre
+I84,20,284,San Miguel Tilquiápam,nombre
+S68,20,285,San Miguel Tlacamama,nombre
+T58,20,286,San Miguel Tlacotepec,nombre
+T03,20,287,San Miguel Tulancingo,nombre
+T48,20,288,San Miguel Yotao,nombre
+I85,20,289,San Nicolás,nombre
+U26,20,290,San Nicolás Hidalgo,nombre
+I86,20,291,San Pablo Coatlán,nombre
+I87,20,292,San Pablo Cuatro Venados,nombre
+D81,20,293,San Pablo Etla,nombre
+I88,20,294,San Pablo Huitzo,nombre
+I89,20,295,San Pablo Huixtepec,nombre
+T49,20,296,San Pablo Macuiltianguis,nombre
+U83,20,297,San Pablo Tijaltepec,nombre
+I90,20,298,San Pablo Villa de Mitla,nombre
+V17,20,299,San Pablo Yaganiza,nombre
+U15,20,300,San Pedro Amuzgos,nombre
+I91,20,301,San Pedro Apóstol,nombre
+S69,20,302,San Pedro Atoyac,nombre
+V18,20,303,San Pedro Cajonos,nombre
+T95,20,304,San Pedro Coxcaltepec Cántaros,nombre
+V78,20,305,San Pedro Comitancillo,nombre
+I92,20,306,San Pedro el Alto,nombre
+V79,20,307,San Pedro Huamelula,nombre
+V80,20,308,San Pedro Huilotepec,nombre
+S95,20,309,San Pedro Ixcatlán,nombre
+I93,20,310,San Pedro Ixtlahuaca,nombre
+T15,20,311,San Pedro Jaltepetongo,nombre
+S70,20,312,San Pedro Jicayán,nombre
+T16,20,313,San Pedro Jocotipac,nombre
+S83,20,314,San Pedro Juchatengo,nombre
+I94,20,315,San Pedro Mártir,nombre
+V59,20,316,San Pedro Mártir Quiechapa,nombre
+U84,20,317,San Pedro Mártir Yucuxaco,nombre
+J89,20,319,San Pedro Mixtepec,nombre
+Z18,20,319,San Pedro Mixtepec,nombre
+U85,20,320,San Pedro Molinos,nombre
+U57,20,321,San Pedro Nopala,nombre
+U45,20,322,San Pedro Ocopetatillo,nombre
+T68,20,323,San Pedro Ocotepec,nombre
+I95,20,324,San Pedro Pochutla,nombre
+V48,20,325,San Pedro Quiatoni,nombre
+T17,20,326,San Pedro Sochiápam,nombre
+P46,20,327,San Pedro Tapanatepec,nombre
+I96,20,328,San Pedro Taviche,nombre
+T96,20,329,San Pedro Teozacoalco,nombre
+T18,20,330,San Pedro Teutila,nombre
+T97,20,331,San Pedro Tidaá,nombre
+U58,20,332,San Pedro Topiltepec,nombre
+V49,20,333,San Pedro Totolápam,nombre
+P62,20,334,Villa de Tututepec de Melchor Ocampo,nombre oficial: Villa de Tututepec
+T50,20,335,San Pedro Yaneri,nombre
+T51,20,336,San Pedro Yólox,nombre
+I97,20,337,San Pedro y San Pablo Ayutla,nombre
+I98,20,338,Villa de Etla,nombre
+M13,20,339,San Pedro y San Pablo Teposcolula,nombre
+M12,20,340,San Pedro y San Pablo Tequixtepec,nombre
+U59,20,341,San Pedro Yucunama,nombre
+I99,20,342,San Raymundo Jalpan,nombre
+J01,20,343,San Sebastián Abasolo,nombre
+J02,20,344,San Sebastián Coatlán,nombre
+S71,20,345,San Sebastián Ixcapa,nombre
+U60,20,346,San Sebastián Nicananduta,nombre
+J03,20,347,San Sebastián Río Hondo,nombre
+T59,20,348,San Sebastián Tecomaxtlahuaca,nombre
+J04,20,349,San Sebastián Teitipac,nombre
+J05,20,350,San Sebastián Tutla,nombre
+J06,20,351,San Simón Almolongas,nombre
+T37,20,352,San Simón Zahuatlán,nombre
+J07,20,353,Santa Ana,nombre
+U46,20,354,Santa Ana Ateixtlahuaca,nombre
+T19,20,355,Santa Ana Cuauhtémoc,nombre
+J08,20,356,Santa Ana del Valle,nombre
+V60,20,357,Santa Ana Tavela,nombre
+J09,20,358,Santa Ana Tlapacoyan,nombre
+J10,20,359,Santa Ana Yareni,nombre
+J11,20,360,Santa Ana Zegache,nombre
+V61,20,361,Santa Catalina Quierí,nombre
+J12,20,362,Santa Catarina Cuixtla,nombre
+D82,20,363,Santa Catarina Ixtepeji,nombre
+S84,20,364,Santa Catarina Juquila,nombre
+J13,20,365,Santa Catarina Lachatao,nombre
+J14,20,366,Santa Catarina Loxicha,nombre
+P64,20,367,Santa Catarina Mechoacán,nombre
+J15,20,368,Santa Catarina Minas,nombre
+J16,20,369,Santa Catarina Quiané,nombre
+U86,20,370,Santa Catarina Tayata,nombre
+U87,20,371,Santa Catarina Ticuá,nombre
+U88,20,372,Santa Catarina Yosonotú,nombre
+T38,20,373,Santa Catarina Zapoquila,nombre
+U47,20,374,Santa Cruz Acatepec,nombre
+D83,20,375,Santa Cruz Amilpas,nombre
+J17,20,376,Santa Cruz de Bravo,nombre
+U16,20,377,Santa Cruz Itundujia,nombre
+J18,20,378,Santa Cruz Mixtepec,nombre
+U89,20,379,Santa Cruz Nundaco,nombre
+J19,20,380,Santa Cruz Papalutla,nombre
+T39,20,381,Santa Cruz Tacache de Mina,nombre
+U90,20,382,Santa Cruz Tacahua,nombre
+U91,20,383,Santa Cruz Tayata,nombre
+J20,20,384,Santa Cruz Xitla,nombre
+J21,20,385,Santa Cruz Xoxocotlán,nombre
+V38,20,386,Santa Cruz Zenzontepec,nombre
+J22,20,387,Santa Gertrudis,nombre
+J23,20,388,Santa Inés del Monte,nombre
+J24,20,389,Santa Inés Yatzeche,nombre
+J25,20,390,Santa Lucía del Camino,nombre
+J26,20,391,Santa Lucía Miahuatlán,nombre
+U17,20,392,Santa Lucía Monteverde,nombre
+J27,20,393,Santa Lucía Ocotlán,nombre
+T69,20,394,Santa María Alotepec,nombre
+T98,20,395,Santa María Apazco,nombre
+U48,20,396,Santa María la Asunción,nombre
+P57,20,397,Heroica Ciudad de Tlaxiaco,nombre
+J28,20,398,Ayoquezco de Aldama,nombre
+J29,20,399,Santa María Atzompa,nombre
+T40,20,400,Santa María Camotlán,nombre
+S89,20,401,Santa María Colotepec,nombre
+S72,20,402,Santa María Cortijo,nombre
+J30,20,403,Santa María Coyotepec,nombre
+T99,20,404,Santa María Chachoápam,nombre
+M14,20,405,Villa de Chilapa de Díaz,nombre
+U49,20,406,Santa María Chilchotla,nombre
+V72,20,407,Santa María Chimalapa,nombre
+P58,20,408,Santa María del Rosario,nombre
+J31,20,409,Santa María del Tule,nombre
+V62,20,410,Santa María Ecatepec,nombre
+J32,20,411,Santa María Guelacé,nombre
+V81,20,412,Santa María Guienagati,nombre
+J91,20,413,Santa María Huatulco,nombre
+S73,20,414,Santa María Huazolotitlán,nombre
+U18,20,415,Santa María Ipalapa,nombre
+U50,20,416,Santa María Ixcatlán,nombre
+S96,20,417,Santa María Jacatepec,nombre
+V82,20,418,Santa María Jalapa del Marqués,nombre
+T52,20,419,Santa María Jaltianguis,nombre
+V39,20,420,Santa María Lachixío,nombre
+V83,20,421,Santa María Mixtequilla,nombre
+T04,20,422,Santa María Nativitas,nombre
+M15,20,423,Santa María Nduayaco,nombre
+J92,20,424,Santa María Ozolotepec,nombre
+D84,20,425,Santa María Pápalo,nombre
+V29,20,426,Santa María Peñoles,nombre
+P44,20,427,Santa María Petapa,nombre
+V63,20,428,Santa María Quiegolani,nombre
+V40,20,429,Santa María Sola,nombre
+U92,20,430,Santa María Tataltepec,nombre
+D85,20,431,Santa María Tecomavaca,nombre
+S85,20,432,Santa María Temaxcalapa,nombre
+V19,20,433,Santa María Temaxcaltepec,nombre
+U51,20,434,Santa María Teopoxco,nombre
+T71,20,435,Santa María Tepantlali,nombre
+T20,20,436,Santa María Texcatitlán,nombre
+T72,20,437,Santa María Tlahuitoltepec,nombre
+T21,20,438,Santa María Tlalixtac,nombre
+J33,20,439,Santa María Tonameca,nombre
+V84,20,440,Santa María Totolapilla,nombre
+P50,20,441,Santa María Xadani,nombre
+V20,20,442,Santa María Yalina,nombre
+J34,20,443,Santa María Yavesía,nombre
+U93,20,444,Santa María Yolotepec,nombre
+U94,20,445,Santa María Yosoyúa,nombre
+U95,20,446,Santa María Yucuhiti,nombre
+U19,20,447,Santa María Zacatepec,nombre
+V41,20,448,Santa María Zaniza,nombre
+V51,20,449,Santa María Zoquitlán,nombre
+V42,20,450,Santiago Amoltepec,nombre
+U01,20,451,Santiago Apoala,nombre
+J35,20,452,Santiago Apóstol,nombre
+V85,20,453,Santiago Astata,nombre
+T73,20,454,Santiago Atitlán,nombre
+T41,20,455,Santiago Ayuquililla,nombre
+T42,20,456,Santiago Cacaloxtepec,nombre
+V21,20,457,Santiago Camotlán,nombre
+T53,20,458,Santiago Comaltepec,nombre
+M16,20,459,Santiago Chazumba,nombre oficial: Villa de Santiago Chazumba
+T27,20,460,Santiago Choápam,nombre
+U27,20,461,Santiago del Río,nombre
+P51,20,462,Santiago Huajolotitlán,nombre
+U02,20,463,Santiago Huauclilla,nombre
+M17,20,464,Santiago Ihuitlán Plumas,nombre
+T74,20,465,Santiago Ixcuintepec,nombre
+S74,20,466,Santiago Ixtayutla,nombre
+P60,20,467,Santiago Jamiltepec,nombre
+T28,20,468,Santiago Jocotepec,nombre
+T60,20,469,Santiago Juxtlahuaca,nombre
+V86,20,470,Santiago Lachiguiri,nombre
+V22,20,471,Santiago Lalopa,nombre
+V87,20,472,Santiago Laollaga,nombre
+T54,20,473,Santiago Laxopa,nombre
+S75,20,474,Santiago Llano Grande,nombre
+J36,20,475,Santiago Matatlán,nombre
+T43,20,476,Santiago Miltepec,nombre
+V43,20,477,Santiago Minas,nombre
+T22,20,478,Santiago Nacaltepec,nombre
+U61,20,479,Santiago Nejapilla,nombre
+U96,20,480,Santiago Nundiche,nombre
+U97,20,481,Santiago Nuyoó,nombre
+M58,20,482,Santiago Pinotepa Nacional,nombre
+J37,20,483,Santiago Suchilquitongo,nombre
+U28,20,484,Santiago Tamazola,nombre
+S76,20,485,Santiago Tapextla,nombre
+U62,20,486,Villa Tejúpam de la Unión,nombre
+J38,20,487,Santiago Tenango,nombre
+T05,20,488,Santiago Tepetlapa,nombre
+S77,20,489,Santiago Tetepec,nombre
+U52,20,490,Santiago Texcalcingo,nombre
+V44,20,491,Santiago Textitlán,nombre
+U03,20,492,Santiago Tilantongo,nombre
+U04,20,493,Santiago Tillo,nombre
+V30,20,494,Santiago Tlazoyaltepec,nombre
+J94,20,495,Santiago Xanica,nombre
+T55,20,496,Santiago Xiacuí,nombre
+S86,20,497,Santiago Yaitepec,nombre
+T29,20,498,Santiago Yaveo,nombre
+U63,20,499,Santiago Yolomécatl,nombre
+U98,20,500,Santiago Yosondúa,nombre
+U29,20,501,Santiago Yucuyachi,nombre
+T75,20,502,Santiago Zacatepec,nombre
+V23,20,503,Santiago Zoochila,nombre
+D86,20,504,Nuevo Zoquiápam,nombre
+D87,20,505,Santo Domingo Ingenio,nombre
+V50,20,506,Santo Domingo Albarradas,nombre
+S78,20,507,Santo Domingo Armenta,nombre
+V88,20,508,Santo Domingo Chihuitán,nombre
+J39,20,509,Santo Domingo de Morelos,nombre
+U99,20,510,Santo Domingo Ixcatlán,nombre
+U05,20,511,Santo Domingo Nuxaá,nombre
+J93,20,512,Santo Domingo Ozolotepec,nombre
+P45,20,513,Santo Domingo Petapa,nombre
+V24,20,514,Santo Domingo Roayaga,nombre
+D88,20,515,Santo Domingo Tehuantepec,nombre
+V45,20,516,Santo Domingo Teojomulco,nombre
+J40,20,517,Santo Domingo Tepuxtepec,nombre
+U65,20,518,Santo Domingo Tlatayápam,nombre
+J41,20,519,Santo Domingo Tomaltepec,nombre
+L19,20,520,Santo Domingo Tonalá,nombre
+U66,20,521,Santo Domingo Tonaltepec,nombre
+V25,20,522,Santo Domingo Xagacía,nombre
+U06,20,523,Santo Domingo Yanhuitlán,nombre
+T44,20,524,Santo Domingo Yodohino,nombre
+P47,20,525,Santo Domingo Zanatepec,nombre
+S87,20,526,Santos Reyes Nopala,nombre
+P56,20,527,Santos Reyes Pápalo,nombre
+T61,20,528,Santos Reyes Tepejillo,nombre
+T45,20,529,Santos Reyes Yucuná,nombre
+J42,20,530,Santo Tomás Jalieza,nombre
+J43,20,531,Santo Tomás Mazaltepec,nombre
+V01,20,532,Santo Tomás Ocotepec,nombre
+J44,20,533,Santo Tomás Tamazulapan,nombre
+J90,20,534,San Vicente Coatlán,nombre
+V46,20,535,San Vicente Lachixío,nombre
+U67,20,536,San Vicente Nuñú,nombre
+M18,20,537,Silacayoápam,nombre
+J95,20,538,Sitio de Xitlapehua,nombre
+J45,20,539,Soledad Etla,nombre
+L18,20,540,Villa de Tamazulápam del Progreso,nombre
+V26,20,541,Tanetze de Zaragoza,nombre
+J46,20,542,Taniche,nombre
+S88,20,543,Tataltepec de Valdés,nombre
+D89,20,544,Teococuilco de Marcos Pérez,nombre
+D90,20,545,Teotitlán de Flores Magón,nombre
+J47,20,546,Teotitlán del Valle,nombre
+U64,20,547,Teotongo,nombre
+T06,20,548,Tepelmeme Villa de Morelos,nombre
+P54,20,549,Heroica Villa Tezoatlán de Segura y Luna,nombre oficial más largo
+J48,20,550,San Jerónimo Tlacochahuaya,nombre
+J49,20,551,Tlacolula de Matamoros,nombre
+T07,20,552,Tlacotepec Plumas,nombre
+J50,20,553,Tlalixtac de Cabrera,nombre
+T76,20,554,Totontepec Villa de Morelos,nombre
+J51,20,555,Trinidad Zaachila,nombre
+U68,20,556,La Trinidad Vista Hermosa,nombre
+V73,20,557,Unión Hidalgo,nombre
+T23,20,558,Valerio Trujano,nombre
+S94,20,559,San Juan Bautista Valle Nacional,nombre
+J52,20,560,Villa Díaz Ordaz,nombre
+J53,20,561,Yaxe,nombre
+U07,20,562,Magdalena Yodocono de Porfirio Díaz,nombre
+J54,20,563,Yogana,nombre
+U08,20,564,Yutanduchi de Guerrero,nombre
+J55,20,565,Villa de Zaachila,nombre
+V47,20,566,San Mateo Yucutindoo,nombre
+J56,20,567,Zapotitlán Lagunas,nombre
+P52,20,568,Zapotitlán Palmas,nombre
+U09,20,569,Santa Inés de Zaragoza,nombre
+J57,20,570,Zimatlán de Álvarez,nombre
+K28,21,001,Acajete,nombre
+V89,21,002,Acateno,nombre
+P68,21,003,Acatlán,nombre
+K29,21,004,Acatzingo,nombre
+P08,21,005,Acteopan,nombre
+V90,21,006,Ahuacatlán,nombre
+W44,21,007,Ahuatlán,nombre
+V91,21,008,Ahuazotepec,nombre
+W45,21,009,Ahuehuetitla,nombre
+D91,21,010,Ajalpan,nombre
+W46,21,011,Albino Zertuche,nombre
+K30,21,012,Aljojuca,nombre
+D92,21,013,Altepexi,nombre
+V92,21,014,Amixtlán,nombre
+D93,21,015,Amozoc,nombre
+P71,21,016,Aquixtla,nombre
+V93,21,017,Atempan,nombre
+W47,21,018,Atexcal,nombre
+D94,21,019,Atlixco,nombre
+W48,21,020,Atoyatempan,nombre
+D95,21,021,Atzala,nombre
+W49,21,022,Atzitzihuacán,nombre
+K31,21,023,Atzitzintla,nombre
+W50,21,024,Axutla,nombre
+V94,21,025,Ayotoxco de Guerrero,nombre
+W51,21,026,Calpan,nombre
+M19,21,027,Caltepec,nombre
+V95,21,028,Camocuautla,nombre
+V96,21,029,Caxhuacan,nombre
+V97,21,030,Coatepec,nombre
+W52,21,031,Coatzingo,nombre
+W53,21,032,Cohetzala,nombre
+W54,21,033,Cohuecan,nombre
+K32,21,034,Coronango,nombre
+D96,21,035,Coxcatlán,nombre
+W55,21,036,Coyomeapan,nombre
+P81,21,037,Coyotepec,nombre
+K33,21,038,Cuapiaxtla de Madero,nombre
+V98,21,039,Cuautempan,nombre
+K34,21,040,Cuautinchán,nombre
+D97,21,041,Cuautlancingo,nombre
+W56,21,042,Cuayuca de Andrade,nombre
+P65,21,043,Cuetzalan del Progreso,nombre
+V99,21,044,Cuyoaco,nombre
+K35,21,045,Chalchicomula de Sesma,nombre
+W57,21,046,Chapulco,nombre
+D98,21,047,Chiautla,nombre
+P74,21,048,Chiautzingo,nombre
+W01,21,049,Chiconcuautla,nombre
+W58,21,050,Chichiquila,nombre
+D99,21,051,Chietla,nombre
+W59,21,052,Chigmecatitlán,nombre
+P69,21,053,Chignahuapan,nombre
+W02,21,054,Chignautla,nombre
+M20,21,055,Chila,nombre
+W60,21,056,Chila de la Sal,nombre
+W03,21,057,Honey,nombre
+K36,21,058,Chilchotla,nombre
+W61,21,059,Chinantla,nombre
+W62,21,060,Domingo Arenas,nombre
+W63,21,061,Eloxochitlán,nombre
+E01,21,062,Epatlán,nombre
+K37,21,063,Esperanza,nombre
+W04,21,064,Francisco Z. Mena,nombre
+H53,21,065,General Felipe Ángeles,nombre
+W64,21,066,Guadalupe,nombre
+K38,21,067,Guadalupe Victoria,nombre
+W05,21,068,Hermenegildo Galeana,nombre
+W65,21,069,Huaquechula,nombre
+W66,21,070,Huatlatlauca,nombre
+E02,21,071,Huauchinango,nombre
+W06,21,072,Huehuetla,nombre
+P88,21,073,Huehuetlán el Chico,nombre
+P73,21,074,Huejotzingo,nombre
+W07,21,075,Hueyapan,nombre
+W08,21,076,Hueytamalco,nombre
+W09,21,077,Hueytlalpan,nombre
+W10,21,078,Huitzilan de Serdán,nombre
+W67,21,079,Huitziltepec,nombre
+W11,21,080,Atlequizayan,nombre
+W68,21,081,Ixcamilpa de Guerrero,nombre
+P79,21,082,Ixcaquixtla,nombre
+W12,21,083,Ixtacamaxtitlán,nombre
+W13,21,084,Ixtepec,nombre
+E03,21,085,Izúcar de Matamoros,nombre
+W14,21,086,Jalpan,nombre
+W69,21,087,Jolalpan,nombre
+W15,21,088,Jonotla,nombre
+W16,21,089,Jopala,nombre
+K39,21,090,Juan C. Bonilla,nombre
+E04,21,091,Juan Galindo,nombre
+P78,21,092,Juan N. Méndez,nombre
+K40,21,093,Lafragua,nombre
+K41,21,094,Libres,nombre
+W70,21,095,La Magdalena Tlatlauquitepec,nombre
+K42,21,096,Mazapiltepec de Juárez,nombre
+K43,21,097,Mixtla,nombre
+P76,21,098,Molcaxac,nombre
+W71,21,099,Cañada Morelos,nombre
+W17,21,100,Naupan,nombre
+W18,21,101,Nauzontla,nombre
+W72,21,102,Nealtican,nombre
+W73,21,103,Nicolás Bravo,nombre
+E05,21,104,Nopalucan,nombre
+W19,21,105,Ocotepec,nombre
+K44,21,106,Ocoyucan,nombre
+W20,21,107,Olintla,nombre
+K45,21,108,Oriental,nombre
+W21,21,109,Pahuatlán,nombre
+K46,21,110,Palmar de Bravo,nombre
+W22,21,111,Pantepec,nombre
+L21,21,112,Petlalcingo,nombre
+W74,21,113,Piaxtla,nombre
+E06,21,114,Puebla,nombre
+Y44,21,114,Puebla,nombre
+Y46,21,114,Puebla,nombre
+Z30,21,114,Puebla,nombre
+K47,21,115,Quecholac,nombre
+K48,21,116,Quimixtlán,nombre
+E07,21,117,Rafael Lara Grajales,nombre
+K49,21,118,Los Reyes de Juárez,nombre
+E08,21,119,San Andrés Cholula,nombre
+W75,21,120,San Antonio Cañada,nombre
+W76,21,121,San Diego la Mesa Tochimiltzingo,nombre
+P83,21,122,San Felipe Teotlalcingo,nombre
+W23,21,123,San Felipe Tepatlán,nombre
+P85,21,124,San Gabriel Chilac,nombre
+E09,21,125,San Gregorio Atzompa,nombre
+W77,21,126,San Jerónimo Tecuanipan,nombre
+M21,21,127,San Jerónimo Xayacatlán,nombre
+E10,21,128,San José Chiapa,nombre
+W79,21,129,San José Miahuatlán,nombre
+K50,21,130,San Juan Atenco,nombre
+W80,21,131,San Juan Atzompa,nombre
+E11,21,132,San Martín Texmelucan,nombre
+W81,21,133,San Martín Totoltepec,nombre
+E12,21,134,San Matías Tlalancaleca,nombre
+M22,21,135,San Miguel Ixitlán,nombre
+E13,21,136,San Miguel Xoxtla,nombre
+K51,21,137,San Nicolás Buenos Aires,nombre
+W82,21,138,San Nicolás de los Ranchos,nombre
+W83,21,139,San Pablo Anicano,nombre
+E14,21,140,San Pedro Cholula,nombre
+W84,21,141,San Pedro Yeloixtlahuaca,nombre
+K52,21,142,San Salvador el Seco,nombre
+W85,21,143,San Salvador el Verde,nombre
+K53,21,144,San Salvador Huixcolotla,nombre
+W86,21,145,San Sebastián Tlacotepec,nombre
+W87,21,146,Santa Catarina Tlaltempan,nombre
+W88,21,147,Santa Inés Ahuatempan,nombre
+K54,21,148,Santa Isabel Cholula,nombre
+W89,21,149,Santiago Miahuatlán,nombre
+W90,21,150,Huehuetlán el Grande,nombre
+K55,21,151,Santo Tomás Hueyotlipan,nombre
+K56,21,152,Soltepec,nombre
+K57,21,153,Tecali de Herrera,nombre
+H54,21,154,Tecamachalco,nombre
+W91,21,155,Tecomatlán,nombre
+E15,21,156,Tehuacán,nombre
+P84,21,157,Tehuitzingo,nombre
+W24,21,158,Tenampulco,nombre
+W92,21,159,Teopantlán,nombre
+W93,21,160,Teotlalco,nombre
+E16,21,161,Tepanco de López,nombre
+W25,21,162,Tepango de Rodríguez,nombre
+K58,21,163,Tepatlaxco de Hidalgo,nombre
+K59,21,164,Tepeaca,nombre
+W94,21,165,Tepemaxalco,nombre
+E17,21,166,Tepeojuma,nombre
+W26,21,167,Tepetzintla,nombre
+W95,21,168,Tepexco,nombre
+P80,21,169,Tepexi de Rodríguez,nombre
+W27,21,170,Tepeyahualco,nombre
+K60,21,171,Tepeyahualco de Cuauhtémoc,nombre
+P70,21,172,Tetela de Ocampo,nombre
+W28,21,173,Teteles de Avila Castillo,nombre
+E18,21,174,Teziutlán,nombre
+W96,21,175,Tianguismanalco,nombre
+E19,21,176,Tilapa,nombre
+P77,21,177,Tlacotepec de Benito Juárez,nombre
+W29,21,178,Tlacuilotepec,nombre
+K61,21,179,Tlachichuca,nombre
+L92,21,180,Tlahuapan,nombre
+P75,21,181,Tlaltenango,nombre
+K62,21,182,Tlanepantla,nombre
+W30,21,183,Tlaola,nombre
+W31,21,184,Tlapacoya,nombre
+W97,21,185,Tlapanalá,nombre
+P66,21,186,Tlatlauquitepec,nombre
+W32,21,187,Tlaxco,nombre
+W98,21,188,Tochimilco,nombre
+W99,21,189,Tochtepec,nombre
+X01,21,190,Totoltepec de Guerrero,nombre
+X02,21,191,Tulcingo,nombre
+W33,21,192,Tuzamapan de Galeana,nombre
+X03,21,193,Tzicatlacoyan,nombre
+W34,21,194,Venustiano Carranza,nombre
+X04,21,195,Vicente Guerrero,nombre
+X05,21,196,Xayacatlán de Bravo,nombre
+H52,21,197,Xicotepec,nombre
+X06,21,198,Xicotlán,nombre
+W35,21,199,Xiutetelco,nombre
+W36,21,200,Xochiapulco,nombre
+E20,21,201,Xochiltepec,nombre
+W37,21,202,Xochitlán de Vicente Suárez,nombre
+X07,21,203,Xochitlán Todos Santos,nombre
+W38,21,204,Yaonáhuac,nombre
+K63,21,205,Yehualtepec,nombre
+X08,21,206,Zacapala,nombre
+P87,21,207,Zacapoaxtla,nombre
+H55,21,208,Zacatlán,nombre
+M23,21,209,Zapotitlán,nombre
+W39,21,210,Zapotitlán de Méndez,nombre
+P67,21,211,Zaragoza,nombre
+W40,21,212,Zautla,nombre
+W41,21,213,Zihuateutla,nombre
+P86,21,214,Zinacatepec,nombre
+W42,21,215,Zongozotla,nombre
+W43,21,216,Zoquiapan,nombre
+E21,21,217,Zoquitlán,nombre
+J58,22,001,Amealco de Bonfil,nombre
+J59,22,002,Pinal de Amoles,nombre
+X10,22,003,Arroyo Seco,nombre
+J60,22,004,Cadereyta de Montes,nombre
+J61,22,005,Colón,nombre
+E22,22,006,Corregidora,nombre
+J62,22,007,Ezequiel Montes,nombre
+J63,22,008,Huimilpan,nombre
+J64,22,009,Jalpan de Serra,nombre
+J65,22,010,Landa de Matamoros,nombre
+E26,22,011,El Marqués,nombre
+E27,22,012,Pedro Escobedo,nombre
+J66,22,013,Peñamiller,nombre
+E23,22,014,Querétaro,nombre
+Z34,22,014,Querétaro,nombre
+J67,22,015,San Joaquín,nombre
+E24,22,016,San Juan del Río,nombre
+E25,22,017,Tequisquiapan,nombre
+J68,22,018,Tolimán,nombre
+E28,23,001,Cozumel,nombre
+P95,23,002,Felipe Carrillo Puerto,nombre
+L02,23,003,Isla Mujeres,nombre
+E29,23,004,Othón P. Blanco,nombre
+L01,23,005,Benito Juárez,nombre
+X11,23,006,José María Morelos,nombre
+X12,23,007,Lázaro Cárdenas,nombre
+Y72,23,008,Solidaridad,hoy se llama Playa del Carmen
+Z35,23,009,Tulum,nombre
+Z37,23,010,Bacalar,nombre
+P02,24,001,Ahualulco,nombre oficial: Ahualulco del Sonido 13
+E30,24,002,Alaquines,nombre
+E31,24,003,Aquismón,nombre
+O95,24,004,Armadillo de los Infante,nombre
+E32,24,005,Cárdenas,nombre
+P04,24,006,Catorce,nombre
+M24,24,007,Cedral,nombre
+O98,24,008,Cerritos,nombre
+O96,24,009,Cerro de San Pedro,nombre
+E33,24,010,Ciudad del Maíz,nombre
+E34,24,011,Ciudad Fernández,nombre
+O86,24,012,Tancanhuitz,nombre
+E35,24,013,Ciudad Valles,nombre
+O87,24,014,Coxcatlán,nombre
+H19,24,015,Charcas,nombre
+O83,24,016,Ebano,nombre
+P03,24,017,Guadalcázar,nombre
+O88,24,018,Huehuetlán,nombre
+P06,24,019,Lagunillas,nombre
+E36,24,020,Matehuala,nombre
+O97,24,021,Mexquitic de Carmona,nombre
+O92,24,022,Moctezuma,nombre
+E37,24,023,Rayón,nombre
+E38,24,024,Rioverde,nombre
+H72,24,025,Salinas,nombre
+O89,24,026,San Antonio,nombre
+X16,24,027,San Ciro de Acosta,nombre
+E39,24,028,San Luis Potosí,nombre
+Y73,24,028,San Luis Potosí,nombre
+K97,24,029,San Martín Chalchicuautla,nombre
+X17,24,030,San Nicolás Tolentino,nombre
+E40,24,031,Santa Catarina,nombre
+H33,24,032,Santa María del Río,nombre
+X13,24,033,Santo Domingo,nombre
+X18,24,034,San Vicente Tancuayalab,nombre
+E41,24,035,Soledad de Graciano Sánchez,nombre
+E42,24,036,Tamasopo,nombre
+K98,24,037,Tamazunchale,nombre
+P05,24,038,Tampacán,nombre
+O90,24,039,Tampamolón Corona,nombre
+E43,24,040,Tamuín,nombre
+E44,24,041,Tanlajás,nombre
+X19,24,042,Tanquián de Escobedo,nombre
+J69,24,043,Tierra Nueva,nombre
+X14,24,044,Vanegas,nombre
+O91,24,045,Venado,nombre
+H73,24,046,Villa de Arriaga,nombre
+O85,24,047,Villa de Guadalupe,nombre
+E45,24,048,Villa de la Paz,nombre
+O84,24,049,Villa de Ramos,nombre
+J70,24,050,Villa de Reyes,nombre
+P01,24,051,Villa Hidalgo,nombre
+O99,24,052,Villa Juárez,nombre
+O94,24,053,Axtla de Terrazas,nombre
+O93,24,054,Xilitla,nombre
+H20,24,055,Zaragoza,nombre
+X15,24,056,Villa de Arista,nombre
+Y76,24,057,Matlapa,nombre
+Y75,24,058,El Naranjo,nombre
+E46,25,001,Ahome,nombre
+E47,25,002,Angostura,nombre
+E48,25,003,Badiraguato,nombre
+L51,25,004,Concordia,nombre
+M42,25,005,Cosalá,nombre
+E49,25,006,Culiacán,nombre
+Z33,25,006,Culiacán,nombre
+L50,25,007,Choix,nombre
+M43,25,008,Elota,nombre
+E51,25,009,Escuinapa,nombre
+E50,25,010,El Fuerte,nombre
+E52,25,011,Guasave,nombre
+E53,25,012,Mazatlán,nombre
+P96,25,013,Mocorito,nombre
+E54,25,014,Rosario,nombre
+E55,25,015,Salvador Alvarado,nombre
+L52,25,016,San Ignacio,nombre
+H36,25,017,Sinaloa,nombre
+Y36,25,018,Navolato,nombre
+K64,26,001,Aconchi,nombre
+E56,26,002,Agua Prieta,nombre
+M61,26,003,Alamos,nombre
+E57,26,004,Altar,nombre
+P99,26,005,Arivechi,nombre
+X28,26,006,Arizpe,nombre
+X20,26,007,Atil,nombre
+X29,26,008,Bacadéhuachi,nombre
+P98,26,009,Bacanora,nombre
+X30,26,010,Bacerac,nombre
+X31,26,011,Bacoachi,nombre
+E58,26,012,Bácum,nombre
+K65,26,013,Banámichi,nombre
+K66,26,014,Baviácora,nombre
+X32,26,015,Bavispe,nombre
+H17,26,016,Benjamín Hill,nombre
+E59,26,017,Caborca,nombre
+E60,26,018,Cajeme,nombre
+H18,26,019,Cananea,nombre
+K67,26,020,Carbó,nombre
+K68,26,021,La Colorada,nombre
+X21,26,022,Cucurpe,nombre
+L28,26,023,Cumpas,nombre
+X33,26,024,Divisaderos,nombre
+E61,26,025,Empalme,nombre
+E62,26,026,Etchojoa,nombre
+Q02,26,027,Fronteras,nombre
+X34,26,028,Granados,nombre
+E63,26,029,Guaymas,nombre
+E64,26,030,Hermosillo,nombre
+Z41,26,030,Hermosillo,nombre
+X35,26,031,Huachinera,nombre
+X36,26,032,Huásabas,nombre
+E65,26,033,Huatabampo,nombre
+K69,26,034,Huépac,nombre
+X22,26,035,Imuris,nombre
+E66,26,036,Magdalena,nombre
+K70,26,037,Mazatán,nombre
+K71,26,038,Moctezuma,nombre
+Q03,26,039,Naco,nombre
+X37,26,040,Nácori Chico,nombre
+M50,26,041,Nacozari de García,nombre
+E67,26,042,Navojoa,nombre
+E68,26,043,Nogales,nombre
+X38,26,044,Onavas,nombre
+K72,26,045,Opodepe,nombre
+X23,26,046,Oquitoa,nombre
+E69,26,047,Pitiquito,nombre
+E70,26,048,Puerto Peñasco,nombre
+X39,26,049,Quiriego,nombre
+K73,26,050,Rayón,nombre
+Q01,26,051,Rosario,nombre
+P97,26,052,Sahuaripa,nombre
+K74,26,053,San Felipe de Jesús,nombre
+X40,26,054,San Javier,nombre
+E71,26,055,San Luis Río Colorado,nombre
+K75,26,056,San Miguel de Horcasitas,nombre
+X41,26,057,San Pedro de la Cueva,nombre
+E72,26,058,Santa Ana,nombre
+X46,26,059,Santa Cruz,nombre
+X24,26,060,Sáric,nombre
+X42,26,061,Soyopa,nombre
+X25,26,062,Suaqui Grande,nombre
+X43,26,063,Tepache,nombre
+X26,26,064,Trincheras,nombre
+X27,26,065,Tubutama,nombre
+E73,26,066,Ures,nombre
+X44,26,067,Villa Hidalgo,nombre
+K76,26,068,Villa Pesqueira,nombre
+X45,26,069,Yécora,nombre
+Y44,26,070,General Plutarco Elías Calles,nombre
+Y95,26,071,Benito Juárez,nombre
+Y96,26,072,San Ignacio Río Muerto,nombre
+Q04,27,001,Balancán,nombre
+E74,27,002,Cárdenas,nombre
+H37,27,003,Centla,nombre
+E75,27,004,Centro,nombre
+E76,27,005,Comalcalco,nombre
+M59,27,006,Cunduacán,nombre
+Q05,27,007,Emiliano Zapata,nombre
+E77,27,008,Huimanguillo,nombre
+E78,27,009,Jalapa,nombre
+Q07,27,010,Jalpa de Méndez,nombre
+Q06,27,011,Jonuta,nombre
+E79,27,012,Macuspana,nombre
+Q08,27,013,Nacajuca,nombre
+M60,27,014,Paraíso,nombre
+E80,27,015,Tacotalpa,nombre
+E82,27,016,Teapa,nombre
+E81,27,017,Tenosique,nombre
+Q21,28,001,Abasolo,nombre
+E83,28,002,Aldama,nombre
+E84,28,003,Altamira,nombre
+E85,28,004,Antiguo Morelos,nombre
+X47,28,005,Burgos,nombre
+X48,28,006,Bustamante,nombre
+E86,28,007,Camargo,nombre
+X49,28,008,Casas,nombre
+E87,28,009,Ciudad Madero,nombre
+X50,28,010,Cruillas,nombre
+E88,28,011,Gómez Farías,nombre
+E89,28,012,González,nombre
+H39,28,013,Güémez,nombre
+E90,28,014,Guerrero,nombre
+E91,28,015,Gustavo Díaz Ordaz,nombre
+Q22,28,016,Hidalgo,nombre
+X51,28,017,Jaumave,nombre
+Q20,28,018,Jiménez,nombre
+E92,28,019,Llera,nombre
+Q24,28,020,Mainero,nombre
+E93,28,021,El Mante,nombre
+E94,28,022,Matamoros,nombre
+X52,28,023,Méndez,nombre
+E95,28,024,Mier,nombre
+E96,28,025,Miguel Alemán,nombre
+X53,28,026,Miquihuana,nombre
+E97,28,027,Nuevo Laredo,nombre
+E98,28,028,Nuevo Morelos,nombre
+E99,28,029,Ocampo,nombre
+Q19,28,030,Padilla,nombre
+X54,28,031,Palmillas,nombre
+F01,28,032,Reynosa,nombre
+F02,28,033,Río Bravo,nombre
+X55,28,034,San Carlos,nombre
+Q17,28,035,San Fernando,nombre
+X56,28,036,San Nicolás,nombre
+Q18,28,037,Soto la Marina,nombre
+F03,28,038,Tampico,nombre
+Q25,28,039,Tula,nombre
+F04,28,040,Valle Hermoso,nombre
+F05,28,041,Victoria,nombre
+Q23,28,042,Villagrán,nombre
+F06,28,043,Xicoténcatl,nombre
+F07,29,001,Amaxac de Guerrero,nombre
+F08,29,002,Apetatitlán de Antonio Carvajal,nombre
+X57,29,003,Atlangatepec,nombre
+X58,29,004,Atltzayanca,nombre
+F09,29,005,Apizaco,nombre
+F10,29,006,Calpulalpan,nombre
+P72,29,007,El Carmen Tequexquitla,nombre
+X59,29,008,Cuapiaxtla,nombre
+L03,29,009,Cuaxomulco,nombre
+F11,29,010,Chiautempan,nombre
+X60,29,011,Muñoz de Domingo Arenas,nombre
+L93,29,012,Españita,nombre
+H40,29,013,Huamantla,nombre
+L94,29,014,Hueyotlipan,nombre
+L04,29,015,Ixtacuixtla de Mariano Matamoros,nombre
+P93,29,016,Ixtenco,nombre
+P94,29,017,Mazatecochco de José María Morelos,nombre
+H74,29,018,Contla de Juan Cuamatzi,nombre
+L05,29,019,Tepetitla de Lardizábal,nombre
+L95,29,020,Sanctórum de Lázaro Cárdenas,nombre
+H75,29,021,Nanacamilpa de Mariano Arista,nombre
+L06,29,022,Acuamanala de Miguel Hidalgo,nombre
+L07,29,023,Natívitas,nombre
+L96,29,024,Panotla,nombre
+H76,29,025,San Pablo del Monte,nombre
+F12,29,026,Santa Cruz Tlaxcala,nombre
+L08,29,027,Tenancingo,nombre
+P89,29,028,Teolocholco,nombre
+L09,29,029,Tepeyanco,nombre
+X61,29,030,Terrenate,nombre
+P91,29,031,Tetla de la Solidaridad,nombre
+L10,29,032,Tetlatlahuca,nombre
+F13,29,033,Tlaxcala,nombre
+H77,29,034,Tlaxco,nombre
+P92,29,035,Tocatlán,nombre
+P90,29,036,Totolac,nombre
+X62,29,037,Ziltlaltépec de Trinidad Sánchez Santos,nombre
+L11,29,038,Tzompantepec,nombre
+L12,29,039,Xaloztoc,nombre
+L13,29,040,Xaltocan,nombre
+F14,29,041,Papalotla de Xicohténcatl,nombre
+F15,29,042,Xicohtzinco,nombre
+L14,29,043,Yauhquemehcan,nombre
+F16,29,044,Zacatelco,nombre
+Y93,29,045,Benito Juárez,nombre
+Z19,29,046,Emiliano Zapata,nombre
+Z20,29,047,Lázaro Cárdenas,nombre
+Y83,29,048,La Magdalena Tlaltelulco,nombre
+Y88,29,049,San Damián Texóloc,nombre
+Y80,29,050,San Francisco Tetlanohcan,nombre
+Y89,29,051,San Jerónimo Zacualpan,nombre
+Y86,29,052,San José Teacalco,nombre
+Y84,29,053,San Juan Huactzinco,nombre
+Y92,29,054,San Lorenzo Axocomanitla,nombre
+Y90,29,055,San Lucas Tecopilco,nombre
+Y91,29,056,Santa Ana Nopalucan,nombre
+Y81,29,057,Santa Apolonia Teacalco,nombre
+Y87,29,058,Santa Catarina Ayometla,nombre
+Y82,29,059,Santa Cruz Quilehtla,nombre
+Y85,29,060,Santa Isabel Xiloxoxtla,nombre
+X64,30,001,Acajete,nombre
+F17,30,002,Acatlán,nombre
+F18,30,003,Acayucan,nombre
+F19,30,004,Actopan,nombre
+F20,30,005,Acula,nombre
+Q47,30,006,Acultzingo,nombre
+Q44,30,007,Camarón de Tejeda,nombre
+X65,30,008,Alpatláhuac,nombre
+M46,30,009,Alto Lucero de Gutiérrez Barrios,nombre
+Q29,30,010,Altotonga,nombre
+F21,30,011,Alvarado,nombre
+F22,30,012,Amatitlán,nombre
+G10,30,013,Naranjos Amatlán,nombre
+F23,30,014,Amatlán de los Reyes,nombre
+F24,30,015,Angel R. Cabada,nombre
+F59,30,016,La Antigua,nombre
+F25,30,017,Apazapan,nombre
+X66,30,018,Aquila,nombre
+X67,30,019,Astacinga,nombre
+X68,30,020,Atlahuilco,nombre
+F26,30,021,Atoyac,nombre
+F27,30,022,Atzacan,nombre
+F28,30,023,Atzalan,nombre
+X70,30,024,Tlaltetela,nombre
+X71,30,025,Ayahualulco,nombre
+F29,30,026,Banderilla,nombre
+G11,30,027,Benito Juárez,nombre
+F30,30,028,Boca del Río,nombre
+H78,30,029,Calcahualco,nombre
+F31,30,030,Camerino Z. Mendoza,nombre
+F32,30,031,Carrillo Puerto,nombre
+G32,30,032,Catemaco,nombre
+X72,30,033,Cazones de Herrera,nombre
+G12,30,034,Cerro Azul,nombre
+G13,30,035,Citlaltépetl,nombre
+X63,30,036,Coacoatzintla,nombre
+Z21,30,037,Coahuitlán,nombre
+F33,30,038,Coatepec,nombre
+F34,30,039,Coatzacoalcos,nombre
+H41,30,040,Coatzintla,nombre
+F35,30,041,Coetzala,nombre
+X74,30,042,Colipa,nombre
+X75,30,043,Comapa,nombre
+F36,30,044,Córdoba,nombre
+F37,30,045,Cosamaloapan de Carpio,nombre
+F38,30,046,Cosautlán de Carvajal,nombre
+F39,30,047,Coscomatepec,nombre
+F40,30,048,Cosoleacaque,nombre
+F41,30,049,Cotaxtla,nombre
+X76,30,050,Coxquihui,nombre
+X77,30,051,Coyutla,nombre
+F42,30,052,Cuichapa,nombre
+F43,30,053,Cuitláhuac,nombre
+F44,30,054,Chacaltianguis,nombre
+Y19,30,055,Chalma,nombre
+Y20,30,056,Chiconamel,nombre
+X78,30,057,Chiconquiaco,nombre
+G14,30,058,Chicontepec,nombre
+M51,30,059,Chinameca,nombre
+G16,30,060,Chinampa de Gorostiza,nombre
+H79,30,061,Las Choapas,nombre
+F45,30,062,Chocamán,nombre
+G15,30,063,Chontla,nombre
+X79,30,064,Chumatlán,nombre
+F46,30,065,Emiliano Zapata,nombre
+X80,30,066,Espinal,nombre
+X81,30,067,Filomeno Mata,nombre
+F47,30,068,Fortín,nombre
+Q27,30,069,Gutiérrez Zamora,nombre
+X82,30,070,Hidalgotitlán,nombre
+F48,30,071,Huatusco,nombre
+G17,30,072,Huayacocotla,nombre
+F49,30,073,Hueyapan de Ocampo,nombre
+G33,30,074,Huiloapan de Cuauhtémoc,nombre
+F50,30,075,Ignacio de la Llave,nombre
+G18,30,076,Ilamatlán,nombre
+G31,30,077,Isla,nombre
+G19,30,078,Ixcatepec,nombre
+X83,30,079,Ixhuacán de los Reyes,nombre
+F51,30,080,Ixhuatlán del Café,nombre
+Q45,30,081,Ixhuatlancillo,nombre
+Q40,30,082,Ixhuatlán del Sureste,nombre
+G20,30,083,Ixhuatlán de Madero,nombre
+F52,30,084,Ixmatlahuacan,nombre
+F53,30,085,Ixtaczoquitlán,nombre
+Q30,30,086,Jalacingo,nombre
+F54,30,087,Xalapa,nombre
+F55,30,088,Jalcomulco,nombre
+F56,30,089,Jáltipan,nombre
+X84,30,090,Jamapa,nombre
+X85,30,091,Jesús Carranza,nombre
+F57,30,092,Xico,nombre
+F58,30,093,Jilotepec,nombre
+Q48,30,094,Juan Rodríguez Clara,nombre
+X86,30,095,Juchique de Ferrer,nombre
+X87,30,096,Landero y Coss,nombre
+F60,30,097,Lerdo de Tejada,nombre
+X88,30,098,Magdalena,nombre
+X89,30,099,Maltrata,nombre
+Q31,30,100,Manlio Fabio Altamirano,nombre
+Q43,30,101,Mariano Escobedo,nombre
+F61,30,102,Martínez de la Torre,nombre
+X90,30,103,Mecatlán,nombre
+X91,30,104,Mecayapan,nombre
+F62,30,105,Medellín de Bravo,nombre
+F63,30,106,Miahuatlán,nombre
+X92,30,107,Las Minas,nombre
+F64,30,108,Minatitlán,nombre
+F65,30,109,Misantla,nombre
+X93,30,110,Mixtla de Altamirano,nombre
+Q41,30,111,Moloacán,nombre
+F66,30,112,Naolinco,nombre
+X94,30,113,Naranjal,nombre
+F67,30,114,Nautla,nombre
+F68,30,115,Nogales,nombre
+Q37,30,116,Oluta,nombre
+F69,30,117,Omealca,nombre
+F70,30,118,Orizaba,nombre
+F71,30,119,Otatitlán,nombre
+X95,30,120,Oteapan,nombre
+F72,30,121,Ozuluama de Mascareñas,nombre
+X96,30,122,Pajapan,nombre
+F73,30,123,Pánuco,nombre
+F74,30,124,Papantla,nombre
+F75,30,125,Paso del Macho,nombre
+F76,30,126,Paso de Ovejas,nombre
+Q42,30,127,La Perla,nombre
+F77,30,128,Perote,nombre
+F78,30,129,Platón Sánchez,nombre
+X97,30,130,Playa Vicente,nombre
+F79,30,131,Poza Rica de Hidalgo,nombre
+F80,30,132,Las Vigas de Ramírez,nombre
+M53,30,133,Pueblo Viejo,nombre
+Q34,30,134,Puente Nacional,nombre
+F81,30,135,Rafael Delgado,nombre
+X98,30,136,Rafael Lucio,nombre
+X99,30,137,Los Reyes,nombre
+F82,30,138,Río Blanco,nombre
+F83,30,139,Saltabarranca,nombre
+Y01,30,140,San Andrés Tenejapan,nombre
+F84,30,141,San Andrés Tuxtla,nombre
+F85,30,142,San Juan Evangelista,nombre
+F86,30,143,Santiago Tuxtla,nombre
+Q38,30,144,Sayula de Alemán,nombre
+Q39,30,145,Soconusco,nombre
+Y02,30,146,Sochiapa,nombre
+Y03,30,147,Soledad Atzompa,nombre
+Q32,30,148,Soledad de Doblado,nombre
+Y04,30,149,Soteapan,nombre
+G21,30,150,Tamalín,nombre
+G22,30,151,Tamiahua,nombre
+O42,30,152,Tampico Alto,nombre
+G23,30,153,Tancoco,nombre
+G24,30,154,Tantima,nombre
+F87,30,155,Tantoyuca,nombre
+Y05,30,156,Tatatila,nombre
+Q26,30,157,Castillo de Teayo,nombre
+Q28,30,158,Tecolutla,nombre
+Y06,30,159,Tehuipango,nombre
+G25,30,160,Álamo Temapache,nombre
+F88,30,161,Tempoal,nombre
+Y07,30,162,Tenampa,nombre
+Y08,30,163,Tenochtitlán,nombre
+F89,30,164,Teocelo,nombre
+F90,30,165,Tepatlaxco,nombre
+Y09,30,166,Tepetlán,nombre
+G26,30,167,Tepetzintla,nombre
+Y10,30,168,Tequila,nombre
+F91,30,169,José Azueta,nombre
+G27,30,170,Texcatepec,nombre
+Y11,30,171,Texhuacán,nombre
+F93,30,172,Texistepec,nombre
+F92,30,173,Tezonapa,nombre
+F94,30,174,Tierra Blanca,nombre
+F95,30,175,Tihuatlán,nombre
+F96,30,176,Tlacojalpan,nombre
+Y12,30,177,Tlacolulan,nombre
+F97,30,178,Tlacotalpan,nombre
+Y13,30,179,Tlacotepec de Mejía,nombre
+G28,30,180,Tlachichilco,nombre
+F98,30,181,Tlalixcoyan,nombre
+Q35,30,182,Tlalnelhuayocan,nombre
+F99,30,183,Tlapacoyan,nombre
+Y14,30,184,Tlaquilpa,nombre
+Q46,30,185,Tlilapan,nombre
+G01,30,186,Tomatlán,nombre
+G02,30,187,Tonayán,nombre
+H38,30,188,Totutla,nombre
+G03,30,189,Tuxpan,nombre
+G04,30,190,Tuxtilla,nombre
+G05,30,191,Ursulo Galván,nombre
+Q36,30,192,Vega de Alatorre,nombre
+G06,30,193,Veracruz,nombre
+Y15,30,194,Villa Aldama,nombre
+Y16,30,195,Xoxocotla,nombre
+G07,30,196,Yanga,nombre
+Q33,30,197,Yecuatla,nombre
+G29,30,198,Zacualpan,nombre
+Y17,30,199,Zaragoza,nombre
+G08,30,200,Zentla,nombre
+G09,30,201,Zongolica,nombre
+G30,30,202,Zontecomatlán de López y Fuentes,nombre
+Y18,30,203,Zozocolco de Hidalgo,nombre
+X09,30,204,Agua Dulce,nombre
+Y41,30,205,El Higo,nombre
+P11,30,206,Nanchital de Lázaro Cárdenas del Río,nombre
+W78,30,207,Tres Valles,nombre
+Y97,30,208,Carlos A. Carrillo,nombre
+Z02,30,209,Tatahuicapan de Juárez,nombre
+Z01,30,210,Uxpanapa,nombre
+Z07,30,211,San Rafael,nombre
+Z08,30,212,Santiago Sochiapan,nombre
+G34,31,001,Abalá,nombre
+G35,31,002,Acanceh,nombre
+Q50,31,003,Akil,nombre
+G36,31,004,Baca,nombre
+G37,31,005,Bokobá,nombre
+Q51,31,006,Buctzotz,nombre
+G38,31,007,Cacalchén,nombre
+Q54,31,008,Calotmul,nombre
+G39,31,009,Cansahcab,nombre
+Y21,31,010,Cantamayec,nombre
+Y22,31,011,Celestún,nombre
+Y23,31,012,Cenotillo,nombre
+G40,31,013,Conkal,nombre
+Q55,31,014,Cuncunul,nombre
+G41,31,015,Cuzamá,nombre
+Q56,31,016,Chacsinkín,nombre
+Y24,31,017,Chankom,nombre
+G42,31,018,Chapab,nombre
+Q57,31,019,Chemax,nombre
+G43,31,020,Chicxulub Pueblo,nombre
+Q58,31,021,Chichimilá,nombre
+Y25,31,022,Chikindzonot,nombre
+G44,31,023,Chocholá,nombre
+Q59,31,024,Chumayel,nombre
+Q60,31,025,Dzán,nombre
+G45,31,026,Dzemul,nombre
+G46,31,027,Dzidzantún,nombre
+Q61,31,028,Dzilam de Bravo,nombre
+G47,31,029,Dzilam González,nombre
+Y26,31,030,Dzitás,nombre
+G48,31,031,Dzoncauich,nombre
+Q62,31,032,Espita,nombre
+G49,31,033,Halachó,nombre
+G50,31,034,Hocabá,nombre
+G51,31,035,Hoctún,nombre
+G52,31,036,Homún,nombre
+G53,31,037,Huhí,nombre
+G54,31,038,Hunucmá,nombre
+G55,31,039,Ixil,nombre
+G56,31,040,Izamal,nombre
+G57,31,041,Kanasín,nombre
+Q63,31,042,Kantunil,nombre
+Q64,31,043,Kaua,nombre
+G58,31,044,Kinchil,nombre
+G59,31,045,Kopomá,nombre
+G60,31,046,Mama,nombre
+Q66,31,047,Maní,nombre
+G61,31,048,Maxcanú,nombre
+Y27,31,049,Mayapán,nombre
+G62,31,050,Mérida,nombre
+Y70,31,050,Mérida,nombre
+Z38,31,050,Mérida,nombre
+G63,31,051,Mocochá,nombre
+G64,31,052,Motul,nombre
+Q67,31,053,Muna,nombre
+G65,31,054,Muxupip,nombre
+Q69,31,055,Opichén,nombre
+Q70,31,056,Oxkutzcab,nombre
+Q71,31,057,Panabá,nombre
+G66,31,058,Peto,nombre
+G67,31,059,Progreso,nombre
+Y28,31,060,Quintana Roo,nombre
+G68,31,061,Río Lagartos,nombre
+G69,31,062,Sacalum,nombre
+G70,31,063,Samahil,nombre
+G71,31,064,Sanahcat,nombre
+Q72,31,065,San Felipe,nombre
+Q73,31,066,Santa Elena,nombre
+G72,31,067,Seyé,nombre
+G73,31,068,Sinanché,nombre
+Q74,31,069,Sotuta,nombre
+Q75,31,070,Sucilá,nombre
+G74,31,071,Sudzal,nombre
+G75,31,072,Suma,nombre
+Q76,31,073,Tahdziú,nombre
+G76,31,074,Tahmek,nombre
+Q77,31,075,Teabo,nombre
+G77,31,076,Tecoh,nombre
+G78,31,077,Tekal de Venegas,nombre
+G79,31,078,Tekantó,nombre
+Q78,31,079,Tekax,nombre
+G80,31,080,Tekit,nombre
+Q79,31,081,Tekom,nombre
+G81,31,082,Telchac Pueblo,nombre
+G82,31,083,Telchac Puerto,nombre
+G83,31,084,Temax,nombre
+Q80,31,085,Temozón,nombre
+G84,31,086,Tepakán,nombre
+G85,31,087,Tetiz,nombre
+G86,31,088,Teya,nombre
+Q49,31,089,Ticul,nombre
+G87,31,090,Timucuy,nombre
+Q81,31,091,Tinum,nombre
+Q82,31,092,Tixcacalcupul,nombre
+G88,31,093,Tixkokob,nombre
+Q83,31,094,Tixmehuac,nombre
+G89,31,095,Tixpéhual,INEGI lo escribe Tixpéual
+G90,31,096,Tizimín,nombre
+Q84,31,097,Tunkás,nombre
+G91,31,098,Tzucacab,nombre
+Q85,31,099,Uayma,nombre
+G92,31,100,Ucú,nombre
+G93,31,101,Umán,nombre
+G94,31,102,Valladolid,nombre
+G95,31,103,Xocchel,nombre
+Y29,31,104,Yaxcabá,nombre
+G96,31,105,Yaxkukul,nombre
+G97,31,106,Yobaín,nombre
+Q89,32,001,Apozol,nombre
+L39,32,002,Apulco,nombre
+Q91,32,003,Atolinga,nombre
+Q87,32,004,Benito Juárez,nombre
+R01,32,005,Calera,nombre
+G98,32,006,Cañitas de Felipe Pescador,nombre
+G99,32,007,Concepción del Oro,nombre
+J71,32,008,Cuauhtémoc,nombre
+H24,32,009,Chalchihuites,nombre
+H01,32,010,Fresnillo,nombre
+Y30,32,011,Trinidad García de la Cadena,nombre
+J72,32,012,Genaro Codina,nombre
+Q94,32,013,General Enrique Estrada,nombre
+Y31,32,014,General Francisco R. Murguía,nombre
+Y32,32,015,El Plateado de Joaquín Amaro,nombre
+J73,32,016,General Pánfilo Natera,nombre
+H02,32,017,Guadalupe,nombre
+J74,32,018,Huanusco,nombre
+H03,32,019,Jalpa,nombre
+H04,32,020,Jerez,nombre
+Y33,32,021,Jiménez del Teul,nombre
+R06,32,022,Juan Aldama,nombre
+L40,32,023,Juchipila,nombre
+J75,32,024,Loreto,nombre
+J76,32,025,Luis Moya,nombre
+H22,32,026,Mazapil,nombre
+H23,32,027,Melchor Ocampo,nombre
+R17,32,028,Mezquital del Oro,nombre
+Q88,32,029,Miguel Auza,nombre
+Q90,32,030,Momax,nombre
+R05,32,031,Monte Escobedo,nombre
+Q99,32,032,Morelos,nombre
+L42,32,033,Moyahua de Estrada,nombre
+H05,32,034,Nochistlán de Mejía,nombre
+Q86,32,035,Noria de Ángeles,nombre
+J77,32,036,Ojocaliente,nombre
+Q93,32,037,Pánuco,nombre
+H06,32,038,Pinos,nombre
+H07,32,039,Río Grande,nombre
+Q95,32,040,Sain Alto,nombre
+Y34,32,041,El Salvador,nombre
+H08,32,042,Sombrerete,nombre
+Q96,32,043,Susticacán,nombre
+Q98,32,044,Tabasco,nombre
+Q92,32,045,Tepechitlán,nombre
+Q97,32,046,Tepetongo,nombre
+R04,32,047,Teúl de González Ortega,nombre
+R03,32,048,Tlaltenango de Sánchez Román,nombre
+R07,32,049,Valparaíso,nombre
+H21,32,050,Vetagrande,nombre
+R08,32,051,Villa de Cos,nombre
+J78,32,052,Villa García,nombre
+R02,32,053,Villa González Ortega,nombre
+R10,32,054,Villa Hidalgo,nombre
+R09,32,055,Villanueva,nombre
+H09,32,056,Zacatecas,nombre
+Z05,32,057,Trancoso,nombre
+Z25,32,058,Santa María de la Paz,nombre

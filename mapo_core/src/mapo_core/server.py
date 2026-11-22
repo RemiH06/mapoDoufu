@@ -11,7 +11,17 @@ from fastapi.responses import JSONResponse, Response
 from psycopg_pool import AsyncConnectionPool
 from pydantic import BaseModel, Field
 
-from mapo_core import buscador, consultas, cruce, datos_geo, datos_propios, localidades, riesgos, vivienda_vista
+from mapo_core import (
+    buscador,
+    consultas,
+    cruce,
+    datos_geo,
+    datos_propios,
+    imss_asegurados,
+    localidades,
+    riesgos,
+    vivienda_vista,
+)
 from mapo_core.coloreado_mapa import PoligonoColoreable, colorear_mapa
 from mapo_core.consultas import INDICADORES_CHOROPLETH, TOLERANCIA_SIMPLIFICACION as _TOLERANCIA_SIMPLIFICACION
 from mapo_core.consultas import feature as _feature
@@ -595,6 +605,7 @@ async def perfil_zona(cve_ent: str, cve_mun: str, pool: AsyncConnectionPool = De
         "consumo": consumo,
         "seguridad": await _seguridad_de(pool, cve_ent, cve_mun),
         "laboral": await consultas.laboral_de(pool, cve_ent),
+        "empleo_formal": await imss_asegurados.empleo_municipio(pool, cve_ent, cve_mun),
     }
 
 
@@ -800,6 +811,7 @@ TABLAS_CITABLES = {
     "shf": ("fuente_shf_ipv", False),
     "envi": ("fuente_envi2020_entidad", False),
     "precio": ("fuente_precio_estimado", True),
+    "imss": ("fuente_imss_asegurados", True),
 }
 
 

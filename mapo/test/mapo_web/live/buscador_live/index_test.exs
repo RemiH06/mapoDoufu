@@ -489,6 +489,46 @@ defmodule MapoWeb.BuscadorLive.IndexTest do
     assert render_async(lv) =~ "mapo_core no está disponible"
   end
 
+  test "el empleo formal del IMSS sale con el rubro y dice lo que no tiene", %{conn: conn} do
+    empleo = %{
+      "periodo" => "2024-12-31",
+      "periodo_anual" => nil,
+      "grupos" => [
+        %{"grupo" => "89", "nombre" => "Servicios personales para el hogar y diversos"}
+      ],
+      "municipios" => [
+        %{
+          "cve_mun" => "120",
+          "puestos_rubro" => 9_000,
+          "puestos_total" => 481_851,
+          "salario_diario_rubro" => 401.25,
+          "variacion_anual_rubro" => nil
+        }
+      ]
+    }
+
+    stub(
+      interpretar:
+        interpretacion(%{
+          "intencion" => "donde_poner",
+          "rubro" => "floreria",
+          "municipios" => ["120"]
+        }),
+      resolver: put_in(resultado_donde_poner(), ["cifras", "empleo_formal"], empleo)
+    )
+
+    {:ok, lv, _html} = live(conn, ~p"/buscador")
+    pregunta(lv, "florerías en Zapopan")
+    lv |> element("#plantilla_form") |> render_submit()
+    render_async(lv)
+
+    assert has_element?(lv, ".empleo-formal h3", "Servicios personales para el hogar y diversos")
+    assert has_element?(lv, ".empleo-formal td", "Zapopan")
+    assert has_element?(lv, ".empleo-formal td", "1.9 %")
+    assert has_element?(lv, ".empleo-formal td", "$401.25")
+    assert has_element?(lv, ".empleo-formal", "falta el mismo mes del año anterior")
+  end
+
   test "una respuesta sin dato dice sin dato, no cero", %{conn: conn} do
     resultado =
       resultado_donde_poner()

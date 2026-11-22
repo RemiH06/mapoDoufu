@@ -19,6 +19,13 @@ lo dice.
 "¿Dónde faltan servicios públicos?" es `donde_poner` con un rubro de
 gobierno, salud o educación y el filtro `solo_publicos`.
 
+En `cuantos` y `donde_poner`, debajo de las cifras de DENUE va el empleo formal
+del IMSS por municipio en los grupos de actividad más cercanos al rubro: puestos,
+su parte del total del municipio y salario diario de cotización, y la variación
+anual cuando está cargado el mismo mes del año anterior (`../fuentes/imss.md`). Los
+grupos salen de la columna `grupos_imss` de `rubros/sectores.csv`: el IMSS no usa
+SCIAN y la equivalencia es aproximada, así se dice en pantalla.
+
 Ninguna intención regresa un puntaje único (RNF5). "Habitantes por
 negocio" es una razón con su fórmula, no una calificación: se muestra
 junto a las capas y quien pregunta decide.

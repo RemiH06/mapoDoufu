@@ -106,6 +106,13 @@ def clases_de(*, rubro: str | None = None, sector: str | None = None, solo_publi
     )
 
 
+def grupos_imss(*, rubro: str | None = None, sector: str | None = None) -> list[str]:
+    """Grupos de actividad del IMSS más cercanos a un rubro (los de su sector) o a
+    un sector. Aproximados: el IMSS no usa SCIAN (docs/fuentes/imss.md)."""
+    sector = rubros()[rubro].sector if rubro else sector
+    return sectores()[sector]["grupos_imss"].split("|") if sector in sectores() else []
+
+
 def clases_con_texto(texto: str) -> list[str]:
     """Clases cuyo nombre contiene el texto, sin importar acentos."""
     buscado = normalizar(texto)

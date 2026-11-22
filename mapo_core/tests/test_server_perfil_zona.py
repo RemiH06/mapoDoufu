@@ -50,6 +50,7 @@ async def test_perfil_zona_sin_datos_de_enigh_sesnsp_ni_enoe_trae_null_no_falso(
     assert cuerpo["consumo"] is None
     assert cuerpo["seguridad"] is None
     assert cuerpo["laboral"] is None
+    assert cuerpo["empleo_formal"] is None
     app.dependency_overrides.clear()
 
 

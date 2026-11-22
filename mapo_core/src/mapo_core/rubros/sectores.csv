@@ -1,22 +1,22 @@
-sector,nombre,buscable,sinonimos
-alimentos_preparados,Comida y bebida preparada,si,comida preparada|lugares de comida|negocios de comida
-abarrotes_y_alimentos,Abarrotes y alimentos,si,alimentos|tiendas de alimentos
-salud,Salud y asistencia,si,salud|servicios de salud
-educacion,Educación,si,educación|escuelas|educativos
-belleza_y_cuidado_personal,Belleza y cuidado personal,si,belleza|cuidado personal
-ropa_calzado_y_accesorios,"Ropa, calzado y accesorios",si,moda
-hogar_ferreteria_y_construccion_menudeo,Hogar y ferretería,si,hogar|artículos para el hogar
-otros_comercios_al_menudeo,Otros comercios,si,
-autos,Autos,si,automotriz|servicios automotrices
-transporte_y_logistica,Transporte y logística,si,transporte|logística
-finanzas_y_seguros,Finanzas y seguros,si,finanzas|servicios financieros
-servicios_profesionales_y_oficinas,Servicios profesionales,si,servicios profesionales|oficinas
-reparacion_y_servicios_personales,Reparaciones y servicios personales,si,reparaciones|servicios personales
-gobierno_y_seguridad,Gobierno y seguridad,si,dependencias de gobierno|instituciones de gobierno
-cultura_deporte_y_entretenimiento,"Cultura, deporte y entretenimiento",si,cultura|entretenimiento|diversión|deporte
-hospedaje,Hospedaje,si,hospedaje|alojamiento
-religion_y_asociaciones,Religión y asociaciones,si,religión|asociaciones
-inmobiliario_y_construccion,Inmobiliario y construcción,si,inmobiliario|inmobiliarios
-mayoreo,Comercio al por mayor,no,
-industria,Industria,no,
-agro_mineria_y_energia,"Agro, minería y energía",no,
+sector,nombre,buscable,sinonimos,grupos_imss
+alimentos_preparados,Comida y bebida preparada,si,comida preparada|lugares de comida|negocios de comida,87
+abarrotes_y_alimentos,Abarrotes y alimentos,si,alimentos|tiendas de alimentos,61|64
+salud,Salud y asistencia,si,salud|servicios de salud,92
+educacion,Educación,si,educación|escuelas|educativos,91
+belleza_y_cuidado_personal,Belleza y cuidado personal,si,belleza|cuidado personal,89
+ropa_calzado_y_accesorios,"Ropa, calzado y accesorios",si,moda,62
+hogar_ferreteria_y_construccion_menudeo,Hogar y ferretería,si,hogar|artículos para el hogar,63|66
+otros_comercios_al_menudeo,Otros comercios,si,,64|69
+autos,Autos,si,automotriz|servicios automotrices,68
+transporte_y_logistica,Transporte y logística,si,transporte|logística,71|72|73|74|75
+finanzas_y_seguros,Finanzas y seguros,si,finanzas|servicios financieros,81|82
+servicios_profesionales_y_oficinas,Servicios profesionales,si,servicios profesionales|oficinas,84|85
+reparacion_y_servicios_personales,Reparaciones y servicios personales,si,reparaciones|servicios personales,89
+gobierno_y_seguridad,Gobierno y seguridad,si,dependencias de gobierno|instituciones de gobierno,94
+cultura_deporte_y_entretenimiento,"Cultura, deporte y entretenimiento",si,cultura|entretenimiento|diversión|deporte,88
+hospedaje,Hospedaje,si,hospedaje|alojamiento,86
+religion_y_asociaciones,Religión y asociaciones,si,religión|asociaciones,93
+inmobiliario_y_construccion,Inmobiliario y construcción,si,inmobiliario|inmobiliarios,41|42|83
+mayoreo,Comercio al por mayor,no,,61|62|63|64|65|66|67|68|69
+industria,Industria,no,,20|21|22|23|24|25|26|27|28|29|30|31|32|33|34|35|36|37|38|39
+agro_mineria_y_energia,"Agro, minería y energía",no,,1|2|3|4|5|11|12|13|14|50|51

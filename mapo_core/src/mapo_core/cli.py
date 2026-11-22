@@ -21,6 +21,7 @@ from mapo_core import (
     precio_estimado,
     geo_downloader,
     iieg_oferta,
+    imss_asegurados,
     iter_downloader,
     rubros,
     sesnsp_ingesta,
@@ -159,6 +160,22 @@ async def _envi(args) -> None:
     print(f"ENVI 2020: {total} indicadores por estado y nacional.")
 
 
+async def _imss(args) -> None:
+    import json
+    from pathlib import Path
+
+    await inicializar_esquema()
+    rutas = [Path(a) for a in args.archivo]
+    rutas = [f for r in rutas for f in (sorted(r.glob("asg-*.csv*")) if r.is_dir() else [r])]
+    if not rutas:
+        raise SystemExit("No hay archivos asg-AAAA-MM-DD.csv(.gz) que cargar.")
+    try:
+        resumen = await imss_asegurados.cargar(rutas)
+    except imss_asegurados.ArchivoInvalido as exc:
+        raise SystemExit(f"No se cargó nada: {exc}") from None
+    print(json.dumps(resumen, ensure_ascii=False, indent=1))
+
+
 async def _precio_estimado(args) -> None:
     from pathlib import Path
 
@@ -284,7 +301,7 @@ async def _status(_args) -> None:
         "fuente_acuiferos", "fuente_acuiferos_ordenamientos", "fuente_piezometria", "fuente_renameca_sitios",
         "fuente_repda_descargas", "fuente_retc_establecimientos", "fuente_retc_emisiones", "fuente_siap_agricola",
         "fuente_firms_focos", "fuente_uso_suelo", "fuente_anp", "fuente_sequia_municipal",
-        "fuente_defunciones_municipal",
+        "fuente_defunciones_municipal", "fuente_imss_asegurados",
     ]
     async with pool.connection() as conn:
         for tabla in tablas:
@@ -373,6 +390,14 @@ def _construir_parser() -> argparse.ArgumentParser:
     )
     p_envi.add_argument("--archivo", default=None, help="ZIP ya bajado (conjunto_de_datos_envi_2020_csv.zip)")
     p_envi.set_defaults(fn=_envi)
+
+    p_imss = subparsers.add_parser(
+        "imss", help="Empleo formal del IMSS por municipio y grupo, de archivos ya bajados (reemplaza esos meses)"
+    )
+    p_imss.add_argument(
+        "archivo", nargs="+", help="asg-AAAA-MM-DD.csv o .csv.gz, o una carpeta con ellos (data/imss)"
+    )
+    p_imss.set_defaults(fn=_imss)
 
     p_precio = subparsers.add_parser(
         "precio_estimado", help="Precio por AGEB del estudio de precio estimado (reemplaza el de antes)"

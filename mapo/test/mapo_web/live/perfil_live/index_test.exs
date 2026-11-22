@@ -55,8 +55,29 @@ defmodule MapoWeb.PerfilLive.IndexTest do
         "anio" => 2025,
         "trimestre" => "trim3",
         "tasa_desocupacion" => 2.49
-      }
+      },
+      "empleo_formal" => empleo_formal()
     }
+  end
+
+  defp empleo_formal(cambios \\ %{}) do
+    Map.merge(
+      %{
+        "periodo" => "2024-12-31",
+        "puestos" => 694_493,
+        "permanentes" => 610_000,
+        "eventuales" => 84_493,
+        "salario_diario" => 612.4,
+        "parte_rango_tope" => 2.8,
+        "asegurados_sin_empleo" => 40_000,
+        "por_division" => [
+          %{"division" => "8", "nombre" => "Servicios para empresas", "puestos" => 250_000}
+        ],
+        "anual" => nil,
+        "puestos_estado_sin_municipio" => 0
+      },
+      cambios
+    )
   end
 
   test "shows a warning when mapo_core/Gaiarda is not reachable", %{conn: conn} do
@@ -141,7 +162,10 @@ defmodule MapoWeb.PerfilLive.IndexTest do
 
     assert html =~ "Guadalajara, Jalisco"
     assert html =~ "1,500,000"
-    assert html =~ "2.49%"
+    assert html =~ "2.49 %"
+    assert html =~ "694,493"
+    assert html =~ "diciembre de 2024"
+    assert html =~ "falta el mismo mes del año anterior"
     assert html =~ "Las demás clases"
     assert has_element?(lv, "[data-piel=demografia]")
     assert has_element?(lv, "[data-piel=laboral]")
@@ -172,7 +196,8 @@ defmodule MapoWeb.PerfilLive.IndexTest do
       "comercio" => %{"total_negocios" => 0, "top_clases_actividad" => []},
       "consumo" => nil,
       "seguridad" => nil,
-      "laboral" => nil
+      "laboral" => nil,
+      "empleo_formal" => nil
     })
 
     {:ok, lv, _html} = live(conn, ~p"/perfil?cve_ent=14&cve_mun=039")
@@ -183,6 +208,31 @@ defmodule MapoWeb.PerfilLive.IndexTest do
     assert html =~ "La muestra de la ENIGH no llegó a este municipio."
     assert html =~ "No hay incidencia del SESNSP cargada para este municipio."
     assert html =~ "No hay datos de la ENOE cargados para este estado."
+    assert html =~ "No hay datos del IMSS cargados para este estado."
+  end
+
+  test "the IMSS block gives the yearly change only when that month is loaded", %{conn: conn} do
+    anual = %{"periodo" => "2023-12-31", "puestos" => 680_000, "variacion" => 2.13}
+
+    stub_catalogo(%{
+      perfil_con_demografia()
+      | "empleo_formal" => empleo_formal(%{"anual" => anual})
+    })
+
+    {:ok, lv, _html} = live(conn, ~p"/perfil?cve_ent=14&cve_mun=039")
+    html = render_async(lv)
+
+    assert html =~ "2.13 % (desde diciembre de 2023)"
+    refute html =~ "falta el mismo mes del año anterior"
+  end
+
+  test "a state the IMSS does not split by municipio says so", %{conn: conn} do
+    sin_municipio = empleo_formal(%{"puestos" => 0, "puestos_estado_sin_municipio" => 3_479_354})
+    stub_catalogo(%{perfil_con_demografia() | "empleo_formal" => sin_municipio})
+
+    {:ok, lv, _html} = live(conn, ~p"/perfil?cve_ent=14&cve_mun=039")
+
+    assert render_async(lv) =~ "El IMSS no asigna municipio a 3,479,354 puestos"
   end
 
   describe "notas del equipo" do

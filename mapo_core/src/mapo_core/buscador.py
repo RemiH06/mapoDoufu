@@ -20,7 +20,7 @@ from functools import cache
 
 from pydantic import BaseModel, Field
 
-from mapo_core import consultas, patrones, rubros
+from mapo_core import consultas, imss_asegurados, patrones, rubros
 from mapo_core import zonas as zonas_candidatas
 from mapo_core.isocronas import calcular_isocrona
 from mapo_core.voronoi import calcular_voronoi
@@ -447,6 +447,8 @@ async def _por_municipio(pool, cve_ent: str, p: Plantilla, clases: list[str], av
 
     capas: dict = {}
     cifras: dict = {"que": _que(p), "unidad": _unidad(p)[0], "municipios": filas, "total_negocios": total}
+    if grupos := rubros.grupos_imss(rubro=p.rubro, sector=p.sector):
+        cifras["empleo_formal"] = await imss_asegurados.empleo_por_grupos(pool, cve_ent, p.municipios, grupos)
 
     if p.intencion == "donde_poner":
         _habitantes_por_negocio(cifras, filas, avisos)

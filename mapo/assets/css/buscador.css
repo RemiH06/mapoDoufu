@@ -239,14 +239,16 @@
   }
 
   .respuesta .zonas,
-  .respuesta .patron {
+  .respuesta .patron,
+  .respuesta .empleo-formal {
     display: grid;
     gap: 8px;
     padding-top: 10px;
     border-top: 1.5px solid var(--text);
   }
   .respuesta .zonas h3,
-  .respuesta .patron h3 {
+  .respuesta .patron h3,
+  .respuesta .empleo-formal h3 {
     font-family: var(--cond);
     font-weight: 700;
     font-size: 18px;
