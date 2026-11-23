@@ -2,24 +2,11 @@ defmodule MapoWeb.AccesibilidadLive.IndexTest do
   use MapoWeb.ConnCase, async: true
 
   import Phoenix.LiveViewTest
+  import Mapo.ZonaFixtures
 
   alias MapoWeb.AccesibilidadLive.Index
 
   setup :register_and_log_in_user
-
-  @estados %{
-    "type" => "FeatureCollection",
-    "features" => [
-      %{"properties" => %{"cvegeo" => "14", "nomgeo" => "Jalisco"}, "geometry" => nil}
-    ]
-  }
-
-  @municipios %{
-    "type" => "FeatureCollection",
-    "features" => [
-      %{"properties" => %{"cve_mun" => "061", "nomgeo" => "Mezquitic"}, "geometry" => nil}
-    ]
-  }
 
   # 1,000 personas: 400 a 5 min o menos, 700 a 20 o menos, 100 sin ruta.
   defp dentro, do: for(m <- 0..120, do: if(m < 5, do: 0, else: if(m < 20, do: 400, else: 700)))
@@ -27,8 +14,8 @@ defmodule MapoWeb.AccesibilidadLive.IndexTest do
   defp resultado(modo) do
     %{
       "zona" => %{
-        "cve_ent" => "14",
-        "cve_mun" => "061",
+        "clave" => "mun:14061",
+        "estados" => ["14"],
         "nombre" => "Mezquitic",
         "geojson" => %{
           "type" => "Polygon",
@@ -95,23 +82,17 @@ defmodule MapoWeb.AccesibilidadLive.IndexTest do
 
   defp stub(fun) do
     Req.Test.stub(Mapo.MapoCore, fn conn ->
-      case conn.request_path do
-        "/geo/estados" -> Req.Test.json(conn, @estados)
-        "/geo/municipios" -> Req.Test.json(conn, @municipios)
-        "/accesibilidad/zona" -> fun.(Plug.Conn.fetch_query_params(conn))
-      end
+      responder_zona(conn) ||
+        case conn.request_path do
+          "/accesibilidad/zona" -> fun.(Plug.Conn.fetch_query_params(conn))
+        end
     end)
   end
 
   defp responde(conn), do: Req.Test.json(conn, resultado(conn.query_params["modo"]))
 
-  defp consultar(lv, extra \\ %{}) do
-    lv |> form("#accesibilidad_form", acc: %{cve_ent: "14"}) |> render_change()
-
-    lv
-    |> form("#accesibilidad_form", acc: Map.merge(%{cve_ent: "14", cve_mun: "061"}, extra))
-    |> render_submit()
-
+  defp consultar(lv) do
+    elegir_zona(lv, "mun:14061")
     render_async(lv)
   end
 
@@ -124,7 +105,7 @@ defmodule MapoWeb.AccesibilidadLive.IndexTest do
 
   test "cada servicio por separado, con su grupo, su fuente y lo que falta", %{conn: conn} do
     stub(fn conn ->
-      assert conn.query_params == %{"cve_ent" => "14", "cve_mun" => "061", "modo" => "pie"}
+      assert conn.query_params == %{"zona" => "mun:14061", "modo" => "pie"}
       responde(conn)
     end)
 
@@ -143,14 +124,14 @@ defmodule MapoWeb.AccesibilidadLive.IndexTest do
     assert has_element?(
              lv,
              "#servicio-primaria_publica",
-             "92 localidades sin AGEB: no se calculan"
+             "92 lugares que no se calculan: localidades sin AGEB"
            )
 
     assert has_element?(lv, "#servicio-supermercado", "Todavía no se calcula a pie")
     refute html =~ "índice de"
 
     assert_push_event(lv, "zona", %{servicio: "centro_salud", umbral: 15})
-    assert_patch(lv, "/accesibilidad?ent=14&mun=061&modo=pie&umbral=15&servicio=centro_salud")
+    assert_patch(lv, "/accesibilidad?zona=mun:14061&modo=pie&umbral=15&servicio=centro_salud")
   end
 
   test "mover el umbral vuelve a restar sin consultar", %{conn: conn} do
@@ -166,7 +147,7 @@ defmodule MapoWeb.AccesibilidadLive.IndexTest do
 
     html =
       lv
-      |> form("#accesibilidad_form", acc: %{cve_ent: "14", cve_mun: "061", umbral: "30"})
+      |> form("#accesibilidad_form", acc: %{umbral: "30"})
       |> render_change()
 
     assert html =~ "a más de 30 minutos a pie"
@@ -176,7 +157,7 @@ defmodule MapoWeb.AccesibilidadLive.IndexTest do
 
     # Un umbral fuera de rango no cambia nada.
     lv
-    |> form("#accesibilidad_form", acc: %{cve_ent: "14", cve_mun: "061", umbral: "500"})
+    |> form("#accesibilidad_form", acc: %{umbral: "500"})
     |> render_change()
 
     assert render(lv) =~ "a más de 30 minutos"
@@ -188,7 +169,7 @@ defmodule MapoWeb.AccesibilidadLive.IndexTest do
     consultar(lv)
 
     lv
-    |> form("#accesibilidad_form", acc: %{cve_ent: "14", cve_mun: "061", modo: "auto"})
+    |> form("#accesibilidad_form", acc: %{modo: "auto"})
     |> render_change()
 
     assert render_async(lv) =~ "a más de 15 minutos en auto"
@@ -240,6 +221,6 @@ defmodule MapoWeb.AccesibilidadLive.IndexTest do
   test "un error de mapo_core se dice", %{conn: conn} do
     stub(fn conn -> conn |> Plug.Conn.put_status(500) |> Req.Test.json(%{"detail" => "boom"}) end)
     {:ok, lv, _} = live(conn, ~p"/accesibilidad")
-    assert consultar(lv) =~ "No se pudo consultar el municipio"
+    assert consultar(lv) =~ "No se pudo consultar la zona"
   end
 end

@@ -28,6 +28,9 @@ class PuntoVoronoi:
     lon: float
     id: str
     nombre: str | None = None
+    # Negocio de fuera de la zona que compite con los de dentro (sesión 29b): su celda
+    # se recorta a la zona como las demás y sale marcada.
+    fuera: bool = False
 
 
 @dataclass
@@ -165,6 +168,7 @@ def calcular_voronoi(
                     "lat": punto.lat,
                     "lon": punto.lon,
                     "num_puntos": len(grupo),
+                    "fuera": all(p.fuera for p in grupo),
                 },
                 "geometry": mapping(recortado),
             }

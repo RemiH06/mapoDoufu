@@ -1,10 +1,11 @@
 defmodule MapoWeb.RiesgosLive.Index do
   @moduledoc """
-  Vista de riesgos: se elige una zona (un municipio cargado o un círculo en el
-  plano) y se ve cada peligro por separado, con su fuente, fecha, nivel y
-  método, y cuánta gente vive dentro de la zona y cerca de cada uno. Nunca un
-  índice ni "expuesta". El cálculo vive en `mapo_core/riesgos.py`; ver
-  docs/producto/vista-riesgos.md.
+  Vista de riesgos: se elige una zona (con el selector común: estado,
+  municipios, metrópoli, colonia, CP o un dibujo; o un círculo en el plano) y
+  se ve cada peligro por separado, con su fuente, fecha, nivel y método, y
+  cuánta gente vive dentro de la zona y cerca de cada uno. Nunca un índice ni
+  "expuesta". El cálculo vive en `mapo_core/riesgos.py`; ver
+  docs/producto/vista-riesgos.md y docs/producto/zona.md.
   """
 
   use MapoWeb, :live_view
@@ -14,6 +15,7 @@ defmodule MapoWeb.RiesgosLive.Index do
   alias Mapo.Limite
   alias Mapo.MapoCore
   alias MapoWeb.Cita
+  alias MapoWeb.ZonaSelector
 
   # Un municipio grande cruza millones de focos y miles de polígonos.
   @max_consultas 30
@@ -82,14 +84,32 @@ defmodule MapoWeb.RiesgosLive.Index do
             Cada peligro va por separado, con su fuente y su fecha: aquí no hay índice. Cercanía no dice causa.
           </p>
 
+          <div class="riesgos-modo" role="group" aria-label="Cómo elegir la zona">
+            <button
+              :for={
+                {texto, modo} <- [{"Buscar una zona", "zona"}, {"Un círculo en el plano", "circulo"}]
+              }
+              type="button"
+              id={"modo-#{modo}"}
+              class="chico"
+              phx-click="modo"
+              phx-value-modo={modo}
+              aria-pressed={to_string(@modo == modo)}
+            >
+              {texto}
+            </button>
+          </div>
+
+          <.live_component
+            :if={@modo == "zona"}
+            module={ZonaSelector}
+            id="zona"
+            zona={@zona}
+            scope={@current_scope}
+          />
+
           <.form for={@form} id="riesgos_form" phx-change="cambiar" phx-submit="consultar">
-            <.input
-              field={@form[:modo]}
-              type="select"
-              label="Zona"
-              options={[{"Un municipio", "municipio"}, {"Un círculo en el plano", "circulo"}]}
-            />
-            <%= if @form[:modo].value == "circulo" do %>
+            <%= if @modo == "circulo" do %>
               <.input
                 field={@form[:radio_km]}
                 type="number"
@@ -103,25 +123,6 @@ defmodule MapoWeb.RiesgosLive.Index do
                   do:
                     "Centro en #{cifra(@punto.lat, 4)}, #{cifra(@punto.lon, 4)}. Toca otro lugar para moverlo.",
                   else: "Toca el plano para poner el centro."}
-              </p>
-            <% else %>
-              <.input
-                field={@form[:cve_ent]}
-                type="select"
-                label="Estado"
-                prompt="Elige un estado"
-                options={@estados}
-              />
-              <.input
-                :if={@municipios != []}
-                field={@form[:cve_mun]}
-                type="select"
-                label="Municipio"
-                prompt="Elige un municipio"
-                options={@municipios}
-              />
-              <p :if={@form[:cve_ent].value not in [nil, ""] and @municipios == []} class="secundario">
-                Ese estado no tiene municipios cargados en Mapo: usa un círculo en el plano.
               </p>
             <% end %>
 
@@ -267,31 +268,16 @@ defmodule MapoWeb.RiesgosLive.Index do
     if partes == [], do: "", else: "; entre ellas, " <> Enum.join(partes, ", ")
   end
 
-  defp titulo_poblacion(%{"zona" => %{"tipo" => "municipio", "municipios" => [m | _]}}),
-    do: "Quién vive en #{m["nombre"] || "el municipio"}"
-
-  defp titulo_poblacion(%{"zona" => z}),
-    do: "Quién vive en el círculo de #{cifra(z["radio_m"] / 1000, 1)} km"
+  defp titulo_poblacion(resultado), do: "Quién vive en #{lugar(resultado)}"
 
   @impl true
   def mount(_params, _session, socket) do
-    estados =
-      case MapoCore.estados() do
-        {:ok, %{"features" => features}} ->
-          features
-          |> Enum.map(fn %{"properties" => p} -> {p["nomgeo"], p["cvegeo"]} end)
-          |> Enum.sort()
-
-        {:error, _} ->
-          []
-      end
-
     {:ok,
      assign(socket,
        page_title: "Riesgos",
-       estados: estados,
-       municipios: [],
        cercas: @cercas,
+       modo: "zona",
+       zona: nil,
        punto: nil,
        resultado: nil,
        error: nil,
@@ -300,6 +286,7 @@ defmodule MapoWeb.RiesgosLive.Index do
        form: formulario(%{}),
        consultada: nil,
        pedida: nil,
+       nombre_pedido: nil,
        citando: nil,
        citas: [],
        cita_enlace: nil
@@ -309,107 +296,101 @@ defmodule MapoWeb.RiesgosLive.Index do
   # Enlace permanente: la zona y la cercanía de la última consulta. Al abrirlo
   # se consulta igual que con el botón (con el mismo límite por hora). Cada
   # valor pasa por la misma validación que el formulario; uno raro deja la
-  # hoja vacía, sin error.
+  # hoja vacía, sin error. Los enlaces de antes de la 29b (`modo=municipio`
+  # con `ent` y `mun`, o `modo=circulo` con `lat`, `lon` y `radio`) se leen
+  # como su clave de zona: ya hay citas con ellos.
   @impl true
   def handle_params(params, _uri, socket) do
-    if connected?(socket) and is_nil(socket.assigns.consultada) and params != %{} do
-      {:noreply, consultar_de_url(socket, params)}
-    else
-      {:noreply, socket}
+    cond do
+      not connected?(socket) or not is_nil(socket.assigns.consultada) -> {:noreply, socket}
+      params != %{} -> {:noreply, consultar_de_url(socket, params)}
+      # Sin zona en el enlace, la que guardó quien abre (sin consultar sola).
+      true -> {:noreply, ZonaSelector.con_zona_inicial(socket)}
     end
   end
 
-  defp consultar_de_url(socket, %{"modo" => "circulo"} = params) do
+  defp consultar_de_url(socket, params) do
+    cerca = params["cerca"] || "1000"
+
+    case clave_de_url(params) do
+      {:circulo, lon, lat, km} ->
+        form = %{"radio_km" => km, "cerca_m" => cerca}
+
+        socket
+        |> assign(modo: "circulo", punto: %{lat: lat, lon: lon}, form: formulario(form))
+        |> previa()
+        |> consultar(form)
+
+      {:zona, clave} ->
+        with {:ok, _} <- cerca(cerca), {:ok, zona} <- ZonaSelector.resolver(clave) do
+          socket
+          |> assign(zona: zona, form: formulario(%{"cerca_m" => cerca}))
+          |> push_event("zona_elegida", %{geojson: zona["geojson"]})
+          |> consultar(%{"cerca_m" => cerca})
+        else
+          _ -> socket
+        end
+
+      nil ->
+        socket
+    end
+  end
+
+  defp clave_de_url(%{"zona" => "cir:" <> resto}) do
+    with [lon, lat, radio] <- String.split(resto, ","),
+         {lon, ""} <- Float.parse(lon),
+         {lat, ""} <- Float.parse(lat),
+         {radio, ""} <- Float.parse(radio) do
+      {:circulo, lon, lat, to_string(radio / 1000)}
+    else
+      _ -> nil
+    end
+  end
+
+  defp clave_de_url(%{"zona" => clave}) when is_binary(clave), do: {:zona, clave}
+
+  defp clave_de_url(%{"modo" => "circulo"} = params) do
     with {lat, ""} <- Float.parse(params["lat"] || ""),
          {lon, ""} <- Float.parse(params["lon"] || "") do
-      form = %{
-        "modo" => "circulo",
-        "radio_km" => params["radio"] || "",
-        "cerca_m" => params["cerca"] || "1000"
-      }
-
-      socket
-      |> assign(punto: %{lat: lat, lon: lon}, form: formulario(form))
-      |> previa()
-      |> consultar(form)
+      {:circulo, lon, lat, params["radio"] || ""}
     else
-      _ -> socket
+      _ -> nil
     end
   end
 
-  defp consultar_de_url(socket, %{"ent" => ent, "mun" => mun} = params)
-       when is_binary(ent) and is_binary(mun) do
-    municipios =
-      if Enum.any?(socket.assigns.estados, fn {_, c} -> c == ent end),
-        do: municipios_de(ent),
-        else: []
-
-    if Enum.any?(municipios, fn {_, c} -> c == mun end) do
-      form = %{
-        "modo" => "municipio",
-        "cve_ent" => ent,
-        "cve_mun" => mun,
-        "cerca_m" => params["cerca"] || "1000"
-      }
-
-      socket |> assign(municipios: municipios, form: formulario(form)) |> consultar(form)
-    else
-      socket
-    end
+  defp clave_de_url(%{"ent" => ent, "mun" => mun}) when is_binary(ent) and is_binary(mun) do
+    if String.match?(ent, ~r/^\d{2}$/) and String.match?(mun, ~r/^\d{3}$/),
+      do: {:zona, "mun:#{ent}#{mun}"},
+      else: nil
   end
 
-  defp consultar_de_url(socket, _params), do: socket
+  defp clave_de_url(_params), do: nil
 
-  defp params_url(%{lat: lat, lon: lon, radio_m: r}, cerca),
-    do: [
-      modo: "circulo",
-      lat: Float.round(lat / 1, 5),
-      lon: Float.round(lon / 1, 5),
-      radio: r / 1000,
-      cerca: cerca
-    ]
-
-  defp params_url(%{cve_ent: ent, cve_mun: mun}, cerca),
-    do: [modo: "municipio", ent: ent, mun: mun, cerca: cerca]
-
-  defp ruta_riesgos(params), do: ~p"/riesgos" <> "?" <> URI.encode_query(params)
+  defp ruta_riesgos(params), do: ~p"/riesgos" <> "?" <> ZonaSelector.query(params)
 
   defp formulario(params) do
-    base = %{
-      "modo" => "municipio",
-      "cve_ent" => "",
-      "cve_mun" => "",
-      "radio_km" => "2",
-      "cerca_m" => "1000"
-    }
-
+    base = %{"radio_km" => "2", "cerca_m" => "1000"}
     to_form(Map.merge(base, Map.take(params, Map.keys(base))), as: "riesgos")
   end
 
   @impl true
+  def handle_info({:zona_elegida, zona}, socket) do
+    socket = assign(socket, zona: zona, modo: "zona")
+    {:noreply, consultar(socket, socket.assigns.form.params)}
+  end
+
+  @impl true
   def handle_event("cambiar", %{"riesgos" => params}, socket) do
-    anterior = socket.assigns.form.params
+    {:noreply, socket |> assign(form: formulario(params)) |> previa()}
+  end
 
-    params =
-      if params["cve_ent"] != anterior["cve_ent"],
-        do: Map.put(params, "cve_mun", ""),
-        else: params
-
-    socket =
-      if params["cve_ent"] != anterior["cve_ent"],
-        do: assign(socket, municipios: municipios_de(params["cve_ent"])),
-        else: socket
-
-    socket = assign(socket, form: formulario(params))
-    {:noreply, previa(socket)}
+  def handle_event("modo", %{"modo" => modo}, socket) when modo in ~w(zona circulo) do
+    {:noreply, socket |> assign(modo: modo, error: nil) |> previa()}
   end
 
   def handle_event("punto", %{"lat" => lat, "lon" => lon}, socket)
       when is_number(lat) and is_number(lon) do
-    params = Map.put(socket.assigns.form.params, "modo", "circulo")
-
-    {:noreply,
-     socket |> assign(punto: %{lat: lat, lon: lon}, form: formulario(params)) |> previa()}
+    {:noreply, socket |> assign(punto: %{lat: lat, lon: lon}, modo: "circulo") |> previa()}
   end
 
   def handle_event("punto", _params, socket), do: {:noreply, socket}
@@ -450,12 +431,17 @@ defmodule MapoWeb.RiesgosLive.Index do
   defp consultar(socket, params) do
     socket = assign(socket, form: formulario(params))
 
-    with {:ok, zona} <- zona(params, socket.assigns.punto),
+    with {:ok, clave, nombre} <- zona(socket.assigns, params),
          {:ok, cerca} <- cerca(params["cerca_m"]),
          :ok <- limite(socket) do
       socket
-      |> assign(consultando: true, error: nil, pedida: params_url(zona, cerca))
-      |> start_async(:riesgos, fn -> MapoCore.riesgos_zona(zona, cerca) end)
+      |> assign(
+        consultando: true,
+        error: nil,
+        pedida: [zona: clave, cerca: cerca],
+        nombre_pedido: nombre
+      )
+      |> start_async(:riesgos, fn -> MapoCore.riesgos_zona(clave, cerca) end)
     else
       {:error, mensaje} -> assign(socket, error: mensaje)
     end
@@ -486,10 +472,11 @@ defmodule MapoWeb.RiesgosLive.Index do
   defp fuente_bloque("agua_" <> _tipo), do: "renameca"
   defp fuente_bloque(clave), do: @fuente_bloque[clave]
 
-  defp lugar(%{"zona" => %{"tipo" => "municipio", "municipios" => [m | _]}}),
-    do: m["nombre"] || "el municipio"
+  defp lugar(%{"zona" => %{"tipo" => "circulo"} = z}),
+    do: "el círculo de #{cifra(z["radio_m"] / 1000, 1)} km"
 
-  defp lugar(%{"zona" => z}), do: "círculo de #{cifra(z["radio_m"] / 1000, 1)} km"
+  defp lugar(%{"nombre_zona" => nombre}) when is_binary(nombre), do: nombre
+  defp lugar(_resultado), do: "la zona"
 
   @impl true
   def handle_async(:riesgos, {:ok, {:ok, resultado}}, socket) do
@@ -502,7 +489,7 @@ defmodule MapoWeb.RiesgosLive.Index do
      socket
      |> assign(
        consultando: false,
-       resultado: resultado,
+       resultado: Map.put(resultado, "nombre_zona", socket.assigns.nombre_pedido),
        consultada: socket.assigns.pedida,
        citando: nil
      )
@@ -517,7 +504,7 @@ defmodule MapoWeb.RiesgosLive.Index do
   def handle_async(:riesgos, {:ok, {:error, {:status, 404, _}}}, socket),
     do:
       {:noreply,
-       assign(socket, consultando: false, error: "Ese municipio no está cargado en Mapo.")}
+       assign(socket, consultando: false, error: "Esa zona no toca nada cargado en Mapo.")}
 
   def handle_async(:riesgos, _resultado, socket) do
     {:noreply,
@@ -527,24 +514,18 @@ defmodule MapoWeb.RiesgosLive.Index do
      )}
   end
 
-  defp zona(%{"modo" => "circulo"} = params, punto) do
+  defp zona(%{modo: "circulo", punto: punto}, params) do
     with %{lat: lat, lon: lon} <- punto,
          {km, ""} when km >= 0.1 and km <= 25 <- Float.parse(params["radio_km"] || "") do
-      {:ok, %{lon: lon, lat: lat, radio_m: round(km * 1000)}}
+      {:ok, "cir:#{Float.round(lon / 1, 5)},#{Float.round(lat / 1, 5)},#{round(km * 1000)}", nil}
     else
       nil -> {:error, "Toca el plano para poner el centro del círculo."}
       _ -> {:error, "El radio va de 0.1 a 25 km."}
     end
   end
 
-  defp zona(params, _punto) do
-    cve_ent = params["cve_ent"] || ""
-    cve_mun = params["cve_mun"] || ""
-
-    if String.match?(cve_ent, ~r/^\d{2}$/) and String.match?(cve_mun, ~r/^\d{3}$/),
-      do: {:ok, %{cve_ent: cve_ent, cve_mun: cve_mun}},
-      else: {:error, "Elige un estado y un municipio."}
-  end
+  defp zona(%{zona: %{"clave" => clave, "nombre" => nombre}}, _params), do: {:ok, clave, nombre}
+  defp zona(_assigns, _params), do: {:error, "Elige una zona."}
 
   defp cerca(valor) when valor in @cercas_validas, do: {:ok, String.to_integer(valor)}
   defp cerca(_), do: {:error, "Elige qué tan cerca contar."}
@@ -560,9 +541,8 @@ defmodule MapoWeb.RiesgosLive.Index do
   end
 
   # El círculo se dibuja en cuanto hay centro y radio, antes de consultar.
-  defp previa(%{assigns: %{punto: %{lat: lat, lon: lon}, form: form}} = socket) do
-    with "circulo" <- form.params["modo"],
-         {km, ""} when km >= 0.1 and km <= 25 <- Float.parse(form.params["radio_km"] || "") do
+  defp previa(%{assigns: %{modo: "circulo", punto: %{lat: lat, lon: lon}, form: form}} = socket) do
+    with {km, ""} when km >= 0.1 and km <= 25 <- Float.parse(form.params["radio_km"] || "") do
       push_event(socket, "previa", %{lat: lat, lon: lon, radio_m: km * 1000})
     else
       _ -> socket
@@ -570,18 +550,4 @@ defmodule MapoWeb.RiesgosLive.Index do
   end
 
   defp previa(socket), do: socket
-
-  defp municipios_de(cve_ent) when cve_ent in [nil, ""], do: []
-
-  defp municipios_de(cve_ent) do
-    case MapoCore.municipios(cve_ent) do
-      {:ok, %{"features" => features}} ->
-        features
-        |> Enum.map(fn %{"properties" => p} -> {p["nomgeo"], p["cve_mun"]} end)
-        |> Enum.sort()
-
-      {:error, _} ->
-        []
-    end
-  end
 end

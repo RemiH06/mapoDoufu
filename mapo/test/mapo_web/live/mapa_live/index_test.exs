@@ -2,6 +2,7 @@ defmodule MapoWeb.MapaLive.IndexTest do
   use MapoWeb.ConnCase, async: true
 
   import Phoenix.LiveViewTest
+  import Mapo.ZonaFixtures
 
   setup :register_and_log_in_user
 
@@ -23,61 +24,57 @@ defmodule MapoWeb.MapaLive.IndexTest do
 
   defp stub_estados_y_municipio(extra) do
     Req.Test.stub(Mapo.MapoCore, fn conn ->
-      case conn.request_path do
-        "/geo/estados" ->
-          Req.Test.json(conn, %{
-            "type" => "FeatureCollection",
-            "features" => [estado_feature("14", "Jalisco")]
-          })
-
-        "/geo/municipios" ->
-          Req.Test.json(conn, %{
-            "type" => "FeatureCollection",
-            "features" => [municipio_feature("14", "039", "Guadalajara")]
-          })
-
-        _ ->
-          extra.(conn)
-      end
+      responder_zona(conn) || otra_ruta(conn, extra)
     end)
+  end
+
+  defp otra_ruta(conn, extra) do
+    case conn.request_path do
+      "/geo/estados" ->
+        Req.Test.json(conn, %{
+          "type" => "FeatureCollection",
+          "features" => [estado_feature("14", "Jalisco")]
+        })
+
+      "/geo/municipios" ->
+        Req.Test.json(conn, %{
+          "type" => "FeatureCollection",
+          "features" => [municipio_feature("14", "039", "Guadalajara")]
+        })
+
+      _ ->
+        extra.(conn)
+    end
   end
 
   defp montar_con_ubicacion(conn, extra) do
     stub_estados_y_municipio(extra)
     {:ok, lv, _html} = live(conn, ~p"/mapa")
-
-    lv
-    |> form("#ubicacion_form", mapa: %{"cve_ent" => "14", "cve_mun" => ""})
-    |> render_change()
-
-    lv
+    elegir_zona(lv, "ent:14")
   end
 
-  test "shows a warning when mapo_core/Gaiarda is not reachable", %{conn: conn} do
+  test "sin mapo_core, buscar una zona lo dice", %{conn: conn} do
     Req.Test.stub(Mapo.MapoCore, fn conn ->
       Plug.Conn.send_resp(conn, 502, Jason.encode!(%{"error" => "no disponible"}))
     end)
 
-    {:ok, _lv, html} = live(conn, ~p"/mapa")
+    {:ok, lv, _html} = live(conn, ~p"/mapa")
 
-    assert html =~ "No se pudo cargar la lista de estados"
+    html = lv |> form("#zona-form", zona_q: %{q: "Jalisco"}) |> render_change()
+    assert html =~ "No se pudo buscar"
   end
 
-  test "picking an estado populates municipios", %{conn: conn} do
+  test "elegir una zona la pone en el membrete y la manda al plano", %{conn: conn} do
     lv = montar_con_ubicacion(conn, fn _conn -> raise "no debería llamarse" end)
 
-    html = render(lv)
-    assert html =~ "Guadalajara"
+    assert has_element?(lv, ".ubicacion .zona-nombre", "Jalisco")
+    assert_push_event(lv, "zona_elegida", %{geojson: %{"type" => "Polygon"}})
   end
 
   defp montar_con_municipio(conn, extra) do
-    lv = montar_con_ubicacion(conn, extra)
-
-    lv
-    |> form("#ubicacion_form", mapa: %{"cve_ent" => "14", "cve_mun" => "039"})
-    |> render_change()
-
-    lv
+    stub_estados_y_municipio(extra)
+    {:ok, lv, _html} = live(conn, ~p"/mapa")
+    elegir_zona(lv, "mun:14039")
   end
 
   defp coleccion_con_una_feature, do: %{"type" => "FeatureCollection", "features" => [%{}]}
@@ -144,7 +141,7 @@ defmodule MapoWeb.MapaLive.IndexTest do
       |> form("#coropleta_capa_form", coropleta_capa: %{"indicador" => "pobtot"})
       |> render_submit()
 
-    assert html =~ "Selecciona un estado"
+    assert html =~ "Elige una zona"
   end
 
   test "quitar_coropleta pushes activa: false", %{conn: conn} do
@@ -162,22 +159,23 @@ defmodule MapoWeb.MapaLive.IndexTest do
     assert_push_event(lv, "capa_coropleta", %{activa: false})
   end
 
-  test "mostrar_voronoi requires a municipio", %{conn: conn} do
-    lv = montar_con_ubicacion(conn, fn _conn -> raise "no debería llamarse" end)
+  test "mostrar_voronoi requires a zone", %{conn: conn} do
+    stub_estados_y_municipio(fn _conn -> raise "no debería llamarse" end)
+    {:ok, lv, _html} = live(conn, ~p"/mapa")
 
     html =
       lv
       |> form("#voronoi_capa_form", voronoi_capa: %{"clase_actividad" => ""})
       |> render_submit()
 
-    assert html =~ "Selecciona un estado y un municipio"
+    assert html =~ "Elige una zona"
   end
 
   test "mostrar_voronoi with a municipio pushes the layer event", %{conn: conn} do
     lv =
       montar_con_ubicacion(conn, fn conn ->
         assert conn.request_path == "/voronoi/denue"
-        assert conn.params["cve_mun"] == "039"
+        assert conn.params["zona"] == "mun:14039"
 
         Req.Test.json(conn, %{
           "celdas" => %{"type" => "FeatureCollection", "features" => []},
@@ -185,13 +183,38 @@ defmodule MapoWeb.MapaLive.IndexTest do
         })
       end)
 
-    lv
-    |> form("#ubicacion_form", mapa: %{"cve_ent" => "14", "cve_mun" => "039"})
-    |> render_change()
-
+    elegir_zona(lv, "mun:14039")
     mostrar_voronoi(lv)
 
     assert_push_event(lv, "capa_voronoi", %{activa: true})
+  end
+
+  test "cambiar de zona vuelve a pedir el Voronoi puesto, con la zona nueva", %{conn: conn} do
+    yo = self()
+
+    lv =
+      montar_con_municipio(conn, fn conn ->
+        send(yo, {:voronoi, conn.params["zona"]})
+
+        Req.Test.json(conn, %{
+          "celdas" => %{"type" => "FeatureCollection", "features" => []},
+          "metodo" => "recortado_a_limite",
+          "num_negocios" => 3,
+          "num_fuera" => 2,
+          "competencia_m" => 5000
+        })
+      end)
+
+    assert mostrar_voronoi(lv, "farmacia") =~ "3 en la zona y 2 de fuera a 5 km o menos"
+    assert_receive {:voronoi, "mun:14039"}
+
+    lv |> element("#zona-sumar") |> render_click()
+    lv |> form("#zona-form", zona_q: %{q: "Zapopan"}) |> render_change()
+    lv |> form("#zona-form", zona_q: %{q: "Zapopan"}) |> render_submit()
+
+    assert_receive {:voronoi, "mun:14039,14120"}
+    assert has_element?(lv, ".zona-chips", "Zapopan")
+    assert_patch(lv, "/mapa?zona=mun:14039,14120&negocios=farmacia")
   end
 
   test "mostrar_voronoi includes clase_actividad when given", %{conn: conn} do
@@ -227,7 +250,7 @@ defmodule MapoWeb.MapaLive.IndexTest do
         Plug.Conn.send_resp(conn, 404, Jason.encode!(%{"detail" => "no encontrado"}))
       end)
 
-    assert mostrar_voronoi(lv) =~ "no está descargado en Gaiarda"
+    assert mostrar_voronoi(lv) =~ "no toca nada cargado en Mapo"
   end
 
   describe "transporte" do
@@ -253,7 +276,7 @@ defmodule MapoWeb.MapaLive.IndexTest do
 
     test "necesita un municipio", %{conn: conn} do
       lv = montar_con_ubicacion(conn, fn _conn -> raise "no debería llamarse" end)
-      assert render_click(lv, "mostrar_transporte", %{}) =~ "Selecciona un estado y un municipio"
+      assert render_click(lv, "mostrar_transporte", %{}) =~ "Elige una zona de un solo municipio"
     end
 
     test "pone las rutas, dice cuántas son frecuentes y la licencia de cada feed", %{conn: conn} do
@@ -322,7 +345,7 @@ defmodule MapoWeb.MapaLive.IndexTest do
 
     html = lv |> element("[phx-click='mostrar_coloreado']") |> render_click()
 
-    assert html =~ "Selecciona un estado"
+    assert html =~ "Elige una zona"
   end
 
   test "an empty coloreado from mapo_core shows an honest message", %{conn: conn} do
@@ -1171,7 +1194,7 @@ defmodule MapoWeb.MapaLive.IndexTest do
 
       assert_receive {:censo, consulta}
       assert consulta =~ "indicador=graproes" and consulta =~ "cve_mun=039"
-      assert_push_event(lv, "encuadrar_estado", %{cve_ent: "14"})
+      assert_push_event(lv, "zona_elegida", %{geojson: _})
       assert_push_event(lv, "capa_coropleta", %{activa: true})
       refute has_element?(lv, "#cinta-coropleta[hidden]")
       assert has_element?(lv, ".rotulo-titulo", "Guadalajara, Jalisco")
@@ -1207,26 +1230,20 @@ defmodule MapoWeb.MapaLive.IndexTest do
       stub_con_carga(fn conn -> Req.Test.json(conn, coleccion_con_una_feature()) end)
       {:ok, lv, _html} = live(conn, ~p"/mapa")
 
-      lv
-      |> form("#ubicacion_form", mapa: %{"cve_ent" => "14", "cve_mun" => ""})
-      |> render_change()
+      elegir_zona(lv, "ent:14")
+      assert_patch(lv, "/mapa?zona=ent:14")
 
-      assert_patch(lv, ~p"/mapa?ent=14")
-
-      lv
-      |> form("#ubicacion_form", mapa: %{"cve_ent" => "14", "cve_mun" => "039"})
-      |> render_change()
-
-      assert_patch(lv, ~p"/mapa?ent=14&mun=039")
+      elegir_zona(lv, "mun:14039")
+      assert_patch(lv, "/mapa?zona=mun:14039")
 
       lv
       |> form("#coropleta_capa_form", coropleta_capa: %{"indicador" => "pobtot"})
       |> render_submit()
 
-      assert_patch(lv, ~p"/mapa?ent=14&mun=039&censo=pobtot")
+      assert_patch(lv, "/mapa?zona=mun:14039&censo=pobtot")
 
       lv |> element("[phx-click='quitar_coropleta']") |> render_click()
-      assert_patch(lv, ~p"/mapa?ent=14&mun=039")
+      assert_patch(lv, "/mapa?zona=mun:14039")
     end
 
     test "la isócrona guarda su punto y sus minutos", %{conn: conn} do
@@ -1270,7 +1287,7 @@ defmodule MapoWeb.MapaLive.IndexTest do
 
       assert html =~ "@misc{inegi_censo2020_mapo_"
       assert html =~ "author = {{Instituto Nacional de Estadística y Geografía}}"
-      assert html =~ "/mapa?ent=14&amp;censo=pobtot&amp;ver=coropleta"
+      assert html =~ "/mapa?zona=ent:14&amp;censo=pobtot&amp;ver=coropleta"
       assert_receive {:carga, consulta}
       assert consulta =~ "tabla=censo" and consulta =~ "cve_ent=14"
 

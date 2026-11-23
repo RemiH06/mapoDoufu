@@ -656,6 +656,40 @@ CREATE TABLE IF NOT EXISTS fuente_cngmd_planeacion (
     PRIMARY KEY (cve_ent, cve_mun, instrumento)
 );
 
+-- Sesión 29b: zona común (zona.py). Metrópolis de México 2020 (SEDATU, CONAPO e
+-- INEGI) con sus municipios, y las colonias del índice de marginación urbana 2020
+-- de CONAPO (docs/fuentes/zonas.md).
+CREATE TABLE IF NOT EXISTS metropolis (
+    clave       TEXT PRIMARY KEY,   -- 14.1.01: estado, tipo (1 ZM, 2 municipal, 3 conurbada), número
+    nombre      TEXT NOT NULL,
+    tipo        TEXT NOT NULL,
+    cvegeos     TEXT[] NOT NULL,
+    actualizado TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE TABLE IF NOT EXISTS colonias (
+    cve_col     TEXT PRIMARY KEY,   -- 14098_0135
+    nombre      TEXT NOT NULL,
+    nombre_norm TEXT NOT NULL,      -- minúsculas y sin acentos, para buscar
+    cve_ent     TEXT NOT NULL,
+    cve_mun     TEXT NOT NULL,
+    nom_mun     TEXT,
+    clasif      TEXT,               -- Colonia, Fraccionamiento, Barrio...
+    pobtot      DOUBLE PRECISION,   -- estimada por CONAPO
+    geom        geometry(MultiPolygon, 4326) NOT NULL,
+    actualizado TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS idx_colonias_geom ON colonias USING GIST (geom);
+CREATE INDEX IF NOT EXISTS idx_colonias_mun ON colonias (cve_ent, cve_mun);
+-- Polígonos de código postal de SEPOMEX (Correos de México, datos.gob.mx), uno
+-- por estado. No se usa el CP de CONAPO: junta varios en una colonia.
+CREATE TABLE IF NOT EXISTS codigos_postales (
+    cp          TEXT PRIMARY KEY,
+    cve_ent     TEXT NOT NULL,
+    geom        geometry(MultiPolygon, 4326) NOT NULL,
+    actualizado TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS idx_cp_geom ON codigos_postales USING GIST (geom);
+
 CREATE TABLE IF NOT EXISTS descargas_checkpoint (
     clave         TEXT PRIMARY KEY,
     completado_en TIMESTAMPTZ NOT NULL DEFAULT now()
@@ -668,7 +702,9 @@ def _conninfo() -> str:
     dbname = os.environ.get("DATABASE_NAME", "mapo_dev")
     user = os.environ.get("DATABASE_USER", "postgres")
     password = os.environ.get("DATABASE_PASSWORD", "postgres")
-    return f"host={host} dbname={dbname} user={user} password={password}"
+    # Sin JIT: con punto en polígono contra una zona (zona.py) Postgres estima costos
+    # enormes y compila 1.4 s una consulta que corre en 0.1 s (sesión 29b).
+    return f"host={host} dbname={dbname} user={user} password={password} options='-c jit=off'"
 
 
 _pool: AsyncConnectionPool | None = None

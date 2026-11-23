@@ -1,6 +1,7 @@
 defmodule MapoWeb.AccesibilidadLive.Index do
   @moduledoc """
-  Accesibilidad a servicios: en un municipio, cuánta gente vive a más de N
+  Accesibilidad a servicios: en una zona (selector común: municipios,
+  metrópoli, colonia, CP o dibujo; docs/producto/zona.md), cuánta gente vive a más de N
   minutos (a pie o en auto) de cada servicio, cada uno por separado y con su
   grupo de población. Nunca un índice. Los minutos ya están calculados por
   estado en `mapo_core/accesibilidad.py`; mover el umbral no vuelve a
@@ -15,6 +16,7 @@ defmodule MapoWeb.AccesibilidadLive.Index do
   alias Mapo.Limite
   alias Mapo.MapoCore
   alias MapoWeb.Cita
+  alias MapoWeb.ZonaSelector
 
   @max_consultas 60
   @ventana 3600
@@ -48,7 +50,7 @@ defmodule MapoWeb.AccesibilidadLive.Index do
         phx-update="ignore"
         class="plano-gl flex-1 min-h-0 w-full"
         role="region"
-        aria-label="Plano del municipio por minutos al servicio elegido"
+        aria-label="Plano de la zona por minutos al servicio elegido"
       >
       </div>
       <%!-- Misma hoja que /riesgos: comparten la forma de una consulta por zona. --%>
@@ -59,7 +61,7 @@ defmodule MapoWeb.AccesibilidadLive.Index do
         aria-labelledby="t-hoja"
       >
         <div class="hoja-cab">
-          <h1 id="t-hoja">Servicios del municipio</h1>
+          <h1 id="t-hoja">Servicios de la zona</h1>
 
           <button
             type="button"
@@ -76,22 +78,10 @@ defmodule MapoWeb.AccesibilidadLive.Index do
             Cada servicio va por separado, con la gente que lo usa: aquí no hay índice. Los minutos son por calle, sin tráfico.
           </p>
 
+          <.live_component module={ZonaSelector} id="zona" zona={@zona} scope={@current_scope} />
+
           <.form for={@form} id="accesibilidad_form" phx-change="cambiar" phx-submit="consultar">
-            <.input
-              field={@form[:cve_ent]}
-              type="select"
-              label="Estado"
-              prompt="Elige un estado"
-              options={@estados}
-            />
-            <.input
-              :if={@municipios != []}
-              field={@form[:cve_mun]}
-              type="select"
-              label="Municipio"
-              prompt="Elige un municipio"
-              options={@municipios}
-            /> <.input field={@form[:modo]} type="select" label="Cómo se llega" options={@modos} />
+            <.input field={@form[:modo]} type="select" label="Cómo se llega" options={@modos} />
             <.input
               field={@form[:umbral]}
               type="number"
@@ -102,7 +92,7 @@ defmodule MapoWeb.AccesibilidadLive.Index do
             />
             <div class="botones">
               <.button variant="primary" phx-disable-with="Consultando..." disabled={@consultando}>
-                {if @consultando, do: "Consultando...", else: "Consultar el municipio"}
+                {if @consultando, do: "Consultando...", else: "Consultar la zona"}
               </.button>
             </div>
           </.form>
@@ -146,8 +136,8 @@ defmodule MapoWeb.AccesibilidadLive.Index do
                   <li :if={(s["sin_calcular_lugares"] || 0) > 0}>
                     <span class="num">{cifra(s["sin_calcular"])}</span>
                     viven en {cifra(s["sin_calcular_lugares"])} {if s["sin_calcular_lugares"] == 1,
-                      do: "localidad",
-                      else: "localidades"} sin AGEB: no se calculan, porque DENUE casi no registra las escuelas del campo.
+                      do: "lugar que no se calcula",
+                      else: "lugares que no se calculan"}: {sin_calcular_por_que(s)}.
                   </li>
 
                   <li :if={s["reservados"] > 0}>
@@ -157,7 +147,18 @@ defmodule MapoWeb.AccesibilidadLive.Index do
                   </li>
 
                   <li>
-                    {cifra(s["destinos_zona"])} en el municipio, {cifra(s["destinos_estado"])} en el estado.
+                    {cifra(s["destinos_zona"])} en la zona, {cifra(s["destinos_estado"])} en {if length(
+                                                                                                   @resultado[
+                                                                                                     "zona"
+                                                                                                   ][
+                                                                                                     "estados"
+                                                                                                   ]
+                                                                                                 ) >
+                                                                                                   1,
+                                                                                                 do:
+                                                                                                   "los estados",
+                                                                                                 else:
+                                                                                                   "el estado"}.
                   </li>
                 </ul>
 
@@ -197,11 +198,18 @@ defmodule MapoWeb.AccesibilidadLive.Index do
                 </div>
               <% else %>
                 <p :if={s["sin_cobertura"]} class="secundario">
-                  Ningún GTFS cargado tiene paradas en este municipio: no se calcula. Fuera de las ciudades con GTFS sí hay camiones, pero nadie publica sus paradas.
+                  Ningún GTFS cargado tiene paradas en los municipios de esta zona: no se calcula. Fuera de las ciudades con GTFS sí hay camiones, pero nadie publica sus paradas.
                 </p>
 
                 <p :if={!s["sin_cobertura"]} class="secundario">
-                  Todavía no se calcula {@frase_modo[@resultado["modo"]]} para este estado.
+                  Todavía no se calcula {@frase_modo[@resultado["modo"]]} para {if length(
+                                                                                     @resultado[
+                                                                                       "zona"
+                                                                                     ]["estados"]
+                                                                                   ) > 1,
+                                                                                   do:
+                                                                                     "estos estados",
+                                                                                   else: "este estado"}.
                 </p>
               <% end %>
             </article>
@@ -221,6 +229,16 @@ defmodule MapoWeb.AccesibilidadLive.Index do
     %{dentro: dentro, fuera: con_ruta - dentro, con_ruta: con_ruta}
   end
 
+  defp sin_calcular_por_que(%{"estados_sin_calcular" => [_ | _]} = s) do
+    if s["solo_agebs"],
+      do:
+        "de un estado sin calcular, o localidades sin AGEB (DENUE casi no registra las escuelas del campo)",
+      else: "de un estado que todavía no se calcula"
+  end
+
+  defp sin_calcular_por_que(_s),
+    do: "localidades sin AGEB, porque DENUE casi no registra las escuelas del campo"
+
   defp porcentaje(%{con_ruta: 0}), do: ""
 
   defp porcentaje(%{fuera: f, con_ruta: c}),
@@ -228,22 +246,10 @@ defmodule MapoWeb.AccesibilidadLive.Index do
 
   @impl true
   def mount(_params, _session, socket) do
-    estados =
-      case MapoCore.estados() do
-        {:ok, %{"features" => features}} ->
-          features
-          |> Enum.map(fn %{"properties" => p} -> {p["nomgeo"], p["cvegeo"]} end)
-          |> Enum.sort()
-
-        {:error, _} ->
-          []
-      end
-
     {:ok,
      assign(socket,
        page_title: "Servicios",
-       estados: estados,
-       municipios: [],
+       zona: nil,
        modos: @modos,
        frase_modo: @frase_modo,
        max_minutos: 120,
@@ -262,29 +268,23 @@ defmodule MapoWeb.AccesibilidadLive.Index do
      )}
   end
 
-  # Enlace permanente: municipio, modo, umbral y servicio del plano. Cada valor
-  # pasa por la misma validación que el formulario; uno raro deja la hoja vacía
-  # o cae al valor inicial, sin error.
+  # Enlace permanente: zona, modo, umbral y servicio del plano. Cada valor pasa
+  # por la misma validación que el formulario; uno raro deja la hoja vacía o
+  # cae al valor inicial, sin error. Los de antes de la 29b traen `ent` y `mun`.
   @impl true
   def handle_params(params, _uri, socket) do
-    if connected?(socket) and is_nil(socket.assigns.consultada) and params != %{} do
-      {:noreply, consultar_de_url(socket, params)}
-    else
-      {:noreply, socket}
+    cond do
+      not connected?(socket) or not is_nil(socket.assigns.consultada) -> {:noreply, socket}
+      params != %{} -> {:noreply, consultar_de_url(socket, params)}
+      # Sin zona en el enlace, la que guardó quien abre (sin consultar sola).
+      true -> {:noreply, ZonaSelector.con_zona_inicial(socket)}
     end
   end
 
-  defp consultar_de_url(socket, %{"ent" => ent, "mun" => mun} = params)
-       when is_binary(ent) and is_binary(mun) do
-    municipios =
-      if Enum.any?(socket.assigns.estados, fn {_, c} -> c == ent end),
-        do: municipios_de(ent),
-        else: []
-
-    if Enum.any?(municipios, fn {_, c} -> c == mun end) do
+  defp consultar_de_url(socket, params) do
+    with clave when is_binary(clave) <- clave_de_url(params),
+         {:ok, zona} <- ZonaSelector.resolver(clave) do
       form = %{
-        "cve_ent" => ent,
-        "cve_mun" => mun,
         "modo" => if(params["modo"] in @modos_validos, do: params["modo"], else: "pie"),
         "umbral" =>
           case umbral(params["umbral"]) do
@@ -294,56 +294,53 @@ defmodule MapoWeb.AccesibilidadLive.Index do
       }
 
       socket
-      |> assign(municipios: municipios, servicio: params["servicio"])
+      |> assign(zona: zona, servicio: params["servicio"])
+      |> push_event("zona_elegida", %{geojson: zona["geojson"]})
       |> consultar(form)
     else
-      socket
+      _ -> socket
     end
   end
 
-  defp consultar_de_url(socket, _params), do: socket
+  defp clave_de_url(%{"zona" => clave}) when is_binary(clave), do: clave
 
-  defp ruta(%{cve_ent: e, cve_mun: m, modo: modo}, umbral, servicio) do
+  defp clave_de_url(%{"ent" => e, "mun" => m}) when is_binary(e) and is_binary(m) do
+    if String.match?(e, ~r/^\d{2}$/) and String.match?(m, ~r/^\d{3}$/), do: "mun:#{e}#{m}"
+  end
+
+  defp clave_de_url(_params), do: nil
+
+  defp ruta(%{zona: clave, modo: modo}, umbral, servicio) do
     params =
-      [ent: e, mun: m, modo: modo, umbral: umbral] ++
+      [zona: clave, modo: modo, umbral: umbral] ++
         if(servicio, do: [servicio: servicio], else: [])
 
-    ~p"/accesibilidad" <> "?" <> URI.encode_query(params)
+    ~p"/accesibilidad" <> "?" <> ZonaSelector.query(params)
   end
 
   defp formulario(params) do
-    base = %{"cve_ent" => "", "cve_mun" => "", "modo" => "pie", "umbral" => "#{@umbral_inicial}"}
+    base = %{"modo" => "pie", "umbral" => "#{@umbral_inicial}"}
     to_form(Map.merge(base, Map.take(params, Map.keys(base))), as: "acc")
   end
 
   @impl true
+  def handle_info({:zona_elegida, zona}, socket) do
+    socket = assign(socket, zona: zona)
+    {:noreply, consultar(socket, socket.assigns.form.params)}
+  end
+
+  @impl true
   def handle_event("cambiar", %{"acc" => params}, socket) do
-    anterior = socket.assigns.form.params
-
-    {params, socket} =
-      if params["cve_ent"] != anterior["cve_ent"],
-        do:
-          {Map.put(params, "cve_mun", ""),
-           assign(socket, municipios: municipios_de(params["cve_ent"]))},
-        else: {params, socket}
-
     socket = assign(socket, form: formulario(params))
     a = socket.assigns
 
     cond do
-      # Con un municipio ya consultado, el modo vuelve a pedir (es una lectura de
-      # la base) y el umbral solo vuelve a restar.
+      # Con una zona ya consultada, el modo vuelve a pedir (es una lectura de la
+      # base) y el umbral solo vuelve a restar.
       not is_nil(a.consultada) and params["modo"] != a.consultada.modo and
         params["modo"] in @modos_validos and
           not a.consultando ->
-        {:noreply,
-         consultar(
-           socket,
-           Map.merge(params, %{
-             "cve_ent" => a.consultada.cve_ent,
-             "cve_mun" => a.consultada.cve_mun
-           })
-         )}
+        {:noreply, consultar(socket, params)}
 
       a.consultada ->
         case umbral(params["umbral"]) do
@@ -413,13 +410,13 @@ defmodule MapoWeb.AccesibilidadLive.Index do
   defp consultar(socket, params) do
     socket = assign(socket, form: formulario(params))
 
-    with {:ok, zona} <- zona(params),
+    with {:ok, pedida} <- zona(socket.assigns.zona, params),
          {:ok, u} <- umbral(params["umbral"]),
          :ok <- limite(socket) do
       socket
-      |> assign(consultando: true, error: nil, pedida: zona, umbral: u)
+      |> assign(consultando: true, error: nil, pedida: pedida, umbral: u)
       |> start_async(:accesibilidad, fn ->
-        MapoCore.accesibilidad_zona(zona.cve_ent, zona.cve_mun, zona.modo)
+        MapoCore.accesibilidad_zona(pedida.zona, pedida.modo)
       end)
     else
       {:error, mensaje} -> assign(socket, error: mensaje)
@@ -455,13 +452,17 @@ defmodule MapoWeb.AccesibilidadLive.Index do
   def handle_async(:accesibilidad, {:ok, {:error, {:status, 404, _}}}, socket),
     do:
       {:noreply,
-       assign(socket, consultando: false, error: "Ese municipio no está cargado en Mapo.")}
+       assign(socket, consultando: false, error: "Esa zona no toca nada cargado en Mapo.")}
+
+  def handle_async(:accesibilidad, {:ok, {:error, {:status, 422, %{"detail" => d}}}}, socket)
+      when is_binary(d),
+      do: {:noreply, assign(socket, consultando: false, error: "La zona no sirve: #{d}.")}
 
   def handle_async(:accesibilidad, _resultado, socket) do
     {:noreply,
      assign(socket,
        consultando: false,
-       error: "No se pudo consultar el municipio. Inténtalo de nuevo en un momento."
+       error: "No se pudo consultar la zona. Inténtalo de nuevo en un momento."
      )}
   end
 
@@ -513,20 +514,12 @@ defmodule MapoWeb.AccesibilidadLive.Index do
       ]
   end
 
-  defp zona(params) do
-    e = params["cve_ent"] || ""
-    m = params["cve_mun"] || ""
+  defp zona(nil, _params), do: {:error, "Elige una zona."}
 
-    cond do
-      not (String.match?(e, ~r/^\d{2}$/) and String.match?(m, ~r/^\d{3}$/)) ->
-        {:error, "Elige un estado y un municipio."}
-
-      params["modo"] not in @modos_validos ->
-        {:error, "Elige cómo se llega."}
-
-      true ->
-        {:ok, %{cve_ent: e, cve_mun: m, modo: params["modo"]}}
-    end
+  defp zona(%{"clave" => clave}, params) do
+    if params["modo"] in @modos_validos,
+      do: {:ok, %{zona: clave, modo: params["modo"]}},
+      else: {:error, "Elige cómo se llega."}
   end
 
   defp umbral(valor) when is_binary(valor) do
@@ -546,19 +539,5 @@ defmodule MapoWeb.AccesibilidadLive.Index do
        ),
        do: :ok,
        else: {:error, "Llevas #{@max_consultas} consultas en una hora. Espera un poco."}
-  end
-
-  defp municipios_de(cve_ent) when cve_ent in [nil, ""], do: []
-
-  defp municipios_de(cve_ent) do
-    case MapoCore.municipios(cve_ent) do
-      {:ok, %{"features" => features}} ->
-        features
-        |> Enum.map(fn %{"properties" => p} -> {p["nomgeo"], p["cve_mun"]} end)
-        |> Enum.sort()
-
-      {:error, _} ->
-        []
-    end
   end
 end

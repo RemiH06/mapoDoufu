@@ -1,0 +1,165 @@
+/* Selector de zona común (MapoWeb.ZonaSelector, sesión 29b): el mismo en la
+   hoja de /riesgos y /accesibilidad y en el membrete de /mapa. Interfaz en
+   blanco o negro: el color es de los datos del plano. */
+
+@layer components {
+  .zona-selector {
+    display: grid;
+    gap: 6px;
+    position: relative;
+  }
+  .zona-tipo {
+    font-family: var(--cond);
+    font-size: 13px;
+    color: var(--text2);
+  }
+  .zona-nombre {
+    font-family: var(--cond);
+    font-weight: 600;
+    font-size: 17px;
+    line-height: 1.2;
+  }
+  .zona-selector .secundario {
+    font-size: 13px;
+    line-height: 1.3;
+    color: var(--text2);
+  }
+  .zona-selector .botones {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+  .zona-selector form {
+    display: grid;
+    gap: 4px;
+  }
+  .zona-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+  }
+  .zona-chips li {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    border: 1.5px solid var(--line);
+    padding: 0 0 0 8px;
+    font-size: 14px;
+  }
+  .zona-chips .chico {
+    border: 0;
+    min-height: 28px;
+    padding: 0 8px;
+  }
+  .zona-sugerencias {
+    display: grid;
+    border: 1.5px solid var(--text);
+    background: var(--bg);
+    max-height: 18rem;
+    overflow-y: auto;
+  }
+  .zona-sugerencias button {
+    display: grid;
+    width: 100%;
+    text-align: left;
+    padding: 6px 10px;
+    min-height: 44px;
+    border-bottom: 1px dashed var(--line);
+    cursor: pointer;
+  }
+  .zona-sugerencias li:last-child button {
+    border-bottom: 0;
+  }
+  .zona-sugerencias button:hover,
+  .zona-sugerencias button:focus-visible {
+    background: color-mix(in srgb, var(--text) 8%, transparent);
+  }
+  .zona-sugerencias .zona-nombre {
+    font-size: 15px;
+  }
+
+  /* /riesgos: buscar una zona o poner un círculo */
+  .riesgos-modo {
+    display: flex;
+    gap: 6px;
+    margin: 8px 0 4px;
+  }
+  .riesgos-modo [aria-pressed="true"] {
+    border-color: var(--text);
+    background: var(--text);
+    color: var(--bg);
+  }
+
+  /* En el membrete de /mapa: un renglón; las sugerencias, sobre el plano */
+  .ubicacion .zona-selector {
+    grid-auto-flow: column;
+    align-items: center;
+    gap: 8px;
+    color: var(--text);
+  }
+  .ubicacion .zona-elegida {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 2px 8px;
+  }
+  .ubicacion .zona-elegida > .secundario,
+  .ubicacion .zona-elegida > .zona-tipo {
+    display: none;
+  }
+  .ubicacion .zona-nombre {
+    font-family: var(--mano);
+    font-weight: 400;
+    font-size: 18px;
+  }
+  .ubicacion .zona-selector form {
+    grid-auto-flow: column;
+    align-items: center;
+    gap: 8px;
+  }
+  .ubicacion .zona-selector input[type="search"] {
+    min-width: 16rem;
+  }
+  .ubicacion .zona-sugerencias {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    z-index: 30;
+    width: min(28rem, 90vw);
+    box-shadow: 4px 4px 0 color-mix(in srgb, var(--text) 25%, transparent);
+  }
+
+  /* Aviso del plano mientras se dibuja (zona_plano.js), arriba a la derecha
+     junto al zoom: abajo a la izquierda lo tapaba la hoja. */
+  .aviso-dibujo {
+    position: absolute;
+    top: 96px;
+    right: 64px;
+    z-index: 5;
+    max-width: min(26rem, 60%);
+    background: var(--bg);
+    border: 1.5px solid var(--text);
+    padding: 6px 12px;
+    font-family: var(--cond);
+    font-size: 15px;
+    pointer-events: none;
+  }
+
+  @media (max-width: 760px) {
+    .aviso-dibujo {
+      top: auto;
+      bottom: 56dvh;
+      left: 10px;
+      right: 10px;
+      max-width: none;
+    }
+    .ubicacion .zona-selector,
+    .ubicacion .zona-selector form {
+      grid-auto-flow: row;
+    }
+    .ubicacion .zona-selector input[type="search"] {
+      min-width: 0;
+      width: 100%;
+    }
+  }
+}

@@ -25,7 +25,8 @@ que se está viendo y un texto de cita listo para copiar. Hecho en la sesión 24
 
 | Parámetro | Qué es | Se valida contra |
 |---|---|---|
-| `ent`, `mun` | Estado y municipio | La lista de estados y la de municipios del estado |
+| `zona` | La zona del membrete, como clave de la zona común (`zona.md`): `zona=mun:14039,14120` | `zona.validar` de mapo_core; una que no resuelve se ignora |
+| `ent`, `mun` | Enlaces de antes de la 29b: se leen como `mun:` o `ent:` y la URL se reescribe con `zona` | Dos y tres dígitos |
 | `censo` | Indicador del acetato "Censo por AGEB" | `MapoCore.indicadores_censo/0` |
 | `viv`, `anio`, `seg` | Indicador de vivienda, año y segmento del SNIIV | El catálogo de `/vivienda/catalogo` |
 | `ficha` | Municipio con la ficha de vivienda abierta | Tres dígitos; mapo_core responde 404 si no existe |
@@ -43,17 +44,19 @@ vez, al conectar. El orden de las capas en la pila no se guarda.
 
 ### `/riesgos`
 
-`modo=municipio&ent=&mun=&cerca=` o `modo=circulo&lat=&lon=&radio=&cerca=`.
-Se escribe al terminar una consulta. Al abrirlo se consulta igual que con el
-botón, con el mismo límite de 30 por hora; un municipio que no está en la lista
-del estado, un radio fuera de 0.1 a 25 km o una cercanía que no es de la lista
-dejan la hoja vacía.
+`zona=&cerca=`, con la clave de la zona común (`zona.md`); el círculo es
+`zona=cir:lon,lat,radio`. Se escribe al terminar una consulta. Al abrirlo se
+consulta igual que con el botón, con el mismo límite de 30 por hora; una zona
+que no resuelve, un radio fuera de 0.1 a 25 km o una cercanía que no es de la
+lista dejan la hoja vacía. Los enlaces de antes de la 29b
+(`modo=municipio&ent=&mun=` y `modo=circulo&lat=&lon=&radio=`) siguen abriendo.
 
 ### `/accesibilidad`
 
-`ent=&mun=&modo=&umbral=&servicio=`. Se escribe al terminar la consulta y al mover el
-umbral o el servicio del plano. Un modo que no es `pie` o `auto` o un umbral fuera de 1 a
-120 caen al valor inicial (a pie, 15); un municipio que no está deja la hoja vacía. La
+`zona=&modo=&umbral=&servicio=` (`ent` y `mun` en los enlaces de antes de la 29b). Se
+escribe al terminar la consulta y al mover el umbral o el servicio del plano. Un modo que
+no es `pie` o `auto` o un umbral fuera de 1 a 120 caen al valor inicial (a pie, 15); una
+zona que no resuelve deja la hoja vacía. La
 cita de cada servicio trae tres referencias: la fuente de los destinos (CLUES, DENUE u
 OSM), el censo y OSM como red, con la fecha del cálculo como versión.
 
@@ -71,7 +74,7 @@ INEGI. (2021). Censo de Población y Vivienda 2020: principales resultados por A
 y manzana urbana [Conjunto de datos]. https://www.inegi.org.mx/programas/ccpv/2020/
 Datos de 2020. Procesado por Mapo: Población total por AGEB, Jalisco; tabla cargada
 en Mapo el 2026-08-28. Consultado el 21 de noviembre de 2026 en
-https://mapo.remlam.dev/mapa?ent=14&censo=pobtot&ver=coropleta
+https://mapo.remlam.dev/mapa?zona=ent:14&censo=pobtot&ver=coropleta
 ```
 
 ```bibtex
@@ -80,7 +83,7 @@ https://mapo.remlam.dev/mapa?ent=14&censo=pobtot&ver=coropleta
   title = {{Censo de Población y Vivienda 2020: principales resultados por AGEB y manzana urbana}},
   year = {2021},
   note = {Datos de 2020. Procesado por Mapo: ... Fuente original: https://...},
-  url = {https://mapo.remlam.dev/mapa?ent=14&censo=pobtot&ver=coropleta},
+  url = {https://mapo.remlam.dev/mapa?zona=ent:14&censo=pobtot&ver=coropleta},
   urldate = {2026-11-21}
 }
 ```

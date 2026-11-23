@@ -8,8 +8,23 @@ defmodule Mapo.Accounts.User do
     field :hashed_password, :string, redact: true
     field :confirmed_at, :utc_datetime
     field :authenticated_at, :utc_datetime, virtual: true
+    # Clave de la zona común: mun:14039, zm:14.1.01... (docs/producto/zona.md).
+    field :zona_operacion, :string
 
     timestamps(type: :utc_datetime)
+  end
+
+  @doc """
+  La zona en la que opera (o `nil` para quitarla). Solo se revisa la forma:
+  si la zona existe lo dice mapo_core al resolverla.
+  """
+  def zona_changeset(user, attrs) do
+    user
+    |> cast(attrs, [:zona_operacion])
+    |> validate_length(:zona_operacion, max: 6_000)
+    |> validate_format(:zona_operacion, ~r/^(ent|mun|zm|cp|col|pol|cir):[0-9.,;_\-]+$/,
+      message: "no es una zona"
+    )
   end
 
   @doc """

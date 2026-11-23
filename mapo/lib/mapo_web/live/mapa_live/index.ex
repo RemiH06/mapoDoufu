@@ -70,32 +70,17 @@ defmodule MapoWeb.MapaLive.Index do
     ~H"""
     <Layouts.app flash={@flash} current_scope={@current_scope} seccion="mapa" full_width?={true}>
       <:membrete>
-        <.form for={@form} id="ubicacion_form" phx-change="cambiar_ubicacion" class="ubicacion">
-          <.input
-            field={@form[:cve_ent]}
-            type="select"
-            options={@estados}
-            prompt="Elige un estado"
-            class="membrete-select"
-            aria-label="Estado"
-          /> <span aria-hidden="true">/</span>
-          <.input
-            field={@form[:cve_mun]}
-            type="select"
-            options={@municipios}
-            prompt="Todo el estado"
-            class="membrete-select"
-            aria-label="Municipio"
+        <div class="ubicacion">
+          <.live_component
+            module={MapoWeb.ZonaSelector}
+            id="zona"
+            zona={@zona}
+            scope={@current_scope}
           />
-        </.form>
+        </div>
       </:membrete>
 
       <h1 class="sr-only">Mapa técnico</h1>
-
-      <p :if={@estados == []} class="aviso-plano pegado sin-cinta">
-        No se pudo cargar la lista de estados: mapo_core no responde o todavía no hay estados
-        descargados.
-      </p>
 
       <div
         id="mapa-tecnico"
@@ -955,7 +940,7 @@ defmodule MapoWeb.MapaLive.Index do
 
     <p class="cinta-texto">
       {@resumen ||
-        "Cada celda es la zona más cerca de ese negocio que de otro. Celda grande, poca oferta. Necesita un municipio."}
+        "Cada celda es la parte de la zona más cerca de ese negocio que de otro. Celda grande, poca oferta. Los de fuera a 5 km o menos también compiten."}
     </p>
     """
   end
@@ -1018,16 +1003,9 @@ defmodule MapoWeb.MapaLive.Index do
   def mount(_params, _session, socket) do
     sesiones = Sesiones.list_sesiones_del_usuario(socket.assigns.current_scope)
 
-    estados =
-      case MapoCore.estados() do
-        {:ok, %{"features" => features}} -> opciones_estados(features)
-        {:error, _} -> []
-      end
-
     {:ok,
      assign(socket,
-       estados: estados,
-       municipios: [],
+       zona: nil,
        indicadores: Enum.map(MapoCore.indicadores_censo(), fn {c, e} -> {e, c} end),
        form: to_form(%{"cve_ent" => "", "cve_mun" => ""}, as: "mapa"),
        coropleta_form: to_form(%{"indicador" => "pobtot"}, as: "coropleta_capa"),
@@ -1100,19 +1078,6 @@ defmodule MapoWeb.MapaLive.Index do
   end
 
   @impl true
-  def handle_event("cambiar_ubicacion", %{"mapa" => params}, socket) do
-    cve_ent_previo = socket.assigns.form[:cve_ent].value
-
-    socket =
-      if params["cve_ent"] != cve_ent_previo do
-        assign(socket, municipios: municipios_de(params["cve_ent"]))
-      else
-        socket
-      end
-
-    {:noreply, socket |> assign(form: to_form(params, as: "mapa")) |> sincronizar_url()}
-  end
-
   def handle_event("elegir", %{"capa" => capa}, socket)
       when is_map_key(@capas, capa) or capa == "marcas" do
     elegida = if socket.assigns.elegida == capa, do: nil, else: capa
@@ -1364,6 +1329,10 @@ defmodule MapoWeb.MapaLive.Index do
   end
 
   @impl true
+  def handle_info({:zona_elegida, zona}, socket) do
+    {:noreply, socket |> ubicar(zona) |> reaplicar_capas() |> sincronizar_url()}
+  end
+
   def handle_info({:anotacion_creada, _} = mensaje, socket),
     do: {:noreply, Marcas.mensaje(mensaje, update(socket, :num_marcas, &(&1 + 1)))}
 
@@ -1580,7 +1549,7 @@ defmodule MapoWeb.MapaLive.Index do
     cve_mun = vacio_para_nil(socket.assigns.form[:cve_mun].value)
 
     if cve_ent in [nil, ""] do
-      put_flash(socket, :error, "Selecciona un estado primero.")
+      put_flash(socket, :error, "Elige una zona primero.")
     else
       case MapoCore.coropleta_censo_poblacion(indicador, cve_ent, cve_mun) do
         {:ok, %{"features" => []}} ->
@@ -1614,14 +1583,13 @@ defmodule MapoWeb.MapaLive.Index do
   end
 
   defp poner_voronoi(socket, clase_actividad) do
-    cve_ent = socket.assigns.form[:cve_ent].value
-    cve_mun = vacio_para_nil(socket.assigns.form[:cve_mun].value)
+    zona = socket.assigns.zona
     clase_actividad = vacio_para_nil(clase_actividad)
 
-    if cve_ent in [nil, ""] or is_nil(cve_mun) do
-      put_flash(socket, :error, "Selecciona un estado y un municipio primero.")
+    if is_nil(zona) do
+      put_flash(socket, :error, "Elige una zona primero.")
     else
-      case MapoCore.voronoi_denue(cve_ent, cve_mun, clase_actividad) do
+      case MapoCore.voronoi_denue(zona["clave"], clase_actividad) do
         {:ok, %{"celdas" => geojson} = respuesta} ->
           socket
           |> assign(
@@ -1637,7 +1605,7 @@ defmodule MapoWeb.MapaLive.Index do
           put_flash(socket, :error, mensaje || "No hay suficientes negocios con ese filtro.")
 
         {:error, {:status, 404, _}} ->
-          put_flash(socket, :error, "Ese municipio no está descargado en Gaiarda todavía.")
+          put_flash(socket, :error, "Esa zona no toca nada cargado en Mapo.")
 
         {:error, _} ->
           put_flash(socket, :error, "mapo_core no está disponible ahorita mismo.")
@@ -1650,7 +1618,7 @@ defmodule MapoWeb.MapaLive.Index do
     cve_mun = vacio_para_nil(socket.assigns.form[:cve_mun].value)
 
     if cve_ent in [nil, ""] or is_nil(cve_mun) do
-      put_flash(socket, :error, "Selecciona un estado y un municipio primero.")
+      put_flash(socket, :error, "Elige una zona de un solo municipio primero.")
     else
       case MapoCore.transporte_zona(cve_ent, cve_mun) do
         {:ok, %{"rutas" => rutas, "paradas" => paradas} = respuesta} ->
@@ -1686,7 +1654,7 @@ defmodule MapoWeb.MapaLive.Index do
     segmento = if sniiv?, do: vacio_para_nil(params["segmento"])
 
     if cve_ent in [nil, ""] do
-      put_flash(socket, :error, "Selecciona un estado primero.")
+      put_flash(socket, :error, "Elige una zona primero.")
     else
       case MapoCore.vivienda_municipios(cve_ent, params["indicador"], anio, segmento) do
         {:ok, %{"features" => [], "nivel" => "AGEB"}} ->
@@ -1733,7 +1701,7 @@ defmodule MapoWeb.MapaLive.Index do
     cve_ent = socket.assigns.form[:cve_ent].value
 
     if cve_ent in [nil, ""] do
-      put_flash(socket, :error, "Selecciona un estado primero.")
+      put_flash(socket, :error, "Elige una zona primero.")
     else
       case MapoCore.coloreado_municipios(cve_ent) do
         {:ok, %{"features" => []}} ->
@@ -1785,8 +1753,7 @@ defmodule MapoWeb.MapaLive.Index do
     vivienda = a.vivienda_activa? && a.vivienda_meta
 
     [
-      ent: vacio_para_nil(a.form[:cve_ent].value),
-      mun: vacio_para_nil(a.form[:cve_mun].value),
+      zona: a.zona && a.zona["clave"],
       censo: a.coropleta_activa? && a.coropleta_form[:indicador].value,
       viv: vivienda && vivienda["indicador"]["clave"],
       anio: vivienda && vivienda["anio"],
@@ -1803,7 +1770,7 @@ defmodule MapoWeb.MapaLive.Index do
     |> Enum.map(fn {k, v} -> {k, to_string(v)} end)
   end
 
-  @claves_url ~w(ent mun censo viv anio seg ficha negocios municipios transporte alcance ver piel sesion)a
+  @claves_url ~w(zona censo viv anio seg ficha negocios municipios transporte alcance ver piel sesion)a
 
   # Lo que trae la URL, en el orden de `params_url`: si lo reconstruido no es
   # igual (un valor fuera de catálogo), la URL se corrige.
@@ -1818,7 +1785,7 @@ defmodule MapoWeb.MapaLive.Index do
 
   defp ruta_mapa([]), do: ~p"/mapa"
   # `~p` ordenaría las claves; así el enlace sale en el orden de la vista.
-  defp ruta_mapa(params), do: ~p"/mapa" <> "?" <> URI.encode_query(params)
+  defp ruta_mapa(params), do: ~p"/mapa" <> "?" <> MapoWeb.ZonaSelector.query(params)
 
   defp sincronizar_url(socket) do
     a = socket.assigns
@@ -1836,7 +1803,7 @@ defmodule MapoWeb.MapaLive.Index do
 
   defp reconstruir(socket, params) do
     socket
-    |> ubicar_de_url(params["ent"], params["mun"])
+    |> ubicar_de_url(params)
     |> coropleta_de_url(params["censo"])
     |> vivienda_de_url(params)
     |> voronoi_de_url(params["negocios"])
@@ -1847,20 +1814,78 @@ defmodule MapoWeb.MapaLive.Index do
     |> ver_de_url(params["ver"])
   end
 
-  defp ubicar_de_url(socket, ent, mun) do
-    if Enum.any?(socket.assigns.estados, fn {_, c} -> c == ent end) do
-      municipios = municipios_de(ent)
-      mun = if Enum.any?(municipios, fn {_, c} -> c == mun end), do: mun, else: ""
+  # La zona del enlace. Los de antes de la 29b traen `ent` y, quizá, `mun`.
+  defp ubicar_de_url(socket, params) do
+    clave =
+      cond do
+        is_binary(params["zona"]) ->
+          params["zona"]
 
-      socket
-      |> assign(
-        municipios: municipios,
-        form: to_form(%{"cve_ent" => ent, "cve_mun" => mun}, as: "mapa")
-      )
-      |> push_event("encuadrar_estado", %{cve_ent: ent})
-    else
-      socket
+        is_binary(params["ent"]) and String.match?(params["ent"], ~r/^\d{2}$/) ->
+          if is_binary(params["mun"]) and String.match?(params["mun"], ~r/^\d{3}$/),
+            do: "mun:#{params["ent"]}#{params["mun"]}",
+            else: "ent:#{params["ent"]}"
+
+        true ->
+          nil
+      end
+
+    case clave && MapoWeb.ZonaSelector.resolver(clave) do
+      {:ok, zona} ->
+        socket |> ubicar(zona) |> push_event("zona_elegida", %{geojson: zona["geojson"]})
+
+      # Sin zona en el enlace, la que guardó quien abre.
+      nil ->
+        case MapoWeb.ZonaSelector.zona_inicial(socket.assigns.current_scope) do
+          nil ->
+            socket
+
+          zona ->
+            socket |> ubicar(zona) |> push_event("zona_elegida", %{geojson: zona["geojson"]})
+        end
+
+      {:error, _} ->
+        socket
     end
+  end
+
+  # Las capas de antes de la 29b piden un estado y, si se puede, un municipio:
+  # salen de la zona (su primer estado; su municipio si es uno solo). El
+  # Voronoi usa la zona completa.
+  defp ubicar(socket, zona) do
+    ent = List.first(zona["estados"] || []) || ""
+
+    mun =
+      case zona do
+        %{"tipo" => "estado"} -> ""
+        %{"municipios" => [m]} -> m["cve_mun"]
+        _ -> ""
+      end
+
+    assign(socket, zona: zona, form: to_form(%{"cve_ent" => ent, "cve_mun" => mun}, as: "mapa"))
+  end
+
+  # Con otra zona, las capas puestas que dependen de ella se vuelven a pedir: si
+  # no, el plano seguiría con la zona de antes y el enlace ya diría la nueva.
+  defp reaplicar_capas(socket) do
+    a = socket.assigns
+
+    socket
+    |> then(
+      &if(a.coropleta_activa?,
+        do: poner_coropleta(&1, a.coropleta_form[:indicador].value),
+        else: &1
+      )
+    )
+    |> then(
+      &if(a.voronoi_activa?,
+        do: poner_voronoi(&1, a.voronoi_form[:clase_actividad].value),
+        else: &1
+      )
+    )
+    |> then(&if(a.transporte_activa?, do: poner_transporte(&1), else: &1))
+    |> then(&if(a.coloreado_activa?, do: poner_coloreado(&1), else: &1))
+    |> then(&if(a.vivienda_activa?, do: poner_vivienda(&1, a.vivienda_form.params), else: &1))
   end
 
   defp coropleta_de_url(socket, indicador) do
@@ -2172,55 +2197,39 @@ defmodule MapoWeb.MapaLive.Index do
 
   defp fuente_puesta(_assigns, id), do: @capas[id].fuente |> String.split(" · ") |> hd()
 
-  defp lugar(assigns) do
-    estado = nombre_de(assigns.estados, assigns.form[:cve_ent].value)
-    municipio = nombre_de(assigns.municipios, assigns.form[:cve_mun].value)
+  defp lugar(%{zona: %{"tipo" => "municipios", "municipios" => [m]}}),
+    do: Enum.join(Enum.reject([m["nombre"], m["estado"]], &is_nil/1), ", ")
 
-    case {municipio, estado} do
-      {nil, nil} -> "México"
-      {nil, e} -> e
-      {m, e} -> "#{m}, #{e}"
-    end
-  end
-
-  defp nombre_de(_opciones, valor) when valor in [nil, ""], do: nil
-
-  defp nombre_de(opciones, valor),
-    do: Enum.find_value(opciones, fn {n, v} -> if v == valor, do: n end)
+  defp lugar(%{zona: %{"nombre" => nombre}}), do: nombre
+  defp lugar(_assigns), do: "México"
 
   # Dice qué se dibujó: el filtro pudo reconocer un rubro de la tabla.
-  defp resumen_voronoi(%{"num_negocios" => n, "filtro" => filtro}) when is_binary(filtro),
-    do: "#{filtro}: #{cifra(n)} en el plano. Celda grande, poca oferta."
+  defp resumen_voronoi(%{"num_negocios" => n} = r) do
+    que = if is_binary(r["filtro"]), do: "#{r["filtro"]}: ", else: ""
 
-  defp resumen_voronoi(%{"num_negocios" => n}),
-    do: "#{cifra(n)} en el plano. Celda grande, poca oferta."
+    fuera =
+      case r["num_fuera"] do
+        f when is_integer(f) and f > 0 ->
+          " y #{cifra(f)} de fuera a #{div(r["competencia_m"] || 5000, 1000)} km o menos que compiten"
+
+        _ ->
+          ""
+      end
+
+    sin_denue =
+      if (r["sin_denue"] || []) != [],
+        do:
+          " Del otro lado del límite hay un estado sin DENUE en Mapo: ahí no se ve la competencia.",
+        else: ""
+
+    "#{que}#{cifra(n)} en la zona#{fuera}. Celda grande, poca oferta.#{sin_denue}"
+  end
 
   defp resumen_voronoi(_respuesta), do: nil
 
   defp vacio_para_nil(nil), do: nil
   defp vacio_para_nil(""), do: nil
   defp vacio_para_nil(valor), do: valor
-
-  defp municipios_de(cve_ent) when cve_ent in [nil, ""], do: []
-
-  defp municipios_de(cve_ent) do
-    case MapoCore.municipios(cve_ent) do
-      {:ok, %{"features" => features}} -> opciones_municipios(features)
-      {:error, _} -> []
-    end
-  end
-
-  defp opciones_estados(features) do
-    features
-    |> Enum.map(fn %{"properties" => props} -> {props["nomgeo"], props["cvegeo"]} end)
-    |> Enum.sort()
-  end
-
-  defp opciones_municipios(features) do
-    features
-    |> Enum.map(fn %{"properties" => props} -> {props["nomgeo"], props["cve_mun"]} end)
-    |> Enum.sort()
-  end
 
   defp etiqueta_indicador(codigo) do
     Enum.find_value(MapoCore.indicadores_censo(), codigo, fn {c, e} -> if c == codigo, do: e end)

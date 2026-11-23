@@ -45,11 +45,10 @@ defmodule Mapo.MapoCoreTest do
     assert {:ok, _} = MapoCore.coropleta_censo_poblacion("pobtot", "14", "039")
   end
 
-  test "voronoi_denue/3 manda cve_ent y cve_mun, sin clase_actividad por defecto" do
+  test "voronoi_denue/2 manda la zona, sin clase_actividad por defecto" do
     Req.Test.stub(Mapo.MapoCore, fn conn ->
       assert conn.request_path == "/voronoi/denue"
-      assert conn.params["cve_ent"] == "14"
-      assert conn.params["cve_mun"] == "039"
+      assert conn.params["zona"] == "mun:14039"
       refute Map.has_key?(conn.params, "clase_actividad")
 
       Req.Test.json(conn, %{
@@ -58,10 +57,10 @@ defmodule Mapo.MapoCoreTest do
       })
     end)
 
-    assert {:ok, %{"metodo" => "recortado_a_limite"}} = MapoCore.voronoi_denue("14", "039")
+    assert {:ok, %{"metodo" => "recortado_a_limite"}} = MapoCore.voronoi_denue("mun:14039")
   end
 
-  test "voronoi_denue/3 incluye clase_actividad cuando se da" do
+  test "voronoi_denue/2 incluye clase_actividad cuando se da" do
     Req.Test.stub(Mapo.MapoCore, fn conn ->
       assert conn.params["clase_actividad"] == "papeleria"
 
@@ -71,7 +70,7 @@ defmodule Mapo.MapoCoreTest do
       })
     end)
 
-    assert {:ok, _} = MapoCore.voronoi_denue("14", "039", "papeleria")
+    assert {:ok, _} = MapoCore.voronoi_denue("mun:14039", "papeleria")
   end
 
   test "coloreado_municipios/1 manda cve_ent" do

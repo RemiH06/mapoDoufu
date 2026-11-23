@@ -28,6 +28,7 @@ from mapo_core import (
     transporte,
     vivienda_vista,
 )
+from mapo_core import zona as zona_comun
 from mapo_core.coloreado_mapa import PoligonoColoreable, colorear_mapa
 from mapo_core.consultas import INDICADORES_CHOROPLETH, TOLERANCIA_SIMPLIFICACION as _TOLERANCIA_SIMPLIFICACION
 from mapo_core.consultas import feature as _feature
@@ -439,39 +440,51 @@ def voronoi_calcular(solicitud: SolicitudVoronoi) -> dict:
 
 @app.get("/voronoi/denue")
 async def voronoi_denue(
-    cve_ent: str,
-    cve_mun: str,
+    zona: str | None = Query(default=None, max_length=6_000),
+    cve_ent: str | None = None,
+    cve_mun: str | None = None,
     clase_actividad: str | None = None,
     pool: AsyncConnectionPool = Depends(get_pool),
 ) -> dict:
-    """Voronoi de los negocios de DENUE en un municipio, recortado al
-    poligono real del municipio: "a cual de estos negocios le queda mas
-    cerca cada lugar dentro del municipio". `clase_actividad` filtra por
-    un termino de la tabla de rubros o por texto en el nombre de la clase;
-    `filtro` dice que rubro o sector se reconocio, o null."""
-    limite = await consultas.limite_municipios(pool, cve_ent, [cve_mun])
-    if limite is None:
-        raise HTTPException(
-            404,
-            f"No se encontro el municipio {cve_ent}{cve_mun} (¿ya se corrio "
-            "'python -m mapo_core.cli municipios --estado' para ese estado?).",
-        )
+    """Voronoi de los negocios de DENUE de una zona (clave de zona.py, o un municipio
+    como antes), recortado a ella: "a cuál de estos negocios le queda más cerca cada
+    lugar de la zona". Los negocios a `COMPETENCIA_M` o menos fuera de la zona también
+    compiten (sus celdas salen con `fuera`): sin ellos, el de junto al límite se quedaba
+    con todo el borde. `clase_actividad` filtra por un término de la tabla de rubros o
+    por texto en el nombre de la clase; `filtro` dice qué rubro o sector se reconoció."""
+    try:
+        z = zona_comun.validar(zona if zona is not None else f"mun:{cve_ent}{cve_mun}")
+    except zona_comun.ZonaInvalida as exc:
+        raise HTTPException(422, str(exc)) from None
+    async with pool.connection() as conn:
+        resuelta = await zona_comun.resolver(conn, z)
+    if resuelta is None:
+        raise HTTPException(404, "No hay nada cargado en Mapo con esa zona.")
 
     # El filtro acepta las mismas palabras que el buscador ("florería",
     # "policía"), no solo texto del nombre oficial de la clase.
     clases, filtro = buscador.giro_tecnico(clase_actividad) if clase_actividad else (None, None)
     patron = clase_actividad if clases is None else None
-    puntos = await consultas.negocios(pool, cve_ent, [cve_mun], patron=patron, clases=clases)
+    puntos, sin_denue = await consultas.negocios_de_zona(pool, z, patron=patron, clases=clases)
 
     if aviso := consultas.aviso_voronoi(len(puntos)):
         raise HTTPException(422, aviso)
 
     try:
-        resultado = await asyncio.to_thread(calcular_voronoi, puntos, limite=limite)
+        resultado = await asyncio.to_thread(calcular_voronoi, puntos, limite=resuelta["geojson"])
     except ValueError as exc:
         raise HTTPException(422, str(exc)) from None
 
-    return {"celdas": resultado.celdas, "metodo": resultado.metodo, "num_negocios": len(puntos), "filtro": filtro}
+    return {
+        "celdas": resultado.celdas,
+        "metodo": resultado.metodo,
+        "num_negocios": sum(1 for p in puntos if not p.fuera),
+        "num_fuera": sum(1 for p in puntos if p.fuera),
+        "competencia_m": consultas.COMPETENCIA_M,
+        "sin_denue": sin_denue,
+        "zona": {"clave": resuelta["clave"], "nombre": resuelta["nombre"]},
+        "filtro": filtro,
+    }
 
 
 class PoligonoColoreableEntrada(BaseModel):
@@ -848,22 +861,54 @@ async def fuentes_carga(
     return {"tabla": tabla, "cargada": fecha}
 
 
+@app.get("/zona/buscar")
+async def zona_buscar(q: str = Query(default="", max_length=80), pool: AsyncConnectionPool = Depends(get_pool)) -> dict:
+    """Sugerencias del selector de zona: estados, metrópolis, municipios, colonias y CP."""
+    async with pool.connection() as conn:
+        return await zona_comun.buscar(conn, q)
+
+
+@app.get("/zona/resolver")
+async def zona_resolver(
+    clave: str = Query(max_length=6_000), pool: AsyncConnectionPool = Depends(get_pool)
+) -> dict:
+    """Una clave de zona (zona.py) a nombre, polígono, área y municipios. 422 si la
+    clave no es válida; 404 si no hay nada cargado con ella."""
+    try:
+        z = zona_comun.validar(clave)
+    except zona_comun.ZonaInvalida as exc:
+        raise HTTPException(422, str(exc)) from None
+    async with pool.connection() as conn:
+        resuelta = await zona_comun.resolver(conn, z)
+    if resuelta is None:
+        raise HTTPException(404, "no hay nada cargado en Mapo con esa zona")
+    return resuelta
+
+
 @app.get("/accesibilidad/zona")
 async def accesibilidad_zona(
-    cve_ent: str = Query(pattern=r"^\d{2}$"),
-    cve_mun: str = Query(pattern=r"^\d{3}$"),
+    zona: str | None = Query(default=None, max_length=6_000),
+    cve_ent: str | None = Query(default=None, pattern=r"^\d{2}$"),
+    cve_mun: str | None = Query(default=None, pattern=r"^\d{3}$"),
     modo: str = Query(default="pie"),
     pool: AsyncConnectionPool = Depends(get_pool),
 ) -> dict:
-    """Cuánta gente de un municipio vive a cada minuto de cada servicio, a pie o en
-    auto, y los minutos de cada lugar para el plano. Ver docs/producto/accesibilidad.md."""
+    """Cuánta gente de una zona (clave de zona.py, o un municipio como antes) vive a
+    cada minuto de cada servicio, a pie o en auto, y los minutos de cada lugar para el
+    plano. Ver docs/producto/accesibilidad.md."""
+    if zona is None and not (cve_ent and cve_mun):
+        raise HTTPException(422, "hace falta una zona")
     try:
         modo = accesibilidad.modo_valido(modo)
+        z = zona_comun.validar(zona if zona is not None else f"mun:{cve_ent}{cve_mun}")
+    except (accesibilidad.ConsultaInvalida, zona_comun.ZonaInvalida) as exc:
+        raise HTTPException(422, str(exc)) from None
+    try:
+        resultado = await accesibilidad.zona(pool, z, modo)
     except accesibilidad.ConsultaInvalida as exc:
         raise HTTPException(422, str(exc)) from None
-    resultado = await accesibilidad.zona(pool, cve_ent, cve_mun, modo)
     if resultado is None:
-        raise HTTPException(404, "municipio no encontrado")
+        raise HTTPException(404, "la zona no toca nada cargado en Mapo")
     return resultado
 
 
@@ -888,16 +933,21 @@ async def riesgos_zona(
     lon: float | None = Query(default=None, ge=-119, le=-85),
     lat: float | None = Query(default=None, ge=14, le=33.5),
     radio_m: float | None = Query(default=None, ge=100, le=riesgos.RADIO_MAX_M),
+    zona: str | None = Query(default=None, max_length=6_000),
     cerca_m: int = Query(default=1000),
 ) -> dict:
     """Cada peligro de la zona por separado, con la gente que vive dentro y cerca.
-    Ver docs/producto/vista-riesgos.md."""
+    `zona` es la clave de la zona común (zona.py). Ver docs/producto/vista-riesgos.md."""
+    clave = zona
     try:
-        zona = riesgos.zona_valida(cve_ent, cve_mun, lon, lat, radio_m)
+        zona = riesgos.zona_valida(cve_ent, cve_mun, lon, lat, radio_m, clave=clave)
         cerca = riesgos.cerca_valido(cerca_m)
     except riesgos.ZonaInvalida as exc:
         raise HTTPException(422, str(exc)) from None
-    resultado = await riesgos.resumen(zona, cerca)
+    try:
+        resultado = await riesgos.resumen(zona, cerca)
+    except riesgos.ZonaInvalida as exc:
+        raise HTTPException(422, str(exc)) from None
     if resultado is None:
         raise HTTPException(404, "municipio no encontrado")
     return resultado

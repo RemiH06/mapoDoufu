@@ -1,6 +1,7 @@
 import {crearPlano, alListo, clics, css, oscuro, escapar, fuente, quitar, indexar, bordes, recuadroDePuntos, relleno, ficha} from "./plano"
 import {Marcas} from "./marcas"
 import {ESTADOS_BBOX} from "./estados_bbox"
+import {conZona} from "./zona_plano"
 
 // La url viene del archivo de alguien: solo se vuelve liga si es http(s).
 const valorFicha = (columna, valor) =>
@@ -77,7 +78,7 @@ export const MapaTecnico = {
     this.modoMarcas = false
     this.origen = null
 
-    this.listo = crearPlano(this.el, {escala: "bottom-left", alTema: () => this._repintar(), margen: () => this._margen()})
+    this.listo = crearPlano(this.el, {escala: "bottom-left", alTema: () => { this._repintar(); this.zonaComun.repintar() }, margen: () => this._margen()})
       .then(({map, ml}) => {
         this.map = map
         this.ml = ml
@@ -89,6 +90,8 @@ export const MapaTecnico = {
         this.marcas = new Marcas(map, ml, {push: (e, p) => this.pushEvent(e, p), clic: this.clic})
       })
     const cuando = alListo(this, this.listo)
+    // La zona del membrete (selector común): su contorno se queda como guía.
+    this.zonaComun = conZona(this, cuando, {margen: () => this._margen()})
 
     this.handleEvent("capa_coropleta", cuando(datos => this._recibir("coropleta", datos)))
     this.handleEvent("capa_voronoi", cuando(datos => this._recibir("voronoi", datos)))
@@ -115,6 +118,7 @@ export const MapaTecnico = {
       this._dibujar("focos")
     }))
     this.handleEvent("pedir_ubicacion", cuando(() => this._ubicacion()))
+    // Lo usa el buscador (/buscador), que todavía elige por estado.
     this.handleEvent("encuadrar_estado", cuando(({cve_ent}) => {
       const bbox = ESTADOS_BBOX[cve_ent]
       // Sin animación: al reconstruir de la URL llega justo antes del acetato.
@@ -414,21 +418,28 @@ export const MapaTecnico = {
   },
 
   // De lejos solo las celdas: miles de puntos a escala de ciudad son una mancha.
+  // Las celdas de negocios de fuera de la zona (que compiten por su borde) van
+  // con un velo y su punto hueco: la parte de la zona que se lleva alguien de afuera.
   _voronoi({geojson}, color, p) {
     const map = this.map
-    fuente(map, `${p}f`, indexar(geojson))
-    map.addLayer({id: `${p}relleno`, type: "fill", source: `${p}f`, paint: {"fill-color": color, "fill-opacity": 0}})
+    const fuera = ["==", ["get", "fuera"], 1]
+    fuente(map, `${p}f`, indexar(geojson, q => ({fuera: q.fuera ? 1 : 0})))
+    map.addLayer({id: `${p}relleno`, type: "fill", source: `${p}f`,
+      paint: {"fill-color": color, "fill-opacity": ["case", fuera, 0.14, 0]}})
     map.addLayer({id: `${p}borde`, type: "line", source: `${p}f`, paint: {"line-color": color, "line-width": 0.8, "line-opacity": 0.9}})
     const puntos = geojson.features.filter(f => f.properties.lat !== undefined)
-      .map(f => ({type: "Feature", properties: {}, geometry: {type: "Point", coordinates: [f.properties.lon, f.properties.lat]}}))
+      .map(f => ({type: "Feature", properties: {fuera: f.properties.fuera ? 1 : 0},
+        geometry: {type: "Point", coordinates: [f.properties.lon, f.properties.lat]}}))
     fuente(map, `${p}puntos-f`, {type: "FeatureCollection", features: puntos})
     map.addLayer({id: `${p}puntos`, type: "circle", source: `${p}puntos-f`, minzoom: ZOOM_PUNTOS,
-      paint: {"circle-radius": 2.2, "circle-color": color}})
+      paint: {"circle-radius": 2.2, "circle-color": ["case", fuera, css("--bg"), color],
+        "circle-stroke-color": color, "circle-stroke-width": ["case", fuera, 1.2, 0]}})
     this.clic.en(`${p}relleno`, (f, lugar) => {
       const props = geojson.features[f.properties._i].properties
       const nombre = escapar(props.nombre || `Negocio ${props.id}`)
       const otros = props.num_puntos - 1
-      ficha(map, this.ml, lugar, otros > 0 ? `${nombre}<br>y ${otros} más en el mismo punto` : nombre)
+      const de_fuera = props.fuera ? "<br>Está fuera de la zona y compite por esta parte" : ""
+      ficha(map, this.ml, lugar, (otros > 0 ? `${nombre}<br>y ${otros} más en el mismo punto` : nombre) + de_fuera)
     })
   },
 

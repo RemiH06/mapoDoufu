@@ -18,6 +18,7 @@
 - [citar.md](producto/citar.md): enlace permanente de `/mapa` y `/riesgos` (qué parámetros guarda y cómo se validan) y "Cómo citar" con la fuente original primero, en APA y BibTeX, con la versión de la tabla.
 - [accesibilidad.md](producto/accesibilidad.md): `/accesibilidad`, cuánta gente vive a más de N minutos a pie o en auto de cada servicio (salud, escuelas por nivel, supermercado, transporte masivo), cada uno con su grupo de población; cómo se calcula por estado y por qué las escuelas solo desde AGEB.
 - [transporte.md](producto/transporte.md): acetato "Transporte público" en `/mapa` (rutas del GTFS con cada cuánto pasan en hora pico, o de OSM sin horarios) y las paradas como servicio en `/accesibilidad`.
+- [zona.md](producto/zona.md): la zona común de todas las vistas (estado, municipios, metrópoli, colonia, CP, dibujo o círculo), su clave en la URL, la zona guardada en la cuenta y cómo calcula cada vista con ella.
 - [datos-propios.md](producto/datos-propios.md): archivos del equipo (tabla, vectorial, ráster) como acetato, su cruce con fuentes públicas, la distancia entre capas y el valor de un ráster: formatos, límites, ubicación, procedencia, permisos y qué se guarda.
 
 ## Arquitectura
@@ -53,6 +54,7 @@ Una por fuente: de dónde sale, cómo se carga, sus problemas conocidos y las ci
 - [efipem.md](fuentes/efipem.md): finanzas públicas municipales de INEGI, ingresos y egresos por capítulo y predial, 2019 a 2023.
 - [rezago-social.md](fuentes/rezago-social.md): Grado de Rezago Social por AGEB urbana 2020 de CONEVAL, validado contra su comunicado.
 - [cngmd.md](fuentes/cngmd.md): Censo Nacional de Gobiernos Municipales 2025, por ahora los instrumentos de planeación territorial de cada municipio.
+- [zonas.md](fuentes/zonas.md): Metrópolis de México 2020, las colonias de CONAPO y los polígonos de CP de SEPOMEX; por qué el CP de CONAPO no sirve, medido contra DENUE.
 - [especies.md](fuentes/especies.md): plantas vasculares registradas en GBIF alrededor de una zona, con su estatus en México (Enciclovida) y el cruce con GRIIS, para elegir árboles nativos.
 - [imagenes.md](fuentes/imagenes.md): compuestos de Sentinel-2 y Landsat y WorldCover por zona, desde el STAC de Planetary Computer.
 
@@ -108,6 +110,7 @@ Qué se construyó en cada etapa, por qué así y qué bugs reales aparecieron.
 - [Transporte público, noviembre 2026](historial/2026-11-transporte.md)
 - [Fuentes económicas y municipales, noviembre 2026](historial/2026-11-fuentes-municipales.md)
 - [Plano común con MapLibre y mapa base propio, noviembre 2026](historial/2026-11-plano-maplibre.md)
+- [Selector de zona común, noviembre 2026](historial/2026-11-zona-comun.md)
 
 ## Gaiarda
 

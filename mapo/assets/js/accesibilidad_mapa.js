@@ -1,4 +1,5 @@
 import {crearPlano, alListo, clics, css, escapar, fuente, quitar, bordes, ficha, margenHoja} from "./plano"
+import {conZona} from "./zona_plano"
 
 // Plano de /accesibilidad. El LiveView manda "zona" (el contorno del municipio,
 // sus AGEB y localidades con los minutos a cada servicio, y los destinos) y
@@ -45,7 +46,7 @@ class Leyenda {
 export const AccesibilidadMapa = {
   mounted() {
     raiz.dataset.piel = "laboral"
-    this.listo = crearPlano(this.el, {alTema: () => this._pintar(), margen: margenHoja}).then(({map, ml}) => {
+    this.listo = crearPlano(this.el, {alTema: () => { this._pintar(); this.zonaComun.repintar() }, margen: margenHoja}).then(({map, ml}) => {
       this.map = map
       this.ml = ml
       this.leyenda = new Leyenda()
@@ -57,6 +58,7 @@ export const AccesibilidadMapa = {
         ficha(map, ml, lugar, `<b>${escapar(f.properties.n || "Sin nombre")}</b>`))
     })
     const cuando = alListo(this, this.listo)
+    this.zonaComun = conZona(this, cuando)
 
     this.handleEvent("zona", cuando(datos => this._dibujar(datos)))
     this.handleEvent("estilo", cuando(({servicio, umbral}) => {
@@ -67,6 +69,7 @@ export const AccesibilidadMapa = {
   },
 
   _dibujar({zona, plano, destinos, titulos, servicio, umbral}) {
+    this.zonaComun.limpiar()
     Object.assign(this, {zona, plano, destinos, titulos, servicio, umbral})
     this._pintar()
     const caja = bordes(zona)

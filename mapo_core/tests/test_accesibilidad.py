@@ -97,13 +97,18 @@ def _cuadro(lat, lado=0.01, lon=0.0):
         [lon, lat], [lon + lado, lat], [lon + lado, lat + lado], [lon, lat + lado], [lon, lat]]]})
 
 
+def _franja():
+    # Angosta: un municipio de 10° por 10° pasaría el tope de área de una consulta.
+    return json.dumps({"type": "Polygon", "coordinates": [[[0, 0], [0.02, 0], [0.02, 10], [0, 10], [0, 0]]]})
+
+
 async def _estado(conn):
     await conn.execute(
         "INSERT INTO entidades (cve_ent, nombre, geom) VALUES ('14', 'Jalisco',"
         " ST_Multi(ST_SetSRID(ST_GeomFromGeoJSON(%s), 4326)))", (_cuadro(0, 10),))
     await conn.execute(
         "INSERT INTO municipios (cvegeo, cve_ent, cve_mun, nombre, geom) VALUES ('14120', '14', '120', 'Zapopan',"
-        " ST_Multi(ST_SetSRID(ST_GeomFromGeoJSON(%s), 4326)))", (_cuadro(0, 10),))
+        " ST_Multi(ST_SetSRID(ST_GeomFromGeoJSON(%s), 4326)))", (_franja(),))
     for sufijo, lat, ninos in (("0001", 1.0, "300"), ("0002", 2.0, "*")):
         cvegeo = f"14120{sufijo}"
         await conn.execute(
@@ -200,12 +205,12 @@ async def test_clues_descarta_coordenadas_fuera_de_su_municipio_salvo_por_nombre
         "INSERT INTO municipios (cvegeo, cve_ent, cve_mun, nombre, geom) VALUES ('14110', '14', '110', 'Unión de Tula',"
         " ST_Multi(ST_SetSRID(ST_GeomFromGeoJSON(%s), 4326)))", (_cuadro(0, 1, lon=20),))
     filas = [
-        ("JCSSA1", "SSA", "120", "CENTRO DE SALUD UNO", 3.0, 0.5, ""),
+        ("JCSSA1", "SSA", "120", "CENTRO DE SALUD UNO", 3.0, 0.01, ""),
         # Clave de Zapopan, coordenada en Unión de Tula y lo dice su nombre: se queda.
         ("JCIMS82", "IMS", "120", "UMF 82 UNION DE TULA", 0.5, 20.5, ""),
-        ("JCSSA2", "SSA", "110", "CENTRO DE SALUD LEJOS", 3.0, 0.5, ""),  # dice Unión de Tula, cae en Zapopan
-        ("JCSSA3", "SSA", "120", "CARAVANA", 3.0, 0.5, "CARAVANA"),  # unidad móvil
-        ("JCSMP1", "SMP", "120", "CONSULTORIO PRIVADO", 3.0, 0.5, ""),
+        ("JCSSA2", "SSA", "110", "CENTRO DE SALUD LEJOS", 3.0, 0.01, ""),  # dice Unión de Tula, cae en Zapopan
+        ("JCSSA3", "SSA", "120", "CARAVANA", 3.0, 0.01, "CARAVANA"),  # unidad móvil
+        ("JCSMP1", "SMP", "120", "CONSULTORIO PRIVADO", 3.0, 0.01, ""),
     ]
     for clues, inst, mun, nombre, lat, lon, movil in filas:
         await conn.execute(

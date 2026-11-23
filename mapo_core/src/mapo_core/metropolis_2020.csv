@@ -1,0 +1,424 @@
+clave_metropoli,metropoli,cvegeo,municipio
+01.1.01,Zona metropolitana de Aguascalientes,01001,Aguascalientes
+01.1.01,Zona metropolitana de Aguascalientes,01005,Jesús María
+01.1.01,Zona metropolitana de Aguascalientes,01011,San Francisco de los Romo
+02.1.01,Zona metropolitana de Tijuana,02004,Tijuana
+02.1.01,Zona metropolitana de Tijuana,02005,Playas de Rosarito
+02.2.02,Metrópoli municipal de Ensenada,02001,Ensenada
+02.2.03,Metrópoli municipal de Mexicali,02002,Mexicali
+03.2.01,Metrópoli municipal de La Paz,03003,La Paz
+03.2.02,Metrópoli municipal de Los Cabos,03008,Los Cabos
+04.2.01,Metrópoli municipal de Campeche,04002,Campeche
+05.1.01,Zona metropolitana de La Laguna,05017,Matamoros
+05.1.01,Zona metropolitana de La Laguna,05035,Torreón
+05.1.01,Zona metropolitana de La Laguna,10007,Gómez Palacio
+05.1.01,Zona metropolitana de La Laguna,10012,Lerdo
+05.1.02,Zona metropolitana de Monclova-Frontera,05006,Castaños
+05.1.02,Zona metropolitana de Monclova-Frontera,05010,Frontera
+05.1.02,Zona metropolitana de Monclova-Frontera,05018,Monclova
+05.1.02,Zona metropolitana de Monclova-Frontera,05031,San Buenaventura
+05.1.03,Zona metropolitana de Piedras Negras,05022,Nava
+05.1.03,Zona metropolitana de Piedras Negras,05025,Piedras Negras
+05.1.04,Zona metropolitana de Saltillo,05004,Arteaga
+05.1.04,Zona metropolitana de Saltillo,05027,Ramos Arizpe
+05.1.04,Zona metropolitana de Saltillo,05030,Saltillo
+05.3.05,Zona conurbada de Sabinas,05028,Sabinas
+05.3.05,Zona conurbada de Sabinas,05032,San Juan de Sabinas
+06.1.01,Zona metropolitana de Colima-Villa de Álvarez,06002,Colima
+06.1.01,Zona metropolitana de Colima-Villa de Álvarez,06003,Comala
+06.1.01,Zona metropolitana de Colima-Villa de Álvarez,06010,Villa de Álvarez
+06.3.02,Zona conurbada de Tecomán,06001,Armería
+06.3.02,Zona conurbada de Tecomán,06009,Tecomán
+07.1.01,Zona metropolitana de Tapachula,07055,Metapa
+07.1.01,Zona metropolitana de Tapachula,07089,Tapachula
+07.1.01,Zona metropolitana de Tapachula,07102,Tuxtla Chico
+07.1.02,Zona metropolitana de Tuxtla Gutiérrez,07012,Berriozábal
+07.1.02,Zona metropolitana de Tuxtla Gutiérrez,07027,Chiapa de Corzo
+07.1.02,Zona metropolitana de Tuxtla Gutiérrez,07079,San Fernando
+07.1.02,Zona metropolitana de Tuxtla Gutiérrez,07086,Suchiapa
+07.1.02,Zona metropolitana de Tuxtla Gutiérrez,07101,Tuxtla Gutiérrez
+08.1.01,Zona metropolitana de Chihuahua,08002,Aldama
+08.1.01,Zona metropolitana de Chihuahua,08004,Aquiles Serdán
+08.1.01,Zona metropolitana de Chihuahua,08019,Chihuahua
+08.1.02,Zona metropolitana de Delicias,08021,Delicias
+08.1.02,Zona metropolitana de Delicias,08045,Meoqui
+08.1.02,Zona metropolitana de Delicias,08055,Rosales
+08.2.03,Metrópoli municipal de Juárez,08037,Juárez
+08.3.04,Zona conurbada de Hidalgo del Parral,08032,Hidalgo del Parral
+08.3.04,Zona conurbada de Hidalgo del Parral,08059,San Francisco del Oro
+09.1.01,Zona metropolitana de la Ciudad de México,09002,Azcapotzalco
+09.1.01,Zona metropolitana de la Ciudad de México,09003,Coyoacán
+09.1.01,Zona metropolitana de la Ciudad de México,09004,Cuajimalpa de Morelos
+09.1.01,Zona metropolitana de la Ciudad de México,09005,Gustavo A. Madero
+09.1.01,Zona metropolitana de la Ciudad de México,09006,Iztacalco
+09.1.01,Zona metropolitana de la Ciudad de México,09007,Iztapalapa
+09.1.01,Zona metropolitana de la Ciudad de México,09008,La Magdalena Contreras
+09.1.01,Zona metropolitana de la Ciudad de México,09009,Milpa Alta
+09.1.01,Zona metropolitana de la Ciudad de México,09010,Álvaro Obregón
+09.1.01,Zona metropolitana de la Ciudad de México,09011,Tláhuac
+09.1.01,Zona metropolitana de la Ciudad de México,09012,Tlalpan
+09.1.01,Zona metropolitana de la Ciudad de México,09013,Xochimilco
+09.1.01,Zona metropolitana de la Ciudad de México,09014,Benito Juárez
+09.1.01,Zona metropolitana de la Ciudad de México,09015,Cuauhtémoc
+09.1.01,Zona metropolitana de la Ciudad de México,09016,Miguel Hidalgo
+09.1.01,Zona metropolitana de la Ciudad de México,09017,Venustiano Carranza
+09.1.01,Zona metropolitana de la Ciudad de México,13013,Atotonilco de Tula
+09.1.01,Zona metropolitana de la Ciudad de México,13069,Tizayuca
+09.1.01,Zona metropolitana de la Ciudad de México,15002,Acolman
+09.1.01,Zona metropolitana de la Ciudad de México,15011,Atenco
+09.1.01,Zona metropolitana de la Ciudad de México,15013,Atizapán de Zaragoza
+09.1.01,Zona metropolitana de la Ciudad de México,15020,Coacalco de Berriozábal
+09.1.01,Zona metropolitana de la Ciudad de México,15022,Cocotitlán
+09.1.01,Zona metropolitana de la Ciudad de México,15023,Coyotepec
+09.1.01,Zona metropolitana de la Ciudad de México,15024,Cuautitlán
+09.1.01,Zona metropolitana de la Ciudad de México,15025,Chalco
+09.1.01,Zona metropolitana de la Ciudad de México,15028,Chiautla
+09.1.01,Zona metropolitana de la Ciudad de México,15029,Chicoloapan
+09.1.01,Zona metropolitana de la Ciudad de México,15030,Chiconcuac
+09.1.01,Zona metropolitana de la Ciudad de México,15031,Chimalhuacán
+09.1.01,Zona metropolitana de la Ciudad de México,15033,Ecatepec de Morelos
+09.1.01,Zona metropolitana de la Ciudad de México,15035,Huehuetoca
+09.1.01,Zona metropolitana de la Ciudad de México,15037,Huixquilucan
+09.1.01,Zona metropolitana de la Ciudad de México,15038,Isidro Fabela
+09.1.01,Zona metropolitana de la Ciudad de México,15039,Ixtapaluca
+09.1.01,Zona metropolitana de la Ciudad de México,15044,Jaltenco
+09.1.01,Zona metropolitana de la Ciudad de México,15046,Jilotzingo
+09.1.01,Zona metropolitana de la Ciudad de México,15053,Melchor Ocampo
+09.1.01,Zona metropolitana de la Ciudad de México,15057,Naucalpan de Juárez
+09.1.01,Zona metropolitana de la Ciudad de México,15058,Nezahualcóyotl
+09.1.01,Zona metropolitana de la Ciudad de México,15059,Nextlalpan
+09.1.01,Zona metropolitana de la Ciudad de México,15060,Nicolás Romero
+09.1.01,Zona metropolitana de la Ciudad de México,15069,Papalotla
+09.1.01,Zona metropolitana de la Ciudad de México,15070,La Paz
+09.1.01,Zona metropolitana de la Ciudad de México,15075,San Martín de las Pirámides
+09.1.01,Zona metropolitana de la Ciudad de México,15081,Tecámac
+09.1.01,Zona metropolitana de la Ciudad de México,15083,Temamatla
+09.1.01,Zona metropolitana de la Ciudad de México,15084,Temascalapa
+09.1.01,Zona metropolitana de la Ciudad de México,15089,Tenango del Aire
+09.1.01,Zona metropolitana de la Ciudad de México,15091,Teoloyucan
+09.1.01,Zona metropolitana de la Ciudad de México,15092,Teotihuacán
+09.1.01,Zona metropolitana de la Ciudad de México,15093,Tepetlaoxtoc
+09.1.01,Zona metropolitana de la Ciudad de México,15095,Tepotzotlán
+09.1.01,Zona metropolitana de la Ciudad de México,15099,Texcoco
+09.1.01,Zona metropolitana de la Ciudad de México,15100,Tezoyuca
+09.1.01,Zona metropolitana de la Ciudad de México,15103,Tlalmanalco
+09.1.01,Zona metropolitana de la Ciudad de México,15104,Tlalnepantla de Baz
+09.1.01,Zona metropolitana de la Ciudad de México,15108,Tultepec
+09.1.01,Zona metropolitana de la Ciudad de México,15109,Tultitlán
+09.1.01,Zona metropolitana de la Ciudad de México,15120,Zumpango
+09.1.01,Zona metropolitana de la Ciudad de México,15121,Cuautitlán Izcalli
+09.1.01,Zona metropolitana de la Ciudad de México,15122,Valle de Chalco Solidaridad
+09.1.01,Zona metropolitana de la Ciudad de México,15125,Tonanitla
+10.2.01,Metrópoli municipal de Durango,10005,Durango
+11.1.01,Zona metropolitana de Celaya,11007,Celaya
+11.1.01,Zona metropolitana de Celaya,11011,Cortazar
+11.1.01,Zona metropolitana de Celaya,11044,Villagrán
+11.1.02,Zona metropolitana de León,11020,León
+11.1.02,Zona metropolitana de León,11025,Purísima del Rincón
+11.1.02,Zona metropolitana de León,11031,San Francisco del Rincón
+11.2.03,Metrópoli municipal de Guanajuato,11015,Guanajuato
+11.2.04,Metrópoli municipal de Irapuato,11017,Irapuato
+11.3.05,Zona conurbada de Moroleón-Uriangato,11021,Moroleón
+11.3.05,Zona conurbada de Moroleón-Uriangato,11041,Uriangato
+11.3.05,Zona conurbada de Moroleón-Uriangato,16020,Cuitzeo
+11.3.06,Zona conurbada de Silao,11026,Romita
+11.3.06,Zona conurbada de Silao,11037,Silao de la Victoria
+12.1.01,Zona metropolitana de Chilpancingo,12029,Chilpancingo de los Bravo
+12.1.01,Zona metropolitana de Chilpancingo,12075,Eduardo Neri
+12.2.02,Metrópoli municipal de Acapulco,12001,Acapulco de Juárez
+13.1.01,Zona metropolitana de Pachuca,13039,Mineral del Monte
+13.1.01,Zona metropolitana de Pachuca,13048,Pachuca de Soto
+13.1.01,Zona metropolitana de Pachuca,13051,Mineral de la Reforma
+13.1.01,Zona metropolitana de Pachuca,13082,Zapotlán de Juárez
+13.1.01,Zona metropolitana de Pachuca,13083,Zempoala
+13.1.02,Zona metropolitana de Tulancingo,13016,Cuautepec de Hinojosa
+13.1.02,Zona metropolitana de Tulancingo,13077,Tulancingo de Bravo
+13.3.03,Zona conurbada de Atitalaquia,13010,Atitalaquia
+13.3.03,Zona conurbada de Atitalaquia,13074,Tlaxcoapan
+14.1.01,Zona metropolitana de Guadalajara,14039,Guadalajara
+14.1.01,Zona metropolitana de Guadalajara,14051,Juanacatlán
+14.1.01,Zona metropolitana de Guadalajara,14070,El Salto
+14.1.01,Zona metropolitana de Guadalajara,14097,Tlajomulco de Zúñiga
+14.1.01,Zona metropolitana de Guadalajara,14098,San Pedro Tlaquepaque
+14.1.01,Zona metropolitana de Guadalajara,14101,Tonalá
+14.1.01,Zona metropolitana de Guadalajara,14120,Zapopan
+14.1.02,Zona metropolitana de Puerto Vallarta,14067,Puerto Vallarta
+14.1.02,Zona metropolitana de Puerto Vallarta,18020,Bahía de Banderas
+14.3.03,Zona conurbada de Ocotlán,14047,Jamay
+14.3.03,Zona conurbada de Ocotlán,14063,Ocotlán
+14.3.03,Zona conurbada de Ocotlán,14066,Poncitlán
+15.1.01,Zona metropolitana de Toluca,15005,Almoloya de Juárez
+15.1.01,Zona metropolitana de Toluca,15018,Calimaya
+15.1.01,Zona metropolitana de Toluca,15027,Chapultepec
+15.1.01,Zona metropolitana de Toluca,15051,Lerma
+15.1.01,Zona metropolitana de Toluca,15054,Metepec
+15.1.01,Zona metropolitana de Toluca,15055,Mexicaltzingo
+15.1.01,Zona metropolitana de Toluca,15062,Ocoyoacac
+15.1.01,Zona metropolitana de Toluca,15067,Otzolotepec
+15.1.01,Zona metropolitana de Toluca,15072,Rayón
+15.1.01,Zona metropolitana de Toluca,15073,San Antonio la Isla
+15.1.01,Zona metropolitana de Toluca,15076,San Mateo Atenco
+15.1.01,Zona metropolitana de Toluca,15087,Temoaya
+15.1.01,Zona metropolitana de Toluca,15090,Tenango del Valle
+15.1.01,Zona metropolitana de Toluca,15106,Toluca
+15.1.01,Zona metropolitana de Toluca,15115,Xonacatlán
+15.1.01,Zona metropolitana de Toluca,15118,Zinacantepec
+15.3.02,Zona conurbada de Ozumba,15015,Atlautla
+15.3.02,Zona conurbada de Ozumba,15068,Ozumba
+15.3.02,Zona conurbada de Ozumba,15094,Tepetlixpa
+15.3.03,Zona conurbada de Tianguistenco,15006,Almoloya del Río
+15.3.03,Zona conurbada de Tianguistenco,15012,Atizapán
+15.3.03,Zona conurbada de Tianguistenco,15019,Capulhuac
+15.3.03,Zona conurbada de Tianguistenco,15043,Xalatlaco
+15.3.03,Zona conurbada de Tianguistenco,15098,Texcalyacac
+15.3.03,Zona conurbada de Tianguistenco,15101,Tianguistenco
+16.1.01,Zona metropolitana de La Piedad-Pénjamo,11023,Pénjamo
+16.1.01,Zona metropolitana de La Piedad-Pénjamo,16069,La Piedad
+16.1.02,Zona metropolitana de Morelia,16022,Charo
+16.1.02,Zona metropolitana de Morelia,16053,Morelia
+16.1.02,Zona metropolitana de Morelia,16088,Tarímbaro
+16.1.03,Zona metropolitana de Zamora,16043,Jacona
+16.1.03,Zona metropolitana de Zamora,16108,Zamora
+16.2.04,Metrópoli municipal de Uruapan,16102,Uruapan
+16.3.05,Zona conurbada de Lázaro Cárdenas,12068,La Unión de Isidoro Montes de Oca
+16.3.05,Zona conurbada de Lázaro Cárdenas,16052,Lázaro Cárdenas
+16.3.06,Zona conurbada de Sahuayo,16045,Jiquilpan
+16.3.06,Zona conurbada de Sahuayo,16076,Sahuayo
+17.1.01,Zona metropolitana de Cuautla,17002,Atlatlahucan
+17.1.01,Zona metropolitana de Cuautla,17004,Ayala
+17.1.01,Zona metropolitana de Cuautla,17006,Cuautla
+17.1.01,Zona metropolitana de Cuautla,17030,Yecapixtla
+17.1.02,Zona metropolitana de Cuernavaca,17007,Cuernavaca
+17.1.02,Zona metropolitana de Cuernavaca,17008,Emiliano Zapata
+17.1.02,Zona metropolitana de Cuernavaca,17009,Huitzilac
+17.1.02,Zona metropolitana de Cuernavaca,17011,Jiutepec
+17.1.02,Zona metropolitana de Cuernavaca,17018,Temixco
+17.1.02,Zona metropolitana de Cuernavaca,17020,Tepoztlán
+17.1.02,Zona metropolitana de Cuernavaca,17028,Xochitepec
+17.1.02,Zona metropolitana de Cuernavaca,17029,Yautepec
+17.1.02,Zona metropolitana de Cuernavaca,17034,Coatetelco
+17.1.02,Zona metropolitana de Cuernavaca,17035,Xoxocotla
+18.1.01,Zona metropolitana de Tepic,18008,Xalisco
+18.1.01,Zona metropolitana de Tepic,18017,Tepic
+19.1.01,Zona metropolitana de Monterrey,19006,Apodaca
+19.1.01,Zona metropolitana de Monterrey,19009,Cadereyta Jiménez
+19.1.01,Zona metropolitana de Monterrey,19010,El Carmen
+19.1.01,Zona metropolitana de Monterrey,19012,Ciénega de Flores
+19.1.01,Zona metropolitana de Monterrey,19018,García
+19.1.01,Zona metropolitana de Monterrey,19019,San Pedro Garza García
+19.1.01,Zona metropolitana de Monterrey,19021,General Escobedo
+19.1.01,Zona metropolitana de Monterrey,19025,General Zuazua
+19.1.01,Zona metropolitana de Monterrey,19026,Guadalupe
+19.1.01,Zona metropolitana de Monterrey,19031,Juárez
+19.1.01,Zona metropolitana de Monterrey,19039,Monterrey
+19.1.01,Zona metropolitana de Monterrey,19041,Pesquería
+19.1.01,Zona metropolitana de Monterrey,19045,Salinas Victoria
+19.1.01,Zona metropolitana de Monterrey,19046,San Nicolás de los Garza
+19.1.01,Zona metropolitana de Monterrey,19048,Santa Catarina
+19.1.01,Zona metropolitana de Monterrey,19049,Santiago
+20.1.01,Zona metropolitana de Oaxaca,20023,Cuilápam de Guerrero
+20.1.01,Zona metropolitana de Oaxaca,20045,Magdalena Apasco
+20.1.01,Zona metropolitana de Oaxaca,20063,Nazareno Etla
+20.1.01,Zona metropolitana de Oaxaca,20067,Oaxaca de Juárez
+20.1.01,Zona metropolitana de Oaxaca,20083,San Agustín de las Juntas
+20.1.01,Zona metropolitana de Oaxaca,20087,San Agustín Yatareni
+20.1.01,Zona metropolitana de Oaxaca,20091,San Andrés Huayápam
+20.1.01,Zona metropolitana de Oaxaca,20107,San Antonio de la Cal
+20.1.01,Zona metropolitana de Oaxaca,20115,San Bartolo Coyotepec
+20.1.01,Zona metropolitana de Oaxaca,20157,San Jacinto Amilpas
+20.1.01,Zona metropolitana de Oaxaca,20174,Ánimas Trujano
+20.1.01,Zona metropolitana de Oaxaca,20227,San Lorenzo Cacaotepec
+20.1.01,Zona metropolitana de Oaxaca,20293,San Pablo Etla
+20.1.01,Zona metropolitana de Oaxaca,20338,Villa de Etla
+20.1.01,Zona metropolitana de Oaxaca,20342,San Raymundo Jalpan
+20.1.01,Zona metropolitana de Oaxaca,20350,San Sebastián Tutla
+20.1.01,Zona metropolitana de Oaxaca,20375,Santa Cruz Amilpas
+20.1.01,Zona metropolitana de Oaxaca,20385,Santa Cruz Xoxocotlán
+20.1.01,Zona metropolitana de Oaxaca,20390,Santa Lucía del Camino
+20.1.01,Zona metropolitana de Oaxaca,20399,Santa María Atzompa
+20.1.01,Zona metropolitana de Oaxaca,20403,Santa María Coyotepec
+20.1.01,Zona metropolitana de Oaxaca,20409,Santa María del Tule
+20.1.01,Zona metropolitana de Oaxaca,20519,Santo Domingo Tomaltepec
+20.1.01,Zona metropolitana de Oaxaca,20539,Soledad Etla
+20.1.01,Zona metropolitana de Oaxaca,20553,Tlalixtac de Cabrera
+20.1.01,Zona metropolitana de Oaxaca,20565,Villa de Zaachila
+20.3.02,Zona conurbada de Juchitán,20030,El Espinal
+20.3.02,Zona conurbada de Juchitán,20043,Juchitán de Zaragoza
+20.3.02,Zona conurbada de Juchitán,20441,Santa María Xadani
+20.3.03,Zona conurbada de Salina Cruz,20079,Salina Cruz
+20.3.03,Zona conurbada de Salina Cruz,20308,San Pedro Huilotepec
+20.3.04,Zona conurbada de Tehuantepec,20124,San Blas Atempa
+20.3.04,Zona conurbada de Tehuantepec,20515,Santo Domingo Tehuantepec
+21.1.01,Zona metropolitana de Puebla-Tlaxcala,21001,Acajete
+21.1.01,Zona metropolitana de Puebla-Tlaxcala,21015,Amozoc
+21.1.01,Zona metropolitana de Puebla-Tlaxcala,21034,Coronango
+21.1.01,Zona metropolitana de Puebla-Tlaxcala,21041,Cuautlancingo
+21.1.01,Zona metropolitana de Puebla-Tlaxcala,21090,Juan C. Bonilla
+21.1.01,Zona metropolitana de Puebla-Tlaxcala,21106,Ocoyucan
+21.1.01,Zona metropolitana de Puebla-Tlaxcala,21114,Puebla
+21.1.01,Zona metropolitana de Puebla-Tlaxcala,21119,San Andrés Cholula
+21.1.01,Zona metropolitana de Puebla-Tlaxcala,21125,San Gregorio Atzompa
+21.1.01,Zona metropolitana de Puebla-Tlaxcala,21136,San Miguel Xoxtla
+21.1.01,Zona metropolitana de Puebla-Tlaxcala,21140,San Pedro Cholula
+21.1.01,Zona metropolitana de Puebla-Tlaxcala,21163,Tepatlaxco de Hidalgo
+21.1.01,Zona metropolitana de Puebla-Tlaxcala,21181,Tlaltenango
+21.1.01,Zona metropolitana de Puebla-Tlaxcala,29017,Mazatecochco de José María Morelos
+21.1.01,Zona metropolitana de Puebla-Tlaxcala,29022,Acuamanala de Miguel Hidalgo
+21.1.01,Zona metropolitana de Puebla-Tlaxcala,29025,San Pablo del Monte
+21.1.01,Zona metropolitana de Puebla-Tlaxcala,29027,Tenancingo
+21.1.01,Zona metropolitana de Puebla-Tlaxcala,29028,Teolocholco
+21.1.01,Zona metropolitana de Puebla-Tlaxcala,29029,Tepeyanco
+21.1.01,Zona metropolitana de Puebla-Tlaxcala,29032,Tetlatlahuca
+21.1.01,Zona metropolitana de Puebla-Tlaxcala,29041,Papalotla de Xicohténcatl
+21.1.01,Zona metropolitana de Puebla-Tlaxcala,29042,Xicohtzinco
+21.1.01,Zona metropolitana de Puebla-Tlaxcala,29044,Zacatelco
+21.1.01,Zona metropolitana de Puebla-Tlaxcala,29051,San Jerónimo Zacualpan
+21.1.01,Zona metropolitana de Puebla-Tlaxcala,29053,San Juan Huactzinco
+21.1.01,Zona metropolitana de Puebla-Tlaxcala,29054,San Lorenzo Axocomanitla
+21.1.01,Zona metropolitana de Puebla-Tlaxcala,29058,Santa Catarina Ayometla
+21.1.01,Zona metropolitana de Puebla-Tlaxcala,29059,Santa Cruz Quilehtla
+21.1.02,Zona metropolitana de San Martín Texmelucan,21048,Chiautzingo
+21.1.02,Zona metropolitana de San Martín Texmelucan,21074,Huejotzingo
+21.1.02,Zona metropolitana de San Martín Texmelucan,21122,San Felipe Teotlalcingo
+21.1.02,Zona metropolitana de San Martín Texmelucan,21132,San Martín Texmelucan
+21.1.02,Zona metropolitana de San Martín Texmelucan,21143,San Salvador el Verde
+21.1.03,Zona metropolitana de Tehuacán,21149,Santiago Miahuatlán
+21.1.03,Zona metropolitana de Tehuacán,21156,Tehuacán
+21.3.04,Zona conurbada de Huauchinango,21071,Huauchinango
+21.3.04,Zona conurbada de Huauchinango,21091,Juan Galindo
+21.3.05,Zona conurbada de Teziutlán,21054,Chignautla
+21.3.05,Zona conurbada de Teziutlán,21174,Teziutlán
+22.1.01,Zona metropolitana de Querétaro,22006,Corregidora
+22.1.01,Zona metropolitana de Querétaro,22008,Huimilpan
+22.1.01,Zona metropolitana de Querétaro,22011,El Marqués
+22.1.01,Zona metropolitana de Querétaro,22014,Querétaro
+23.1.01,Zona metropolitana de Cancún,23003,Isla Mujeres
+23.1.01,Zona metropolitana de Cancún,23005,Benito Juárez
+23.2.02,Metrópoli municipal de Chetumal,23004,Othón P. Blanco
+23.2.03,Metrópoli municipal de Playa del Carmen,23008,Solidaridad
+24.1.01,Zona metropolitana de San Luis Potosí,24028,San Luis Potosí
+24.1.01,Zona metropolitana de San Luis Potosí,24035,Soledad de Graciano Sánchez
+24.3.02,Zona conurbada de Matehuala,24020,Matehuala
+24.3.02,Zona conurbada de Matehuala,24048,Villa de la Paz
+24.3.03,Zona conurbada de Rioverde,24011,Ciudad Fernández
+24.3.03,Zona conurbada de Rioverde,24024,Rioverde
+25.2.01,Metrópoli municipal de Culiacán,25006,Culiacán
+25.2.02,Metrópoli municipal de Los Mochis,25001,Ahome
+25.2.03,Metrópoli municipal de Mazatlán,25012,Mazatlán
+26.1.01,Zona metropolitana de Guaymas,26025,Empalme
+26.1.01,Zona metropolitana de Guaymas,26029,Guaymas
+26.2.02,Metrópoli municipal de Ciudad Obregón,26018,Cajeme
+26.2.03,Metrópoli municipal de Hermosillo,26030,Hermosillo
+26.2.04,Metrópoli municipal de Nogales,26043,Nogales
+26.3.05,Zona conurbada de Caborca,26017,Caborca
+26.3.05,Zona conurbada de Caborca,26047,Pitiquito
+27.1.01,Zona metropolitana de Villahermosa,27004,Centro
+27.1.01,Zona metropolitana de Villahermosa,27013,Nacajuca
+28.1.01,Zona metropolitana de Reynosa,28032,Reynosa
+28.1.01,Zona metropolitana de Reynosa,28033,Río Bravo
+28.1.02,Zona metropolitana de Tampico,28003,Altamira
+28.1.02,Zona metropolitana de Tampico,28009,Ciudad Madero
+28.1.02,Zona metropolitana de Tampico,28038,Tampico
+28.1.02,Zona metropolitana de Tampico,30123,Pánuco
+28.1.02,Zona metropolitana de Tampico,30133,Pueblo Viejo
+28.2.03,Metrópoli municipal de Ciudad Victoria,26043,Nogales
+28.2.03,Metrópoli municipal de Ciudad Victoria,28041,Victoria
+28.2.04,Metrópoli municipal de Matamoros,26043,Nogales
+28.2.04,Metrópoli municipal de Matamoros,28022,Matamoros
+28.2.05,Metrópoli municipal de Nuevo Laredo,26043,Nogales
+28.2.05,Metrópoli municipal de Nuevo Laredo,28027,Nuevo Laredo
+29.1.01,Zona metropolitana de Tlaxcala-Apizaco,29001,Amaxac de Guerrero
+29.1.01,Zona metropolitana de Tlaxcala-Apizaco,29002,Apetatitlán de Antonio Carvajal
+29.1.01,Zona metropolitana de Tlaxcala-Apizaco,29003,Atlangatepec
+29.1.01,Zona metropolitana de Tlaxcala-Apizaco,29005,Apizaco
+29.1.01,Zona metropolitana de Tlaxcala-Apizaco,29009,Cuaxomulco
+29.1.01,Zona metropolitana de Tlaxcala-Apizaco,29010,Chiautempan
+29.1.01,Zona metropolitana de Tlaxcala-Apizaco,29011,Muñoz de Domingo Arenas
+29.1.01,Zona metropolitana de Tlaxcala-Apizaco,29015,Ixtacuixtla de Mariano Matamoros
+29.1.01,Zona metropolitana de Tlaxcala-Apizaco,29018,Contla de Juan Cuamatzi
+29.1.01,Zona metropolitana de Tlaxcala-Apizaco,29024,Panotla
+29.1.01,Zona metropolitana de Tlaxcala-Apizaco,29026,Santa Cruz Tlaxcala
+29.1.01,Zona metropolitana de Tlaxcala-Apizaco,29031,Tetla de la Solidaridad
+29.1.01,Zona metropolitana de Tlaxcala-Apizaco,29033,Tlaxcala
+29.1.01,Zona metropolitana de Tlaxcala-Apizaco,29034,Tlaxco
+29.1.01,Zona metropolitana de Tlaxcala-Apizaco,29035,Tocatlán
+29.1.01,Zona metropolitana de Tlaxcala-Apizaco,29036,Totolac
+29.1.01,Zona metropolitana de Tlaxcala-Apizaco,29038,Tzompantepec
+29.1.01,Zona metropolitana de Tlaxcala-Apizaco,29039,Xaloztoc
+29.1.01,Zona metropolitana de Tlaxcala-Apizaco,29043,Yauhquemehcan
+29.1.01,Zona metropolitana de Tlaxcala-Apizaco,29048,La Magdalena Tlaltelulco
+29.1.01,Zona metropolitana de Tlaxcala-Apizaco,29049,San Damián Texóloc
+29.1.01,Zona metropolitana de Tlaxcala-Apizaco,29050,San Francisco Tetlanohcan
+29.1.01,Zona metropolitana de Tlaxcala-Apizaco,29056,Santa Ana Nopalucan
+29.1.01,Zona metropolitana de Tlaxcala-Apizaco,29060,Santa Isabel Xiloxoxtla
+29.3.02,Zona conurbada de Huamantla,29013,Huamantla
+29.3.02,Zona conurbada de Huamantla,29016,Ixtenco
+30.1.01,Zona metropolitana de Coatzacoalcos,30039,Coatzacoalcos
+30.1.01,Zona metropolitana de Coatzacoalcos,30082,Ixhuatlán del Sureste
+30.1.01,Zona metropolitana de Coatzacoalcos,30206,Nanchital de Lázaro Cárdenas del Río
+30.1.02,Zona metropolitana de Córdoba,30014,Amatlán de los Reyes
+30.1.02,Zona metropolitana de Córdoba,30044,Córdoba
+30.1.02,Zona metropolitana de Córdoba,30068,Fortín
+30.1.02,Zona metropolitana de Córdoba,30113,Naranjal
+30.1.02,Zona metropolitana de Córdoba,30196,Yanga
+30.1.03,Zona metropolitana de Minatitlán,30048,Cosoleacaque
+30.1.03,Zona metropolitana de Minatitlán,30059,Chinameca
+30.1.03,Zona metropolitana de Minatitlán,30108,Minatitlán
+30.1.03,Zona metropolitana de Minatitlán,30120,Oteapan
+30.1.03,Zona metropolitana de Minatitlán,30199,Zaragoza
+30.1.04,Zona metropolitana de Orizaba,30006,Acultzingo
+30.1.04,Zona metropolitana de Orizaba,30030,Camerino Z. Mendoza
+30.1.04,Zona metropolitana de Orizaba,30074,Huiloapan de Cuauhtémoc
+30.1.04,Zona metropolitana de Orizaba,30081,Ixhuatlancillo
+30.1.04,Zona metropolitana de Orizaba,30085,Ixtaczoquitlán
+30.1.04,Zona metropolitana de Orizaba,30098,Magdalena
+30.1.04,Zona metropolitana de Orizaba,30099,Maltrata
+30.1.04,Zona metropolitana de Orizaba,30101,Mariano Escobedo
+30.1.04,Zona metropolitana de Orizaba,30115,Nogales
+30.1.04,Zona metropolitana de Orizaba,30118,Orizaba
+30.1.04,Zona metropolitana de Orizaba,30135,Rafael Delgado
+30.1.04,Zona metropolitana de Orizaba,30138,Río Blanco
+30.1.04,Zona metropolitana de Orizaba,30140,San Andrés Tenejapan
+30.1.04,Zona metropolitana de Orizaba,30185,Tlilapan
+30.1.05,Zona metropolitana de Poza Rica,30040,Coatzintla
+30.1.05,Zona metropolitana de Poza Rica,30131,Poza Rica de Hidalgo
+30.1.05,Zona metropolitana de Poza Rica,30175,Tihuatlán
+30.1.06,Zona metropolitana de Veracruz,30028,Boca del Río
+30.1.06,Zona metropolitana de Veracruz,30090,Jamapa
+30.1.06,Zona metropolitana de Veracruz,30100,Manlio Fabio Altamirano
+30.1.06,Zona metropolitana de Veracruz,30105,Medellín de Bravo
+30.1.06,Zona metropolitana de Veracruz,30193,Veracruz
+30.1.07,Zona metropolitana de Xalapa,30001,Acajete
+30.1.07,Zona metropolitana de Xalapa,30026,Banderilla
+30.1.07,Zona metropolitana de Xalapa,30036,Coacoatzintla
+30.1.07,Zona metropolitana de Xalapa,30038,Coatepec
+30.1.07,Zona metropolitana de Xalapa,30065,Emiliano Zapata
+30.1.07,Zona metropolitana de Xalapa,30087,Xalapa
+30.1.07,Zona metropolitana de Xalapa,30092,Xico
+30.1.07,Zona metropolitana de Xalapa,30093,Jilotepec
+30.1.07,Zona metropolitana de Xalapa,30136,Rafael Lucio
+30.1.07,Zona metropolitana de Xalapa,30182,Tlalnelhuayocan
+30.3.08,Zona conurbada de Acayucan,30003,Acayucan
+30.3.08,Zona conurbada de Acayucan,30116,Oluta
+30.3.08,Zona conurbada de Acayucan,30145,Soconusco
+31.1.01,Zona metropolitana de Mérida,31002,Acanceh
+31.1.01,Zona metropolitana de Mérida,31013,Conkal
+31.1.01,Zona metropolitana de Mérida,31020,Chicxulub Pueblo
+31.1.01,Zona metropolitana de Mérida,31038,Hunucmá
+31.1.01,Zona metropolitana de Mérida,31039,Ixil
+31.1.01,Zona metropolitana de Mérida,31041,Kanasín
+31.1.01,Zona metropolitana de Mérida,31050,Mérida
+31.1.01,Zona metropolitana de Mérida,31063,Samahil
+31.1.01,Zona metropolitana de Mérida,31090,Timucuy
+31.1.01,Zona metropolitana de Mérida,31093,Tixkokob
+31.1.01,Zona metropolitana de Mérida,31095,Tixpéhual
+31.1.01,Zona metropolitana de Mérida,31100,Ucú
+31.1.01,Zona metropolitana de Mérida,31101,Umán
+31.3.02,Zona conurbada de Valladolid,31021,Chichimilá
+31.3.02,Zona conurbada de Valladolid,31099,Uayma
+31.3.02,Zona conurbada de Valladolid,31102,Valladolid
+32.1.01,Zona metropolitana de Zacatecas-Guadalupe,32017,Guadalupe
+32.1.01,Zona metropolitana de Zacatecas-Guadalupe,32032,Morelos
+32.1.01,Zona metropolitana de Zacatecas-Guadalupe,32050,Vetagrande
+32.1.01,Zona metropolitana de Zacatecas-Guadalupe,32056,Zacatecas
+32.1.01,Zona metropolitana de Zacatecas-Guadalupe,32057,Trancoso

@@ -12,6 +12,7 @@ import json
 
 from psycopg_pool import AsyncConnectionPool
 
+from mapo_core import zona as zona_comun
 from mapo_core.voronoi import PuntoVoronoi
 
 # Simplificacion aplicada al leer poligonos (no al guardar): mismo
@@ -116,6 +117,48 @@ async def negocios(
         filas = await cursor.fetchall()
 
     return [PuntoVoronoi(id=id_, nombre=nombre, lat=lat, lon=lon) for id_, nombre, lat, lon in filas]
+
+
+# Hasta dónde fuera de la zona se busca competencia para el Voronoi: sin ella, un
+# negocio junto al límite municipal se quedaba con todo el borde (sesión 29b).
+COMPETENCIA_M = 5_000
+
+
+async def negocios_de_zona(
+    pool: AsyncConnectionPool, zona: dict, *, patron: str | None = None, clases: list[str] | None = None,
+    margen_m: int = COMPETENCIA_M,
+) -> tuple[list[PuntoVoronoi], list[str]]:
+    """Negocios de DENUE dentro de la zona y, marcados `fuera`, los que están a
+    `margen_m` metros o menos de ella. También regresa los estados que toca ese margen
+    sin DENUE cargado: ahí la competencia de fuera no se ve."""
+    sql, params = zona_comun.geom_sql(zona)
+    async with pool.connection() as conn:
+        cursor = await conn.execute(
+            f"""WITH z AS MATERIALIZED ({sql}),
+                    m AS MATERIALIZED (SELECT ST_Buffer(geom::geography, %(margen)s)::geometry AS g FROM z),
+                    zs AS MATERIALIZED (SELECT ST_Subdivide(geom, 128) AS g FROM z),
+                    ms AS MATERIALIZED (SELECT ST_Subdivide(g, 128) AS g FROM m)
+               SELECT n.id, n.nombre, n.lat, n.lon,
+                      NOT EXISTS (SELECT 1 FROM zs WHERE zs.g && pt.p AND ST_Intersects(zs.g, pt.p)) AS fuera
+               FROM fuente_denue_negocios n
+                    CROSS JOIN LATERAL (SELECT ST_SetSRID(ST_MakePoint(n.lon, n.lat), 4326) AS p) pt
+               WHERE n.lat IS NOT NULL AND n.lon IS NOT NULL
+                 AND n.lat BETWEEN (SELECT ST_YMin(g) FROM m) AND (SELECT ST_YMax(g) FROM m)
+                 AND n.lon BETWEEN (SELECT ST_XMin(g) FROM m) AND (SELECT ST_XMax(g) FROM m)
+                 AND EXISTS (SELECT 1 FROM ms WHERE ms.g && pt.p AND ST_Intersects(ms.g, pt.p))
+                 AND (%(patron)s::text IS NULL OR n.clase_actividad ILIKE %(patron)s)
+                 AND (%(clases)s::text[] IS NULL OR n.clase_actividad = ANY(%(clases)s))""",
+            {**params, "margen": margen_m, "patron": f"%{patron}%" if patron else None, "clases": clases},
+        )
+        filas = await cursor.fetchall()
+        cursor = await conn.execute(
+            f"""WITH z AS ({sql}), m AS (SELECT ST_Buffer(geom::geography, %(margen)s)::geometry AS g FROM z)
+               SELECT e.cve_ent FROM entidades e, m WHERE e.geom && m.g AND ST_Intersects(e.geom, m.g)
+                 AND NOT EXISTS (SELECT 1 FROM fuente_denue_negocios d WHERE d.cve_ent = e.cve_ent)
+               ORDER BY 1""", {**params, "margen": margen_m})
+        sin_denue = [f[0] for f in await cursor.fetchall()]
+    puntos = [PuntoVoronoi(id=i, nombre=n, lat=lat, lon=lon, fuera=f) for i, n, lat, lon, f in filas]
+    return puntos, sin_denue
 
 
 def aviso_voronoi(num_negocios: int) -> str | None:

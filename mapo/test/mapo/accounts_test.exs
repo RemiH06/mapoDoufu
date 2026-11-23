@@ -394,4 +394,28 @@ defmodule Mapo.AccountsTest do
       refute inspect(%User{password: "123456"}) =~ "password: \"123456\""
     end
   end
+
+  describe "update_user_zona/2" do
+    test "guarda una clave de zona y la quita con nil" do
+      scope = Mapo.AccountsFixtures.user_scope_fixture()
+      assert {:ok, user} = Accounts.update_user_zona(scope, "mun:14039,14120")
+      assert user.zona_operacion == "mun:14039,14120"
+      assert {:ok, user} = Accounts.update_user_zona(scope, nil)
+      assert is_nil(user.zona_operacion)
+    end
+
+    test "rechaza lo que no es una clave de zona" do
+      scope = Mapo.AccountsFixtures.user_scope_fixture()
+
+      for clave <- [
+            "14039",
+            "mun:14039'; DROP",
+            "javascript:alert(1)",
+            "pol:" <> String.duplicate("1", 6_001)
+          ] do
+        assert {:error, changeset} = Accounts.update_user_zona(scope, clave)
+        assert changeset.errors[:zona_operacion]
+      end
+    end
+  end
 end

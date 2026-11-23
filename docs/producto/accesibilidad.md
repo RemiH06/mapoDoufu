@@ -1,6 +1,7 @@
 # Accesibilidad a servicios
 
-`/accesibilidad` (en el menú, "Servicios"): se elige un municipio, cómo se llega (a pie
+`/accesibilidad` (en el menú, "Servicios"): se elige una zona con el selector común
+(municipios, metrópoli, colonia, CP o un dibujo; `zona.md`), cómo se llega (a pie
 o en auto) y a partir de cuántos minutos se cuenta como lejos, y se ve, servicio por
 servicio, cuánta gente de su grupo vive a más de esos minutos del más cercano. Es lo que
 un municipio necesita saber y no puede calcular sin un SIG. Nunca un índice: cada
@@ -84,13 +85,17 @@ modo en `accesibilidad_cargas`). Consultar es leer la base.
 
 ## Qué manda mapo_core
 
-`GET /accesibilidad/zona?cve_ent=&cve_mun=&modo=pie|auto`. Por servicio: `total`
-(personas del grupo), `sin_ruta`, `reservados` (lugares con `*` de INEGI, no se cuentan
-como cero), `sin_calcular` y `sin_calcular_lugares` (escuelas fuera de AGEB) y
+`GET /accesibilidad/zona?zona=<clave>&modo=pie|auto` (siguen valiendo `cve_ent` y
+`cve_mun`). Un lugar es de la zona si su punto (el de dentro del AGEB, o el de la
+localidad) cae en ella; hasta 5,000 km². Por servicio: `total` (personas del grupo),
+`sin_ruta`, `reservados` (lugares con `*` de INEGI, no se cuentan como cero),
+`sin_calcular` y `sin_calcular_lugares` (escuelas fuera de AGEB, o lugares de un estado
+que no se ha calculado: `estados_sin_calcular`) y
 `dentro`, la gente a m minutos o menos para cada m de 0 a 120. La pantalla resta: mover
 el umbral no vuelve a consultar. También el plano (AGEB simplificados a 0.0001° y
-localidades como punto, con los minutos a cada servicio) y los destinos dentro del
-municipio o que quedaron como el más cercano de algún lugar.
+localidades como punto, con los minutos a cada servicio; con más de 5,000 km², a
+0.0004°) y los destinos dentro de la zona o que quedaron como el más cercano de algún
+lugar. La ZMG entera: 2,455 lugares, 5.5 MB, 15 s en Aerilate.
 
 ## La pantalla
 
@@ -99,9 +104,8 @@ municipio o que quedaron como el más cercano de algún lugar.
 - El plano pinta un servicio a la vez ("Ver en el plano"): más lejos, más tinta, en
   cuatro clases relativas al umbral (hasta la mitad, hasta el umbral, hasta el doble y
   más); sin dato, solo el borde punteado. Al tocar un lugar, su gente y sus minutos.
-- Enlace permanente: `ent`, `mun`, `modo`, `umbral` (1 a 120) y `servicio`. Un modo o
-  umbral raro cae al valor inicial (a pie, 15); un municipio que no está deja la hoja
-  vacía. Límite de 60 consultas por hora por cuenta.
+- Enlace permanente: `zona`, `modo`, `umbral` (1 a 120) y `servicio`. Un modo o umbral
+  raro cae al valor inicial (a pie, 15); una zona que no resuelve deja la hoja vacía. Límite de 60 consultas por hora por cuenta.
 - "Cómo citar" en cada servicio: la fuente de los destinos (CLUES, DENUE u OSM), el
   censo y OSM como red, con la fecha del cálculo (`citar.md`).
 

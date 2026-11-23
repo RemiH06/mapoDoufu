@@ -6,7 +6,15 @@ defmodule Mapo.Accounts do
   import Ecto.Query, warn: false
   alias Mapo.Repo
 
-  alias Mapo.Accounts.{User, UserToken, UserNotifier}
+  alias Mapo.Accounts.{Scope, User, UserToken, UserNotifier}
+
+  @doc """
+  Guarda la zona en la que opera quien usa Mapo (clave de la zona común,
+  docs/producto/zona.md); `nil` la quita.
+  """
+  def update_user_zona(%Scope{user: %User{} = user}, clave) do
+    user |> User.zona_changeset(%{zona_operacion: clave}) |> Repo.update()
+  end
 
   ## Database getters
 

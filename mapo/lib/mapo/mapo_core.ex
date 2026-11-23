@@ -68,15 +68,28 @@ defmodule Mapo.MapoCore do
   end
 
   @doc """
-  Diagrama de Voronoi de los negocios de DENUE en un municipio
-  (opcionalmente filtrados por texto en `clase_actividad`), recortado
-  al polígono real del municipio: para cada negocio, el área que le
-  queda más cerca a él que a cualquier otro de la lista.
+  Diagrama de Voronoi de los negocios de DENUE de una zona (clave de la zona
+  común, docs/producto/zona.md), opcionalmente filtrados por `clase_actividad`,
+  recortado a la zona. Los negocios cercanos de fuera también compiten: sus
+  celdas traen `"fuera" => true`.
   """
-  def voronoi_denue(cve_ent, cve_mun, clase_actividad \\ nil) do
-    params = [cve_ent: cve_ent, cve_mun: cve_mun] |> maybe_put(:clase_actividad, clase_actividad)
-    get("/voronoi/denue", params)
+  def voronoi_denue(zona, clase_actividad \\ nil) do
+    params = [zona: zona] |> maybe_put(:clase_actividad, clase_actividad)
+    get("/voronoi/denue", params, receive_timeout: 60_000)
   end
+
+  @doc """
+  Sugerencias del selector de zona: `%{"resultados" => [%{"clave", "tipo",
+  "nombre", "detalle"}], "aviso" => texto o nil}`.
+  """
+  def zona_buscar(texto), do: get("/zona/buscar", q: texto)
+
+  @doc """
+  Una clave de zona (`mun:14039`, `zm:14.1.01`, `col:14098_0135`...) a su
+  nombre, polígono, área y municipios. 422 si la clave no sirve, 404 si no
+  hay nada cargado con ella.
+  """
+  def zona_resolver(clave), do: get("/zona/resolver", clave: clave)
 
   @doc """
   Los municipios de un estado, cada uno con `properties.color_indice`
@@ -107,14 +120,11 @@ defmodule Mapo.MapoCore do
 
   @doc """
   Vista de riesgos: cada peligro de una zona por separado, con la gente que
-  vive dentro y cerca. `zona` es `%{cve_ent:, cve_mun:}` o
-  `%{lon:, lat:, radio_m:}`. Un municipio grande tarda varios segundos.
+  vive dentro y cerca. `zona` es la clave de la zona común (un círculo es
+  `cir:lon,lat,radio`). Un municipio grande tarda varios segundos.
   """
   def riesgos_zona(zona, cerca_m) do
-    params =
-      zona |> Map.take([:cve_ent, :cve_mun, :lon, :lat, :radio_m]) |> Map.put(:cerca_m, cerca_m)
-
-    get("/riesgos/zona", Enum.to_list(params), receive_timeout: 120_000)
+    get("/riesgos/zona", [zona: zona, cerca_m: cerca_m], receive_timeout: 120_000)
   end
 
   @doc """
@@ -127,14 +137,12 @@ defmodule Mapo.MapoCore do
   end
 
   @doc """
-  Accesibilidad a servicios de un municipio, a pie o en auto: por servicio,
-  cuánta gente de su grupo vive a cada minuto o menos, y los minutos de cada
-  lugar para el plano (docs/producto/accesibilidad.md).
+  Accesibilidad a servicios de una zona (clave de la zona común), a pie o en
+  auto: por servicio, cuánta gente de su grupo vive a cada minuto o menos, y
+  los minutos de cada lugar para el plano (docs/producto/accesibilidad.md).
   """
-  def accesibilidad_zona(cve_ent, cve_mun, modo) do
-    get("/accesibilidad/zona", [cve_ent: cve_ent, cve_mun: cve_mun, modo: modo],
-      receive_timeout: 60_000
-    )
+  def accesibilidad_zona(zona, modo) do
+    get("/accesibilidad/zona", [zona: zona, modo: modo], receive_timeout: 60_000)
   end
 
   @doc """

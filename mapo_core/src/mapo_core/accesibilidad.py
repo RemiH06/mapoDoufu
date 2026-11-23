@@ -29,6 +29,7 @@ from psycopg_pool import AsyncConnectionPool
 from scipy.spatial import cKDTree
 
 from mapo_core import rubros, transporte
+from mapo_core import zona as zona_comun
 from mapo_core.osrm_client import OSRMClient
 from mapo_core.zonas import minutos_por_calle, plano
 
@@ -371,81 +372,109 @@ def metodo(s: Servicio, modo: str) -> str:
             f" {origen} Solo destinos del mismo estado.{extra}")
 
 
-async def zona(pool: AsyncConnectionPool, cve_ent: str, cve_mun: str, modo: str) -> dict | None:
-    """Un municipio: por servicio, la curva de su grupo de población, y el plano con
-    los minutos de cada lugar. None si el municipio no está cargado."""
+async def zona(pool: AsyncConnectionPool, z: dict, modo: str) -> dict | None:
+    """Una zona de la zona común (zona.py): por servicio, la curva de su grupo de
+    población, y el plano con los minutos de cada lugar. Un lugar es de la zona si su
+    punto (el de dentro del AGEB, o el de la localidad) cae en ella. None si la zona no
+    toca nada cargado. Los minutos son por estado: los lugares de un estado sin calcular
+    se cuentan aparte (`sin_calcular`), nunca como lejos."""
     async with pool.connection() as conn:
-        cur = conn.cursor(row_factory=dict_row)
-        await cur.execute(
-            """SELECT nombre, ST_AsGeoJSON(ST_SimplifyPreserveTopology(geom, 0.0005), 5) AS gj
-               FROM municipios WHERE cve_ent = %(e)s AND cve_mun = %(m)s""", {"e": cve_ent, "m": cve_mun})
-        mun = await cur.fetchone()
-        if mun is None:
+        resuelta = await zona_comun.resolver(conn, z)
+        if resuelta is None or not resuelta["estados"]:
             return None
+        if motivo := zona_comun.demasiado_grande(resuelta["km2"]):
+            raise ConsultaInvalida(motivo)
+        estados = resuelta["estados"]
+        sql, params = zona_comun.geom_sql(z)
+        cur = conn.cursor(row_factory=dict_row)
+        # Con miles de AGEB (un estado) el plano pesaría megas: se simplifica más.
+        tolerancia = 0.0001 if resuelta["km2"] < 5_000 else 0.0004
+        # La zona partida en pedazos chicos: punto en polígono contra un municipio entero
+        # tardaba más de un segundo con decenas de miles de destinos.
+        zonas_sql = (f"WITH z AS MATERIALIZED ({sql}),"
+                     " zs AS MATERIALIZED (SELECT ST_Subdivide(geom, 128) AS g FROM z)")
+        dentro = "EXISTS (SELECT 1 FROM zs WHERE zs.g && {p} AND ST_Intersects(zs.g, {p}))"
         await cur.execute(
-            """SELECT a.cvegeo AS clave, 'ageb' AS tipo, c.datos_json AS d,
-                      ST_AsGeoJSON(ST_SimplifyPreserveTopology(a.geom, 0.0001), 5) AS gj
+            f"""{zonas_sql}
+               SELECT a.cvegeo AS clave, a.cve_ent, a.cve_mun, 'ageb' AS tipo, c.datos_json AS d,
+                      ST_AsGeoJSON(ST_SimplifyPreserveTopology(a.geom, %(tol)s), 5) AS gj
                FROM agebs a JOIN fuente_censo_poblacion c ON c.cvegeo = a.cvegeo
-               WHERE a.cve_ent = %(e)s AND a.cve_mun = %(m)s AND a.geom IS NOT NULL
+                    CROSS JOIN LATERAL (SELECT ST_PointOnSurface(a.geom) AS p) pt
+               WHERE a.geom && (SELECT geom FROM z) AND {dentro.format(p="pt.p")}
                UNION ALL
-               SELECT l.cvegeo, 'localidad', l.datos, ST_AsGeoJSON(l.geom, 5)
+               SELECT l.cvegeo, l.cve_ent, l.cve_mun, 'localidad', l.datos, ST_AsGeoJSON(l.geom, 5)
                FROM localidades l
-               WHERE l.cve_ent = %(e)s AND l.cve_mun = %(m)s AND coalesce(l.pobtot, 1) > 0
+               WHERE l.geom && (SELECT geom FROM z) AND {dentro.format(p="l.geom")} AND coalesce(l.pobtot, 1) > 0
                  AND NOT EXISTS (SELECT 1 FROM agebs a WHERE a.geom && l.geom AND ST_Covers(a.geom, l.geom))""",
-            {"e": cve_ent, "m": cve_mun})
+            {**params, "tol": tolerancia})
         lugares_zona = await cur.fetchall()
+        # Por municipio primero (idx_acc_minutos_mun): por clave sola recorría la tabla.
+        de_lugares = sorted({(u["cve_ent"], u["cve_mun"]) for u in lugares_zona})
         await cur.execute(
             """SELECT servicio, clave, minutos, destino FROM accesibilidad_minutos
-               WHERE cve_ent = %(e)s AND cve_mun = %(m)s AND modo = %(modo)s""",
-            {"e": cve_ent, "m": cve_mun, "modo": modo})
+               WHERE (cve_ent, cve_mun) IN (SELECT * FROM unnest(%(e)s::text[], %(m)s::text[]))
+                 AND modo = %(modo)s AND clave = ANY(%(claves)s)""",
+            {"e": [e for e, _ in de_lugares], "m": [m for _, m in de_lugares], "modo": modo,
+             "claves": [u["clave"] for u in lugares_zona]})
         minutos: dict[str, dict[str, tuple]] = {}
         for r in await cur.fetchall():
             minutos.setdefault(r["servicio"], {})[r["clave"]] = (r["minutos"], r["destino"])
         await cur.execute(
-            """SELECT servicio, origenes, destinos, sin_ruta, fuente, red, actualizado::date::text AS calculado
-               FROM accesibilidad_cargas WHERE cve_ent = %(e)s AND modo = %(modo)s""", {"e": cve_ent, "modo": modo})
-        cargas = {r["servicio"]: r for r in await cur.fetchall()}
+            """SELECT cve_ent, servicio, origenes, destinos, sin_ruta, fuente, red,
+                      actualizado::date::text AS calculado
+               FROM accesibilidad_cargas WHERE cve_ent = ANY(%(es)s) AND modo = %(modo)s""",
+            {"es": estados, "modo": modo})
+        cargas: dict[str, dict[str, dict]] = {}
+        for r in await cur.fetchall():
+            cargas.setdefault(r["servicio"], {})[r["cve_ent"]] = r
+        municipios = [(m["cve_ent"], m["cve_mun"]) for m in resuelta["municipios"]]
         await cur.execute(
-            """SELECT EXISTS (SELECT 1 FROM transporte_paradas WHERE cve_ent = %(e)s AND cve_mun = %(m)s
-                              AND feed <> 'osm') AS hay""", {"e": cve_ent, "m": cve_mun})
+            """SELECT EXISTS (SELECT 1 FROM transporte_paradas WHERE feed <> 'osm'
+                              AND (cve_ent, cve_mun) IN (SELECT * FROM unnest(%(e)s::text[], %(m)s::text[]))) AS hay""",
+            {"e": [e for e, _ in municipios], "m": [m for _, m in municipios]})
         con_gtfs = (await cur.fetchone())["hay"]
         # Para citar al productor de cada GTFS, no a Mapo.
         await cur.execute(
             """SELECT DISTINCT f.feed, f.titulo, f.productor, f.pagina, f.licencia, f.fecha_ref::text AS fecha_ref
                FROM transporte_feeds f JOIN transporte_paradas p USING (feed)
-               WHERE p.cve_ent = %(e)s AND f.feed <> 'osm' ORDER BY f.feed""", {"e": cve_ent})
+               WHERE p.cve_ent = ANY(%(es)s) AND f.feed <> 'osm' ORDER BY f.feed""", {"es": estados})
         feeds_gtfs = await cur.fetchall()
         usados = sorted({d for por_lugar in minutos.values() for _, d in por_lugar.values() if d})
         await cur.execute(
-            """SELECT * FROM (
-                 SELECT servicio, id, nombre, lat, lon, ST_Covers(
-                   (SELECT geom FROM municipios WHERE cve_ent = %(e)s AND cve_mun = %(m)s),
-                   ST_SetSRID(ST_MakePoint(lon, lat), 4326)) AS en_zona
-                 FROM accesibilidad_destinos WHERE cve_ent = %(e)s) d
+            f"""{zonas_sql}
+               SELECT * FROM (
+                 SELECT d.servicio, d.id, d.nombre, d.lat, d.lon, {dentro.format(p="pt.p")} AS en_zona
+                 FROM accesibilidad_destinos d
+                      CROSS JOIN LATERAL (SELECT ST_SetSRID(ST_MakePoint(d.lon, d.lat), 4326) AS p) pt
+                 WHERE d.cve_ent = ANY(%(es)s)) q
                WHERE en_zona OR id = ANY(%(ids)s)""",
-            {"e": cve_ent, "m": cve_mun, "ids": usados})
+            {**params, "es": estados, "ids": usados})
         puntos = await cur.fetchall()
 
     servicios = []
     for s in SERVICIOS.values():
         if modo not in s.modos:
             continue
-        carga = cargas.get(s.clave)
+        por_estado = cargas.get(s.clave, {})
         sin_cobertura = s.solo_cobertura and not con_gtfs
         base = {"clave": s.clave, "titulo": s.titulo, "grupo": s.grupo, "grupo_etiqueta": s.grupo_etiqueta,
-                "calculado": carga is not None and not sin_cobertura, "sin_cobertura": sin_cobertura}
-        if carga is None or sin_cobertura:
+                "calculado": bool(por_estado) and not sin_cobertura, "sin_cobertura": sin_cobertura}
+        if not por_estado or sin_cobertura:
             servicios.append(base)
             continue
         por_lugar = minutos.get(s.clave, {})
-        cubiertos = [u for u in lugares_zona if u["tipo"] == "ageb" or not s.solo_agebs]
+        cuenta = lambda u: u["cve_ent"] in por_estado and (u["tipo"] == "ageb" or not s.solo_agebs)  # noqa: E731
+        cubiertos = [u for u in lugares_zona if cuenta(u)]
         c = curva([(_valor(u["d"], s.grupo), por_lugar.get(u["clave"], (None, None))[0]) for u in cubiertos])
-        # La gente de las localidades que no se calculan se dice aparte, nunca como lejos.
-        fuera = [_valor(u["d"], s.grupo) for u in lugares_zona if u["tipo"] != "ageb" and s.solo_agebs]
-        servicios.append({**base, **c, "fuente": carga["fuente"], "red": carga["red"], "solo_agebs": s.solo_agebs,
+        # La gente de los lugares que no se calculan se dice aparte, nunca como lejos.
+        fuera = [_valor(u["d"], s.grupo) for u in lugares_zona if not cuenta(u)]
+        una = next(iter(por_estado.values()))
+        servicios.append({**base, **c, "fuente": una["fuente"], "red": una["red"], "solo_agebs": s.solo_agebs,
                           "sin_calcular": sum(v for v in fuera if v is not None),
                           "sin_calcular_lugares": len(fuera),
-                          "fecha": carga["calculado"], "destinos_estado": carga["destinos"],
+                          "estados_sin_calcular": [e for e in estados if e not in por_estado],
+                          "fecha": max(r["calculado"] for r in por_estado.values()),
+                          "destinos_estado": sum(r["destinos"] for r in por_estado.values()),
                           "metodo": metodo(s, modo),
                           "destinos_zona": sum(1 for p in puntos if p["servicio"] == s.clave and p["en_zona"]),
                           **({"feeds": feeds_gtfs} if s.fuente == "gtfs" else {})})
@@ -460,7 +489,7 @@ async def zona(pool: AsyncConnectionPool, cve_ent: str, cve_mun: str, modo: str)
          "properties": {"s": p["servicio"], "n": p["nombre"]}}
         for p in puntos]}
     return {
-        "zona": {"cve_ent": cve_ent, "cve_mun": cve_mun, "nombre": mun["nombre"], "geojson": json.loads(mun["gj"])},
+        "zona": resuelta,
         "modo": modo,
         "max_minutos": MAX_MINUTOS,
         "lugares": len(lugares_zona),

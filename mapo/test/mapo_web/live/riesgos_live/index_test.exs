@@ -2,23 +2,9 @@ defmodule MapoWeb.RiesgosLive.IndexTest do
   use MapoWeb.ConnCase, async: true
 
   import Phoenix.LiveViewTest
+  import Mapo.ZonaFixtures
 
   setup :register_and_log_in_user
-
-  @estados %{
-    "type" => "FeatureCollection",
-    "features" => [
-      %{"properties" => %{"cvegeo" => "14", "nomgeo" => "Jalisco"}, "geometry" => nil},
-      %{"properties" => %{"cvegeo" => "20", "nomgeo" => "Oaxaca"}, "geometry" => nil}
-    ]
-  }
-
-  @municipios %{
-    "type" => "FeatureCollection",
-    "features" => [
-      %{"properties" => %{"cve_mun" => "015", "nomgeo" => "Autlán de Navarro"}, "geometry" => nil}
-    ]
-  }
 
   defp grupos(pob) do
     %{
@@ -95,58 +81,36 @@ defmodule MapoWeb.RiesgosLive.IndexTest do
 
   defp stub(fun) do
     Req.Test.stub(Mapo.MapoCore, fn conn ->
-      case conn.request_path do
-        "/geo/estados" -> Req.Test.json(conn, @estados)
-        "/geo/municipios" -> municipios(conn)
-        "/riesgos/zona" -> fun.(conn)
-      end
+      responder_zona(conn) ||
+        case conn.request_path do
+          "/riesgos/zona" -> fun.(conn)
+        end
     end)
-  end
-
-  defp municipios(conn) do
-    conn = Plug.Conn.fetch_query_params(conn)
-
-    if conn.query_params["cve_ent"] == "14",
-      do: Req.Test.json(conn, @municipios),
-      else: Req.Test.json(conn, %{"type" => "FeatureCollection", "features" => []})
   end
 
   defp sin_consulta, do: stub(fn _ -> raise "no debería consultar" end)
 
-  test "mounts with the form and the states", %{conn: conn} do
+  defp autlan(conn),
+    do: Req.Test.json(conn, resultado(%{"tipo" => "municipios", "cvegeos" => ["14015"]}))
+
+  test "mounts with the zone selector", %{conn: conn} do
     sin_consulta()
     {:ok, _lv, html} = live(conn, ~p"/riesgos")
 
     assert html =~ "Riesgos de la zona"
-    assert html =~ "Jalisco"
+    assert html =~ "Estado, municipio, metrópoli, colonia o CP"
     assert html =~ "aquí no hay índice"
   end
 
-  test "a state without loaded municipios says to use a circle", %{conn: conn} do
-    sin_consulta()
-    {:ok, lv, _} = live(conn, ~p"/riesgos")
-
-    html = lv |> form("#riesgos_form", riesgos: %{cve_ent: "20"}) |> render_change()
-    assert html =~ "no tiene municipios cargados"
-
-    html = lv |> form("#riesgos_form", riesgos: %{cve_ent: "14"}) |> render_change()
-    assert html =~ "Autlán de Navarro"
-  end
-
-  test "a municipio shows each hazard on its own, with source, date and method", %{conn: conn} do
+  test "elegir una zona consulta de una vez, con la clave de la zona", %{conn: conn} do
     stub(fn conn ->
       conn = Plug.Conn.fetch_query_params(conn)
-      assert conn.query_params == %{"cve_ent" => "14", "cve_mun" => "015", "cerca_m" => "1000"}
-
-      Req.Test.json(
-        conn,
-        resultado(%{"tipo" => "municipio", "cve_ent" => "14", "cve_mun" => "015"})
-      )
+      assert conn.query_params == %{"zona" => "mun:14015", "cerca_m" => "1000"}
+      autlan(conn)
     end)
 
     {:ok, lv, _} = live(conn, ~p"/riesgos")
-    lv |> form("#riesgos_form", riesgos: %{cve_ent: "14"}) |> render_change()
-    lv |> form("#riesgos_form", riesgos: %{cve_ent: "14", cve_mun: "015"}) |> render_submit()
+    elegir_zona(lv, "Autlán")
     html = render_async(lv)
 
     assert html =~ "Quién vive en Autlán de Navarro"
@@ -165,15 +129,57 @@ defmodule MapoWeb.RiesgosLive.IndexTest do
     assert has_element?(lv, "#bloque-sequia .metodo", "Categoría del Monitor")
     refute html =~ "expuest"
 
+    assert_push_event(lv, "zona_elegida", %{geojson: _})
     assert_push_event(lv, "zona", %{capas: [%{clave: "agua_superficial"}]})
+  end
+
+  test "una colonia o un dibujo se consultan igual", %{conn: conn} do
+    yo = self()
+
+    stub(fn conn ->
+      conn = Plug.Conn.fetch_query_params(conn)
+      send(yo, {:zona, conn.query_params["zona"]})
+      Req.Test.json(conn, resultado(%{"tipo" => "colonia"}))
+    end)
+
+    {:ok, lv, _} = live(conn, ~p"/riesgos")
+    elegir_zona(lv, "col:14098_0135")
+    assert_receive {:zona, "col:14098_0135"}
+    assert render_async(lv) =~ "Quién vive en Lopez Cotilla"
+
+    # El plano manda los vértices al cerrar el dibujo.
+    lv |> element("#zona-cambiar") |> render_click()
+    lv |> element("#zona-dibujar") |> render_click()
+    assert_push_event(lv, "dibujar_zona", %{destino: "#zona"})
+
+    lv
+    |> with_target("#zona")
+    |> render_hook("poligono", %{"vertices" => [[-103.4, 20.6], [-103.3, 20.6], [-103.3, 20.7]]})
+
+    assert_receive {:zona, "pol:-103.4,20.6;-103.3,20.6;-103.3,20.7"}
+  end
+
+  test "un dibujo que no sirve se dice y no consulta", %{conn: conn} do
+    sin_consulta()
+    {:ok, lv, _} = live(conn, ~p"/riesgos")
+
+    html =
+      lv |> with_target("#zona") |> render_hook("poligono", %{"vertices" => [[-103.4, 20.6]]})
+
+    assert html =~ "Ese dibujo no sirve"
+
+    html =
+      lv
+      |> with_target("#zona")
+      |> render_hook("poligono", %{"vertices" => [["x", 1], [1, 2], [3, 4]]})
+
+    assert html =~ "Ese dibujo no sirve"
   end
 
   test "a circle needs a point and sends lon, lat and radio in meters", %{conn: conn} do
     stub(fn conn ->
       conn = Plug.Conn.fetch_query_params(conn)
-
-      assert %{"lon" => "-104.3", "lat" => "19.7", "radio_m" => "2500", "cerca_m" => "500"} =
-               conn.query_params
+      assert %{"zona" => "cir:-104.3,19.7,2500", "cerca_m" => "500"} = conn.query_params
 
       Req.Test.json(
         conn,
@@ -182,10 +188,10 @@ defmodule MapoWeb.RiesgosLive.IndexTest do
     end)
 
     {:ok, lv, _} = live(conn, ~p"/riesgos")
-    lv |> form("#riesgos_form", riesgos: %{modo: "circulo"}) |> render_change()
+    lv |> element("#modo-circulo") |> render_click()
 
     html =
-      lv |> form("#riesgos_form", riesgos: %{modo: "circulo", radio_km: "2.5"}) |> render_submit()
+      lv |> form("#riesgos_form", riesgos: %{radio_km: "2.5"}) |> render_submit()
 
     assert html =~ "Toca el plano para poner el centro"
 
@@ -193,7 +199,7 @@ defmodule MapoWeb.RiesgosLive.IndexTest do
     assert_push_event(lv, "previa", %{lat: 19.7, lon: -104.3})
 
     lv
-    |> form("#riesgos_form", riesgos: %{modo: "circulo", radio_km: "2.5", cerca_m: "500"})
+    |> form("#riesgos_form", riesgos: %{radio_km: "2.5", cerca_m: "500"})
     |> render_submit()
 
     assert render_async(lv) =~ "Quién vive en el círculo de 2.5 km"
@@ -204,17 +210,23 @@ defmodule MapoWeb.RiesgosLive.IndexTest do
     {:ok, lv, _} = live(conn, ~p"/riesgos")
     render_hook(lv, "punto", %{"lat" => 19.7, "lon" => -104.3})
 
-    html =
-      lv |> form("#riesgos_form", riesgos: %{modo: "circulo", radio_km: "80"}) |> render_submit()
-
+    html = lv |> form("#riesgos_form", riesgos: %{radio_km: "80"}) |> render_submit()
     assert html =~ "El radio va de 0.1 a 25 km"
 
     html =
       render_submit(lv, "consultar", %{
-        "riesgos" => %{"modo" => "circulo", "radio_km" => "2", "cerca_m" => "999"}
+        "riesgos" => %{"radio_km" => "2", "cerca_m" => "999"}
       })
 
     assert html =~ "Elige qué tan cerca contar"
+  end
+
+  test "sin zona el botón lo pide", %{conn: conn} do
+    sin_consulta()
+    {:ok, lv, _} = live(conn, ~p"/riesgos")
+
+    assert lv |> form("#riesgos_form", riesgos: %{cerca_m: "1000"}) |> render_submit() =~
+             "Elige una zona"
   end
 
   test "points that are not numbers are ignored", %{conn: conn} do
@@ -229,33 +241,52 @@ defmodule MapoWeb.RiesgosLive.IndexTest do
     stub(fn conn -> conn |> Plug.Conn.put_status(500) |> Req.Test.json(%{"detail" => "boom"}) end)
 
     {:ok, lv, _} = live(conn, ~p"/riesgos")
-    lv |> form("#riesgos_form", riesgos: %{cve_ent: "14"}) |> render_change()
-    lv |> form("#riesgos_form", riesgos: %{cve_ent: "14", cve_mun: "015"}) |> render_submit()
+    elegir_zona(lv, "Autlán")
 
     assert render_async(lv) =~ "No se pudo consultar la zona"
   end
 
+  test "una zona muy grande dice por qué", %{conn: conn} do
+    stub(fn conn ->
+      conn
+      |> Plug.Conn.put_status(422)
+      |> Req.Test.json(%{"detail" => "la zona mide 78,601 km² y aquí se calcula hasta 5,000 km²"})
+    end)
+
+    {:ok, lv, _} = live(conn, ~p"/riesgos")
+    elegir_zona(lv, "Jalisco")
+
+    assert render_async(lv) =~ "La zona no sirve: la zona mide 78,601 km²"
+  end
+
+  test "la zona guardada abre la vista sin consultar sola", %{conn: conn} do
+    stub(&autlan/1)
+    {:ok, lv, _} = live(conn, ~p"/riesgos")
+    elegir_zona(lv, "Autlán")
+    render_async(lv)
+
+    lv |> element("#zona-guardar") |> render_click()
+    assert has_element?(lv, "#zona-olvidar", "Es tu zona")
+
+    sin_consulta()
+    {:ok, lv, _} = live(conn, ~p"/riesgos")
+    assert has_element?(lv, "#zona .zona-nombre", "Autlán de Navarro")
+    assert_push_event(lv, "zona_elegida", %{geojson: _})
+    refute render(lv) =~ "Quién vive"
+
+    lv |> element("#zona-olvidar") |> render_click()
+    assert has_element?(lv, "#zona-guardar")
+  end
+
   describe "enlace permanente y cómo citar" do
-    defp con_municipio do
-      stub(fn conn ->
-        Req.Test.json(
-          conn,
-          resultado(%{"tipo" => "municipio", "cve_ent" => "14", "cve_mun" => "015"})
-        )
-      end)
-    end
-
     test "consultar escribe la zona en la URL", %{conn: conn} do
-      con_municipio()
+      stub(&autlan/1)
       {:ok, lv, _} = live(conn, ~p"/riesgos")
-      lv |> form("#riesgos_form", riesgos: %{cve_ent: "14"}) |> render_change()
-
-      lv
-      |> form("#riesgos_form", riesgos: %{cve_ent: "14", cve_mun: "015", cerca_m: "500"})
-      |> render_submit()
+      lv |> form("#riesgos_form", riesgos: %{cerca_m: "500"}) |> render_change()
+      elegir_zona(lv, "Autlán")
 
       render_async(lv)
-      assert_patch(lv, "/riesgos?modo=municipio&ent=14&mun=015&cerca=500")
+      assert_patch(lv, "/riesgos?zona=mun:14015&cerca=500")
     end
 
     test "abrir el enlace vuelve a consultar la misma zona", %{conn: conn} do
@@ -271,16 +302,9 @@ defmodule MapoWeb.RiesgosLive.IndexTest do
         )
       end)
 
-      {:ok, lv, _} = live(conn, "/riesgos?modo=circulo&lat=19.7&lon=-104.3&radio=2.5&cerca=250")
+      {:ok, lv, _} = live(conn, "/riesgos?zona=cir:-104.3,19.7,2500&cerca=250")
 
-      assert_receive {:zona,
-                      %{
-                        "lat" => "19.7",
-                        "lon" => "-104.3",
-                        "radio_m" => "2500",
-                        "cerca_m" => "250"
-                      }}
-
+      assert_receive {:zona, %{"zona" => "cir:-104.3,19.7,2500", "cerca_m" => "250"}}
       assert render_async(lv) =~ "Quién vive en el círculo de 2.5 km"
 
       assert has_element?(
@@ -289,12 +313,31 @@ defmodule MapoWeb.RiesgosLive.IndexTest do
              )
     end
 
+    test "los enlaces de antes de la zona común siguen abriendo", %{conn: conn} do
+      yo = self()
+
+      stub(fn conn ->
+        conn = Plug.Conn.fetch_query_params(conn)
+        send(yo, {:zona, conn.query_params["zona"]})
+        autlan(conn)
+      end)
+
+      {:ok, lv, _} = live(conn, "/riesgos?modo=municipio&ent=14&mun=015&cerca=1000")
+      assert_receive {:zona, "mun:14015"}
+      assert render_async(lv) =~ "Quién vive en Autlán de Navarro"
+
+      {:ok, _lv, _} = live(conn, "/riesgos?modo=circulo&lat=19.7&lon=-104.3&radio=2.5&cerca=250")
+      assert_receive {:zona, "cir:-104.3,19.7,2500"}
+    end
+
     test "una zona rara en la URL deja la hoja vacía sin consultar", %{conn: conn} do
       sin_consulta()
 
       for url <- [
             "/riesgos?modo=municipio&ent=14&mun=999",
             "/riesgos?modo=municipio&ent=99&mun=015",
+            "/riesgos?zona=mun:99999",
+            "/riesgos?zona=cir:abc,19.7,2000",
             "/riesgos?modo=circulo&lat=abc&lon=-104&radio=2",
             "/riesgos?modo=circulo&lat=19.7&lon=-104.3&radio=900",
             "/riesgos?modo=municipio&ent=14&mun=015&cerca=7"
@@ -306,8 +349,8 @@ defmodule MapoWeb.RiesgosLive.IndexTest do
     end
 
     test "cada bloque cita su fuente con la fecha del dato y el enlace", %{conn: conn} do
-      con_municipio()
-      {:ok, lv, _} = live(conn, "/riesgos?modo=municipio&ent=14&mun=015&cerca=1000")
+      stub(&autlan/1)
+      {:ok, lv, _} = live(conn, "/riesgos?zona=mun:14015&cerca=1000")
       render_async(lv)
 
       lv |> element("#citar-sequia") |> render_click()
@@ -315,7 +358,7 @@ defmodule MapoWeb.RiesgosLive.IndexTest do
       assert html =~ "SMN, Conagua. (s. f.). Monitor de Sequía de México"
       assert html =~ "Datos de 2003 a 2026-10-31."
       assert html =~ "Procesado por Mapo: Sequía, Autlán de Navarro, por municipio."
-      assert html =~ "/riesgos?modo=municipio&amp;ent=14&amp;mun=015&amp;cerca=1000"
+      assert html =~ "/riesgos?zona=mun:14015&amp;cerca=1000"
 
       lv |> element("#citar-agua_superficial") |> render_click()
       refute has_element?(lv, "#cita-sequia")

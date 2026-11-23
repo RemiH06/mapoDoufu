@@ -225,15 +225,16 @@ export function clics(map, {vacio, activo = () => true, cursor = () => ""} = {})
     return activo() && ids.length ? map.queryRenderedFeatures(punto, {layers: ids})[0] : null
   }
   map.on("click", e => {
-    // Las marcas (DOM) y las fichas tienen sus propios clics.
-    if (e.originalEvent.target.closest?.(".maplibregl-marker, .maplibregl-popup")) return
+    // Las marcas (DOM) y las fichas tienen sus propios clics; al dibujar una
+    // zona (zona_plano.js) el clic es un vértice.
+    if (map._dibujandoZona || e.originalEvent.target.closest?.(".maplibregl-marker, .maplibregl-popup")) return
     const f = encima(e.point)
     if (f) manejadores.get(f.layer.id)(f, e.lngLat, e)
     else vacio?.(e.lngLat, e)
   })
   let pendiente = null
   map.on("mousemove", e => {
-    if (pendiente) return
+    if (pendiente || map._dibujandoZona) return
     pendiente = requestAnimationFrame(() => {
       pendiente = null
       map.getCanvas().style.cursor = encima(e.point) ? "pointer" : cursor()

@@ -4,7 +4,8 @@ from mapo_core import riesgos as r
 
 
 def test_zona_por_municipio_solo_con_claves_bien_formadas():
-    assert r.zona_valida("14", "015") == {"tipo": "municipio", "cve_ent": "14", "cve_mun": "015"}
+    assert r.zona_valida("14", "015") == {"tipo": "municipios", "cvegeos": ["14015"]}
+    assert r.zona_valida(clave="zm:14.1.01") == {"tipo": "metropoli", "clave": "14.1.01"}
     for e, m in (("14", "15"), ("1a", "015"), ("14", "015; DROP"), (14, "015")):
         with pytest.raises(r.ZonaInvalida):
             r.zona_valida(e, m)
@@ -12,7 +13,7 @@ def test_zona_por_municipio_solo_con_claves_bien_formadas():
 
 def test_zona_por_circulo_dentro_de_mexico_y_con_radio_acotado():
     assert r.zona_valida(lon="-104.3", lat="19.7", radio_m="2500") == {
-        "tipo": "circulo", "lon": -104.3, "lat": 19.7, "radio_m": 2500.0}
+        "tipo": "circulo", "lon": -104.3, "lat": 19.7, "radio_m": 2500}
     for lon, lat, radio in ((-104.3, 19.7, 50), (-104.3, 19.7, 30_000), (2.35, 48.85, 1000), ("x", 19.7, 1000),
                             (None, None, None), (float("nan"), 19.7, 1000)):
         with pytest.raises(r.ZonaInvalida):
@@ -40,3 +41,10 @@ def test_nombres_de_parametros():
     assert r.nombre_parametro("OD_PORC_SUP") == "oxígeno disuelto"
     assert r.nombre_parametro("AS_TOT_mg/L") == "arsénico"
     assert r.nombre_parametro("NUEVO_X") == "NUEVO_X"
+
+
+def test_sin_lugares_cerca_es_cero_y_con_lugares_reservados_es_sin_dato():
+    # Nadie vive cerca: la suma de SQL sale NULL, pero lo cierto es cero.
+    assert r._grupos({"agebs": 0, "localidades": 0, "POBTOT": None})["POBTOT"]["valor"] == 0
+    # Hay lugares y todos traen '*': eso sí es "sin dato".
+    assert r._grupos({"agebs": 2, "localidades": 0, "POBTOT": None})["POBTOT"]["valor"] is None

@@ -124,6 +124,9 @@ docker compose exec mapo_core python -m mapo_core.cli efipem /app/data/fuentes28
 docker compose exec mapo_core python -m mapo_core.cli rezago_social /app/data/fuentes28/GRS_AGEB_urbana_2020.xlsx   # CONEVAL
 docker compose exec mapo_core python -m mapo_core.cli cngmd /app/data/fuentes28/conjunto_de_datos_ins_plan_ord_jur_cngmd2025_csv.zip
 docker compose exec mapo_core python -m mapo_core.cli ambiental --crudos /app/data/crudos-ambiental [--fuente acuiferos,...]   # fuentes ambientales desde los crudos (docs/fuentes/ambientales.md)
+docker compose exec mapo_core python -m mapo_core.cli metropolis          # Metrópolis de México 2020 (CSV del paquete), zona común
+docker compose exec mapo_core python -m mapo_core.cli colonias /app/data/colonias/imc2020_shp.zip   # colonias de CONAPO, todo el país (~3 min)
+docker compose exec mapo_core python -m mapo_core.cli codigos_postales /app/data/colonias/CP_14.zip  # polígonos de CP de SEPOMEX, bajados a mano
 docker compose exec mapo_core python -m mapo_core.cli status
 ```
 

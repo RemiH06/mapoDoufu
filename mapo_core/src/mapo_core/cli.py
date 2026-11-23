@@ -319,6 +319,47 @@ async def _rezago_social(args) -> None:
     print(json.dumps(resumen, ensure_ascii=False))
 
 
+async def _metropolis(args) -> None:
+    import json
+
+    from mapo_core import zona
+
+    await inicializar_esquema()
+    try:
+        resumen = await zona.cargar_metropolis(await get_pool())
+    except zona.ZonaInvalida as exc:
+        raise SystemExit(f"No se cargó nada: {exc}") from None
+    print(json.dumps(resumen, ensure_ascii=False))
+
+
+async def _colonias(args) -> None:
+    import json
+    from pathlib import Path
+
+    from mapo_core import zona
+
+    await inicializar_esquema()
+    try:
+        resumen = await zona.cargar_colonias(await get_pool(), Path(args.archivo))
+    except (zona.ZonaInvalida, OSError, KeyError) as exc:
+        raise SystemExit(f"No se cargó nada: {exc}") from None
+    print(json.dumps(resumen, ensure_ascii=False))
+
+
+async def _codigos_postales(args) -> None:
+    import json
+    from pathlib import Path
+
+    from mapo_core import zona
+
+    await inicializar_esquema()
+    for archivo in args.archivos:
+        try:
+            print(json.dumps(await zona.cargar_codigos_postales(await get_pool(), Path(archivo)), ensure_ascii=False))
+        except (zona.ZonaInvalida, OSError, KeyError) as exc:
+            raise SystemExit(f"No se cargó {archivo}: {exc}") from None
+
+
 async def _cngmd(args) -> None:
     import json
     from pathlib import Path
@@ -601,6 +642,23 @@ def _construir_parser() -> argparse.ArgumentParser:
     p_grs = subparsers.add_parser("rezago_social", help="Grado de Rezago Social por AGEB urbana 2020 (CONEVAL)")
     p_grs.add_argument("archivo", help="GRS_AGEB_urbana_2020.xlsx")
     p_grs.set_defaults(fn=_rezago_social)
+
+    p_metro = subparsers.add_parser(
+        "metropolis", help="Metrópolis de México 2020 con sus municipios, del CSV del paquete (reemplaza todo)"
+    )
+    p_metro.set_defaults(fn=_metropolis)
+
+    p_col = subparsers.add_parser(
+        "colonias", help="Colonias del índice de marginación urbana 2020 de CONAPO, todo el país (reemplaza todo)"
+    )
+    p_col.add_argument("archivo", help="imc2020_shp.zip (zona.COLONIAS_URL)")
+    p_col.set_defaults(fn=_colonias)
+
+    p_cp = subparsers.add_parser(
+        "codigos_postales", help="Polígonos de CP de SEPOMEX, un CP_XX.zip por estado (reemplaza ese estado)"
+    )
+    p_cp.add_argument("archivos", nargs="+", help="CP_14.zip ... de datos.gob.mx")
+    p_cp.set_defaults(fn=_codigos_postales)
 
     p_cngmd = subparsers.add_parser(
         "cngmd", help="Instrumentos de planeación territorial del CNGMD 2025 (reemplaza todo)"

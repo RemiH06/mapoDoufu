@@ -6,9 +6,9 @@ fecha del dato, su nivel geográfico y su método, y las frases son de lugar:
 "dentro de la zona", "a menos de 1,000 m de un sitio en rojo". Si una fuente no
 tiene nada en la zona, el bloque lo dice; si no está cargada, también.
 
-La zona es un municipio cargado en Mapo o un círculo (punto y radio). Todo lo que
-manda el navegador pasa por `zona_valida` y `cerca_valido`: nada se interpola en
-el SQL.
+La zona es cualquiera de la zona común (zona.py: estado, municipios, metrópoli,
+CP, colonia, polígono dibujado o círculo). Todo lo que manda el navegador pasa por
+`zona_valida` y `cerca_valido`: nada se interpola en el SQL.
 """
 
 from __future__ import annotations
@@ -19,9 +19,10 @@ from decimal import Decimal
 
 from psycopg.rows import dict_row
 
+from mapo_core import zona as zona_comun
 from mapo_core.db import get_pool
 
-RADIO_MAX_M = 25_000
+RADIO_MAX_M = zona_comun.RADIO_MAX_M
 CERCAS_M = (250, 500, 1_000, 2_000, 5_000)
 MAX_PUNTOS_CAPA = 2_000
 
@@ -51,21 +52,23 @@ class ZonaInvalida(ValueError):
     pass
 
 
-def zona_valida(cve_ent=None, cve_mun=None, lon=None, lat=None, radio_m=None) -> dict:
-    if cve_ent is not None or cve_mun is not None:
-        if not (isinstance(cve_ent, str) and re.fullmatch(r"\d{2}", cve_ent)
-                and isinstance(cve_mun, str) and re.fullmatch(r"\d{3}", cve_mun)):
-            raise ZonaInvalida("cve_ent de 2 dígitos y cve_mun de 3")
-        return {"tipo": "municipio", "cve_ent": cve_ent, "cve_mun": cve_mun}
+def zona_valida(cve_ent=None, cve_mun=None, lon=None, lat=None, radio_m=None, clave=None) -> dict:
+    """La zona como la entiende zona.py. Acepta la clave de zona común (`clave`) o,
+    como antes de la 29b, un municipio (`cve_ent` y `cve_mun`) o un círculo."""
+    if clave is None:
+        if cve_ent is not None or cve_mun is not None:
+            if not (isinstance(cve_ent, str) and re.fullmatch(r"\d{2}", cve_ent)
+                    and isinstance(cve_mun, str) and re.fullmatch(r"\d{3}", cve_mun)):
+                raise ZonaInvalida("cve_ent de 2 dígitos y cve_mun de 3")
+            clave = f"mun:{cve_ent}{cve_mun}"
+        elif None in (lon, lat, radio_m):
+            raise ZonaInvalida("hace falta una zona, un municipio o lon, lat y radio_m")
+        else:
+            clave = f"cir:{lon},{lat},{radio_m}"
     try:
-        lon, lat, radio = float(lon), float(lat), float(radio_m)
-    except (TypeError, ValueError):
-        raise ZonaInvalida("hace falta un municipio o lon, lat y radio_m") from None
-    if not (-119 <= lon <= -85 and 14 <= lat <= 33.5):
-        raise ZonaInvalida("el punto no está en México")
-    if not (100 <= radio <= RADIO_MAX_M):
-        raise ZonaInvalida(f"radio_m entre 100 y {RADIO_MAX_M}")
-    return {"tipo": "circulo", "lon": lon, "lat": lat, "radio_m": radio}
+        return zona_comun.validar(clave)
+    except zona_comun.ZonaInvalida as exc:
+        raise ZonaInvalida(str(exc)) from None
 
 
 def cerca_valido(cerca_m) -> int:
@@ -78,21 +81,15 @@ def cerca_valido(cerca_m) -> int:
     return cerca
 
 
-def _zona_origen_sql(zona: dict) -> str:
-    if zona["tipo"] == "municipio":
-        return "SELECT geom FROM municipios WHERE cve_ent = %(cve_ent)s AND cve_mun = %(cve_mun)s"
-    return ("SELECT ST_Buffer(ST_SetSRID(ST_MakePoint(%(lon)s, %(lat)s), 4326)::geography,"
-            " %(radio_m)s)::geometry AS geom")
-
-
 async def preparar(conn, zona: dict, cerca_m: int) -> dict | None:
     """La zona y la zona ampliada `cerca_m` metros se calculan una vez (el buffer en
     geography de un municipio tarda) y viajan como parámetros a todas las consultas:
     "dentro o cerca" queda como punto en polígono, que el índice resuelve rápido."""
+    sql, params = zona_comun.geom_sql(zona)
     cur = await _ex(conn,
         "SELECT encode(ST_AsEWKB(geom), 'hex') AS z,"
         " encode(ST_AsEWKB(ST_Buffer(geom::geography, %(cerca_m)s)::geometry), 'hex') AS zc"
-        f" FROM ({_zona_origen_sql(zona)}) q", {**zona, "cerca_m": cerca_m})
+        f" FROM ({sql}) q", {**params, "cerca_m": cerca_m})
     fila = await cur.fetchone()
     if fila is None or fila["z"] is None:
         return None
@@ -136,9 +133,13 @@ async def _ex(conn, sql: str, params: dict):
 
 
 def _grupos(fila: dict) -> dict:
+    # Sin ningún lugar que sumar, la suma de SQL es NULL pero lo cierto es cero:
+    # "sin dato" queda para cuando hay lugares y todos traen el dato reservado.
+    hay_lugares = (fila.get("agebs") or 0) + (fila.get("localidades") or 0) > 0
     salida = {}
     for clave, etiqueta in GRUPOS + VIVIENDAS:
-        salida[clave] = {"etiqueta": etiqueta, "valor": fila.get(clave), "reservados": fila.get(f"{clave}_reservado", 0)}
+        valor = fila.get(clave) if hay_lugares else 0
+        salida[clave] = {"etiqueta": etiqueta, "valor": valor, "reservados": fila.get(f"{clave}_reservado", 0)}
     return salida
 
 
@@ -392,8 +393,18 @@ _METODO_FUEGO = ("Un foco es un píxel más caliente que su entorno al paso del 
 
 # --- Peligros por polígono o municipio --------------------------------------
 async def _municipios_de_la_zona(conn, zona) -> list[tuple[str, str]]:
-    if zona["tipo"] == "municipio":
-        return [(zona["cve_ent"], zona["cve_mun"])]
+    if zona["tipo"] == "municipios":
+        return [(c[:2], c[2:]) for c in zona["cvegeos"]]
+    # Por polígono de municipio, como zona.py: una colonia urbana no tiene ningún
+    # punto del ITER adentro (sesión 29b). Sin municipios cargados, por localidades.
+    cur = await _ex(conn,
+        f"WITH zona AS ({_zona_sql(zona)}) SELECT m.cve_ent, m.cve_mun FROM municipios m, zona z"
+        " WHERE m.geom && z.geom AND ST_Intersects(m.geom, z.geom)"
+        " AND ST_Area(ST_Intersection(m.geom, z.geom)) >= %(parte)s * ST_Area(z.geom) ORDER BY 1, 2",
+        {**zona, "parte": zona_comun.PARTE_MINIMA})
+    por_poligono = [(f["cve_ent"], f["cve_mun"]) for f in await cur.fetchall()]
+    if por_poligono:
+        return por_poligono
     cur = await _ex(conn, 
         f"WITH zona AS ({_zona_sql(zona)}) SELECT DISTINCT l.cve_ent, l.cve_mun FROM localidades l, zona z"
         f" WHERE l.geom && z.geom AND ST_Intersects(l.geom, z.geom) ORDER BY 1, 2", zona)
@@ -584,6 +595,11 @@ _METODO_DEFUN = ("Por municipio de residencia y año de registro, sin ajustar po
 async def resumen(zona: dict, cerca_m: int) -> dict | None:
     pool = await get_pool()
     async with pool.connection() as conn:
+        km2 = await zona_comun.area_km2(conn, zona)
+        if km2 is None:
+            return None
+        if motivo := zona_comun.demasiado_grande(km2):
+            raise ZonaInvalida(motivo)
         zona = await preparar(conn, zona, cerca_m)
         if zona is None:
             return None
@@ -609,8 +625,8 @@ async def resumen(zona: dict, cerca_m: int) -> dict | None:
             await _agricultura(conn, municipios, nombres),
             await _defunciones(conn, municipios, nombres),
         ]
-    visible = {k: v for k, v in zona.items() if k not in ("z_wkb", "zc_wkb", "cerca_m")}
-    return {"zona": {**visible, "geojson": json.loads(z["gj"]), "km2": float(z["km2"]),
+    visible = {k: v for k, v in zona.items() if k in ("tipo", "lon", "lat", "radio_m")}
+    return {"zona": {**visible, "clave": zona_comun.clave(zona), "geojson": json.loads(z["gj"]), "km2": float(z["km2"]),
                      "municipios": [{"cve_ent": e, "cve_mun": m, "nombre": nombres.get((e, m))} for e, m in municipios]},
             "cerca_m": cerca_m, "poblacion": poblacion,
             "metodo_poblacion": ("AGEB urbanos con su censo 2020 donde están cargados (su punto interior dentro de la "

@@ -1,7 +1,8 @@
 # Vista de riesgos
 
-`/riesgos`: se elige una zona (un municipio cargado en Mapo o un círculo de 0.1 a 25 km en
-el plano) y se ve cada peligro por separado, con su fuente, fecha, nivel geográfico y
+`/riesgos`: se elige una zona con el selector común (estado, municipios, metrópoli,
+colonia, CP o un polígono dibujado; `zona.md`) o un círculo de 0.1 a 25 km en el plano, y
+se ve cada peligro por separado, con su fuente, fecha, nivel geográfico y
 método, y cuánta gente vive dentro de la zona y cerca de cada uno. Nunca un índice ni la
 palabra "expuesta": las frases son de lugar ("a menos de 1,000 m de un sitio en rojo").
 
@@ -43,10 +44,18 @@ en Oaxaca de Juárez cuenta sus 304 mil habitantes. La vista lo avisa cuando pas
   vez (`preparar`) y viajan como parámetros; todo lo demás es punto en polígono con el
   índice espacial. Medir cada punto contra el contorno de un municipio en `geography`
   tardaba minutos.
-- `GET /riesgos/zona?cve_ent&cve_mun` o `?lon&lat&radio_m`, más `cerca_m`.
+- `GET /riesgos/zona?zona=<clave de zona.py>&cerca_m=` (siguen valiendo `cve_ent` y
+  `cve_mun`, o `lon`, `lat` y `radio_m`). Hasta 5,000 km²: un estado tardaría minutos.
+- Los datos por municipio (sequía, cultivos, defunciones) usan los municipios que tienen
+  al menos 5 % del área de la zona, por polígono; sin municipios cargados, los del ITER
+  que caen dentro. Antes de la 29b iba solo por el ITER, y una colonia urbana, sin ningún
+  punto del ITER adentro, se quedaba sin municipio.
+- Si nadie vive cerca de un peligro, la gente cerca es 0, no "sin dato": la suma de cero
+  renglones salía NULL. "Sin dato" queda para cuando hay lugares y todos traen `*`.
 - `mapo/lib/mapo_web/live/riesgos_live/index.ex` y `mapo/assets/js/riesgos_mapa.js`:
   formulario, hoja de bloques y plano con una capa por peligro de puntos.
 
 ## Tiempos (producción, 2026-11-19)
 
-Autlán 1.3 s, Guadalajara 1.2 s, círculo de 3 km 0.2 s.
+Autlán 1.3 s, Guadalajara 1.2 s, círculo de 3 km 0.2 s. En Aerilate (2026-11-22, Docker
+en Windows): López Cotilla 0.9 s, Guadalajara 7 s, Zapopan 19.5 s, la ZMG 64 s.

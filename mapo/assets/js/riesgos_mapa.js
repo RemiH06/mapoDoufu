@@ -1,4 +1,5 @@
 import {crearPlano, alListo, clics, css, escapar, fuente, quitar, bordes, circulo, ficha, relleno, margenHoja} from "./plano"
+import {conZona} from "./zona_plano"
 
 // Plano de /riesgos. El LiveView decide la zona y manda lo que hay que dibujar:
 // "previa" (el círculo antes de consultar) y "zona" (el contorno y una capa por
@@ -66,7 +67,7 @@ export const RiesgosMapa = {
     raiz.dataset.piel = "laboral"
     this.capas = []
     this.visibles = new Set()
-    this.listo = crearPlano(this.el, {alTema: () => this._pintar(), margen: margenHoja}).then(({map, ml}) => {
+    this.listo = crearPlano(this.el, {alTema: () => { this._pintar(); this.zonaComun.repintar() }, margen: margenHoja}).then(({map, ml}) => {
       this.map = map
       this.ml = ml
       this.control = new ControlCapas((clave, si) => {
@@ -83,6 +84,7 @@ export const RiesgosMapa = {
       this.clic.cursor()
     })
     const cuando = alListo(this, this.listo)
+    this.zonaComun = conZona(this, cuando)
 
     this.handleEvent("previa", cuando(({lat, lon, radio_m}) => {
       this.previa = circulo([lon, lat], radio_m)
@@ -102,6 +104,7 @@ export const RiesgosMapa = {
 
   _dibujar(zona, capas) {
     this.previa = null
+    this.zonaComun.limpiar()
     this.zona = zona
     this.capas = capas
     this.visibles = new Set(capas.map(c => c.clave))

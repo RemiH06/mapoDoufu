@@ -314,6 +314,18 @@ $C run --rm -v "$HOME/srv/mapo-crudos/municipales:/crudos:ro" mapo_core python -
 $C run --rm -v "$HOME/srv/mapo-crudos/municipales:/crudos:ro" mapo_core python -m mapo_core.cli cngmd /crudos/conjunto_de_datos_ins_plan_ord_jur_cngmd2025_csv.zip
 ```
 
+## Zona común (sesión 29b)
+
+Las tablas las crea `mapo_core`; la cuenta (`users.zona_operacion`) es migración. El
+shapefile de colonias de CONAPO va en `~/srv/mapo-crudos/zonas/` (`fuentes/zonas.md`):
+
+```bash
+$C run --rm mapo_core python -m mapo_core.cli metropolis
+$C run --rm -v "$HOME/srv/mapo-crudos/zonas:/crudos:ro" mapo_core python -m mapo_core.cli colonias /crudos/imc2020_shp.zip
+# cuando estén los polígonos de SEPOMEX, bajados a mano:
+$C run --rm -v "$HOME/srv/mapo-crudos/zonas:/crudos:ro" mapo_core python -m mapo_core.cli codigos_postales /crudos/CP_14.zip
+```
+
 ## Operación
 
 ```bash
