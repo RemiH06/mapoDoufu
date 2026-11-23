@@ -309,6 +309,196 @@
     display: none;
   }
 
+  /* Antes de la respuesta no hay plano: la pregunta sola, al centro, como
+     una hoja en la mesa. El plano entra desvanecido con la respuesta. */
+  .plano-gl {
+    transition: opacity 0.4s ease, visibility 0s;
+  }
+  main:has(.pregunta.sin-plano) .plano-gl {
+    visibility: hidden;
+    opacity: 0;
+  }
+  .pregunta.sin-plano {
+    left: 50%;
+    translate: -50% 0;
+    top: max(118px, 16dvh);
+    width: min(640px, calc(100% - 40px));
+    padding: 18px 22px 20px;
+    gap: 12px;
+  }
+  .pregunta.sin-plano h1 {
+    font-size: 34px;
+  }
+  .pregunta.sin-plano ~ .consultando {
+    top: auto;
+    bottom: 14dvh;
+  }
+
+  /* Autocompletado: la pregunta entera con la última palabra completada */
+  .pregunta .caja-pregunta {
+    position: relative;
+    flex: 1;
+    min-width: 0;
+  }
+  .pregunta .caja-pregunta .campo {
+    width: 100%;
+  }
+  .pregunta .sugerencias {
+    position: absolute;
+    z-index: 2;
+    top: calc(100% + 4px);
+    left: 0;
+    right: 0;
+    padding: 4px 0;
+    list-style: none;
+    background: var(--bg);
+    border: 1.5px solid var(--text);
+    transition: opacity 0.18s ease, translate 0.18s ease;
+  }
+  @starting-style {
+    .pregunta .sugerencias {
+      opacity: 0;
+      translate: 0 -4px;
+    }
+  }
+  .pregunta .sugerencias-salida {
+    transition: opacity 0.18s ease;
+  }
+  .pregunta .sugerencias-fuera {
+    opacity: 0;
+  }
+  .pregunta .sugerencias li {
+    display: flex;
+    align-items: baseline;
+    gap: 0 6px;
+    padding: 6px 10px;
+    min-height: 36px;
+    font-size: 15px;
+    cursor: pointer;
+  }
+  .pregunta .sugerencias li:hover,
+  .pregunta .sugerencias li[aria-selected="true"] {
+    background: color-mix(in srgb, var(--accent) 12%, transparent);
+  }
+  .pregunta .sugerencias .previo {
+    color: var(--text2);
+    white-space: pre;
+  }
+  .pregunta .sugerencias b {
+    font-weight: 600;
+  }
+  .pregunta .sugerencias .pista {
+    font-size: 13px;
+    color: var(--text2);
+  }
+  .pregunta .sugerencias .pista::before {
+    content: "· ";
+  }
+  .pregunta .sugerencias em {
+    margin-left: auto;
+    padding-left: 8px;
+    font-style: normal;
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text2);
+  }
+
+  /* El hueco del rubro es un botón que abre el menú */
+  .pregunta button.hueco {
+    text-align: left;
+  }
+  .menu-rubros {
+    width: min(520px, calc(100vw - 24px));
+    max-height: min(74dvh, 680px);
+    margin: auto;
+    padding: 0 14px 12px;
+    overflow-y: auto;
+    color: var(--text);
+    background: var(--bg);
+    border: 1.5px solid var(--text);
+  }
+  .menu-rubros:popover-open {
+    display: grid;
+    align-content: start;
+    gap: 2px;
+  }
+  .menu-rubros::backdrop {
+    background: color-mix(in srgb, #000 22%, transparent);
+  }
+  .menu-rubros::before,
+  .menu-rubros::after {
+    display: none;
+  }
+  .menu-rubros .campo {
+    position: sticky;
+    z-index: 1;
+    top: 0;
+    width: 100%;
+    margin: 0 0 6px;
+    border-top: 12px solid var(--bg);
+    font-size: 16px;
+  }
+  .menu-rubros .sin-coincidencias {
+    font-size: 14px;
+    color: var(--accent);
+  }
+  .menu-rubros summary {
+    display: flex;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 6px 2px;
+    min-height: 36px;
+    font-family: var(--cond);
+    font-weight: 600;
+    font-size: 17px;
+    border-bottom: 1px solid var(--line);
+    cursor: pointer;
+  }
+  .menu-rubros summary .num {
+    font-family: var(--mono);
+    font-weight: 400;
+    font-size: 12px;
+    color: var(--text2);
+  }
+  .menu-rubros ul {
+    display: grid;
+    padding: 2px 0 8px 10px;
+    list-style: none;
+  }
+  .menu-rubros li button {
+    width: 100%;
+    min-height: 34px;
+    padding: 4px 8px;
+    text-align: left;
+    font-size: 15px;
+    cursor: pointer;
+  }
+  .menu-rubros li:first-child button {
+    color: var(--text2);
+  }
+  .menu-rubros li button:hover,
+  .menu-rubros li button:focus-visible {
+    background: color-mix(in srgb, var(--accent) 12%, transparent);
+  }
+
+  .respuesta .respuesta-cabeza {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 10px;
+  }
+  .respuesta .agrandar {
+    display: none;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .plano-gl,
+    .pregunta .sugerencias,
+    .pregunta .sugerencias-salida {
+      transition: none;
+    }
+  }
+
   /* Celular acostado: la pregunta se pliega al resolver, igual que en
      celular, porque la plantilla completa no cabe en 390 px de alto. */
   @media (max-height: 500px) {
@@ -350,6 +540,9 @@
     .pregunta.resuelta:not(.abierta) ~ .respuesta {
       top: 196px;
     }
+    .pregunta.sin-plano {
+      top: 100px;
+    }
   }
 
   @media (max-width: 760px) {
@@ -385,8 +578,46 @@
       max-height: 30dvh;
       padding: 10px 14px 8px;
     }
+    /* El papel abre bajo para que se vea el plano; "Ver todo" lo sube
+       hasta la pregunta y "Ver el plano" lo regresa. */
+    .respuesta .agrandar {
+      display: block;
+      flex: none;
+      min-height: 32px;
+      color: var(--accent);
+      font-size: 14px;
+      text-decoration: underline;
+      text-underline-offset: 2px;
+      cursor: pointer;
+    }
+    .respuesta .agrandar .ver-menos,
+    .respuesta.alta .agrandar .ver-mas {
+      display: none;
+    }
+    .respuesta.alta .agrandar .ver-menos {
+      display: inline;
+    }
+    .respuesta.alta {
+      max-height: calc(100dvh - var(--alto-cabecera) - 110px);
+    }
     .pregunta .frase {
       font-size: 17px;
+    }
+    .pregunta.sin-plano {
+      top: calc(var(--alto-cabecera) + 12px);
+      width: calc(100% - 24px);
+      max-height: calc(100dvh - var(--alto-cabecera) - 24px);
+      padding: 14px 16px 16px;
+    }
+    .pregunta.sin-plano h1 {
+      display: block;
+      font-size: 26px;
+    }
+    .pregunta .sugerencias li {
+      font-size: 14px;
+    }
+    .pregunta .sugerencias .previo {
+      display: none;
     }
   }
 }

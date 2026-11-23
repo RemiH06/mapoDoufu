@@ -111,6 +111,7 @@ Qué se construyó en cada etapa, por qué así y qué bugs reales aparecieron.
 - [Fuentes económicas y municipales, noviembre 2026](historial/2026-11-fuentes-municipales.md)
 - [Plano común con MapLibre y mapa base propio, noviembre 2026](historial/2026-11-plano-maplibre.md)
 - [Selector de zona común, noviembre 2026](historial/2026-11-zona-comun.md)
+- [Buscador sin mapa, autocompletado y menú de rubros, noviembre 2026](historial/2026-11-buscador-sin-mapa.md)
 
 ## Gaiarda
 

@@ -107,6 +107,13 @@ def test_catalogo_no_ofrece_sectores_no_buscables():
     assert "salud" in sectores
 
 
+def test_catalogo_trae_sinonimos_normalizados_para_filtrar_el_menu():
+    comida = next(s for s in buscador.catalogo()["sectores"] if s["sector"] == "alimentos_preparados")
+    taqueria = next(r for r in comida["rubros"] if r["rubro"] == "taqueria")
+    assert "torteria" in taqueria["buscar"].split(" | ")
+    assert "comida preparada" in comida["buscar"]
+
+
 # --- Resolver ------------------------------------------------------------------
 
 CUADRADO = {"type": "Polygon", "coordinates": [[[-2, -2], [12, -2], [12, 12], [-2, 12], [-2, -2]]]}
@@ -286,3 +293,64 @@ def test_plantilla_incompleta_o_invalida_da_422(pool_de_una_conexion):
 async def test_municipio_que_no_esta_da_422(conn, pool_de_una_conexion):
     respuesta = _resolver(pool_de_una_conexion, {"intencion": "cuantos", "rubro": "floreria", "municipios": ["999"]})
     assert respuesta.status_code == 422
+
+
+# --- Sugerir -------------------------------------------------------------------
+
+
+def _sugerir(texto):
+    return buscador.sugerir(texto, "14", MUNICIPIOS)["sugerencias"]
+
+
+def test_sugerir_completa_la_ultima_palabra_con_la_pregunta_entera():
+    textos = [s["texto"] for s in _sugerir("¿Dónde pongo una flor")]
+    assert "¿Dónde pongo una florería" in textos
+    assert all(t.startswith("¿Dónde pongo una ") for t in textos)
+
+
+def test_sugerir_una_por_rubro_y_sin_marcas():
+    sugerencias = _sugerir("oxx")
+    assert sugerencias == []
+    claves = [(s["tipo"], s["nombre"]) for s in _sugerir("flor")]
+    assert len(claves) == len(set(claves))
+
+
+def test_sugerir_municipio_por_nombre_o_apodo_con_su_nombre_oficial():
+    assert {"texto": "¿Cómo es Zapopan", "completa": "Zapopan", "nombre": "Zapopan", "tipo": "municipio"} in _sugerir(
+        "¿Cómo es zapo"
+    )
+    tlaque = [s for s in _sugerir("en Tlaque") if s["tipo"] == "municipio"]
+    assert tlaque[0]["nombre"] == "San Pedro Tlaquepaque"
+
+
+def test_sugerir_varias_palabras_le_gana_a_la_ultima():
+    primera = _sugerir("una tienda de masc")[0]
+    assert primera["tipo"] == "rubro"
+    assert primera["texto"] == "una tienda de mascotas"
+
+
+def test_sugerir_inicios_de_pregunta():
+    textos = [s["texto"] for s in _sugerir("cuá")]
+    assert textos[:2] == ["¿Cuántos ", "¿Cuántas "]
+
+
+def test_sugerir_nada_con_caja_vacia_palabra_completa_o_espacio_al_final():
+    assert _sugerir("") == []
+    assert _sugerir("florería en ") == []
+    assert _sugerir("de") == []
+    assert all(s["completa"] != "Zapopan" for s in _sugerir("Zapopan"))
+    assert all(s["nombre"] != "Florería" for s in _sugerir("una florería"))
+
+
+def test_endpoint_sugerir(monkeypatch):
+    async def municipios_de(_pool, _cve_ent):
+        return MUNICIPIOS
+
+    monkeypatch.setattr("mapo_core.consultas.municipios_de", municipios_de)
+    app.dependency_overrides[get_pool] = lambda: None
+    try:
+        r = TestClient(app).post("/buscador/sugerir", json={"texto": "¿Cómo es Guadal", "cve_ent": "14"})
+    finally:
+        app.dependency_overrides.clear()
+    assert r.status_code == 200
+    assert r.json()["sugerencias"][0]["texto"] == "¿Cómo es Guadalajara"

@@ -93,7 +93,10 @@ node pantallas.js antes         # todas las pantallas; reporte.json con scroll l
 node estados.js antes           # capas propias, coropleta, charola abierta, consulta resuelta
 ```
 
-`TAM=celular,acostado` y `MODO=dark` recortan la corrida; un segundo argumento
+Hay scripts por sesión (`zona.js`, `buscador.js`, ...) que recorren una
+sola función con su texto en `textos.md`. `TAM=celular,acostado` y
+`MODO=dark` recortan la corrida; `NAVEGAR_MS` sube la espera de cada página
+(180 s por omisión, para cuando el montaje de Docker va lento); un segundo argumento
 filtra por nombre (`node pantallas.js antes buscador`). El equipo, la sesión y
 las capas se leen de los enlaces de la cuenta: no hay ids que ajustar. Dev
 compila cada página la primera vez, así que una corrida completa tarda varios

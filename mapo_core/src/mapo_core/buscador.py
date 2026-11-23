@@ -117,14 +117,27 @@ def faltantes(p: Plantilla) -> list[str]:
 
 
 def catalogo() -> dict:
-    """Lo que la pantalla necesita para las plantillas con huecos."""
+    """Lo que la pantalla necesita para las plantillas con huecos. `buscar`
+    son el nombre y los sinónimos normalizados, para filtrar el menú de rubros
+    con las mismas palabras que entiende el analizador."""
+
+    def buscar(*terminos: str) -> str:
+        return " | ".join(rubros.normalizar(t) for t in terminos if t)
+
     por_sector: dict[str, list[dict]] = {}
     for clave, r in rubros.rubros().items():
-        por_sector.setdefault(r.sector, []).append({"rubro": clave, "nombre": r.nombre})
+        por_sector.setdefault(r.sector, []).append(
+            {"rubro": clave, "nombre": r.nombre, "buscar": buscar(r.nombre, *r.sinonimos)}
+        )
     return {
         "intenciones": [{"intencion": k, "nombre": v, "huecos": list(_REQUISITOS[k])} for k, v in INTENCIONES.items()],
         "sectores": [
-            {"sector": s, "nombre": f["nombre"], "rubros": sorted(por_sector[s], key=lambda r: r["nombre"])}
+            {
+                "sector": s,
+                "nombre": f["nombre"],
+                "buscar": buscar(f["nombre"], *f["sinonimos"].split("|")),
+                "rubros": sorted(por_sector[s], key=lambda r: r["nombre"]),
+            }
             for s, f in rubros.sectores().items()
             if f["buscable"] == "si"
         ],
@@ -315,6 +328,96 @@ def interpretar(texto: str, cve_ent: str, municipios: list[tuple[str, str]]) -> 
             for i, f, t, c in encontrados
         ],
     }
+
+
+# --- Sugerir -----------------------------------------------------------------
+
+MAX_SUGERENCIAS = 6
+
+# Un inicio por intención (y las dos formas de contar), para quien empieza a
+# escribir la pregunta.
+_INICIOS = [
+    "¿Dónde pongo una ",
+    "¿Dónde faltan ",
+    "¿Cuántos ",
+    "¿Cuántas ",
+    "¿Dónde busco gente de 18 a 24 años en ",
+    "¿Cómo es ",
+]
+
+
+@cache
+def _vocabulario() -> list[tuple[str, str, str, str]]:
+    """(normalizado, como se escribe, tipo, clave) de rubros y sectores, los
+    mismos términos de `rubros.terminos()` salvo las marcas: se reconocen,
+    pero sugerirlas sería prometer un filtro que DENUE no tiene."""
+    salida = []
+    for clave, r in rubros.rubros().items():
+        nombre = _nombre_escrito("rubro", clave, {})  # "Gas LP" -> "gas LP"
+        salida += [(rubros.normalizar(t), t, "rubro", clave) for t in (nombre, *r.sinonimos)]
+    for clave, fila in rubros.sectores().items():
+        if fila["buscable"] == "si":
+            salida += [(rubros.normalizar(t), t, "sector", clave) for t in filter(None, fila["sinonimos"].split("|"))]
+    return salida
+
+
+def _nombre_escrito(tipo: str, clave: str, municipios: dict[str, str]) -> str:
+    nombre = _nombre(tipo, clave, municipios)
+    return nombre if tipo == "municipio" else nombre[:1].lower() + nombre[1:]
+
+
+def sugerir(texto: str, cve_ent: str, municipios: list[tuple[str, str]]) -> dict:
+    """Autocompletado de la pregunta: inicios de pregunta y términos (rubro,
+    sector, municipio o su apodo) que empiezan con lo último que se escribió.
+    Cada sugerencia es la pregunta entera con ese pedazo completado. Con el
+    texto vacío o terminado en espacio no hay nada que completar."""
+    if not texto.strip() or texto[-1].isspace():
+        return {"sugerencias": []}
+
+    norm = rubros.normalizar(texto)
+    sugerencias = [
+        {"texto": inicio, "completa": inicio.strip(), "nombre": None, "tipo": "pregunta"}
+        for inicio in _INICIOS
+        if len(norm) >= 2 and rubros.normalizar(inicio).startswith(norm) and rubros.normalizar(inicio) != norm
+    ]
+
+    nombres_mun = dict(municipios)
+    vocabulario = _vocabulario() + [(rubros.normalizar(n), n, "municipio", cve) for cve, n in municipios]
+    vocabulario += [(a, nombres_mun[cve], "municipio", cve) for a, cve in rubros.alias_municipios().get(cve_ent, []) if cve in nombres_mun]
+
+    # El pedazo puede ser de varias palabras ("tienda de mas"): primero el más
+    # largo, que es el más preciso. El signo de apertura no es del término.
+    palabras = list(re.finditer(r"\S+", texto))
+    vistos = {(s["tipo"], s["completa"]) for s in sugerencias}
+    for k in range(min(4, len(palabras)), 0, -1):
+        inicio = palabras[-k].start()
+        inicio += re.match(r"[^\w]*", texto[inicio:]).end()
+        pedazo = rubros.normalizar(texto[inicio:])
+        # Con dos letras ("de", "en") sale medio catálogo.
+        if len(pedazo) < 3:
+            continue
+        # Primero los nombres ("florería", no "flores"), luego el más corto.
+        candidatos = sorted(
+            (c for c in vocabulario if c[0].startswith(pedazo) and c[0] != pedazo),
+            key=lambda c: (len(c[0]), c[0]),
+        )
+        candidatos.sort(key=lambda c: c[1] != _nombre_escrito(c[2], c[3], nombres_mun))
+        # Lo que ya está escrito entero no se vuelve a ofrecer en plural.
+        vistos |= {(t, clave) for n, _, t, clave in vocabulario if n == pedazo}
+        for _, escrito, tipo, clave in candidatos:
+            if (tipo, clave) in vistos:
+                continue
+            vistos.add((tipo, clave))
+            sugerencias.append(
+                {
+                    "texto": texto[:inicio] + escrito,
+                    "completa": escrito,
+                    "nombre": _nombre(tipo, clave, nombres_mun),
+                    "tipo": tipo,
+                }
+            )
+
+    return {"sugerencias": sugerencias[:MAX_SUGERENCIAS]}
 
 
 # --- Resolver ----------------------------------------------------------------

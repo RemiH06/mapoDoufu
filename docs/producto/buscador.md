@@ -55,7 +55,38 @@ Las dos formas desde el inicio, y llevan a lo mismo:
    "contratar", "cómo es"). Muestra la plantilla que entendió con los
    huecos editables antes de resolver.
 2. **Plantillas con huecos.** "¿Dónde pongo un [rubro] en [municipios]?"
-   con selects, para quien prefiera elegir.
+   con selects, para quien prefiera elegir. El hueco del rubro abre un menú
+   aparte (ver "Menú de rubros").
+
+**Enter resuelve.** Si la pregunta se entiende completa (ningún hueco
+vacío), se resuelve sola al darle Enter, sin pasar por "Resolver"; lo mismo
+al abrir un enlace con `?q=`. Si falta algo, la plantilla se queda con el
+hueco marcado y no se consulta nada. Un perfil completo lleva directo a
+`/perfil` reemplazando la entrada del historial, para que "atrás" no regrese
+a una pregunta que se vuelve a resolver sola.
+
+**Autocompletado** (`POST /buscador/sugerir`). Mientras se escribe, hasta 6
+sugerencias, cada una con la pregunta entera y la última palabra completada:
+
+- **Inicios de pregunta**, uno por intención ("¿Dónde pongo una", "¿Cuántos",
+  "¿Cómo es"...), si lo escrito es el principio de alguno.
+- **Términos** que empiezan con el pedazo final: rubros por su nombre o sus
+  sinónimos, sectores por sus sinónimos, municipios por su nombre o su apodo
+  (con el nombre oficial). El pedazo puede ser de varias palabras: "tienda de
+  masc" da "tienda de mascotas" antes que el municipio Mascota.
+- **Uno por rubro o municipio**, con su nombre primero ("florería", no
+  "flores"); si se completó un sinónimo, al lado va el rubro al que lleva.
+- **Sin marcas.** Se reconocen al preguntar, pero sugerirlas prometería un
+  filtro que DENUE no tiene.
+- **Nada que completar** con la caja vacía, con espacio al final o con menos
+  de tres letras en el pedazo ("de", "en" traerían medio catálogo). Lo ya
+  escrito entero no se vuelve a ofrecer en plural.
+
+En la pantalla, las flechas recorren la lista, Enter o Tab toman la marcada y
+Esc la esconde; sin marcada, Enter pregunta. Con la caja vacía la lista se va
+desvanecida y vuelven los ejemplos. Una respuesta que llega cuando ya se
+escribió otra cosa se descarta. Si `mapo_core` no contesta, no hay
+sugerencias y la pregunta igual se puede hacer.
 
 Si falta un parámetro, el hueco queda vacío y se pide; si un término
 coincide con dos rubros, no se elige uno en silencio (el test
@@ -80,14 +111,34 @@ Reglas del analizador (`mapo_core/src/mapo_core/buscador.py`):
 
 ## Pantalla
 
-`/buscador` usa el mismo plano y el mismo hook de `/mapa` (`MapaTecnico`),
-con la piel del enfoque de la respuesta. A la izquierda va la pregunta y
-su plantilla, escrita como frase con los huecos; a la derecha, la
-respuesta con sus cifras, sus avisos y sus fuentes; la fórmula y la
-leyenda van en el desplegable "Cómo se lee", para que las zonas
-candidatas suban. En celular y acostado la plantilla se pliega al
-resolver para dejar ver el plano; acostado, además, la pregunta plegada
-se apila sobre la respuesta y deja la mitad izquierda libre.
+**Sin plano hasta la respuesta.** Antes de responder, la pantalla es solo la
+pregunta, al centro. El plano entra desvanecido con la respuesta, o antes si
+la pregunta es "cuántos cerca", que necesita un clic en el plano para el
+punto de partida. El plano existe desde el principio, oculto
+(`visibility: hidden`): así MapLibre arranca con su tamaño real y las capas
+que llegan con la respuesta encuadran bien.
+
+Con la respuesta, `/buscador` usa el mismo plano y el mismo hook de `/mapa`
+(`MapaTecnico`), con la piel del enfoque de la respuesta. A la izquierda va
+la pregunta y su plantilla, escrita como frase con los huecos; a la derecha,
+la respuesta con sus cifras, sus avisos y sus fuentes; la fórmula y la
+leyenda van en el desplegable "Cómo se lee", para que las zonas candidatas
+suban. En celular y acostado la plantilla se pliega al resolver para dejar
+ver el plano; acostado, además, la pregunta plegada se apila sobre la
+respuesta y deja la mitad izquierda libre. En celular la respuesta abre en
+un papel bajo (30 % del alto) y "Ver todo" lo sube hasta la pregunta; "Ver
+el plano" lo regresa.
+
+### Menú de rubros
+
+El hueco del rubro es un botón que abre un menú (popover: Esc y el clic fuera
+lo cierran). Adentro van los 21 sectores plegados, cada uno con "Todo el
+sector" y sus rubros, y arriba un filtro: escribir "tortas" deja Taquería, y
+"comida" deja todo el sector de comida preparada. El filtro usa el campo
+`buscar` del catálogo (nombre y sinónimos normalizados, los mismos que
+entiende el analizador) y se normaliza igual en el navegador: sin acentos ni
+signos. Enter toma el primero que quede. No hay "los más pedidos": Mapo no
+guarda qué se pregunta, y no se va a guardar solo para esto.
 
 El plano abre encuadrado en el estado elegido (`estados_bbox.js`, sacado
 de `entidades`) y lo vuelve a encuadrar al cambiarlo. Todo encuadre mide
@@ -98,7 +149,8 @@ La pregunta va en la URL (`?q=`) para poder compartirla. Las ediciones a
 mano de la plantilla no viajan en la URL.
 
 Qué huecos lleva cada intención lo dice `GET /buscador/catalogo`, que
-también trae los rubros por sector y los grupos de edad. Nada de eso se
+también trae los rubros por sector (con `buscar` para el filtro del menú) y
+los grupos de edad. Nada de eso se
 repite en Phoenix. `POST /buscador/interpretar` convierte el texto en
 plantilla y `POST /buscador/resolver` da capas y cifras; si a la
 plantilla le falta un hueco responde 422 con `faltan`.

@@ -216,6 +216,18 @@ defmodule Mapo.MapoCore do
     do: post("/buscador/interpretar", %{texto: texto, cve_ent: cve_ent})
 
   @doc """
+  Autocompletado de la pregunta -> `%{"sugerencias" => [%{"texto", "completa",
+  "nombre", "tipo"}]}`: cada una es la pregunta entera con la última palabra
+  completada, con el vocabulario del analizador.
+  """
+  def buscador_sugerir(texto, cve_ent),
+    do:
+      post("/buscador/sugerir", %{texto: texto, cve_ent: cve_ent},
+        receive_timeout: 3_000,
+        retry: false
+      )
+
+  @doc """
   Plantilla completa -> `%{"capas", "cifras", "avisos"}` con las mismas
   consultas del modo técnico, o `%{"perfil" => %{...}}` para ir a /perfil.
   Si le falta un hueco, `{:error, {:status, 422, %{"detail" => %{"faltan" => ...}}}}`.

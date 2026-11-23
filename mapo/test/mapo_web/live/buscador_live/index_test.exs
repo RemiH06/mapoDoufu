@@ -24,7 +24,10 @@ defmodule MapoWeb.BuscadorLive.IndexTest do
       %{
         "sector" => "otros_comercios_al_menudeo",
         "nombre" => "Otros comercios",
-        "rubros" => [%{"rubro" => "floreria", "nombre" => "Florería"}]
+        "buscar" => "otros comercios",
+        "rubros" => [
+          %{"rubro" => "floreria", "nombre" => "Florería", "buscar" => "floreria | flores"}
+        ]
       }
     ],
     "edades" => [%{"edad" => "p_18a24", "nombre" => "18 a 24 años"}],
@@ -203,6 +206,11 @@ defmodule MapoWeb.BuscadorLive.IndexTest do
         "/buscador/interpretar" ->
           Req.Test.json(conn, opts[:interpretar] || interpretacion(%{}))
 
+        "/buscador/sugerir" ->
+          {:ok, cuerpo, conn} = Plug.Conn.read_body(conn)
+          if opts[:espia], do: send(opts[:espia], {:sugerir, Jason.decode!(cuerpo)})
+          Req.Test.json(conn, opts[:sugerir] || %{"sugerencias" => []})
+
         "/buscador/zonas" ->
           {:ok, cuerpo, conn} = Plug.Conn.read_body(conn)
           if opts[:espia], do: send(opts[:espia], {:zonas, Jason.decode!(cuerpo)})
@@ -265,8 +273,12 @@ defmodule MapoWeb.BuscadorLive.IndexTest do
     assert html =~ "mapo_core no responde"
   end
 
-  test "la pregunta llena la plantilla, va a la URL y dice lo que entendió", %{conn: conn} do
+  test "la pregunta completa se resuelve sola, va a la URL y dice lo que entendió", %{
+    conn: conn
+  } do
     stub(
+      resolver: resultado_donde_poner(),
+      espia: self(),
       interpretar:
         interpretacion(
           %{"intencion" => "donde_poner", "rubro" => "floreria", "municipios" => ["120"]},
@@ -288,16 +300,129 @@ defmodule MapoWeb.BuscadorLive.IndexTest do
 
     assert_patch(lv, ~p"/buscador?#{[q: "¿Dónde pongo una florería en Zapopan?"]}")
     assert html =~ "Entendí:"
-    assert has_element?(lv, ~s(select[name="plantilla[que]"] option[selected]), "Florería")
+    assert has_element?(lv, "#hueco-rubro", "Florería")
     assert has_element?(lv, ".recorte", "Zapopan")
-    refute has_element?(lv, "#plantilla_form button[disabled]")
+
+    assert_receive {:resolver, %{"plantilla" => %{"rubro" => "floreria"}}}
+    assert render_async(lv) =~ "4,841"
   end
 
-  test "con ?q= en la URL interpreta al abrir", %{conn: conn} do
-    stub(interpretar: interpretacion(%{"intencion" => "perfil", "municipios" => ["120"]}))
+  test "con ?q= en la URL interpreta al abrir y no resuelve si falta algo", %{conn: conn} do
+    stub(
+      interpretar: interpretacion(%{"intencion" => "donde_poner", "municipios" => ["120"]}),
+      espia: self()
+    )
+
+    {:ok, lv, _html} = live(conn, ~p"/buscador?#{[q: "¿Dónde pongo algo en Zapopan?"]}")
+
+    assert has_element?(lv, ".recorte", "Zapopan")
+    assert has_element?(lv, "#hueco-rubro.vacio", "qué rubro")
+    assert has_element?(lv, "#pregunta.sin-plano")
+    refute_received {:resolver, _}
+  end
+
+  test "con ?q= de un perfil completo lleva directo a /perfil", %{conn: conn} do
+    stub(
+      interpretar: interpretacion(%{"intencion" => "perfil", "municipios" => ["120"]}),
+      resolver: %{"intencion" => "perfil", "perfil" => %{"cve_ent" => "14", "cve_mun" => "120"}}
+    )
+
     {:ok, lv, _html} = live(conn, ~p"/buscador?#{[q: "¿Cómo es Zapopan?"]}")
 
-    assert has_element?(lv, ~s(select[name="plantilla[municipio]"] option[selected]), "Zapopan")
+    assert_redirect(lv, ~p"/perfil?#{[cve_ent: "14", cve_mun: "120"]}", 1000)
+  end
+
+  test "al escribir pide sugerencias y con la caja vacía se van", %{conn: conn} do
+    stub(
+      espia: self(),
+      sugerir: %{
+        "sugerencias" => [
+          %{
+            "texto" => "¿Dónde pongo una florería",
+            "completa" => "florería",
+            "nombre" => "Florería",
+            "tipo" => "rubro"
+          },
+          %{
+            "texto" => "¿Dónde pongo una flores",
+            "completa" => "flores",
+            "nombre" => "Florería",
+            "tipo" => "rubro"
+          }
+        ]
+      }
+    )
+
+    {:ok, lv, _html} = live(conn, ~p"/buscador")
+    assert has_element?(lv, ".ejemplos")
+
+    lv
+    |> form("#pregunta_form", pregunta: %{texto: "¿Dónde pongo una flor"})
+    |> render_change()
+
+    render_async(lv)
+    assert_received {:sugerir, %{"texto" => "¿Dónde pongo una flor", "cve_ent" => "14"}}
+
+    assert has_element?(
+             lv,
+             ~s(#sugerencias [role=option][data-texto="¿Dónde pongo una florería"])
+           )
+
+    assert has_element?(lv, "#sugerencia-1 .pista", "Florería")
+    refute has_element?(lv, "#sugerencia-0 .pista")
+    assert has_element?(lv, ~s(#pregunta-texto[aria-expanded="true"]))
+    refute has_element?(lv, ".ejemplos")
+
+    lv |> form("#pregunta_form", pregunta: %{texto: ""}) |> render_change()
+
+    refute has_element?(lv, "#sugerencias")
+    assert has_element?(lv, ".ejemplos")
+  end
+
+  test "sin mapo_core no hay sugerencias, sin tronar", %{conn: conn} do
+    stub()
+    {:ok, lv, _html} = live(conn, ~p"/buscador")
+
+    Req.Test.stub(Mapo.MapoCore, &Plug.Conn.send_resp(&1, 502, "{}"))
+    lv |> form("#pregunta_form", pregunta: %{texto: "flor"}) |> render_change()
+    render_async(lv)
+
+    refute has_element?(lv, "#sugerencias")
+  end
+
+  test "el plano no se ve antes de la respuesta, salvo para elegir un punto", %{conn: conn} do
+    stub()
+    {:ok, lv, _html} = live(conn, ~p"/buscador")
+    assert has_element?(lv, "#pregunta.sin-plano")
+
+    lv |> element("#plantilla_form") |> render_change(%{plantilla: %{intencion: "cuantos_cerca"}})
+    refute has_element?(lv, "#pregunta.sin-plano")
+  end
+
+  test "el menú de rubros trae los sectores y elegir llena el hueco", %{conn: conn} do
+    stub()
+    {:ok, lv, _html} = live(conn, ~p"/buscador")
+
+    lv |> element("#plantilla_form") |> render_change(%{plantilla: %{intencion: "cuantos"}})
+
+    assert has_element?(lv, "#menu-rubros[popover] summary", "Otros comercios")
+
+    assert has_element?(
+             lv,
+             ~s(#menu-rubros li[data-buscar="floreria | flores | otros comercios"])
+           )
+
+    assert has_element?(lv, ~s(#hueco-rubro[popovertarget="menu-rubros"].vacio))
+
+    lv
+    |> element(~s(#menu-rubros button[phx-value-que="sector:otros_comercios_al_menudeo"]))
+    |> render_click()
+
+    assert has_element?(lv, "#hueco-rubro", "todo Otros comercios")
+
+    lv |> element(~s(#menu-rubros button[phx-value-que="rubro:floreria"])) |> render_click()
+    assert has_element?(lv, "#hueco-rubro", "Florería")
+    refute has_element?(lv, "#hueco-rubro.vacio")
   end
 
   test "los avisos del analizador se muestran y el hueco vacío se pide", %{conn: conn} do
@@ -322,9 +447,8 @@ defmodule MapoWeb.BuscadorLive.IndexTest do
 
     lv |> element("#plantilla_form") |> render_change(%{plantilla: %{intencion: "donde_poner"}})
 
-    lv
-    |> element("#plantilla_form")
-    |> render_change(%{plantilla: %{que: "rubro:floreria", agregar: "120"}})
+    lv |> element(~s(#menu-rubros button[phx-value-que="rubro:floreria"])) |> render_click()
+    lv |> element("#plantilla_form") |> render_change(%{plantilla: %{agregar: "120"}})
 
     lv
     |> element("#plantilla_form")
@@ -451,9 +575,7 @@ defmodule MapoWeb.BuscadorLive.IndexTest do
     )
 
     {:ok, lv, _html} = live(conn, ~p"/buscador")
-    pregunta(lv, "¿Cómo es Zapopan?")
-
-    lv |> element("#plantilla_form") |> render_submit()
+    lv |> form("#pregunta_form", pregunta: %{texto: "¿Cómo es Zapopan?"}) |> render_submit()
 
     assert_redirect(lv, ~p"/perfil?#{[cve_ent: "14", cve_mun: "120"]}", 1000)
   end

@@ -22,6 +22,9 @@ const elegidos = (todos, variable) =>
 
 // Dev compila cada página la primera vez: los tiempos son holgados a propósito.
 const conectado = (p) => p.waitForSelector(".phx-connected", { timeout: 90000 });
+// Con la máquina cargada, el montaje 9p de Docker Desktop hace que cada
+// página de dev tarde decenas de segundos (docs/desarrollo.md).
+const NAVEGAR_MS = Number(process.env.NAVEGAR_MS || 180000);
 const quieto = (p, ms = 2500) =>
   p.waitForLoadState("networkidle").catch(() => {}).then(() => p.waitForTimeout(ms));
 
@@ -31,6 +34,7 @@ async function entrar(browser) {
     process.exit(1);
   }
   const ctx = await browser.newContext();
+  ctx.setDefaultNavigationTimeout(NAVEGAR_MS);
   const p = await ctx.newPage();
   await p.goto(BASE + "/users/log-in");
   await conectado(p);
@@ -84,6 +88,7 @@ async function porCadaVista(browser, estado, fn) {
   for (const tn of elegidos(Object.keys(TAMANOS), "TAM")) {
     for (const modo of elegidos(MODOS, "MODO")) {
       const ctx = await browser.newContext({ ...TAMANOS[tn], deviceScaleFactor: 1, storageState: estado });
+      ctx.setDefaultNavigationTimeout(NAVEGAR_MS);
       await ctx.addInitScript((m) => localStorage.setItem("phx:theme", m), modo);
       await fn(ctx, tn, modo);
       await ctx.close();

@@ -653,6 +653,15 @@ async def buscador_interpretar(solicitud: SolicitudInterpretar, pool: AsyncConne
     return buscador.interpretar(solicitud.texto, solicitud.cve_ent, municipios)
 
 
+@app.post("/buscador/sugerir")
+async def buscador_sugerir(solicitud: SolicitudInterpretar, pool: AsyncConnectionPool = Depends(get_pool)) -> dict:
+    """Autocompletado de la pregunta con el mismo vocabulario del analizador:
+    inicios de pregunta y rubros, sectores y municipios que empiezan con lo
+    último que se escribió."""
+    municipios = await consultas.municipios_de(pool, solicitud.cve_ent)
+    return buscador.sugerir(solicitud.texto, solicitud.cve_ent, municipios)
+
+
 class SolicitudResolver(BaseModel):
     cve_ent: str
     plantilla: buscador.Plantilla
