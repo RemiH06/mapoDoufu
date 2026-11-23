@@ -24,25 +24,16 @@ defmodule Mapo.MapoCoreTest do
     assert {:ok, _} = MapoCore.municipios("14")
   end
 
-  test "coropleta_censo_poblacion/3 manda indicador y cve_ent, sin cve_mun por defecto" do
+  test "coropleta_censo_poblacion/2 manda indicador y la clave de la zona" do
     Req.Test.stub(Mapo.MapoCore, fn conn ->
       assert conn.request_path == "/censo/choropleth"
       assert conn.params["indicador"] == "pobtot"
-      assert conn.params["cve_ent"] == "14"
-      refute Map.has_key?(conn.params, "cve_mun")
+      assert conn.params["zona"] == "mun:14039"
+      refute Map.has_key?(conn.params, "cve_ent")
       Req.Test.json(conn, %{"type" => "FeatureCollection", "features" => []})
     end)
 
-    assert {:ok, _} = MapoCore.coropleta_censo_poblacion("pobtot", "14")
-  end
-
-  test "coropleta_censo_poblacion/3 incluye cve_mun cuando se da" do
-    Req.Test.stub(Mapo.MapoCore, fn conn ->
-      assert conn.params["cve_mun"] == "039"
-      Req.Test.json(conn, %{"type" => "FeatureCollection", "features" => []})
-    end)
-
-    assert {:ok, _} = MapoCore.coropleta_censo_poblacion("pobtot", "14", "039")
+    assert {:ok, _} = MapoCore.coropleta_censo_poblacion("pobtot", "mun:14039")
   end
 
   test "voronoi_denue/2 manda la zona, sin clase_actividad por defecto" do
@@ -73,14 +64,14 @@ defmodule Mapo.MapoCoreTest do
     assert {:ok, _} = MapoCore.voronoi_denue("mun:14039", "papeleria")
   end
 
-  test "coloreado_municipios/1 manda cve_ent" do
+  test "coloreado_municipios/1 manda la zona" do
     Req.Test.stub(Mapo.MapoCore, fn conn ->
       assert conn.request_path == "/coloreado/municipios"
-      assert conn.params["cve_ent"] == "14"
+      assert conn.params["zona"] == "ent:14"
       Req.Test.json(conn, %{"type" => "FeatureCollection", "features" => [], "num_colores" => 0})
     end)
 
-    assert {:ok, %{"num_colores" => 0}} = MapoCore.coloreado_municipios("14")
+    assert {:ok, %{"num_colores" => 0}} = MapoCore.coloreado_municipios("ent:14")
   end
 
   test "perfil_zona/2 manda cve_ent y cve_mun" do

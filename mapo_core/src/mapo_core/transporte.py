@@ -21,6 +21,7 @@ import hashlib
 import io
 import json
 import math
+import re
 import urllib.request
 import zipfile
 from array import array
@@ -30,6 +31,8 @@ from pathlib import Path
 
 from psycopg.rows import dict_row
 from psycopg_pool import AsyncConnectionPool
+
+from mapo_core import zona as zona_comun
 
 # Hora pico de la mañana, en segundos desde la medianoche del día de servicio.
 PICO = (7 * 3600, 9 * 3600)
@@ -647,41 +650,55 @@ CLASES = {"10": "cada 10 min o menos", "15": "de 10 a 15 min", "30": "de 15 a 30
           "sin_dato": "sin horario en hora pico"}
 
 
-async def zona(pool: AsyncConnectionPool, cve_ent: str, cve_mun: str) -> dict | None:
-    """Las rutas que pasan por un municipio y sus paradas. Las del GTFS si alguna lo
-    toca; si ninguna, las de OSM, dichas como tales. None si el municipio no existe."""
+def _color(texto: str | None) -> str | None:
+    """`route_color` del GTFS como `#RRGGBB`, o None si no viene o no es un color."""
+    return f"#{texto.upper()}" if texto and re.fullmatch(r"[0-9A-Fa-f]{6}", texto) else None
+
+
+class ZonaMuyGrande(ValueError):
+    pass
+
+
+async def zona(pool: AsyncConnectionPool, z: dict) -> dict | None:
+    """Las rutas que pasan por una zona (zona.py) y sus paradas dentro de ella. Las del
+    GTFS si alguna la toca; si ninguna, las de OSM, dichas como tales. None si la zona
+    no toca nada cargado; `ZonaMuyGrande` si pasa de lo que se calcula (un estado)."""
     async with pool.connection() as conn:
-        cur = conn.cursor(row_factory=dict_row)
-        await cur.execute("SELECT nombre FROM municipios WHERE cve_ent = %(e)s AND cve_mun = %(m)s",
-                          {"e": cve_ent, "m": cve_mun})
-        mun = await cur.fetchone()
-        if mun is None:
+        resuelta = await zona_comun.resolver(conn, z)
+        if resuelta is None or not resuelta["estados"]:
             return None
-        consulta_rutas = """
+        if motivo := zona_comun.demasiado_grande(resuelta["km2"]):
+            raise ZonaMuyGrande(motivo)
+        cte, params = zona_comun.partida_sql(z)
+        cur = conn.cursor(row_factory=dict_row)
+        consulta_rutas = f"""
+            WITH {cte}
             SELECT r.feed, r.route_id, r.agencia, r.nombre_corto, r.nombre_largo, r.modo, r.color, r.viajes_dia,
                    r.salidas_pico, r.frecuencia_estimada, f.frecuencia_util,
                    ST_AsGeoJSON(ST_SimplifyPreserveTopology(r.geom, 0.0001), 4) AS gj
-            FROM transporte_rutas r JOIN transporte_feeds f USING (feed), municipios m
-            WHERE m.cve_ent = %(e)s AND m.cve_mun = %(m)s AND r.geom && m.geom AND ST_Intersects(r.geom, m.geom)
+            FROM transporte_rutas r JOIN transporte_feeds f USING (feed)
+            WHERE r.geom && (SELECT geom FROM z) AND {zona_comun.dentro('r.geom')}
               AND (r.feed = 'osm') = %(osm)s"""
-        await cur.execute(consulta_rutas, {"e": cve_ent, "m": cve_mun, "osm": False})
+        await cur.execute(consulta_rutas, {**params, "osm": False})
         rutas = await cur.fetchall()
         de_osm = not rutas
         if de_osm:
-            await cur.execute(consulta_rutas, {"e": cve_ent, "m": cve_mun, "osm": True})
+            await cur.execute(consulta_rutas, {**params, "osm": True})
             rutas = await cur.fetchall()
         # Sin rutas de OSM tampoco: se cita OSM igual, porque ahí se buscó.
         feeds_usados = sorted({r["feed"] for r in rutas}) or ([OSM] if de_osm else [])
         # Las paradas de una ruta repetidas en el mismo punto (feeds que dan una por
         # ruta) se juntan a ~10 m: cuenta la ruta que más pasa.
         await cur.execute(
-            """SELECT min(p.nombre) AS nombre, round(p.lat::numeric, 4)::float8 AS lat,
+            f"""WITH {cte}
+               SELECT min(p.nombre) AS nombre, round(p.lat::numeric, 4)::float8 AS lat,
                       round(p.lon::numeric, 4)::float8 AS lon, sum(p.rutas) AS rutas,
                       max(p.pasadas_ruta_max) FILTER (WHERE f.frecuencia_util) AS ruta_max
                FROM transporte_paradas p JOIN transporte_feeds f USING (feed)
-               WHERE p.cve_ent = %(e)s AND p.cve_mun = %(m)s AND p.feed = ANY(%(feeds)s)
+               WHERE p.geom && (SELECT geom FROM z) AND {zona_comun.dentro('p.geom')}
+                 AND p.feed = ANY(%(feeds)s)
                GROUP BY 2, 3""",
-            {"e": cve_ent, "m": cve_mun, "feeds": feeds_usados})
+            {**params, "feeds": feeds_usados})
         paradas = await cur.fetchall()
         await cur.execute(
             """SELECT feed, titulo, productor, licencia, pagina, via, vigencia_ini::text, vigencia_fin::text,
@@ -701,7 +718,7 @@ async def zona(pool: AsyncConnectionPool, cve_ent: str, cve_mun: str) -> dict | 
         features.append({"type": "Feature", "geometry": json.loads(r["gj"]), "properties": {
             "f": r["feed"], "id": r["route_id"], "n": r["nombre_corto"], "l": r["nombre_largo"], "a": r["agencia"],
             "modo": r["modo"], "int": minutos, "c": clase, "vd": None if de_osm else r["viajes_dia"],
-            "est": r["frecuencia_estimada"]}})
+            "est": r["frecuencia_estimada"], "col": _color(r["color"])}})
     # Masivo encima del camión; dentro de cada modo, lo más frecuente encima.
     orden_modo = {m: i for i, m in enumerate(("autobus", "trolebus", "otro", "ferri", "cable", "funicular",
                                               "tren_ligero", "monorriel", "tren", "metro"))}
@@ -714,7 +731,7 @@ async def zona(pool: AsyncConnectionPool, cve_ent: str, cve_mun: str) -> dict | 
     for f in feeds:
         f["licencia_url"] = LICENCIAS.get(f["licencia"]) if f["licencia"] else None
     return {
-        "zona": {"cve_ent": cve_ent, "cve_mun": cve_mun, "nombre": mun["nombre"]},
+        "zona": {"clave": resuelta["clave"], "nombre": resuelta["nombre"]},
         "origen": OSM if de_osm else "gtfs",
         "rutas": {"type": "FeatureCollection", "features": features},
         "paradas": paradas_gj,

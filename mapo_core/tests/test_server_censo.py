@@ -75,3 +75,25 @@ async def test_censo_choropleth_ageb_sin_censo_trae_null_no_cero(conn, pool_de_u
     propiedades = cuerpo["features"][0]["properties"]
     assert propiedades["valor_choropleth"] is None
     app.dependency_overrides.clear()
+
+
+@pytest.mark.asyncio
+async def test_censo_choropleth_por_zona_toma_los_agebs_con_su_punto_dentro(conn, pool_de_una_conexion):
+    # Dos AGEB del mismo municipio: el círculo de 3 km en (-103.35, 20.67) solo cubre la primera.
+    await _insertar_ageb(conn, "1403900010010", "14", "039", box(-103.355, 20.665, -103.345, 20.675).__geo_interface__)
+    await _insertar_ageb(conn, "1403900010020", "14", "039", box(-103.30, 20.60, -103.29, 20.61).__geo_interface__)
+    await _insertar_censo_ageb(conn, "1403900010010", "14", "039", pobtot=50)
+
+    app.dependency_overrides[get_pool] = lambda: pool_de_una_conexion
+    try:
+        cliente = TestClient(app)
+        circulo = cliente.get("/censo/choropleth", params={"indicador": "pobtot", "zona": "cir:-103.35,20.67,3000"})
+        municipio = cliente.get("/censo/choropleth", params={"indicador": "pobtot", "zona": "mun:14039"})
+        sin_zona = cliente.get("/censo/choropleth", params={"indicador": "pobtot"})
+        mala = cliente.get("/censo/choropleth", params={"indicador": "pobtot", "zona": "cir:0,0,1"})
+    finally:
+        app.dependency_overrides.clear()
+
+    assert [f["properties"]["cvegeo"] for f in circulo.json()["features"]] == ["1403900010010"]
+    assert len(municipio.json()["features"]) == 2
+    assert (sin_zona.status_code, mala.status_code) == (422, 422)

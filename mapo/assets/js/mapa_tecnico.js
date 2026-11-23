@@ -24,14 +24,16 @@ const valorPrecio = ({fuente, valor, rango_bajo, rango_alto, anio_tabla, cobertu
 
 // Mapa tecnico: cada capa (coropleta, Voronoi, coloreado, isocrona) es un
 // acetato sobre el plano. El servidor las prende y apaga por push_event y
-// dice el orden de la pila y la piel de la mesa; aqui se pintan con la
-// pelicula de su enfoque. El contenedor tiene phx-update="ignore": lo
-// dibujado vive aqui, nunca en el DOM de LiveView.
+// dice el orden de la pila; aqui se pintan con la pelicula de su enfoque.
+// La mesa de /mapa es neutra (data-mesa): el color es solo de los datos. El
+// contenedor tiene phx-update="ignore": lo dibujado vive aqui, nunca en el
+// DOM de LiveView.
 //
 // Cada acetato es un grupo de capas de MapLibre con el prefijo `a-<id>:`;
 // el orden de la pila se aplica moviendo los grupos (_ordenar). Todo va en el
 // mismo lienzo de WebGL: ya no hay mezcla por acetato (mix-blend-mode), la
-// película se ve por su opacidad.
+// película se ve por su opacidad. Los acetatos van debajo de los nombres del
+// mapa base (calles, colonias): si no, una coropleta los tapaba.
 //
 // "Tus marcas" no es un acetato: va encima de todos y sus marcas son las de
 // la sesion elegida (marcas.js, compartido con /sesiones/:id). Con su cinta
@@ -51,6 +53,7 @@ const ZOOM_PARADAS = 13
 // Transporte: más seguido, más tinta y más grueso; sin horario, punteado.
 const CLASES_CON_HORARIO = ["10", "15", "30", "mas"]
 const MASIVO = ["metro", "tren", "tren_ligero", "monorriel", "cable", "funicular"]
+const RESALTE = ["lineas", "sin-horario"]
 
 const raiz = document.documentElement
 const tinta = nombre => css(nombre)
@@ -70,6 +73,8 @@ const porClase = (valores, otro = 0) => ["match", ["get", "k"], ...valores.flatM
 
 export const MapaTecnico = {
   mounted() {
+    if (this.el.dataset.mesa) raiz.dataset.piel = this.el.dataset.mesa
+    this.colorRutas = "frecuencia"
     this.datos = Object.fromEntries(Object.keys(ENFOQUE).map(id => [id, null]))
     this.orden = Object.keys(ENFOQUE)
     this.propias = []
@@ -88,6 +93,8 @@ export const MapaTecnico = {
           vacio: lugar => this._clicVacio(lugar),
         })
         this.marcas = new Marcas(map, ml, {push: (e, p) => this.pushEvent(e, p), clic: this.clic})
+        map.on("mousemove", e => this._resaltar(e.point))
+        map.on("mouseout", () => this._resaltar(null))
       })
     const cuando = alListo(this, this.listo)
     // La zona del membrete (selector común): su contorno se queda como guía.
@@ -150,10 +157,27 @@ export const MapaTecnico = {
       this.orden = [...orden, ...this.orden.filter(id => !orden.includes(id))]
       this._ordenar()
     }))
-    this.handleEvent("piel", cuando(({piel}) => {
-      raiz.dataset.piel = piel
-      this._repintar()
+    this.handleEvent("color_rutas", cuando(({color}) => {
+      this.colorRutas = color
+      this._dibujar("transporte")
     }))
+  },
+
+  // Una ruta bajo el cursor se resalta: con cientos encimadas en el centro,
+  // es la forma de seguir una sola.
+  _resaltar(punto) {
+    if (this.pendienteResalte) return
+    this.pendienteResalte = requestAnimationFrame(() => {
+      this.pendienteResalte = null
+      const p = "a-transporte:"
+      if (!this.map.getLayer(`${p}resalte`)) return
+      const capas = RESALTE.map(c => `${p}${c}`).filter(id => this.map.getLayer(id))
+      const f = punto && !this._dibujando() ? this.map.queryRenderedFeatures(punto, {layers: capas})[0] : null
+      const i = f ? f.properties._i : -1
+      if (i === this.rutaResaltada) return
+      this.rutaResaltada = i
+      for (const c of ["resalte-halo", "resalte"]) this.map.setFilter(`${p}${c}`, ["==", ["get", "_i"], i])
+    })
   },
 
   _dibujando() {
@@ -173,6 +197,7 @@ export const MapaTecnico = {
 
   _recibir(id, datos) {
     this.datos[id] = datos.activa ? datos : null
+    if (id === "transporte" && datos.color) this.colorRutas = datos.color
     this._dibujar(id)
     const recuadro = this.datos[id] && this._recuadro(id, this.datos[id])
     if (recuadro) this.map.fitBounds(recuadro, {padding: this._margen()})
@@ -181,7 +206,7 @@ export const MapaTecnico = {
   _recuadro(id, d) {
     switch (id) {
       case "puntos": return recuadroDePuntos(d.puntos.map(p => [p.lon, p.lat]))
-      case "isocrona": return bordes(d.poligono)
+      case "isocrona": return bordes(...d.isocronas.map(i => i.poligono))
       case "transporte": return bordes(d.rutas)
       case "propios": return bordes(...d.capas.map(c =>
         c.raster ? {type: "MultiPoint", coordinates: [[c.raster.oeste, c.raster.sur], [c.raster.este, c.raster.norte]]}
@@ -257,11 +282,14 @@ export const MapaTecnico = {
   },
 
   // La pila: el primero de `orden` va arriba. Se mueven los grupos de abajo
-  // hacia arriba, cada uno con sus capas en su orden, y al final las marcas.
+  // hacia arriba, cada uno con sus capas en su orden, justo debajo del primer
+  // nombre del mapa base; las marcas, al final, encima de todo.
   _ordenar() {
-    const capas = this.map.getStyle().layers.map(l => l.id)
+    const estilo = this.map.getStyle().layers
+    const capas = estilo.map(l => l.id)
+    const nombres = estilo.find(l => l.type === "symbol" && !l.id.startsWith("a-"))?.id
     for (const id of [...this.orden].reverse()) {
-      for (const capa of capas) if (capa.startsWith(`a-${id}:`)) this.map.moveLayer(capa)
+      for (const capa of capas) if (capa.startsWith(`a-${id}:`)) this.map.moveLayer(capa, nombres)
     }
     this.marcas.alFrente()
   },
@@ -389,7 +417,7 @@ export const MapaTecnico = {
         ? `sin dato${nota ? ` (${escapar(nota)})` : ""}`
         : `${valor.toLocaleString("es-MX", {maximumFractionDigits: 1})} ${escapar(unidad)}${cv != null ? ` · CV ${cv.toLocaleString("es-MX", {maximumFractionDigits: 1})}` : ""}`
       ficha(this.map, this.ml, lugar, `<strong>${escapar(nomgeo)}</strong><br>${escapar(etiqueta)}: ${cifra}`)
-      this.pushEvent("ficha_vivienda", {cve_mun})
+      this.pushEvent("ficha_vivienda", {cvegeo: `${props.cve_ent ?? ""}${cve_mun}`})
     })
   },
 
@@ -444,21 +472,31 @@ export const MapaTecnico = {
   },
 
   // Rutas del GTFS (o de OSM, sin horarios). Lo masivo lleva un halo de papel
-  // para leerse encima de los camiones. Las paradas, solo de cerca.
+  // para leerse encima de los camiones. Con el color de cada ruta (el de su
+  // GTFS) todas llevan halo, porque hay colores que se pierden en el fondo; el
+  // grosor sigue diciendo cada cuánto pasa. La ruta bajo el cursor se dibuja
+  // otra vez encima, con un halo de tinta (`_resaltar`). Las paradas, solo de cerca.
   _transporte({rutas, paradas, clases, origen, modos}, color, p) {
     const map = this.map
+    const deRuta = this.colorRutas === "ruta"
     const c = ["to-string", ["get", "c"]]
     const conHorario = ["in", c, ["literal", CLASES_CON_HORARIO]]
     const masivo = ["in", ["get", "modo"], ["literal", MASIVO]]
     const ancho = ["+", ["match", c, "10", 3, "15", 2.4, "30", 1.8, 1.4], ["case", masivo, 2.5, 0]]
-    const opacidad = ["match", c, "10", 1, "15", 0.8, "30", 0.55, "mas", 0.35, 0.6]
-    fuente(map, `${p}f`, indexar(rutas, props => ({c: props.c ?? "sin_dato", modo: props.modo ?? ""})))
-    map.addLayer({id: `${p}halo`, type: "line", source: `${p}f`, filter: masivo,
-      paint: {"line-color": tinta("--bg"), "line-width": ["+", ancho, 3], "line-opacity": 0.9}})
+    const opacidad = deRuta ? 0.95 : ["match", c, "10", 1, "15", 0.8, "30", 0.55, "mas", 0.35, 0.6]
+    const tintaRuta = deRuta ? ["coalesce", ["get", "col"], color] : color
+    fuente(map, `${p}f`, indexar(rutas, props => ({c: props.c ?? "sin_dato", modo: props.modo ?? "", ...(props.col ? {col: props.col} : {})})))
+    map.addLayer({id: `${p}halo`, type: "line", source: `${p}f`, filter: deRuta ? ["literal", true] : masivo,
+      layout: {"line-join": "round"}, paint: {"line-color": tinta("--bg"), "line-width": ["+", ancho, deRuta ? 2 : 3], "line-opacity": 0.9}})
     map.addLayer({id: `${p}lineas`, type: "line", source: `${p}f`, filter: conHorario,
-      layout: {"line-join": "round"}, paint: {"line-color": color, "line-width": ancho, "line-opacity": opacidad}})
+      layout: {"line-join": "round"}, paint: {"line-color": tintaRuta, "line-width": ancho, "line-opacity": opacidad}})
     map.addLayer({id: `${p}sin-horario`, type: "line", source: `${p}f`, filter: ["!", conHorario],
-      paint: {"line-color": color, "line-width": ancho, "line-opacity": opacidad, "line-dasharray": [2.9, 2.9]}})
+      paint: {"line-color": tintaRuta, "line-width": ancho, "line-opacity": opacidad, "line-dasharray": [2.9, 2.9]}})
+    this.rutaResaltada = -1
+    map.addLayer({id: `${p}resalte-halo`, type: "line", source: `${p}f`, filter: ["==", ["get", "_i"], -1],
+      layout: {"line-join": "round", "line-cap": "round"}, paint: {"line-color": tinta("--text"), "line-width": ["+", ancho, 5]}})
+    map.addLayer({id: `${p}resalte`, type: "line", source: `${p}f`, filter: ["==", ["get", "_i"], -1],
+      layout: {"line-join": "round", "line-cap": "round"}, paint: {"line-color": tintaRuta, "line-width": ["+", ancho, 1.5]}})
     const abrirRuta = (f, lugar) => ficha(map, this.ml, lugar, this._fichaRuta(rutas.features[f.properties._i].properties, origen, modos))
     this.clic.en(`${p}lineas`, abrirRuta)
     this.clic.en(`${p}sin-horario`, abrirRuta)
@@ -517,18 +555,28 @@ export const MapaTecnico = {
     )
   },
 
-  _isocrona({poligono, metodo, origen: zona}, color, p) {
+  // Alcances apilados: cada uno con su tinta y su número en el punto de salida;
+  // la parte que comparten todos, con un contorno grueso de tinta de texto.
+  _isocrona({isocronas, interseccion}, _color, p) {
     const map = this.map
-    fuente(map, `${p}f`, {type: "Feature", properties: {}, geometry: poligono})
-    map.addLayer({id: `${p}area`, type: "fill", source: `${p}f`, paint: {"fill-color": color, "fill-opacity": 0.2}})
-    map.addLayer({id: `${p}borde`, type: "line", source: `${p}f`, paint: {"line-color": color, "line-width": 2, "line-dasharray": [3, 2]}})
-    this.clic.en(`${p}area`, (_f, lugar) =>
-      ficha(map, this.ml, lugar, metodo === "osrm_real" ? "Por carretera real" : "Círculo aproximado: OSRM no respondió"))
-    const origen = zona ? [zona.lon, zona.lat] : this.origen && [this.origen.lng, this.origen.lat]
-    if (!origen) return
-    fuente(map, `${p}origen-f`, {type: "Feature", properties: {}, geometry: {type: "Point", coordinates: origen}})
-    ;[4, 9, 14].forEach(r => map.addLayer({id: `${p}origen-${r}`, type: "circle", source: `${p}origen-f`,
-      paint: {"circle-radius": r, "circle-opacity": 0, "circle-stroke-color": color, "circle-stroke-width": 1.3}}))
+    isocronas.forEach(({poligono, metodo, origen, tinta: t}, i) => {
+      const color = tinta(`--f-${t}`), q = `${p}${i}-`
+      fuente(map, `${q}f`, {type: "Feature", properties: {}, geometry: poligono})
+      map.addLayer({id: `${q}area`, type: "fill", source: `${q}f`, paint: {"fill-color": color, "fill-opacity": 0.12}})
+      map.addLayer({id: `${q}borde`, type: "line", source: `${q}f`, paint: {"line-color": color, "line-width": 2, "line-dasharray": [3, 2]}})
+      this.clic.en(`${q}area`, (_f, lugar) => ficha(map, this.ml, lugar,
+        `<strong>Alcance ${i + 1}</strong><br>${metodo === "osrm_real" ? "Por carretera real" : "Círculo aproximado: OSRM no respondió"}`))
+      fuente(map, `${q}origen-f`, {type: "Feature", properties: {n: String(i + 1)}, geometry: {type: "Point", coordinates: [origen.lon, origen.lat]}})
+      map.addLayer({id: `${q}origen`, type: "circle", source: `${q}origen-f`,
+        paint: {"circle-radius": 9, "circle-color": color, "circle-stroke-color": tinta("--bg"), "circle-stroke-width": 1.5}})
+      map.addLayer({id: `${q}numero`, type: "symbol", source: `${q}origen-f`,
+        layout: {"text-field": ["get", "n"], "text-font": ["Noto Sans Regular"], "text-size": 12, "text-allow-overlap": true, "text-ignore-placement": true},
+        paint: {"text-color": tinta("--bg")}})
+    })
+    if (!interseccion) return
+    fuente(map, `${p}todos-f`, {type: "Feature", properties: {}, geometry: interseccion})
+    map.addLayer({id: `${p}todos-halo`, type: "line", source: `${p}todos-f`, paint: {"line-color": tinta("--bg"), "line-width": 5}})
+    map.addLayer({id: `${p}todos`, type: "line", source: `${p}todos-f`, paint: {"line-color": tinta("--text"), "line-width": 2.5}})
   },
 
   destroyed() {

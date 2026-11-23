@@ -62,9 +62,8 @@ defmodule Mapo.MapoCore do
   cruzado en `properties.valor_choropleth` (puede venir `null`, si el
   AGEB no tiene ese dato: nunca se inventa un cero).
   """
-  def coropleta_censo_poblacion(indicador, cve_ent, cve_mun \\ nil) do
-    params = [indicador: indicador, cve_ent: cve_ent] |> maybe_put(:cve_mun, cve_mun)
-    get("/censo/choropleth", params)
+  def coropleta_censo_poblacion(indicador, zona) do
+    get("/censo/choropleth", indicador: indicador, zona: zona)
   end
 
   @doc """
@@ -92,11 +91,12 @@ defmodule Mapo.MapoCore do
   def zona_resolver(clave), do: get("/zona/resolver", clave: clave)
 
   @doc """
-  Los municipios de un estado, cada uno con `properties.color_indice`
-  ya calculado (teorema de las 4 colores: dos municipios vecinos nunca
-  traen el mismo índice), listos para pintar en un mapa categórico.
+  Los municipios de los estados que toca la zona, cada uno con
+  `properties.color_indice` ya calculado (teorema de las 4 colores: dos
+  municipios vecinos nunca traen el mismo índice), listos para pintar en un
+  mapa categórico.
   """
-  def coloreado_municipios(cve_ent), do: get("/coloreado/municipios", cve_ent: cve_ent)
+  def coloreado_municipios(zona), do: get("/coloreado/municipios", zona: zona)
 
   @doc """
   Indicadores de la vista de vivienda (fuente, etiqueta, unidad), segmentos
@@ -105,13 +105,14 @@ defmodule Mapo.MapoCore do
   def vivienda_catalogo, do: get("/vivienda/catalogo", [])
 
   @doc """
-  Municipios de un estado con el valor de un indicador de vivienda de una
-  sola fuente en `valor_choropleth` (`null` si no hay dato), más su
-  `metodo` y su nivel. `anio` y `segmento` solo cuentan para el SNIIV.
+  Municipios de los estados que toca la zona con el valor de un indicador
+  de vivienda de una sola fuente en `valor_choropleth` (`null` si no hay
+  dato), más su `metodo` y su nivel; el precio por AGEB, solo dentro de la
+  zona. `anio` y `segmento` solo cuentan para el SNIIV.
   """
-  def vivienda_municipios(cve_ent, indicador, anio \\ nil, segmento \\ nil) do
+  def vivienda_municipios(zona, indicador, anio \\ nil, segmento \\ nil) do
     params =
-      [cve_ent: cve_ent, indicador: indicador]
+      [zona: zona, indicador: indicador]
       |> maybe_put(:anio, anio)
       |> maybe_put(:segmento, segmento)
 
@@ -128,12 +129,13 @@ defmodule Mapo.MapoCore do
   end
 
   @doc """
-  Rutas y paradas de transporte público de un municipio (docs/fuentes/gtfs.md):
-  las del GTFS con su frecuencia en hora pico o, si ningún GTFS lo toca, las de
-  OSM sin horarios (`"origen"` dice cuál).
+  Rutas y paradas de transporte público que pasan por una zona (clave de la
+  zona común; docs/fuentes/gtfs.md): las del GTFS con su frecuencia en hora
+  pico o, si ningún GTFS la toca, las de OSM sin horarios (`"origen"` dice
+  cuál). 422 si la zona pasa de 5,000 km².
   """
-  def transporte_zona(cve_ent, cve_mun) do
-    get("/transporte/zona", [cve_ent: cve_ent, cve_mun: cve_mun], receive_timeout: 60_000)
+  def transporte_zona(zona) do
+    get("/transporte/zona", [zona: zona], receive_timeout: 60_000)
   end
 
   @doc """
@@ -174,6 +176,13 @@ defmodule Mapo.MapoCore do
       num_direcciones: num_direcciones
     })
   end
+
+  @doc """
+  Cuánta gente vive dentro de cada isócrona (`poligonos`, GeoJSON de
+  `isocrona_calcular/4`), en todas y en alguna, con la intersección para
+  dibujarla (docs/producto/isocronas.md).
+  """
+  def isocronas_poblacion(poligonos), do: post("/isocronas/poblacion", %{poligonos: poligonos})
 
   @doc """
   Perfil de un municipio, una sección por enfoque: demografía (censo),

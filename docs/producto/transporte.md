@@ -6,15 +6,23 @@ feeds y rutas de OSM) y cómo se leen están en `../fuentes/gtfs.md`.
 
 ## El acetato en `/mapa`
 
-Se elige un municipio y se pone "Transporte público" (enfoque movilidad). mapo_core
-(`GET /transporte/zona?cve_ent=&cve_mun=`) manda las rutas que tocan el municipio y sus
-paradas:
+Se elige una zona (la común, `zona.md`) y se pone "Transporte público" (enfoque
+movilidad). mapo_core (`GET /transporte/zona?zona=`) manda las rutas que cruzan la zona y
+sus paradas dentro de ella, hasta 5,000 km² (una metrópoli sí, un estado no: la cinta dice
+por qué). `cve_ent` y `cve_mun` siguen sirviendo, como un municipio:
 
-- **Del GTFS** si alguno toca el municipio. Cada ruta lleva su intervalo en hora pico (de
+- **Del GTFS** si alguno toca la zona. Cada ruta lleva su intervalo en hora pico (de
   7 a 9 de un miércoles) y se pinta con más tinta y más grosor mientras más seguido
   pasa, en cinco clases: cada 10 min o menos, de 10 a 15, de 15 a 30, más de 30, y sin
   horario en hora pico (punteada). El transporte masivo (metro, tren, tren ligero,
   cable) va más grueso y con un halo de papel, encima de los camiones.
+- **Color de cada ruta** (29d): si el feed trae `route_color` (hexadecimal válido; en la
+  ZMG, 305 de 332 rutas), "Color de las rutas" en la cinta cambia la tinta única por el
+  color de cada ruta; el grosor sigue diciendo la frecuencia y todas llevan halo, porque
+  hay colores que se pierden en el fondo. Al poner el acetato se elige solo: el de cada
+  ruta con 20 o menos, la tinta única con más (cientos de colores son confeti).
+- **Resalte:** pasar el cursor por una ruta la dibuja encima, más gruesa y con halo de
+  tinta de texto.
 - **De OSM** si ningún GTFS lo toca: el trazo, sin horarios, todo punteado, y la cinta
   lo dice. Nunca se mezclan: donde hay GTFS, OSM no sale.
 - **Sin nada:** "Ningún GTFS ni OpenStreetMap tiene rutas que pasen por Autlán de
@@ -26,7 +34,7 @@ paradas:
 - La cinta dice cuántas rutas pasan y cuántas cada 15 minutos o menos, y por cada feed su
   productor, su licencia ("Sin licencia declarada" si no la trae), el día con que se
   contaron las frecuencias, si venció y si su frecuencia es de relleno.
-- Enlace permanente: `transporte=1` (con `ent` y `mun`). "Cómo citar" cita a cada
+- Enlace permanente: `transporte=1` (con `zona`). "Cómo citar" cita a cada
   productor con la página del feed (`Cita.gtfs/2`), o a OSM con la fecha del extracto.
 
 Guadalajara, 2026-11-25 de referencia: 251 rutas, 212 cada 15 minutos o menos (160 cada

@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="es" data-piel="urbanismo">
+<html lang="es" data-piel={assigns[:piel_raiz] || "urbanismo"}>
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -22,7 +22,7 @@
           urbanismo: ["Papel", "Cianotipia"], demografia: ["Cédula", "Archivo"],
           comercio: ["Libro", "Corte de caja"], consumo: ["Mostrador", "Cierre"],
           seguridad: ["Expediente", "Guardia"], laboral: ["Matutino", "Nocturno"],
-          movilidad: ["Día", "Nocturna"],
+          movilidad: ["Día", "Nocturna"], neutra: ["Blanco", "Negro"],
         };
         const raiz = document.documentElement;
         const sistema = () => matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";

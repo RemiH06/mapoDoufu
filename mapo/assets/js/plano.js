@@ -119,6 +119,9 @@ export async function crearPlano(el, {escala = "bottom-right", alTema, margen = 
   map.on("remove", () => observador.disconnect())
 
   if (!map.loaded()) await new Promise(r => map.once("load", r))
+  // Lo que tapan los papeles encima del plano: las fichas se recorren para
+  // quedar fuera de ahí (`ficha`).
+  map._margenMapo = margen
   // Los scripts de capturas (scripts/capturas/) ubican puntos con él.
   el.planoMapo = map
   return {map, ml}
@@ -203,14 +206,31 @@ export function circulo([lon, lat], radio, pasos = 72) {
   return {type: "Feature", properties: {}, geometry: {type: "Polygon", coordinates: [anillo]}}
 }
 
-// Ficha (popup) única del plano: abrir una cierra la anterior.
+// Ficha (popup) única del plano: abrir una cierra la anterior. Si queda en
+// parte fuera del hueco que dejan los papeles (el membrete, la cinta, la
+// charola), el plano se recorre lo justo para verla entera, como hacía el
+// `autoPan` de Leaflet.
 export function ficha(map, ml, lugar, contenido, opciones = {}) {
   map._fichaMapo?.remove()
   const popup = new ml.Popup({maxWidth: "320px", focusAfterOpen: false, ...opciones}).setLngLat(lugar)
   if (typeof contenido === "string") popup.setHTML(contenido)
   else popup.setDOMContent(contenido)
   map._fichaMapo = popup.addTo(map)
+  requestAnimationFrame(() => alcanzar(map, popup))
   return popup
+}
+
+function alcanzar(map, popup) {
+  const el = popup.getElement()
+  if (!el || !popup.isOpen()) return
+  const caja = el.getBoundingClientRect(), lienzo = map.getContainer().getBoundingClientRect()
+  const m = map._margenMapo?.() ?? 20
+  const pad = typeof m === "number" ? {top: m, left: m, right: m, bottom: m} : m
+  const hueco = {izq: lienzo.left + pad.left, der: lienzo.right - pad.right, arriba: lienzo.top + pad.top, abajo: lienzo.bottom - pad.bottom}
+  // Si la ficha no cabe en el hueco, que se vea su principio.
+  const dx = caja.left < hueco.izq ? caja.left - hueco.izq : caja.right > hueco.der ? Math.min(caja.right - hueco.der, caja.left - hueco.izq) : 0
+  const dy = caja.top < hueco.arriba ? caja.top - hueco.arriba : caja.bottom > hueco.abajo ? Math.min(caja.bottom - hueco.abajo, caja.top - hueco.arriba) : 0
+  if (dx || dy) map.panBy([dx, dy], {duration: matchMedia("(prefers-reduced-motion: reduce)").matches ? 0 : 250})
 }
 
 // Un solo clic por plano: si cae sobre una capa con ficha, gana la de más

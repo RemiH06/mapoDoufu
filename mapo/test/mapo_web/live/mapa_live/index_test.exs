@@ -99,12 +99,13 @@ defmodule MapoWeb.MapaLive.IndexTest do
     assert_push_event(lv, "capa_coropleta", %{activa: true, etiqueta: "Población total"})
   end
 
-  test "mostrar_coropleta with a municipio sends its cve_mun (3 digits), not the cvegeo", %{
+  test "mostrar_coropleta manda la clave de la zona, no un estado y un municipio", %{
     conn: conn
   } do
     lv =
       montar_con_municipio(conn, fn conn ->
-        assert conn.params["cve_mun"] == "039"
+        assert conn.params["zona"] == "mun:14039"
+        refute Map.has_key?(conn.params, "cve_ent")
         Req.Test.json(conn, coleccion_con_una_feature())
       end)
 
@@ -126,7 +127,7 @@ defmodule MapoWeb.MapaLive.IndexTest do
       |> form("#coropleta_capa_form", coropleta_capa: %{"indicador" => "pobtot"})
       |> render_submit()
 
-    assert html =~ "no tiene AGEBs o censo descargados"
+    assert html =~ "no tiene AGEB o censo cargados en esa zona"
   end
 
   test "mostrar_coropleta without an estado shows a flash", %{conn: conn} do
@@ -254,11 +255,11 @@ defmodule MapoWeb.MapaLive.IndexTest do
   end
 
   describe "transporte" do
-    defp respuesta_transporte(origen, feeds) do
+    defp respuesta_transporte(origen, feeds, rutas \\ []) do
       %{
-        "zona" => %{"cve_ent" => "14", "cve_mun" => "039", "nombre" => "Guadalajara"},
+        "zona" => %{"clave" => "mun:14039", "nombre" => "Guadalajara"},
         "origen" => origen,
-        "rutas" => %{"type" => "FeatureCollection", "features" => []},
+        "rutas" => %{"type" => "FeatureCollection", "features" => rutas},
         "paradas" => %{"type" => "FeatureCollection", "features" => []},
         "resumen" => %{
           "rutas" => 3,
@@ -274,12 +275,33 @@ defmodule MapoWeb.MapaLive.IndexTest do
       }
     end
 
-    test "necesita un municipio", %{conn: conn} do
-      lv = montar_con_ubicacion(conn, fn _conn -> raise "no debería llamarse" end)
-      assert render_click(lv, "mostrar_transporte", %{}) =~ "Elige una zona de un solo municipio"
+    test "necesita una zona y dice por qué una muy grande no se calcula", %{conn: conn} do
+      stub_estados_y_municipio(fn _conn -> raise "no debería llamarse" end)
+      {:ok, lv, _html} = live(conn, ~p"/mapa")
+      assert render_click(lv, "mostrar_transporte", %{}) =~ "Elige una zona primero"
+
+      lv =
+        montar_con_ubicacion(conn, fn conn ->
+          assert conn.params["zona"] == "ent:14"
+
+          conn
+          |> Plug.Conn.put_status(422)
+          |> Req.Test.json(%{
+            "detail" => "la zona mide 78,601 km² y aquí se calcula hasta 5,000 km²"
+          })
+        end)
+
+      assert render_click(lv, "mostrar_transporte", %{}) =~
+               "Transporte: la zona mide 78,601 km² y aquí se calcula hasta 5,000 km²."
     end
 
     test "pone las rutas, dice cuántas son frecuentes y la licencia de cada feed", %{conn: conn} do
+      ruta = %{
+        "type" => "Feature",
+        "properties" => %{"id" => "R1", "col" => "#FF8800"},
+        "geometry" => %{}
+      }
+
       feed = %{
         "feed" => "jal-setran",
         "titulo" => "Jalisco",
@@ -295,12 +317,18 @@ defmodule MapoWeb.MapaLive.IndexTest do
       lv =
         montar_con_municipio(conn, fn conn ->
           assert conn.request_path == "/transporte/zona"
-          assert conn.params["cve_mun"] == "039"
-          Req.Test.json(conn, respuesta_transporte("gtfs", [feed]))
+          assert conn.params["zona"] == "mun:14039"
+          Req.Test.json(conn, respuesta_transporte("gtfs", [feed], [ruta]))
         end)
 
       html = render_click(lv, "mostrar_transporte", %{})
-      assert_push_event(lv, "capa_transporte", %{activa: true, origen: "gtfs"})
+      # Pocas rutas y con color en su GTFS: cada una con el suyo.
+      assert_push_event(lv, "capa_transporte", %{activa: true, origen: "gtfs", color: "ruta"})
+      assert html =~ "Cada ruta con el color que le da su GTFS"
+
+      html = lv |> form("#transporte_color_form", %{"color" => "frecuencia"}) |> render_change()
+      assert_push_event(lv, "color_rutas", %{color: "frecuencia"})
+      assert html =~ "Más gruesa y con más tinta, pasa más seguido."
       assert html =~ "3 rutas pasan por Guadalajara; 2 pasan cada 15 minutos o menos"
       assert html =~ "Sin licencia declarada"
       assert html =~ "frecuencias del 2026-11-25"
@@ -356,10 +384,10 @@ defmodule MapoWeb.MapaLive.IndexTest do
 
     html = lv |> element("[phx-click='mostrar_coloreado']") |> render_click()
 
-    assert html =~ "no tiene municipios descargados"
+    assert html =~ "no tiene municipios cargados en esa zona"
   end
 
-  test "activar_isocrona pushes modo_isocrona and quitar_isocrona turns it off", %{conn: conn} do
+  test "agregar un alcance espera el clic; cancelar y quitar apagan el modo", %{conn: conn} do
     lv = montar_con_ubicacion(conn, fn _conn -> raise "no debería llamarse" end)
 
     lv
@@ -367,31 +395,113 @@ defmodule MapoWeb.MapaLive.IndexTest do
     |> render_submit()
 
     assert_push_event(lv, "modo_isocrona", %{activo: true})
+    assert render(lv) =~ "Haz clic en el plano para elegir el punto de salida."
 
-    lv |> element("button", "Quitar") |> render_click()
-
+    lv |> element("button", "Cancelar") |> render_click()
     assert_push_event(lv, "modo_isocrona", %{activo: false})
+
+    html =
+      lv
+      |> form("#isocrona_capa_form", isocrona_capa: %{"minutos" => "500"})
+      |> render_submit()
+
+    assert html =~ "Los minutos van de 1 a 120."
+  end
+
+  defp cuerpo(conn) do
+    {:ok, cuerpo, _conn} = Plug.Conn.read_body(conn)
+    Jason.decode!(cuerpo)
+  end
+
+  defp isocrona(lat) do
+    %{
+      "poligono" => %{
+        "type" => "Polygon",
+        "coordinates" => [[[lat, 0], [lat, 1], [0, 1], [lat, 0]]]
+      },
+      "metodo" => "osrm_real"
+    }
+  end
+
+  defp poblacion(n) do
+    cada = for i <- 1..n, do: %{"personas" => 1000 * i, "lugares" => i, "reservados" => 0}
+
+    %{
+      "cada_una" => cada,
+      "en_todas" => if(n > 1, do: %{"personas" => 500, "lugares" => 1, "reservados" => 2}),
+      "en_alguna" => if(n > 1, do: %{"personas" => 2500, "lugares" => 3, "reservados" => 0}),
+      "interseccion" => if(n > 1, do: %{"type" => "Polygon", "coordinates" => []}),
+      "metodo" => "Censo 2020 por su punto."
+    }
+  end
+
+  test "los alcances se apilan con la gente dentro de cada uno, en todos y en alguno", %{
+    conn: conn
+  } do
+    yo = self()
+
+    lv =
+      montar_con_ubicacion(conn, fn conn ->
+        case conn.request_path do
+          "/isocronas/calcular" ->
+            Req.Test.json(conn, isocrona(cuerpo(conn)["lat"]))
+
+          "/isocronas/poblacion" ->
+            n = length(cuerpo(conn)["poligonos"])
+            send(yo, {:poblacion, n})
+            Req.Test.json(conn, poblacion(n))
+        end
+      end)
+
+    for {lat, min} <- [{20.6, "10"}, {20.7, "20"}] do
+      lv
+      |> form("#isocrona_capa_form", isocrona_capa: %{"minutos" => min})
+      |> render_submit()
+
+      render_hook(lv, "click_mapa", %{"lat" => lat, "lon" => -103.3})
+    end
+
+    assert_receive {:poblacion, 1}
+    assert_receive {:poblacion, 2}
+    assert_push_event(lv, "capa_isocrona", %{activa: true, isocronas: [_], interseccion: nil})
+
+    assert_push_event(lv, "capa_isocrona", %{
+      activa: true,
+      isocronas: [%{tinta: "movilidad"}, %{tinta: "urbanismo"}],
+      interseccion: %{"type" => "Polygon"}
+    })
+
+    html = render(lv)
+    assert html =~ "1,000 personas" and html =~ "2,000 personas"
+    assert has_element?(lv, ".alcances-suma", "500 personas, sin 2 lugares con dato reservado")
+    assert has_element?(lv, ".alcances-suma", "2,500 personas")
+    assert html =~ "El contorno grueso es la parte que comparten todos."
+    assert_patch(lv) =~ "alcance=20.6,-103.3,10;20.7,-103.3,20"
+
+    lv |> element("button[aria-label='Quitar el alcance 1']") |> render_click()
+    assert_receive {:poblacion, 1}
+    assert_patch(lv) =~ "alcance=20.7,-103.3,20"
+
+    lv |> element("button", "Quitar todos") |> render_click()
     assert_push_event(lv, "capa_isocrona", %{activa: false})
   end
 
-  test "click_mapa while isocrona is active calls mapo_core and pushes the polygon", %{conn: conn} do
+  test "sin mapo_core para contar, el alcance se pinta y se dice", %{conn: conn} do
     lv =
       montar_con_ubicacion(conn, fn conn ->
-        assert conn.request_path == "/isocronas/calcular"
-
-        Req.Test.json(conn, %{
-          "poligono" => %{"type" => "Polygon", "coordinates" => []},
-          "metodo" => "osrm_real"
-        })
+        case conn.request_path do
+          "/isocronas/calcular" -> Req.Test.json(conn, isocrona(20.6))
+          "/isocronas/poblacion" -> Plug.Conn.send_resp(conn, 502, "{}")
+        end
       end)
 
     lv
     |> form("#isocrona_capa_form", isocrona_capa: %{"minutos" => "10"})
     |> render_submit()
 
-    render_hook(lv, "click_mapa", %{"lat" => 19.4, "lon" => -99.1})
-
-    assert_push_event(lv, "capa_isocrona", %{activa: true, metodo: "osrm_real"})
+    html = render_hook(lv, "click_mapa", %{"lat" => 20.6, "lon" => -103.3})
+    assert_push_event(lv, "capa_isocrona", %{activa: true, isocronas: [_]})
+    assert html =~ "No se pudo contar la gente dentro"
   end
 
   test "click_mapa while isocrona is not active does nothing (and does not call mapo_core)", %{
@@ -404,6 +514,14 @@ defmodule MapoWeb.MapaLive.IndexTest do
     # si hubiera llamado a mapo_core, el stub habria lanzado y tumbado
     # el proceso; si sigue vivo y renderiza, no se llamo.
     assert render(lv) =~ "Mapa técnico"
+  end
+
+  defp pestanas(lv) do
+    lv
+    |> render()
+    |> LazyHTML.from_fragment()
+    |> LazyHTML.query(".pestana[data-capa]")
+    |> LazyHTML.attribute("id")
   end
 
   describe "mesa de planeación" do
@@ -430,24 +548,40 @@ defmodule MapoWeb.MapaLive.IndexTest do
       assert html =~ ~s(id="cinta-coropleta" class="cinta pegado" hidden)
     end
 
-    test "la piel sigue a la capa de arriba de la pila", %{conn: conn} do
+    test "la mesa es neutra y sin selector de piel", %{conn: conn} do
+      stub_estados_y_municipio(fn _conn -> raise "no debería llamarse" end)
+      {:ok, _lv, html} = live(conn, ~p"/mapa")
+
+      assert html =~ ~s(lang="es" data-piel="neutra">)
+      assert html =~ ~s(data-mesa="neutra")
+      refute html =~ "piel_form"
+    end
+
+    test "arrastrar las pestañas cambia la pila; un orden con otras capas se ignora", %{
+      conn: conn
+    } do
+      stub_estados_y_municipio(fn _conn -> raise "no debería llamarse" end)
+      {:ok, lv, _html} = live(conn, ~p"/mapa")
+
+      orden = ~w(coropleta propios isocrona transporte voronoi vivienda coloreado)
+      render_hook(lv, "ordenar", %{"orden" => orden})
+      assert_push_event(lv, "orden_capas", %{orden: ^orden})
+      assert ["pestana-coropleta" | _] = pestanas(lv)
+
+      render_hook(lv, "ordenar", %{"orden" => ~w(coropleta propios inventada)})
+      render_hook(lv, "ordenar", %{"orden" => "coropleta"})
+      assert ["pestana-coropleta", "pestana-propios" | _] = pestanas(lv)
+    end
+
+    test "los botones de la cinta también mueven la pila", %{conn: conn} do
       lv =
         montar_con_ubicacion(conn, fn conn ->
-          case conn.request_path do
-            "/censo/choropleth" -> Req.Test.json(conn, coropleta_con_valores([10, 20]))
-            "/coloreado/municipios" -> Req.Test.json(conn, coleccion_con_una_feature())
-          end
+          Req.Test.json(conn, coropleta_con_valores([10, 20]))
         end)
-
-      lv |> element("[phx-click='mostrar_coloreado']") |> render_click()
-      refute_push_event(lv, "piel", %{piel: "urbanismo"})
 
       lv
       |> form("#coropleta_capa_form", coropleta_capa: %{"indicador" => "pobtot"})
       |> render_submit()
-
-      # La coropleta va arriba del coloreado en la pila: manda demografía.
-      assert_push_event(lv, "piel", %{piel: "demografia"})
 
       lv
       |> element("button[phx-click=mover][phx-value-capa=coropleta][phx-value-hacia=abajo]")
@@ -464,19 +598,6 @@ defmodule MapoWeb.MapaLive.IndexTest do
           "coropleta"
         ]
       })
-
-      assert_push_event(lv, "piel", %{piel: "urbanismo"})
-    end
-
-    test "una piel fijada gana sobre la automática hasta que se suelta", %{conn: conn} do
-      stub_estados_y_municipio(fn _conn -> raise "no debería llamarse" end)
-      {:ok, lv, _html} = live(conn, ~p"/mapa")
-
-      lv |> form("#piel_form", %{"piel" => "seguridad"}) |> render_change()
-      assert_push_event(lv, "piel", %{piel: "seguridad"})
-
-      lv |> form("#piel_form", %{"piel" => ""}) |> render_change()
-      assert_push_event(lv, "piel", %{piel: "urbanismo"})
     end
 
     test "los quintiles cuentan aparte los AGEB sin dato, nunca como cero" do
@@ -1061,7 +1182,7 @@ defmodule MapoWeb.MapaLive.IndexTest do
       |> form("#vivienda_capa_form", vivienda_capa: %{"indicador" => "eic_alqui"})
       |> render_submit()
 
-      html = render_hook(lv, "ficha_vivienda", %{"cve_mun" => "039"})
+      html = render_hook(lv, "ficha_vivienda", %{"cvegeo" => "14039"})
 
       assert html =~ "Guadalajara"
       assert html =~ "Del municipio"
@@ -1142,7 +1263,7 @@ defmodule MapoWeb.MapaLive.IndexTest do
         |> form("#vivienda_capa_form", vivienda_capa: %{"indicador" => "eic_alqui"})
         |> render_submit(%{vivienda_capa: %{"indicador" => "precio_ageb"}})
 
-      assert html =~ "Todavía no hay precio de oferta por AGEB para ese estado."
+      assert html =~ "Todavía no hay precio de oferta por AGEB en esa zona."
     end
 
     test "quitar apaga el acetato y su ficha", %{conn: conn} do
@@ -1152,7 +1273,7 @@ defmodule MapoWeb.MapaLive.IndexTest do
       |> form("#vivienda_capa_form", vivienda_capa: %{"indicador" => "eic_alqui"})
       |> render_submit()
 
-      render_hook(lv, "ficha_vivienda", %{"cve_mun" => "039"})
+      render_hook(lv, "ficha_vivienda", %{"cvegeo" => "14039"})
       html = lv |> element("#cinta-vivienda button", "Quitar") |> render_click()
 
       assert_push_event(lv, "capa_vivienda", %{activa: false})
@@ -1193,7 +1314,7 @@ defmodule MapoWeb.MapaLive.IndexTest do
       {:ok, lv, _html} = live(conn, ~p"/mapa?ent=14&mun=039&censo=graproes&ver=coropleta")
 
       assert_receive {:censo, consulta}
-      assert consulta =~ "indicador=graproes" and consulta =~ "cve_mun=039"
+      assert consulta =~ "indicador=graproes" and consulta =~ "zona=mun%3A14039"
       assert_push_event(lv, "zona_elegida", %{geojson: _})
       assert_push_event(lv, "capa_coropleta", %{activa: true})
       refute has_element?(lv, "#cinta-coropleta[hidden]")
@@ -1246,21 +1367,30 @@ defmodule MapoWeb.MapaLive.IndexTest do
       assert_patch(lv, "/mapa?zona=mun:14039")
     end
 
-    test "la isócrona guarda su punto y sus minutos", %{conn: conn} do
+    test "los alcances guardan su punto y sus minutos; la cita lleva el censo si se contó", %{
+      conn: conn
+    } do
       stub_con_carga(fn conn ->
-        Req.Test.json(conn, %{"poligono" => %{}, "metodo" => "carretera_real"})
+        case conn.request_path do
+          "/isocronas/calcular" ->
+            Req.Test.json(conn, %{"poligono" => %{}, "metodo" => "carretera_real"})
+
+          "/isocronas/poblacion" ->
+            Req.Test.json(conn, poblacion(2))
+        end
       end)
 
-      {:ok, lv, _html} = live(conn, ~p"/mapa?alcance=20.67,-103.35,15")
+      {:ok, lv, _html} = live(conn, ~p"/mapa?alcance=20.67,-103.35,15;20.7,-103.4,30")
 
-      assert_push_event(lv, "modo_isocrona", %{activo: true})
-      assert_push_event(lv, "capa_isocrona", %{activa: true})
-      assert has_element?(lv, "#isocrona_capa_form input[value='15']")
+      refute_push_event(lv, "modo_isocrona", %{activo: true})
+      assert_push_event(lv, "capa_isocrona", %{activa: true, isocronas: [_, _]})
+      assert has_element?(lv, "#isocrona_capa_form input[value='30']")
 
       lv |> element("#citar-isocrona") |> render_click()
       assert has_element?(lv, "#cita-isocrona", "Colaboradores de OpenStreetMap")
-      assert has_element?(lv, "#cita-isocrona", "15 minutos desde 20.67000, -103.35000")
+      assert has_element?(lv, "#cita-isocrona", "15 min desde 20.67000, -103.35000; 30 min desde")
       assert has_element?(lv, "#cita-isocrona", "método carretera_real")
+      assert has_element?(lv, "#cita-isocrona", "población dentro de cada alcance en auto")
     end
 
     test "la cita pone la fuente original primero, su versión y el enlace", %{conn: conn} do

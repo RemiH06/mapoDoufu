@@ -277,6 +277,75 @@
     display: none;
   }
 
+  /* Arrastrar una pestaña reordena la pila (charola.js): la que se mueve
+     queda levantada y una raya marca dónde caería. */
+  .pestana[data-capa] {
+    touch-action: pan-x pan-y;
+  }
+  .charola.ordenando .pestana {
+    cursor: grabbing;
+  }
+  .pestana.arrastrando,
+  .pestana.lista-para-mover {
+    outline: 2px dashed var(--text);
+    outline-offset: -4px;
+    opacity: 0.75;
+  }
+  .pestana.destino-antes {
+    box-shadow: inset 4px 0 0 var(--text);
+  }
+  .charola.destino-final .pestana[data-capa]:last-of-type {
+    box-shadow: inset -4px 0 0 var(--text);
+  }
+
+  /* Alcances apilados: número y tinta de cada uno, la gente dentro, y en
+     todos y en alguno debajo. */
+  .alcances {
+    display: grid;
+    gap: 6px;
+    list-style: none;
+    min-width: 260px;
+  }
+  .alcances li {
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    gap: 8px;
+    align-items: start;
+    font-size: 14px;
+  }
+  .alcance-numero {
+    display: grid;
+    place-items: center;
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    background: var(--tinta-escala);
+    color: var(--bg);
+    font-size: 12px;
+  }
+  .alcance-que {
+    display: grid;
+    gap: 2px;
+  }
+  .alcance-que em {
+    font-style: normal;
+    font-size: 12px;
+    color: var(--text2);
+  }
+  .alcances button {
+    color: var(--text2);
+    font-size: 13px;
+    text-decoration: underline;
+  }
+  .alcances-suma {
+    display: flex;
+    gap: 18px;
+  }
+  .alcances-suma dt {
+    font-size: 12px;
+    color: var(--text2);
+  }
+
   /* Cinta de la capa elegida: controles cortos en una tira */
   .cinta {
     position: fixed;
@@ -505,6 +574,8 @@
   .muestra-linea.linea-30 { border-top-width: 2px; opacity: 0.55; }
   .muestra-linea.linea-mas { border-top-width: 1.5px; opacity: 0.35; }
   .muestra-linea.linea-sin_dato { border-top: 1.5px dashed var(--f-movilidad); opacity: 0.6; }
+  /* Con el color de cada ruta la leyenda solo habla del grosor. */
+  .cinta-clases.sin-tinta .muestra-linea { border-top-color: var(--text2); }
   .cinta-fuentes {
     max-width: 46ch;
     list-style: none;

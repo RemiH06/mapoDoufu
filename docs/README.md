@@ -17,6 +17,7 @@
 - [precio-estimado.md](producto/precio-estimado.md): precio de vivienda estimado por AGEB como rango con cobertura medida; hecha la forma (catastro y rango conformal, validados por bloques), pendiente la escala de mercado.
 - [citar.md](producto/citar.md): enlace permanente de `/mapa` y `/riesgos` (qué parámetros guarda y cómo se validan) y "Cómo citar" con la fuente original primero, en APA y BibTeX, con la versión de la tabla.
 - [accesibilidad.md](producto/accesibilidad.md): `/accesibilidad`, cuánta gente vive a más de N minutos a pie o en auto de cada servicio (salud, escuelas por nivel, supermercado, transporte masivo), cada uno con su grupo de población; cómo se calcula por estado y por qué las escuelas solo desde AGEB.
+- [isocronas.md](producto/isocronas.md): alcances en auto apilados en `/mapa` (hasta cinco), con la gente dentro de cada uno, en todos y en alguno, y cómo se cuenta.
 - [transporte.md](producto/transporte.md): acetato "Transporte público" en `/mapa` (rutas del GTFS con cada cuánto pasan en hora pico, o de OSM sin horarios) y las paradas como servicio en `/accesibilidad`.
 - [zona.md](producto/zona.md): la zona común de todas las vistas (estado, municipios, metrópoli, colonia, CP, dibujo o círculo), su clave en la URL, la zona guardada en la cuenta y cómo calcula cada vista con ella.
 - [datos-propios.md](producto/datos-propios.md): archivos del equipo (tabla, vectorial, ráster) como acetato, su cruce con fuentes públicas, la distancia entre capas y el valor de un ráster: formatos, límites, ubicación, procedencia, permisos y qué se guarda.
@@ -112,6 +113,7 @@ Qué se construyó en cada etapa, por qué así y qué bugs reales aparecieron.
 - [Plano común con MapLibre y mapa base propio, noviembre 2026](historial/2026-11-plano-maplibre.md)
 - [Selector de zona común, noviembre 2026](historial/2026-11-zona-comun.md)
 - [Buscador sin mapa, autocompletado y menú de rubros, noviembre 2026](historial/2026-11-buscador-sin-mapa.md)
+- [Organización de `/mapa`: mesa neutra, pila arrastrable, alcances apilados y rutas con color, noviembre 2026](historial/2026-11-organizacion-mapa.md)
 
 ## Gaiarda
 

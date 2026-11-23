@@ -73,9 +73,12 @@ la URL se reescribe con `zona=`.
   otro lado hubiera competencia. En Guadalajara, con farmacias, 1,106 de fuera compiten y
   76 se quedan con parte del municipio. Sus celdas van con un velo y su punto hueco. Si el
   margen toca un estado sin DENUE en Mapo, se dice.
-- **Las demás capas de `/mapa`** (censo, vivienda, municipios, transporte) todavía piden
-  un estado y, si se puede, un municipio: salen de la zona (su primer estado; su municipio
-  si es uno solo). Se pasan en la 29d.
+- **Las demás capas de `/mapa`** (29d): el censo y el precio por AGEB, las AGEB con su
+  punto de dentro en la zona (`zona.filtro_agebs`: estado, municipios y metrópoli van por
+  clave, que da lo mismo y tarda 0.1 a 0.7 s contra 44 s por geometría en un estado);
+  vivienda por municipio y "Municipios", todos los municipios de los estados que toca la
+  zona, para tener contra qué comparar; transporte, las rutas que cruzan la zona, hasta
+  5,000 km².
 
 ## Límites
 

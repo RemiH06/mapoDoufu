@@ -216,6 +216,38 @@ def geom_sql(zona: dict) -> tuple[str, dict]:
             {"zona_lon": zona["lon"], "zona_lat": zona["lat"], "zona_radio": zona["radio_m"]})
 
 
+def partida_sql(zona: dict) -> tuple[str, dict]:
+    """Dos CTE para un WITH: `z` con la geometría de la zona y `zs` con ella partida en
+    pedazos chicos. Punto en polígono contra un municipio entero tardaba más de un
+    segundo con decenas de miles de lugares; contra los pedazos, milisegundos."""
+    sql, params = geom_sql(zona)
+    return (f"z AS MATERIALIZED ({sql}),"
+            " zs AS MATERIALIZED (SELECT ST_Subdivide(geom, 128) AS g FROM z)"), params
+
+
+def dentro(geom: str) -> str:
+    """Condición SQL: `geom` toca la zona de `partida_sql`."""
+    return f"EXISTS (SELECT 1 FROM zs WHERE zs.g && {geom} AND ST_Intersects(zs.g, {geom}))"
+
+
+def filtro_agebs(zona: dict, alias: str = "a") -> tuple[str, str, dict]:
+    """(CTE para un WITH o "", condición, parámetros) para las AGEB de la zona: las que
+    tienen su punto de dentro en ella. Un estado, municipios o una metrópoli son
+    municipios enteros, así que van por clave: por geometría, un estado tardaba 44 s."""
+    t = zona["tipo"]
+    if t == "estado":
+        return "", f"{alias}.cve_ent = %(zona_ent)s", {"zona_ent": zona["cve_ent"]}
+    if t == "municipios":
+        # El estado primero, para que entre el índice (cve_ent, cve_mun).
+        return ("", f"{alias}.cve_ent = ANY(%(zona_ents)s) AND {alias}.cve_ent || {alias}.cve_mun = ANY(%(zona_muns)s)",
+                {"zona_ents": sorted({c[:2] for c in zona["cvegeos"]}), "zona_muns": zona["cvegeos"]})
+    if t == "metropoli":
+        return ("", f"{alias}.cve_ent || {alias}.cve_mun = ANY((SELECT cvegeos FROM metropolis WHERE clave = %(zona_zm)s)::text[])",
+                {"zona_zm": zona["clave"]})
+    cte, params = partida_sql(zona)
+    return cte, f"{alias}.geom && (SELECT geom FROM z) AND {dentro(f'ST_PointOnSurface({alias}.geom)')}", params
+
+
 def _lista(nombres: list[str], total: int, sustantivo: str) -> str:
     if total == 0:
         return ""

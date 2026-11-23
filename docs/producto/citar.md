@@ -29,18 +29,18 @@ que se está viendo y un texto de cita listo para copiar. Hecho en la sesión 24
 | `ent`, `mun` | Enlaces de antes de la 29b: se leen como `mun:` o `ent:` y la URL se reescribe con `zona` | Dos y tres dígitos |
 | `censo` | Indicador del acetato "Censo por AGEB" | `MapoCore.indicadores_censo/0` |
 | `viv`, `anio`, `seg` | Indicador de vivienda, año y segmento del SNIIV | El catálogo de `/vivienda/catalogo` |
-| `ficha` | Municipio con la ficha de vivienda abierta | Tres dígitos; mapo_core responde 404 si no existe |
+| `ficha` | Municipio con la ficha de vivienda abierta, por cvegeo (`14039`) | Cinco dígitos; los enlaces de antes de la 29d traen tres y se leen con el primer estado de la zona; mapo_core responde 404 si no existe |
 | `negocios` | "Área por negocio" puesto, con su giro (vacío: todos) | Texto de hasta 60 caracteres; mapo_core lo pasa por la tabla de rubros o como parámetro |
 | `municipios=1` | Acetato "Municipios" puesto | Solo `1` |
-| `alcance` | Isócrona: `lat,lon,minutos` | Lat 14 a 33.5, lon −119 a −85, de 1 a 120 minutos |
+| `alcance` | Alcances en auto: `lat,lon,minutos`, hasta cinco separados por `;` (`isocronas.md`) | Lat 14 a 33.5, lon −119 a −85, de 1 a 120 minutos; uno que no pasa se salta |
 | `ver` | Cinta abierta | Los acetatos de la pantalla, menos "Tus datos" |
-| `piel` | Piel fijada | Las siete pieles |
 | `sesion`, `capa` | Del equipo (ya existían) | El scope; no van en la cita |
 
 El año del SNIIV se escribe aunque se haya pedido "último completo": el enlace
 dice 2025 y sigue diciendo 2025 cuando salga 2026. La URL se reescribe con cada
 cambio (`push_patch` con `replace`, sin llenar el historial) y se lee una sola
-vez, al conectar. El orden de las capas en la pila no se guarda.
+vez, al conectar. El orden de las capas en la pila no se guarda, ni el color de las
+rutas. `piel` (la piel fijada, hasta la 29d) se ignora: la mesa de `/mapa` es neutra.
 
 ### `/riesgos`
 

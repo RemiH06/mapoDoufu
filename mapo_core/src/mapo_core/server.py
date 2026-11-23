@@ -34,7 +34,8 @@ from mapo_core.consultas import INDICADORES_CHOROPLETH, TOLERANCIA_SIMPLIFICACIO
 from mapo_core.consultas import feature as _feature
 from mapo_core.db import get_pool
 from mapo_core.enigh_resumen import resumen_por_municipio
-from mapo_core.isocronas import calcular_isocrona
+from mapo_core.isocronas import MAX_ISOCRONAS, calcular_isocrona
+from mapo_core.isocronas import poblacion as poblacion_isocronas
 from mapo_core.osrm_client import OSRMClient
 from mapo_core.voronoi import PuntoVoronoi, calcular_voronoi
 from mapo_core.vrp import Parada, Vehiculo, resolver_vrp
@@ -269,21 +270,49 @@ async def datos_ubicar(
     }
 
 
+def _zona_de(zona: str | None, cve_ent: str | None = None, cve_mun: str | None = None) -> dict:
+    """La zona de una consulta: su clave (zona.py) o, como antes de la 29b, un estado
+    y quizá un municipio. 422 si no hay ninguna o la clave no es válida."""
+    if zona is None and cve_ent:
+        zona = f"mun:{cve_ent}{cve_mun}" if cve_mun else f"ent:{cve_ent}"
+    if zona is None:
+        raise HTTPException(422, "hace falta una zona")
+    try:
+        return zona_comun.validar(zona)
+    except zona_comun.ZonaInvalida as exc:
+        raise HTTPException(422, str(exc)) from None
+
+
+async def _resuelta(pool: AsyncConnectionPool, z: dict) -> dict:
+    async with pool.connection() as conn:
+        resuelta = await zona_comun.resolver(conn, z)
+    if resuelta is None or not resuelta["estados"]:
+        raise HTTPException(404, "No hay nada cargado en Mapo con esa zona.")
+    return resuelta
+
+
 @app.get("/censo/choropleth")
 async def censo_choropleth(
     indicador: str,
-    cve_ent: str,
-    cve_mun: str | None = None,
+    zona: str | None = Query(default=None, max_length=6_000),
+    cve_ent: str | None = Query(default=None, pattern=r"^\d{2}$"),
+    cve_mun: str | None = Query(default=None, pattern=r"^\d{3}$"),
     pool: AsyncConnectionPool = Depends(get_pool),
 ) -> dict:
     """Cruza los poligonos de AGEB con el Censo de Poblacion por AGEB,
     por cvegeo (propio de mapo_core, ya no un passthrough de Gaiarda).
-    Si falta el censo de un AGEB, el poligono trae `valor_choropleth:
-    null`, nunca se inventa un cero."""
+    Con `zona`, los AGEB con su punto de dentro en ella; si no, los de un
+    estado o un municipio, como antes. Si falta el censo de un AGEB, el
+    poligono trae `valor_choropleth: null`, nunca se inventa un cero."""
     if indicador not in INDICADORES_CHOROPLETH:
         raise HTTPException(400, f"indicador invalido. Usa uno de: {sorted(INDICADORES_CHOROPLETH)}")
 
-    features = await consultas.coropleta(pool, indicador, cve_ent, [cve_mun] if cve_mun else None)
+    if zona is None:
+        if not cve_ent:
+            raise HTTPException(422, "hace falta una zona")
+        features = await consultas.coropleta(pool, indicador, cve_ent, [cve_mun] if cve_mun else None)
+    else:
+        features = await consultas.coropleta(pool, indicador, None, None, zona=_zona_de(zona))
     return {"type": "FeatureCollection", "features": features}
 
 
@@ -410,6 +439,25 @@ async def isocronas_calcular(
     return {"poligono": resultado.poligono, "metodo": resultado.metodo}
 
 
+class SolicitudPoblacionIsocronas(BaseModel):
+    poligonos: list[dict] = Field(min_length=1, max_length=MAX_ISOCRONAS)
+
+
+@app.post("/isocronas/poblacion")
+async def isocronas_poblacion(
+    solicitud: SolicitudPoblacionIsocronas, pool: AsyncConnectionPool = Depends(get_pool)
+) -> dict:
+    """Cuánta gente vive dentro de cada isócrona, en todas y en alguna (Censo 2020 por
+    AGEB y localidad, por su punto). Polígonos GeoJSON de `/isocronas/calcular`."""
+    for p in solicitud.poligonos:
+        if p.get("type") not in ("Polygon", "MultiPolygon") or len(json.dumps(p)) > 200_000:
+            raise HTTPException(422, "cada isócrona es un polígono GeoJSON")
+    try:
+        return await poblacion_isocronas(pool, solicitud.poligonos)
+    except ValueError as exc:
+        raise HTTPException(422, str(exc)) from None
+
+
 class PuntoVoronoiEntrada(BaseModel):
     lat: float
     lon: float
@@ -509,15 +557,21 @@ def coloreado_calcular(solicitud: SolicitudColoreado) -> dict:
 
 
 @app.get("/coloreado/municipios")
-async def coloreado_municipios(cve_ent: str, pool: AsyncConnectionPool = Depends(get_pool)) -> dict:
-    """Los municipios de un estado, cada uno con su `color_indice` ya
-    calculado para que dos municipios vecinos nunca se vean del mismo
-    color en un mapa categorico."""
+async def coloreado_municipios(
+    zona: str | None = Query(default=None, max_length=6_000),
+    cve_ent: str | None = Query(default=None, pattern=r"^\d{2}$"),
+    pool: AsyncConnectionPool = Depends(get_pool),
+) -> dict:
+    """Los municipios de los estados que toca la zona (o de un estado, como antes),
+    cada uno con su `color_indice` ya calculado para que dos municipios vecinos nunca
+    se vean del mismo color en un mapa categorico. Son los del estado entero y no
+    solo los de la zona: una colonia sola no tiene vecinos que distinguir."""
+    estados = [cve_ent] if zona is None and cve_ent else (await _resuelta(pool, _zona_de(zona)))["estados"]
     async with pool.connection() as conn:
         cursor = await conn.execute(
             "SELECT cvegeo, cve_mun, nombre, ST_AsGeoJSON(ST_Simplify(geom, %(tolerancia)s, true), 5) "
-            "FROM municipios WHERE cve_ent = %(cve_ent)s ORDER BY cvegeo",
-            {"cve_ent": cve_ent, "tolerancia": _TOLERANCIA_SIMPLIFICACION},
+            "FROM municipios WHERE cve_ent = ANY(%(estados)s) ORDER BY cvegeo",
+            {"estados": estados, "tolerancia": _TOLERANCIA_SIMPLIFICACION},
         )
         filas = await cursor.fetchall()
 
@@ -805,16 +859,23 @@ async def vivienda_catalogo(pool: AsyncConnectionPool = Depends(get_pool)) -> di
 
 @app.get("/vivienda/municipios")
 async def vivienda_municipios(
-    cve_ent: str = Query(pattern=r"^\d{2}$"),
     indicador: str = Query(),
+    zona: str | None = Query(default=None, max_length=6_000),
+    cve_ent: str | None = Query(default=None, pattern=r"^\d{2}$"),
     anio: int | None = Query(default=None, ge=2000, le=2100),
     segmento: str | None = Query(default=None),
     pool: AsyncConnectionPool = Depends(get_pool),
 ) -> dict:
-    """Municipios de un estado con el valor de un indicador de una sola
-    fuente, su nivel y su `metodo`. Sin dato es `null`, nunca cero."""
+    """Municipios de los estados que toca la zona (o de un estado, como antes) con el
+    valor de un indicador de una sola fuente, su nivel y su `metodo`; el precio por
+    AGEB, solo dentro de la zona. Sin dato es `null`, nunca cero."""
+    if zona is None and cve_ent:
+        estados, z = [cve_ent], None
+    else:
+        z = _zona_de(zona)
+        estados = (await _resuelta(pool, z))["estados"]
     try:
-        return await vivienda_vista.municipios(pool, cve_ent, indicador, anio, segmento or None)
+        return await vivienda_vista.municipios(pool, estados, indicador, anio, segmento or None, zona=z)
     except ValueError as exc:
         raise HTTPException(400, str(exc)) from None
 
@@ -923,15 +984,22 @@ async def accesibilidad_zona(
 
 @app.get("/transporte/zona")
 async def transporte_zona(
-    cve_ent: str = Query(pattern=r"^\d{2}$"),
-    cve_mun: str = Query(pattern=r"^\d{3}$"),
+    zona: str | None = Query(default=None, max_length=6_000),
+    cve_ent: str | None = Query(default=None, pattern=r"^\d{2}$"),
+    cve_mun: str | None = Query(default=None, pattern=r"^\d{3}$"),
     pool: AsyncConnectionPool = Depends(get_pool),
 ) -> dict:
-    """Rutas y paradas de transporte público que pasan por un municipio: las del GTFS
-    con su frecuencia en hora pico o, si no hay GTFS, las de OSM. Ver docs/fuentes/gtfs.md."""
-    resultado = await transporte.zona(pool, cve_ent, cve_mun)
+    """Rutas y paradas de transporte público que pasan por una zona (clave de zona.py,
+    o un municipio como antes): las del GTFS con su frecuencia en hora pico o, si no
+    hay GTFS, las de OSM. Hasta `MAX_KM2_CONSULTA`. Ver docs/fuentes/gtfs.md."""
+    if zona is None and not (cve_ent and cve_mun):
+        raise HTTPException(422, "hace falta una zona")
+    try:
+        resultado = await transporte.zona(pool, _zona_de(zona, cve_ent, cve_mun))
+    except transporte.ZonaMuyGrande as exc:
+        raise HTTPException(422, str(exc)) from None
     if resultado is None:
-        raise HTTPException(404, "municipio no encontrado")
+        raise HTTPException(404, "la zona no toca nada cargado en Mapo")
     return resultado
 
 

@@ -14,12 +14,13 @@ defmodule MapoWeb.MapaLive.Index do
 
   # Cada capa es un acetato sobre el plano (docs/arquitectura/decisiones.md,
   # "Concepto visual"). El orden de la lista es el orden de la pila: la
-  # primera queda encima. La piel de la mesa la pone la capa visible de más
-  # arriba, salvo que la persona fije una.
+  # primera queda encima; se cambia arrastrando las pestañas o con los botones
+  # de la cinta. Desde la 29d la mesa es neutra (blanco o negro según el
+  # tema): el color es solo de los datos, cada acetato con su tinta.
   #
   # "Tus marcas" no está en esta lista: no es un acetato impreso sino lo que
-  # el equipo anota a mano, así que va siempre encima, no se reordena y no
-  # pone piel. Sus marcas son las de una sesión del equipo (`?sesion=ID`),
+  # el equipo anota a mano, así que va siempre encima y no se reordena. Sus
+  # marcas son las de una sesión del equipo (`?sesion=ID`),
   # las mismas que se ven en /sesiones/:id y en vivo con ella.
   #
   # "propios" junta hasta tres capas del equipo en un solo acetato, cada una
@@ -53,19 +54,17 @@ defmodule MapoWeb.MapaLive.Index do
   # equipo y nunca va en un enlace permanente (docs/producto/citar.md).
   @citables ~w(coropleta vivienda voronoi coloreado isocrona transporte)
 
-  @pieles [
-    {"Urbanismo", "urbanismo"},
-    {"Demografía", "demografia"},
-    {"Comercio", "comercio"},
-    {"Consumo", "consumo"},
-    {"Seguridad", "seguridad"},
-    {"Laboral", "laboral"},
-    {"Movilidad", "movilidad"}
-  ]
+  # Alcances apilados: cada uno con una tinta, en este orden.
+  @tintas_isocrona ~w(movilidad urbanismo comercio seguridad demografia)
+  @max_isocronas length(@tintas_isocrona)
+
+  # Con estas rutas o menos, cada una va con el color que le da su GTFS; con
+  # más, una sola tinta con el grosor por frecuencia (si no, es confeti).
+  @max_rutas_con_color 20
 
   @impl true
   def render(assigns) do
-    assigns = assign(assigns, capas: @capas, pieles: @pieles, citables: @citables)
+    assigns = assign(assigns, capas: @capas, citables: @citables)
 
     ~H"""
     <Layouts.app flash={@flash} current_scope={@current_scope} seccion="mapa" full_width?={true}>
@@ -86,6 +85,7 @@ defmodule MapoWeb.MapaLive.Index do
         id="mapa-tecnico"
         phx-hook="MapaTecnico"
         phx-update="ignore"
+        data-mesa="neutra"
         class="plano-gl flex-1 min-h-0 w-full"
       >
       </div>
@@ -185,11 +185,18 @@ defmodule MapoWeb.MapaLive.Index do
           meta={@vivienda_meta}
           ficha={@vivienda_ficha}
         />
-        <.cinta_isocrona :if={id == "isocrona"} form={@isocrona_form} activa?={@isocrona_activa?} />
+        <.cinta_isocrona
+          :if={id == "isocrona"}
+          form={@isocrona_form}
+          isocronas={@isocronas}
+          poniendo?={@isocrona_poniendo?}
+          poblacion={@isocrona_poblacion}
+        />
         <.cinta_transporte
           :if={id == "transporte"}
           activa?={@transporte_activa?}
           meta={@transporte_meta}
+          color={@transporte_color}
         />
         <div :if={id in @citables and activa?(assigns, id)} class="cinta-citar">
           <button
@@ -248,25 +255,18 @@ defmodule MapoWeb.MapaLive.Index do
         <dt>Fuentes</dt>
 
         <dd>{fuentes(assigns)}</dd>
-
-        <dt>Piel</dt>
-
-        <dd>
-          <.form for={%{}} as={:piel} id="piel_form" phx-change="fijar_piel">
-            <select name="piel" aria-label="Piel de la mesa">
-              <option value="" selected={is_nil(@piel_fijada)}>
-                Automática · {nombre_piel(piel_automatica(assigns))}
-              </option>
-
-              <option :for={{nombre, clave} <- @pieles} value={clave} selected={@piel_fijada == clave}>
-                {nombre}
-              </option>
-            </select>
-          </.form>
-        </dd>
       </dl>
 
-      <nav id="charola" class="charola" aria-label="Acetatos">
+      <nav
+        id="charola"
+        class="charola"
+        aria-label="Acetatos"
+        aria-describedby="charola-ayuda"
+        phx-hook="Charola"
+      >
+        <p id="charola-ayuda" class="sr-only">
+          Arrastra una pestaña para cambiar el orden de la pila; con teclado, abre su cinta y usa Más arriba o Más abajo.
+        </p>
         <%!-- Solo en pantallas angostas: la charola se pliega en una lista. --%>
         <button
           type="button"
@@ -296,8 +296,10 @@ defmodule MapoWeb.MapaLive.Index do
 
         <button
           :for={id <- @orden}
+          id={"pestana-#{id}"}
           type="button"
           class="pestana"
+          data-capa={id}
           phx-click={elegir_js(id)}
           aria-pressed={to_string(activa?(assigns, id))}
           aria-expanded={to_string(@elegida == id)}
@@ -842,6 +844,7 @@ defmodule MapoWeb.MapaLive.Index do
 
   attr :activa?, :boolean, required: true
   attr :meta, :map, default: nil
+  attr :color, :string, default: "frecuencia"
 
   # Las rutas del GTFS con su frecuencia en hora pico; si ningún GTFS toca el
   # municipio, las de OSM, dichas como tales. Cada feed con su productor, su
@@ -868,7 +871,7 @@ defmodule MapoWeb.MapaLive.Index do
     <%= cond do %>
       <% is_nil(@meta) -> %>
         <p class="cinta-texto">
-          Rutas y paradas del municipio, con cada cuánto pasan de 7 a 9 de la mañana de un día hábil. Necesita un municipio.
+          Rutas y paradas de la zona, con cada cuánto pasan de 7 a 9 de la mañana de un día hábil. Hasta 5,000 km²: una metrópoli sí, un estado no.
         </p>
       <% @meta["origen"] == "osm" and @meta["resumen"]["rutas"] == 0 -> %>
         <p class="cinta-texto">
@@ -885,7 +888,31 @@ defmodule MapoWeb.MapaLive.Index do
           )} pasan cada {@meta["frecuente_min"]} minutos o menos {@meta["pico"]}.
         </p>
 
-        <ul class="cinta-clases" aria-label="Cada cuánto pasa">
+        <.form
+          :if={@meta["con_color"] > 0}
+          for={%{}}
+          as={:rutas}
+          id="transporte_color_form"
+          phx-change="color_rutas"
+          class="cinta-campos"
+        >
+          <label>
+            <span class="etiqueta">Color de las rutas</span>
+            <select name="color" class="cinta-control">
+              {Phoenix.HTML.Form.options_for_select(
+                [{"Una tinta, por frecuencia", "frecuencia"}, {"El de cada ruta (GTFS)", "ruta"}],
+                @color
+              )}
+            </select>
+          </label>
+        </.form>
+        <p class="cinta-texto">
+          {if @color == "ruta",
+            do: "Cada ruta con el color que le da su GTFS; el grosor dice cada cuánto pasa.",
+            else: "Más gruesa y con más tinta, pasa más seguido."} Pasa el cursor por una para resaltarla.
+        </p>
+
+        <ul class={["cinta-clases", @color == "ruta" && "sin-tinta"]} aria-label="Cada cuánto pasa">
           <li :for={c <- ~w(10 15 30 mas sin_dato)} :if={@meta["resumen"]["por_clase"][c]}>
             <span class={"muestra-linea linea-#{c}"} aria-hidden="true"></span> {@meta["clases"][c]}: {cifra(
               @meta["resumen"]["por_clase"][c]
@@ -962,42 +989,119 @@ defmodule MapoWeb.MapaLive.Index do
     </div>
 
     <p class="cinta-texto">
-      Los municipios del estado, sin dos vecinos del mismo tono.
+      Los municipios de los estados que toca la zona, sin dos vecinos del mismo tono.
     </p>
     """
   end
 
   attr :form, :any, required: true
-  attr :activa?, :boolean, required: true
+  attr :isocronas, :list, required: true
+  attr :poniendo?, :boolean, required: true
+  attr :poblacion, :map, default: nil
 
+  # Alcances apilados (docs/producto/isocronas.md): cada uno con su tinta y su
+  # número, la gente dentro de cada uno y, con dos o más, en todos y en alguno.
   defp cinta_isocrona(assigns) do
+    assigns = assign(assigns, tope: @max_isocronas, tintas: @tintas_isocrona)
+
     ~H"""
-    <.form for={@form} id="isocrona_capa_form" phx-submit="activar_isocrona" class="cinta-campos">
+    <.form for={@form} id="isocrona_capa_form" phx-submit="agregar_isocrona" class="cinta-campos">
       <.input
         field={@form[:minutos]}
         type="number"
         label="Minutos"
         min="1"
+        max="120"
         class="cinta-control cinta-corto"
       />
       <div class="cinta-botones">
-        <.button phx-disable-with="Activando..." class="boton primario">
-          {if @activa?, do: "Actualizar", else: "Activar"}
+        <.button
+          :if={not @poniendo?}
+          class="boton primario"
+          disabled={length(@isocronas) >= @tope}
+        >
+          {if @isocronas == [], do: "Poner", else: "Agregar otro"}
         </.button>
 
-        <.button :if={@activa?} type="button" phx-click="quitar_isocrona" class="boton">
-          Quitar
+        <.button :if={@poniendo?} type="button" phx-click="cancelar_isocrona" class="boton">
+          Cancelar
+        </.button>
+
+        <.button :if={@isocronas != []} type="button" phx-click="quitar_isocrona" class="boton">
+          Quitar todos
         </.button>
       </div>
     </.form>
 
     <p class="cinta-texto">
-      {if @activa?,
-        do: "Haz clic en el plano para elegir el punto de salida.",
-        else: "Hasta dónde llegas en auto desde un punto."}
+      <%= cond do %>
+        <% @poniendo? -> %>
+          Haz clic en el plano para elegir el punto de salida.
+        <% @isocronas == [] -> %>
+          Hasta dónde llegas en auto desde un punto. Se apilan hasta {@tope} para comparar cuánta gente queda dentro de cada uno.
+        <% length(@isocronas) >= @tope -> %>
+          Ya hay {@tope}: quita uno para agregar otro.
+        <% true -> %>
+          Agrega otro, con otros minutos o desde otro punto, para compararlos.
+      <% end %>
+    </p>
+
+    <ol :if={@isocronas != []} class="alcances">
+      <li
+        :for={{iso, i} <- Enum.with_index(@isocronas)}
+        style={"--tinta-escala: var(--f-#{Enum.at(@tintas, i)})"}
+      >
+        <span class="alcance-numero num" aria-hidden="true">{i + 1}</span>
+        <span class="alcance-que">
+          {minutos_texto(iso.minutos)} min desde
+          <span class="num">{cifra(iso.lat, 4)}, {cifra(iso.lon, 4)}</span>
+          <em :if={iso.metodo != "osrm_real"}>(círculo aproximado: OSRM no respondió)</em>
+          <b class="num">{personas(@poblacion, i)}</b>
+        </span>
+        <button
+          type="button"
+          phx-click="quitar_isocrona"
+          phx-value-n={i}
+          aria-label={"Quitar el alcance #{i + 1}"}
+        >
+          Quitar
+        </button>
+      </li>
+    </ol>
+
+    <dl :if={@poblacion && @poblacion["en_todas"]} class="alcances-suma">
+      <div>
+        <dt>En todos</dt>
+        <dd class="num">{personas(@poblacion["en_todas"])}</dd>
+      </div>
+      <div>
+        <dt>En alguno</dt>
+        <dd class="num">{personas(@poblacion["en_alguna"])}</dd>
+      </div>
+    </dl>
+
+    <p :if={@poblacion && @poblacion["en_todas"]} class="cinta-texto">
+      {if @poblacion["interseccion"],
+        do: "El contorno grueso es la parte que comparten todos.",
+        else: "No hay una parte que compartan todos."}
+    </p>
+
+    <p :if={@poblacion} class="cinta-texto cinta-metodo">{@poblacion["metodo"]}</p>
+    <p :if={@isocronas != [] and is_nil(@poblacion)} class="cinta-texto">
+      No se pudo contar la gente dentro: mapo_core no respondió.
     </p>
     """
   end
+
+  defp personas(nil, _i), do: ""
+  defp personas(%{"cada_una" => cada}, i), do: personas(Enum.at(cada, i))
+
+  defp personas(%{"personas" => n, "reservados" => r}) when r > 0,
+    do:
+      "#{cifra(n)} personas, sin #{r} #{if r == 1, do: "lugar", else: "lugares"} con dato reservado"
+
+  defp personas(%{"personas" => n}), do: "#{cifra(n)} personas"
+  defp personas(_), do: ""
 
   @impl true
   def mount(_params, _session, socket) do
@@ -1005,19 +1109,24 @@ defmodule MapoWeb.MapaLive.Index do
 
     {:ok,
      assign(socket,
+       # La mesa neutra desde el primer render (el hook la pone al navegar).
+       piel_raiz: "neutra",
        zona: nil,
        indicadores: Enum.map(MapoCore.indicadores_censo(), fn {c, e} -> {e, c} end),
        form: to_form(%{"cve_ent" => "", "cve_mun" => ""}, as: "mapa"),
        coropleta_form: to_form(%{"indicador" => "pobtot"}, as: "coropleta_capa"),
        voronoi_form: to_form(%{"clase_actividad" => ""}, as: "voronoi_capa"),
        isocrona_form: to_form(%{"minutos" => "10"}, as: "isocrona_capa"),
+       isocronas: [],
+       isocrona_poniendo?: false,
+       isocrona_poblacion: nil,
        coropleta_activa?: false,
        voronoi_activa?: false,
        voronoi_resumen: nil,
        coloreado_activa?: false,
-       isocrona_activa?: false,
        transporte_activa?: false,
        transporte_meta: nil,
+       transporte_color: "frecuencia",
        coropleta_escala: nil,
        vivienda_form:
          to_form(%{"indicador" => "eic_alqui", "anio" => "", "segmento" => ""},
@@ -1040,14 +1149,10 @@ defmodule MapoWeb.MapaLive.Index do
          "coloreado"
        ],
        elegida: nil,
-       piel_fijada: nil,
-       piel_pintada: "urbanismo",
        sesiones: sesiones,
        sesion: nil,
        herramienta: "punto",
        num_marcas: 0,
-       isocrona_punto: nil,
-       isocrona_metodo: nil,
        url_params: [],
        reconstruida?: false,
        citando: nil,
@@ -1128,9 +1233,15 @@ defmodule MapoWeb.MapaLive.Index do
     {:noreply, socket |> assign(orden: orden) |> actualizar_mesa()}
   end
 
-  def handle_event("fijar_piel", %{"piel" => piel}, socket) do
-    {:noreply, socket |> fijar_piel(piel) |> actualizar_mesa() |> sincronizar_url()}
+  # El arrastre de las pestañas manda la pila entera; solo se acepta si son
+  # las mismas capas en otro orden.
+  def handle_event("ordenar", %{"orden" => orden}, socket) when is_list(orden) do
+    if Enum.sort(orden) == Enum.sort(socket.assigns.orden),
+      do: {:noreply, socket |> assign(orden: orden) |> actualizar_mesa()},
+      else: {:noreply, socket}
   end
+
+  def handle_event("ordenar", _params, socket), do: {:noreply, socket}
 
   def handle_event(
         "mostrar_coropleta",
@@ -1159,6 +1270,12 @@ defmodule MapoWeb.MapaLive.Index do
 
   def handle_event("mostrar_transporte", _params, socket) do
     {:noreply, socket |> poner_transporte() |> sincronizar_url()}
+  end
+
+  def handle_event("color_rutas", %{"color" => color}, socket)
+      when color in ~w(frecuencia ruta) do
+    {:noreply,
+     socket |> assign(transporte_color: color) |> push_event("color_rutas", %{color: color})}
   end
 
   def handle_event("quitar_transporte", _params, socket) do
@@ -1272,8 +1389,8 @@ defmodule MapoWeb.MapaLive.Index do
 
   # El clic en un municipio del acetato pide su ficha: las cuatro fuentes,
   # cada una con su nivel, en la cinta de la capa.
-  def handle_event("ficha_vivienda", %{"cve_mun" => cve_mun}, socket) when is_binary(cve_mun) do
-    {:noreply, socket |> abrir_ficha_vivienda(cve_mun) |> sincronizar_url()}
+  def handle_event("ficha_vivienda", %{"cvegeo" => cvegeo}, socket) when is_binary(cvegeo) do
+    {:noreply, socket |> abrir_ficha_vivienda(cvegeo) |> sincronizar_url()}
   end
 
   def handle_event("cerrar_ficha_vivienda", _params, socket),
@@ -1292,37 +1409,66 @@ defmodule MapoWeb.MapaLive.Index do
      |> sincronizar_url()}
   end
 
-  def handle_event("activar_isocrona", %{"isocrona_capa" => %{"minutos" => minutos}}, socket) do
+  # Agregar un alcance deja el plano esperando el clic del punto de salida.
+  def handle_event("agregar_isocrona", %{"isocrona_capa" => %{"minutos" => minutos}}, socket) do
+    socket = assign(socket, isocrona_form: to_form(%{"minutos" => minutos}, as: "isocrona_capa"))
+
+    cond do
+      length(socket.assigns.isocronas) >= @max_isocronas ->
+        {:noreply, socket}
+
+      is_nil(minutos_validos(minutos)) ->
+        {:noreply, put_flash(socket, :error, "Los minutos van de 1 a 120.")}
+
+      true ->
+        {:noreply,
+         socket
+         |> assign(isocrona_poniendo?: true)
+         |> push_event("modo_isocrona", %{activo: true})
+         |> actualizar_mesa()}
+    end
+  end
+
+  def handle_event("cancelar_isocrona", _params, socket) do
     {:noreply,
      socket
-     |> assign(
-       isocrona_activa?: true,
-       isocrona_form: to_form(%{"minutos" => minutos}, as: "isocrona_capa")
-     )
-     |> push_event("modo_isocrona", %{activo: true})
+     |> assign(isocrona_poniendo?: false)
+     |> push_event("modo_isocrona", %{activo: false})
      |> actualizar_mesa()}
+  end
+
+  def handle_event("quitar_isocrona", %{"n" => n}, socket) do
+    case Integer.parse(to_string(n)) do
+      {i, ""} when i >= 0 ->
+        socket = assign(socket, isocronas: List.delete_at(socket.assigns.isocronas, i))
+        {:noreply, socket |> pintar_isocronas() |> sincronizar_url()}
+
+      _ ->
+        {:noreply, socket}
+    end
   end
 
   def handle_event("quitar_isocrona", _params, socket) do
     {:noreply,
      socket
-     |> assign(isocrona_activa?: false, isocrona_punto: nil, isocrona_metodo: nil)
+     |> assign(isocronas: [], isocrona_poniendo?: false, isocrona_poblacion: nil)
      |> push_event("modo_isocrona", %{activo: false})
-     |> push_event("capa_isocrona", %{activa: false})
-     |> actualizar_mesa()
+     |> pintar_isocronas()
      |> sincronizar_url()}
   end
 
   def handle_event("click_mapa", %{"lat" => lat, "lon" => lon}, socket)
       when is_number(lat) and is_number(lon) do
-    if socket.assigns.isocrona_activa? do
-      minutos =
-        case socket.assigns.isocrona_form[:minutos].value |> to_string() |> Float.parse() do
-          {valor, _} -> valor
-          :error -> 10.0
-        end
+    if socket.assigns.isocrona_poniendo? do
+      minutos = minutos_validos(socket.assigns.isocrona_form[:minutos].value) || 10.0
 
-      {:noreply, socket |> calcular_isocrona(lat, lon, minutos) |> sincronizar_url()}
+      {:noreply,
+       socket
+       |> assign(isocrona_poniendo?: false)
+       |> push_event("modo_isocrona", %{activo: false})
+       |> calcular_isocrona(lat, lon, minutos)
+       |> pintar_isocronas()
+       |> sincronizar_url()}
     else
       {:noreply, socket}
     end
@@ -1545,19 +1691,14 @@ defmodule MapoWeb.MapaLive.Index do
   ## Poner cada acetato. Sirven igual al botón de la cinta y a la URL.
 
   defp poner_coropleta(socket, indicador) do
-    cve_ent = socket.assigns.form[:cve_ent].value
-    cve_mun = vacio_para_nil(socket.assigns.form[:cve_mun].value)
+    zona = socket.assigns.zona
 
-    if cve_ent in [nil, ""] do
+    if is_nil(zona) do
       put_flash(socket, :error, "Elige una zona primero.")
     else
-      case MapoCore.coropleta_censo_poblacion(indicador, cve_ent, cve_mun) do
+      case MapoCore.coropleta_censo_poblacion(indicador, zona["clave"]) do
         {:ok, %{"features" => []}} ->
-          put_flash(
-            socket,
-            :error,
-            "Gaiarda no tiene AGEBs o censo descargados para ese estado/municipio todavía."
-          )
+          put_flash(socket, :error, "Mapo no tiene AGEB o censo cargados en esa zona todavía.")
 
         {:ok, geojson} ->
           escala = escala_quintiles(geojson)
@@ -1614,18 +1755,34 @@ defmodule MapoWeb.MapaLive.Index do
   end
 
   defp poner_transporte(socket) do
-    cve_ent = socket.assigns.form[:cve_ent].value
-    cve_mun = vacio_para_nil(socket.assigns.form[:cve_mun].value)
+    zona = socket.assigns.zona
 
-    if cve_ent in [nil, ""] or is_nil(cve_mun) do
-      put_flash(socket, :error, "Elige una zona de un solo municipio primero.")
+    if is_nil(zona) do
+      put_flash(socket, :error, "Elige una zona primero.")
     else
-      case MapoCore.transporte_zona(cve_ent, cve_mun) do
+      case MapoCore.transporte_zona(zona["clave"]) do
         {:ok, %{"rutas" => rutas, "paradas" => paradas} = respuesta} ->
+          con_color = Enum.count(rutas["features"], & &1["properties"]["col"])
+          total = length(rutas["features"])
+
+          # Al ponerlo, el color de cada ruta si son pocas; luego decide la persona.
+          color =
+            if socket.assigns.transporte_activa?,
+              do: socket.assigns.transporte_color,
+              else:
+                if(con_color > 0 and total <= @max_rutas_con_color,
+                  do: "ruta",
+                  else: "frecuencia"
+                )
+
+          color = if con_color == 0, do: "frecuencia", else: color
+
           socket
           |> assign(
             transporte_activa?: true,
-            transporte_meta: Map.drop(respuesta, ["rutas", "paradas"])
+            transporte_color: color,
+            transporte_meta:
+              respuesta |> Map.drop(["rutas", "paradas"]) |> Map.put("con_color", con_color)
           )
           |> push_event("capa_transporte", %{
             activa: true,
@@ -1633,12 +1790,16 @@ defmodule MapoWeb.MapaLive.Index do
             paradas: paradas,
             origen: respuesta["origen"],
             modos: respuesta["modos"],
-            clases: respuesta["clases"]
+            clases: respuesta["clases"],
+            color: color
           })
           |> actualizar_mesa()
 
+        {:error, {:status, 422, %{"detail" => detalle}}} when is_binary(detalle) ->
+          put_flash(socket, :error, "Transporte: " <> detalle <> ".")
+
         {:error, {:status, 404, _}} ->
-          put_flash(socket, :error, "Ese municipio no está descargado todavía.")
+          put_flash(socket, :error, "Esa zona no toca nada cargado en Mapo.")
 
         {:error, _} ->
           put_flash(socket, :error, "mapo_core no está disponible ahorita mismo.")
@@ -1647,21 +1808,21 @@ defmodule MapoWeb.MapaLive.Index do
   end
 
   defp poner_vivienda(socket, params) do
-    cve_ent = socket.assigns.form[:cve_ent].value
+    zona = socket.assigns.zona
     socket = assign(socket, vivienda_form: to_form(params, as: "vivienda_capa"))
     sniiv? = String.starts_with?(params["indicador"] || "", "sniiv_")
     anio = if sniiv?, do: vacio_para_nil(params["anio"])
     segmento = if sniiv?, do: vacio_para_nil(params["segmento"])
 
-    if cve_ent in [nil, ""] do
+    if is_nil(zona) do
       put_flash(socket, :error, "Elige una zona primero.")
     else
-      case MapoCore.vivienda_municipios(cve_ent, params["indicador"], anio, segmento) do
+      case MapoCore.vivienda_municipios(zona["clave"], params["indicador"], anio, segmento) do
         {:ok, %{"features" => [], "nivel" => "AGEB"}} ->
-          put_flash(socket, :error, "Todavía no hay precio de oferta por AGEB para ese estado.")
+          put_flash(socket, :error, "Todavía no hay precio de oferta por AGEB en esa zona.")
 
         {:ok, %{"features" => []}} ->
-          put_flash(socket, :error, "No hay municipios cargados para ese estado todavía.")
+          put_flash(socket, :error, "No hay municipios cargados en esa zona todavía.")
 
         {:ok, geojson} ->
           escala = escala_quintiles(geojson)
@@ -1687,10 +1848,23 @@ defmodule MapoWeb.MapaLive.Index do
     end
   end
 
-  defp abrir_ficha_vivienda(socket, cve_mun) do
-    case MapoCore.vivienda_ficha(socket.assigns.form[:cve_ent].value, cve_mun) do
+  # El municipio de la ficha llega como cvegeo; los enlaces de antes de la 29d
+  # traen solo el municipio (3 dígitos), del primer estado de la zona.
+  defp abrir_ficha_vivienda(socket, <<cve_ent::binary-size(2), cve_mun::binary-size(3)>>),
+    do: abrir_ficha_vivienda(socket, cve_ent, cve_mun)
+
+  defp abrir_ficha_vivienda(socket, cve_mun),
+    do: abrir_ficha_vivienda(socket, socket.assigns.form[:cve_ent].value, cve_mun)
+
+  defp abrir_ficha_vivienda(socket, cve_ent, cve_mun) do
+    case MapoCore.vivienda_ficha(cve_ent, cve_mun) do
       {:ok, ficha} ->
-        socket |> assign(vivienda_ficha: ficha, elegida: "vivienda") |> modo_marcas()
+        socket
+        |> assign(
+          vivienda_ficha: Map.put(ficha, "cvegeo", cve_ent <> cve_mun),
+          elegida: "vivienda"
+        )
+        |> modo_marcas()
 
       {:error, _} ->
         put_flash(socket, :error, "No se pudo leer la ficha de ese municipio.")
@@ -1698,18 +1872,14 @@ defmodule MapoWeb.MapaLive.Index do
   end
 
   defp poner_coloreado(socket) do
-    cve_ent = socket.assigns.form[:cve_ent].value
+    zona = socket.assigns.zona
 
-    if cve_ent in [nil, ""] do
+    if is_nil(zona) do
       put_flash(socket, :error, "Elige una zona primero.")
     else
-      case MapoCore.coloreado_municipios(cve_ent) do
+      case MapoCore.coloreado_municipios(zona["clave"]) do
         {:ok, %{"features" => []}} ->
-          put_flash(
-            socket,
-            :error,
-            "Gaiarda no tiene municipios descargados para ese estado todavía."
-          )
+          put_flash(socket, :error, "Mapo no tiene municipios cargados en esa zona todavía.")
 
         {:ok, geojson} ->
           socket
@@ -1723,27 +1893,67 @@ defmodule MapoWeb.MapaLive.Index do
     end
   end
 
+  # Un alcance más al final de la pila de alcances. La gente dentro se cuenta
+  # aparte (`pintar_isocronas`): al reconstruir de la URL llegan varios juntos.
   defp calcular_isocrona(socket, lat, lon, minutos) do
     case MapoCore.isocrona_calcular(lat, lon, minutos) do
       {:ok, %{"poligono" => poligono, "metodo" => metodo}} ->
-        socket
-        |> assign(isocrona_punto: %{lat: lat, lon: lon}, isocrona_metodo: metodo)
-        |> push_event("capa_isocrona", %{activa: true, poligono: poligono, metodo: metodo})
+        iso = %{lat: lat, lon: lon, minutos: minutos, poligono: poligono, metodo: metodo}
+        assign(socket, isocronas: socket.assigns.isocronas ++ [iso])
 
       {:error, _} ->
         put_flash(socket, :error, "mapo_core no está disponible ahorita mismo.")
     end
   end
 
-  defp fijar_piel(socket, piel) do
-    fijada = if Enum.any?(@pieles, fn {_, clave} -> clave == piel end), do: piel, else: nil
-    assign(socket, piel_fijada: fijada)
+  # Cuenta la gente dentro de los alcances y los manda al plano.
+  defp pintar_isocronas(%{assigns: %{isocronas: []}} = socket) do
+    socket
+    |> assign(isocrona_poblacion: nil)
+    |> push_event("capa_isocrona", %{activa: false})
+    |> actualizar_mesa()
+  end
+
+  defp pintar_isocronas(socket) do
+    isocronas = socket.assigns.isocronas
+
+    poblacion =
+      case MapoCore.isocronas_poblacion(Enum.map(isocronas, & &1.poligono)) do
+        {:ok, %{"cada_una" => _} = p} -> p
+        _ -> nil
+      end
+
+    socket
+    |> assign(isocrona_poblacion: poblacion)
+    |> push_event("capa_isocrona", %{
+      activa: true,
+      isocronas:
+        isocronas
+        |> Enum.with_index()
+        |> Enum.map(fn {iso, i} ->
+          %{
+            poligono: iso.poligono,
+            metodo: iso.metodo,
+            origen: %{lat: iso.lat, lon: iso.lon},
+            tinta: Enum.at(@tintas_isocrona, i)
+          }
+        end),
+      interseccion: poblacion && poblacion["interseccion"]
+    })
+    |> actualizar_mesa()
+  end
+
+  defp minutos_validos(texto) do
+    case Float.parse(to_string(texto)) do
+      {min, ""} when min >= 1 and min <= 120 -> min
+      _ -> nil
+    end
   end
 
   ## Enlace permanente (docs/producto/citar.md).
   #
-  # La URL dice lo que se ve: estado, municipio, cada acetato público puesto
-  # con sus opciones, la cinta abierta y la piel fijada. Se escribe después de
+  # La URL dice lo que se ve: la zona, cada acetato público puesto con sus
+  # opciones y la cinta abierta. Se escribe después de
   # cada cambio (sin agregar entradas al historial) y se lee una vez al
   # conectar. Al leerla, cada valor pasa por su catálogo cerrado; uno que no
   # está se ignora sin error. "Tus datos" y las marcas son del equipo: la
@@ -1758,19 +1968,18 @@ defmodule MapoWeb.MapaLive.Index do
       viv: vivienda && vivienda["indicador"]["clave"],
       anio: vivienda && vivienda["anio"],
       seg: vivienda && vivienda["segmento"],
-      ficha: vivienda && a.vivienda_ficha && a.vivienda_ficha["cve_mun"],
+      ficha: vivienda && a.vivienda_ficha && a.vivienda_ficha["cvegeo"],
       negocios: a.voronoi_activa? && (a.voronoi_form[:clase_actividad].value || ""),
       municipios: a.coloreado_activa? && "1",
       transporte: a.transporte_activa? && "1",
       alcance: alcance_url(a),
-      ver: if(a.elegida in Map.keys(@capas) and a.elegida != "propios", do: a.elegida),
-      piel: a.piel_fijada
+      ver: if(a.elegida in Map.keys(@capas) and a.elegida != "propios", do: a.elegida)
     ]
     |> Enum.reject(fn {_k, v} -> v in [nil, false] end)
     |> Enum.map(fn {k, v} -> {k, to_string(v)} end)
   end
 
-  @claves_url ~w(zona censo viv anio seg ficha negocios municipios transporte alcance ver piel sesion)a
+  @claves_url ~w(zona censo viv anio seg ficha negocios municipios transporte alcance ver sesion)a
 
   # Lo que trae la URL, en el orden de `params_url`: si lo reconstruido no es
   # igual (un valor fuera de catálogo), la URL se corrige.
@@ -1778,10 +1987,14 @@ defmodule MapoWeb.MapaLive.Index do
     for k <- @claves_url, v = params[Atom.to_string(k)], is_binary(v), do: {k, v}
   end
 
-  defp alcance_url(%{isocrona_activa?: true, isocrona_punto: %{lat: lat, lon: lon}} = a),
-    do: "#{Float.round(lat / 1, 5)},#{Float.round(lon / 1, 5)},#{a.isocrona_form[:minutos].value}"
+  # Cada alcance como `lat,lon,minutos`, separados por `;`.
+  defp alcance_url(%{isocronas: []}), do: nil
 
-  defp alcance_url(_a), do: nil
+  defp alcance_url(%{isocronas: isocronas}) do
+    Enum.map_join(isocronas, ";", fn %{lat: lat, lon: lon, minutos: min} ->
+      "#{Float.round(lat / 1, 5)},#{Float.round(lon / 1, 5)},#{minutos_texto(min)}"
+    end)
+  end
 
   defp ruta_mapa([]), do: ~p"/mapa"
   # `~p` ordenaría las claves; así el enlace sale en el orden de la vista.
@@ -1810,7 +2023,6 @@ defmodule MapoWeb.MapaLive.Index do
     |> then(&if(params["municipios"] == "1", do: poner_coloreado(&1), else: &1))
     |> then(&if(params["transporte"] == "1", do: poner_transporte(&1), else: &1))
     |> isocrona_de_url(params["alcance"])
-    |> piel_de_url(params["piel"])
     |> ver_de_url(params["ver"])
   end
 
@@ -1924,21 +2136,35 @@ defmodule MapoWeb.MapaLive.Index do
 
   defp voronoi_de_url(socket, _giro), do: socket
 
+  # Hasta cinco alcances; uno con un punto fuera de México o minutos de más se
+  # salta sin pedirlo.
   defp isocrona_de_url(socket, alcance) when is_binary(alcance) do
-    with [lat, lon, min] <- String.split(alcance, ","),
-         {lat, ""} when lat >= 14 and lat <= 33.5 <- Float.parse(lat),
-         {lon, ""} when lon >= -119 and lon <= -85 <- Float.parse(lon),
-         {min, ""} when min >= 1 and min <= 120 <- Float.parse(min) do
-      socket
-      |> assign(
-        isocrona_activa?: true,
-        isocrona_form: to_form(%{"minutos" => minutos_texto(min)}, as: "isocrona_capa")
-      )
-      |> push_event("modo_isocrona", %{activo: true})
-      |> actualizar_mesa()
-      |> calcular_isocrona(lat, lon, min)
-    else
-      _ -> socket
+    alcance
+    |> String.split(";")
+    |> Enum.take(@max_isocronas)
+    |> Enum.flat_map(fn parte ->
+      with [lat, lon, min] <- String.split(parte, ","),
+           {lat, ""} when lat >= 14 and lat <= 33.5 <- Float.parse(lat),
+           {lon, ""} when lon >= -119 and lon <= -85 <- Float.parse(lon),
+           min when is_float(min) <- minutos_validos(min) do
+        [{lat, lon, min}]
+      else
+        _ -> []
+      end
+    end)
+    |> case do
+      [] ->
+        socket
+
+      puntos ->
+        {_, _, ultimo} = List.last(puntos)
+
+        puntos
+        |> Enum.reduce(socket, fn {lat, lon, min}, s -> calcular_isocrona(s, lat, lon, min) end)
+        |> assign(
+          isocrona_form: to_form(%{"minutos" => minutos_texto(ultimo)}, as: "isocrona_capa")
+        )
+        |> pintar_isocronas()
     end
   end
 
@@ -1946,11 +2172,6 @@ defmodule MapoWeb.MapaLive.Index do
 
   defp minutos_texto(min) when min == trunc(min), do: Integer.to_string(trunc(min))
   defp minutos_texto(min), do: Float.to_string(min)
-
-  defp piel_de_url(socket, piel) when is_binary(piel),
-    do: socket |> fijar_piel(piel) |> actualizar_mesa()
-
-  defp piel_de_url(socket, _piel), do: socket
 
   defp ver_de_url(socket, ver) do
     if ver in Map.keys(@capas) and ver != "propios",
@@ -2063,21 +2284,34 @@ defmodule MapoWeb.MapaLive.Index do
 
   defp citas(a, "isocrona", enlace) do
     que =
-      case a.isocrona_punto do
-        %{lat: lat, lon: lon} ->
-          "alcance en auto de #{a.isocrona_form[:minutos].value} minutos desde #{cifra(lat, 5)}, #{cifra(lon, 5)}"
+      Enum.map_join(a.isocronas, "; ", fn iso ->
+        "#{minutos_texto(iso.minutos)} min desde #{cifra(iso.lat, 5)}, #{cifra(iso.lon, 5)}"
+      end)
 
-        nil ->
-          "alcance en auto"
-      end
+    metodos = a.isocronas |> Enum.map(& &1.metodo) |> Enum.uniq() |> Enum.join(", ")
 
-    [
+    alcance =
       Cita.armar("osm",
-        que: que,
-        version: a.isocrona_metodo && "método #{a.isocrona_metodo}",
+        que: "alcance en auto: #{que}",
+        version: "método #{metodos}",
         enlace: enlace
       )
-    ]
+
+    gente =
+      if a.isocrona_poblacion do
+        [
+          Cita.armar("censo",
+            que: "población dentro de cada alcance en auto, por AGEB y localidad",
+            datos: "2020",
+            version: carga("censo", a),
+            enlace: enlace
+          )
+        ]
+      else
+        []
+      end
+
+    [alcance | gente]
   end
 
   defp fuente_vivienda(%{"indicador" => %{"clave" => "eic_" <> _}}),
@@ -2125,24 +2359,16 @@ defmodule MapoWeb.MapaLive.Index do
   defp marcas(1), do: "1 marca en la sesión"
   defp marcas(n), do: "#{n} marcas en la sesión"
 
-  # Le dice al hook el orden de la pila y, si cambió, la piel de la mesa.
-  defp actualizar_mesa(socket) do
-    piel = socket.assigns.piel_fijada || piel_automatica(socket.assigns)
-    socket = push_event(socket, "orden_capas", %{orden: socket.assigns.orden})
-
-    if piel != socket.assigns.piel_pintada do
-      socket |> assign(piel_pintada: piel) |> push_event("piel", %{piel: piel})
-    else
-      socket
-    end
-  end
+  # Le dice al hook el orden de la pila.
+  defp actualizar_mesa(socket),
+    do: push_event(socket, "orden_capas", %{orden: socket.assigns.orden})
 
   defp activa?(assigns, "propios"), do: assigns.abiertas != []
   defp activa?(assigns, "coropleta"), do: assigns.coropleta_activa?
   defp activa?(assigns, "voronoi"), do: assigns.voronoi_activa?
   defp activa?(assigns, "coloreado"), do: assigns.coloreado_activa?
   defp activa?(assigns, "vivienda"), do: assigns.vivienda_activa?
-  defp activa?(assigns, "isocrona"), do: assigns.isocrona_activa?
+  defp activa?(assigns, "isocrona"), do: assigns.isocronas != [] or assigns.isocrona_poniendo?
   defp activa?(assigns, "transporte"), do: assigns.transporte_activa?
 
   defp activas(assigns), do: Enum.filter(assigns.orden, &activa?(assigns, &1))
@@ -2159,17 +2385,6 @@ defmodule MapoWeb.MapaLive.Index do
       0 -> "nada encima"
       n -> "#{n} encima"
     end
-  end
-
-  defp piel_automatica(assigns) do
-    case activas(assigns) do
-      [arriba | _] -> @capas[arriba].enfoque
-      [] -> "urbanismo"
-    end
-  end
-
-  defp nombre_piel(clave) do
-    Enum.find_value(@pieles, clave, fn {nombre, c} -> if c == clave, do: nombre end)
   end
 
   defp acetatos(assigns) do

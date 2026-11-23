@@ -12,6 +12,7 @@ from __future__ import annotations
 
 from psycopg_pool import AsyncConnectionPool
 
+from mapo_core import zona as zona_comun
 from mapo_core.consultas import TOLERANCIA_SIMPLIFICACION, feature
 from mapo_core.precio_estimado import OBSERVADAS
 
@@ -195,18 +196,26 @@ def _metodo(clave: str, anio: int | None, meses: int | None, segmento: str | Non
             "trimestre un año antes. Es cambio, no nivel: SHF lo publica solo para 74 municipios del país.")
 
 
-async def _precio_agebs(pool: AsyncConnectionPool, cve_ent: str) -> list[dict]:
+async def _precio_agebs(pool: AsyncConnectionPool, estados: list[str], zona: dict | None) -> list[dict]:
+    # Con zona, solo las AGEB con su punto de dentro en ella (zona.py).
+    params = {"estados": estados, "t": TOLERANCIA_SIMPLIFICACION}
+    previo, donde = "", ""
+    if zona is not None:
+        cte, condicion, extra = zona_comun.filtro_agebs(zona)
+        previo = f"WITH {cte} " if cte else ""
+        donde = f" AND {condicion}"
+        params |= extra
     async with pool.connection() as conn:
         cursor = await conn.execute(
-            """SELECT p.cvegeo, a.cve_ageb, m.nombre, p.cve_mun, p.fuente, p.valor, p.rango_bajo,
+            f"""{previo}SELECT p.cvegeo, a.cve_ageb, m.nombre, p.cve_mun, p.fuente, p.valor, p.rango_bajo,
                       p.rango_alto, p.anio_tabla, p.cobertura, p.n_base, p.version, p.metodo,
                       -- true: una AGEB más chica que la tolerancia no se pierde (24 de la ZMG).
                       ST_AsGeoJSON(ST_Simplify(a.geom, %(t)s, true), 5)
                FROM fuente_precio_estimado p
                JOIN agebs a ON a.cvegeo = p.cvegeo
                LEFT JOIN municipios m ON m.cve_ent = p.cve_ent AND m.cve_mun = p.cve_mun
-               WHERE p.cve_ent = %(cve_ent)s ORDER BY p.cvegeo""",
-            {"cve_ent": cve_ent, "t": TOLERANCIA_SIMPLIFICACION},
+               WHERE p.cve_ent = ANY(%(estados)s){donde} ORDER BY p.cvegeo""",
+            params,
         )
         filas = await cursor.fetchall()
     features = []
@@ -216,7 +225,7 @@ async def _precio_agebs(pool: AsyncConnectionPool, cve_ent: str) -> list[dict]:
         # Solo lo observado pinta. Un rango estimado no se vuelve color: su punto
         # medio pasaría por dato (docs/producto/precio-estimado.md).
         color = round(valor) if fuente in OBSERVADAS else None
-        props = {"cve_mun": cve_mun, "valor_choropleth": color, "fuente": fuente,
+        props = {"cve_ent": cvegeo[:2], "cve_mun": cve_mun, "valor_choropleth": color, "fuente": fuente,
                  "valor": valor, "rango_bajo": bajo, "rango_alto": alto, "anio_tabla": anio,
                  "cobertura": cob, "n_base": n, "version": version,
                  "metodo": metodo if fuente == "sin_base" else None}
@@ -226,13 +235,18 @@ async def _precio_agebs(pool: AsyncConnectionPool, cve_ent: str) -> list[dict]:
 
 
 async def municipios(
-    pool: AsyncConnectionPool, cve_ent: str, clave: str, anio: int | None = None, segmento: str | None = None
+    pool: AsyncConnectionPool, estados: str | list[str], clave: str, anio: int | None = None,
+    segmento: str | None = None, zona: dict | None = None,
 ) -> dict:
+    """El indicador `clave` en los municipios de uno o varios estados (los que toca la
+    zona: un municipio necesita a sus vecinos para leerse por quintiles), o en las AGEB
+    de la zona si es el precio por AGEB. Cada municipio trae su `cve_ent`."""
     if clave not in INDICADORES:
         raise ValueError(f"indicador inválido: {clave}")
+    estados = [estados] if isinstance(estados, str) else list(estados)
     if clave == "precio_ageb":
         ind = INDICADORES[clave]
-        features = await _precio_agebs(pool, cve_ent)
+        features = await _precio_agebs(pool, estados, zona)
         return {
             "type": "FeatureCollection",
             "features": features,
@@ -249,27 +263,29 @@ async def municipios(
         raise ValueError(f"segmento inválido: {segmento}")
     ind = INDICADORES[clave]
     meses = periodo = None
-    async with pool.connection() as conn:
-        geoms = await _geometrias(conn, cve_ent)
-        if clave.startswith("eic_"):
-            valores = await _valores_eic(conn, cve_ent, ind["eic"])
-        elif clave.startswith("sniiv_"):
-            if anio is None:
-                cursor = await conn.execute("SELECT max(anio) FROM fuente_sniiv_financiamiento WHERE meses = 12")
-                (anio,) = await cursor.fetchone()
-            valores = await _valores_sniiv(conn, cve_ent, anio, segmento, clave == "sniiv_promedio")
-            meses = max((v["meses"] for v in valores.values()), default=None)
-        else:
-            valores = await _valores_shf(conn, cve_ent)
-            periodo = next((v["periodo"] for v in valores.values()), None)
-
     features = []
-    for cvegeo, cve_mun, nombre, geom in geoms:
-        if geom is None:
-            continue
-        v = valores.get(cve_mun, {})
-        extra = {k: v.get(k) for k in ("cv", "lim_inf", "lim_sup", "nota", "acciones") if v.get(k) is not None}
-        features.append(feature(cvegeo, nombre, geom, {"cve_mun": cve_mun, "valor_choropleth": v.get("valor"), **extra}))
+    async with pool.connection() as conn:
+        if clave.startswith("sniiv_") and anio is None:
+            cursor = await conn.execute("SELECT max(anio) FROM fuente_sniiv_financiamiento WHERE meses = 12")
+            (anio,) = await cursor.fetchone()
+        for cve_ent in estados:
+            geoms = await _geometrias(conn, cve_ent)
+            if clave.startswith("eic_"):
+                valores = await _valores_eic(conn, cve_ent, ind["eic"])
+            elif clave.startswith("sniiv_"):
+                valores = await _valores_sniiv(conn, cve_ent, anio, segmento, clave == "sniiv_promedio")
+                meses = max([meses or 0, *(v["meses"] for v in valores.values())]) or None
+            else:
+                valores = await _valores_shf(conn, cve_ent)
+                periodo = periodo or next((v["periodo"] for v in valores.values()), None)
+
+            for cvegeo, cve_mun, nombre, geom in geoms:
+                if geom is None:
+                    continue
+                v = valores.get(cve_mun, {})
+                extra = {k: v.get(k) for k in ("cv", "lim_inf", "lim_sup", "nota", "acciones") if v.get(k) is not None}
+                features.append(feature(cvegeo, nombre, geom,
+                                        {"cve_ent": cve_ent, "cve_mun": cve_mun, "valor_choropleth": v.get("valor"), **extra}))
 
     return {
         "type": "FeatureCollection",

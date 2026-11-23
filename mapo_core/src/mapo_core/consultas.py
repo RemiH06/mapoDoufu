@@ -47,23 +47,33 @@ def feature(cvegeo: str, nombre: str, geojson_geom: str | None, props_extra: dic
 
 
 async def coropleta(
-    pool: AsyncConnectionPool, indicador: str, cve_ent: str, cve_muns: list[str] | None
+    pool: AsyncConnectionPool, indicador: str, cve_ent: str | None, cve_muns: list[str] | None,
+    zona: dict | None = None,
 ) -> list[dict]:
-    """AGEBs con el valor de `indicador` del censo. Si falta el censo de un
-    AGEB, trae `valor_choropleth: null`, nunca un cero inventado."""
+    """AGEBs con el valor de `indicador` del censo: los de un estado (y sus municipios)
+    o, con `zona` (validada, zona.py), los que tienen su punto de dentro en ella. Si
+    falta el censo de un AGEB, trae `valor_choropleth: null`, nunca un cero inventado."""
     if indicador not in INDICADORES_CHOROPLETH:
         raise ValueError(f"indicador invalido: {indicador}")
 
+    params = {"cve_ent": cve_ent, "cve_muns": cve_muns, "tolerancia": TOLERANCIA_SIMPLIFICACION}
+    if zona is not None:
+        cte, donde, extra = zona_comun.filtro_agebs(zona)
+        previo = f"WITH {cte} " if cte else ""
+        params |= extra
+    else:
+        previo = ""
+        donde = "a.cve_ent = %(cve_ent)s AND (%(cve_muns)s::text[] IS NULL OR a.cve_mun = ANY(%(cve_muns)s))"
+
     async with pool.connection() as conn:
         cursor = await conn.execute(
-            f"""SELECT a.cvegeo, ST_AsGeoJSON(ST_Simplify(a.geom, %(tolerancia)s, true), 5), c.{indicador}
+            f"""{previo}SELECT a.cvegeo, ST_AsGeoJSON(ST_Simplify(a.geom, %(tolerancia)s, true), 5), c.{indicador}
                 FROM agebs a
                 LEFT JOIN fuente_censo_poblacion c
                   ON c.cvegeo = a.cvegeo AND c.nivel = 'ageb'
-                WHERE a.cve_ent = %(cve_ent)s
-                  AND (%(cve_muns)s::text[] IS NULL OR a.cve_mun = ANY(%(cve_muns)s))
+                WHERE {donde}
                 ORDER BY a.cvegeo""",
-            {"cve_ent": cve_ent, "cve_muns": cve_muns, "tolerancia": TOLERANCIA_SIMPLIFICACION},
+            params,
         )
         filas = await cursor.fetchall()
 

@@ -130,9 +130,13 @@ la pantalla era un dashboard genérico.
   oscuro es manila oscuro y no violeta, para no caer en morado sobre
   negro. Las 14 combinaciones (7 pieles por 2 modos) pasan: texto 7:1,
   secundario y anotaciones 4.5:1, bordes y películas 3:1.
-- **La piel sigue al análisis:** la toma la capa de arriba de la pila
-  (población pone demografía, DENUE pone comercio, una isócrona pone
-  movilidad); sin capas, urbanismo. Un selector permite fijarla.
+- **`/mapa` es una mesa neutra** (desde la sesión 29d, pedido de Remi):
+  blanco en claro y negro en oscuro, sin motivo de papel, y el color solo
+  en los datos: cada acetato con su tinta en el plano y en su pestaña.
+  Antes la piel seguía a la capa de arriba de la pila (población ponía
+  demografía, DENUE comercio) y un selector del rótulo la fijaba; con
+  varias capas encima, la mesa entera cambiaba de color al mover una.
+  Las demás vistas conservan sus pieles.
 - **Acetatos:** se multiplican sobre el papel (`mix-blend-mode:
   multiply`); en el modo oscuro van normales, porque `screen` aplanaba
   las clases de la coropleta.
@@ -167,10 +171,11 @@ la pantalla era un dashboard genérico.
   utilidades sigan ganando y la capa no quede debajo de los estilos base.
 - Los temas de daisyUI apuntan a los tokens de la piel: las vistas que
   todavía no se rehacen ya usan la paleta nueva.
-- La raíz lleva `data-piel="urbanismo"`. En `/mapa` el servidor calcula
-  la piel (la capa visible de más arriba, o la fijada en el rótulo) y se
-  la manda al hook, que la pone en la raíz y la regresa a urbanismo al
-  salir de la vista. Los cortes por quintil de la coropleta también los
+- La raíz lleva `data-piel="urbanismo"`, o la que pida la vista con
+  `piel_raiz` (`/mapa` pide `neutra`, definida en `mesa.css` porque no es
+  un enfoque). Al navegar dentro de LiveView el layout raíz no se vuelve a
+  pintar: el hook del plano la pone (`data-mesa`) y la regresa a urbanismo
+  al salir de la vista. Los cortes por quintil de la coropleta también los
   calcula el servidor, para que el mapa y la escala de la cinta usen los
   mismos números.
 - `/perfil` sigue el prototipo: los documentos con su piel sobre el

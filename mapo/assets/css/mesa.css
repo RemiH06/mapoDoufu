@@ -22,6 +22,34 @@
   --trazo: color-mix(in srgb, var(--line) 22%, transparent);
 }
 
+/* Mesa neutra (sesión 29d, /mapa): blanco o negro según el tema y el color
+   solo en los datos. No es un enfoque, así que no sale de pieles.js: sus
+   valores van aquí. Contraste medido contra --bg y --bg2: texto 16:1 o más,
+   secundario 7.4:1, acento 5.5:1 y bordes 4:1. La cinta adhesiva también
+   pierde el color. */
+[data-piel="neutra"] {
+  --bg: #FFFFFF;
+  --bg2: #F0F0F0;
+  --text: #111111;
+  --text2: #4D4D4D;
+  --line: #767676;
+  --accent: #B3301C;
+  --film: #111111;
+  --mano: "Architects Daughter", cursive;
+  --cinta: rgba(190, 190, 190, 0.7);
+}
+[data-theme="dark"] [data-piel="neutra"],
+[data-theme="dark"][data-piel="neutra"] {
+  --bg: #141414;
+  --bg2: #222222;
+  --text: #F2F2F2;
+  --text2: #B3B3B3;
+  --line: #8C8C8C;
+  --accent: #FF9E85;
+  --film: #F2F2F2;
+  --cinta: rgba(150, 150, 150, 0.45);
+}
+
 @layer components {
   body {
     background: var(--bg);

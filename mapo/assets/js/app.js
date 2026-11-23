@@ -26,6 +26,7 @@ import {hooks as colocatedHooks} from "phoenix-colocated/mapo"
 import topbar from "../vendor/topbar"
 import {CollabMap} from "./collab_map"
 import {MapaTecnico} from "./mapa_tecnico"
+import {Charola} from "./charola"
 import {LogisticaMap} from "./logistica_map"
 import {RiesgosMapa} from "./riesgos_mapa"
 import {AccesibilidadMapa} from "./accesibilidad_mapa"
@@ -38,6 +39,7 @@ const liveSocket = new LiveSocket("/live", Socket, {
     ...colocatedHooks,
     CollabMap,
     MapaTecnico,
+    Charola,
     LogisticaMap,
     RiesgosMapa,
     AccesibilidadMapa,

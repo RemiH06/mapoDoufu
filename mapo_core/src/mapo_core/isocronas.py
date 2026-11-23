@@ -20,6 +20,7 @@ marginal sobre este metodo.
 
 from __future__ import annotations
 
+import json
 import math
 from dataclasses import dataclass
 
@@ -117,3 +118,67 @@ async def calcular_isocrona(
         anillo.append((p_lat, p_lon))
 
     return ResultadoIsocrona(poligono=_anillo_a_poligono(anillo), metodo="osrm_real")
+
+
+# Isócronas apilables (sesión 29d): cuánta gente vive dentro de cada una, en todas
+# (intersección) y en alguna (unión). Una persona se cuenta donde cae el punto de su
+# lugar, igual que en /riesgos y /accesibilidad: el punto de dentro del AGEB urbano
+# con su censo, o el de la localidad del ITER si su AGEB no está cargado.
+MAX_ISOCRONAS = 5
+
+METODO_POBLACION = (
+    "Censo 2020: la población de cada AGEB urbana cuenta entera donde cae su punto de dentro, y la de"
+    " cada localidad sin AGEB cargada, donde cae su punto (ITER). No se reparte por área: una AGEB"
+    " partida por el borde cuenta de un solo lado."
+)
+
+_SQL_POBLACION = """
+WITH p AS (
+    SELECT t.i, ST_MakeValid(ST_SetSRID(ST_GeomFromGeoJSON(t.g), 4326)) AS geom
+    FROM unnest(%(gs)s::text[]) WITH ORDINALITY AS t(g, i)
+), todo AS MATERIALIZED (SELECT ST_Union(geom) AS geom FROM p),
+u AS (
+    SELECT 'a' || a.cvegeo AS id, ST_PointOnSurface(a.geom) AS punto, c.pobtot AS pob
+    FROM agebs a JOIN fuente_censo_poblacion c ON c.cvegeo = a.cvegeo AND c.nivel = 'ageb', todo
+    WHERE a.geom && todo.geom AND ST_Intersects(todo.geom, ST_PointOnSurface(a.geom))
+    UNION ALL
+    SELECT 'l' || l.cvegeo, l.geom, l.pobtot
+    FROM localidades l, todo
+    WHERE l.geom && todo.geom AND ST_Intersects(todo.geom, l.geom)
+      AND NOT EXISTS (SELECT 1 FROM agebs a WHERE a.geom && l.geom AND ST_Covers(a.geom, l.geom))
+)
+SELECT u.id, u.pob, array_agg(p.i ORDER BY p.i) AS dentro
+FROM u JOIN p ON p.geom && u.punto AND ST_Intersects(p.geom, u.punto)
+GROUP BY u.id, u.pob
+"""
+
+
+def _suma(valores: list[int | None]) -> dict:
+    # INEGI reserva la población de lugares con muy pocas viviendas: no es cero.
+    return {"personas": sum(v for v in valores if v is not None),
+            "lugares": len(valores), "reservados": sum(1 for v in valores if v is None)}
+
+
+async def poblacion(pool, poligonos: list[dict]) -> dict:
+    """Personas dentro de cada polígono, en todos y en alguno, con la intersección
+    para dibujarla (None si no se tocan todos)."""
+    from shapely.geometry import mapping, shape
+
+    if not 1 <= len(poligonos) <= MAX_ISOCRONAS:
+        raise ValueError(f"de 1 a {MAX_ISOCRONAS} isócronas")
+    formas = [shape(p).buffer(0) for p in poligonos]
+    async with pool.connection() as conn:
+        cur = await conn.execute(_SQL_POBLACION, {"gs": [json.dumps(p) for p in poligonos]})
+        filas = await cur.fetchall()
+
+    n = len(poligonos)
+    interseccion = formas[0]
+    for f in formas[1:]:
+        interseccion = interseccion.intersection(f)
+    return {
+        "cada_una": [_suma([pob for _id, pob, dentro in filas if i + 1 in dentro]) for i in range(n)],
+        "en_todas": _suma([pob for _id, pob, dentro in filas if len(dentro) == n]) if n > 1 else None,
+        "en_alguna": _suma([pob for _id, pob, _dentro in filas]) if n > 1 else None,
+        "interseccion": mapping(interseccion) if n > 1 and not interseccion.is_empty else None,
+        "metodo": METODO_POBLACION,
+    }

@@ -221,9 +221,15 @@ async def test_carga_y_consulta_de_un_municipio(conn, pool_de_una_conexion, tmp_
         sin = cliente.get("/transporte/zona", params={"cve_ent": "14", "cve_mun": "015"})
         nada = cliente.get("/transporte/zona", params={"cve_ent": "14", "cve_mun": "999"})
         malo = cliente.get("/transporte/zona", params={"cve_ent": "14", "cve_mun": "39; x"})
+        # La zona común: un círculo dentro de Guadalajara, y un estado (demasiado grande).
+        circulo = cliente.get("/transporte/zona", params={"zona": "cir:-103.345,20.675,1500"})
+        estado = cliente.get("/transporte/zona", params={"zona": "ent:14"})
     finally:
         app.dependency_overrides.clear()
     assert (nada.status_code, malo.status_code) == (404, 422)
+    assert {f["properties"]["id"] for f in circulo.json()["rutas"]["features"]} == {"R1", "R2", "RV"}
+    assert circulo.json()["zona"]["nombre"].startswith("Círculo")
+    assert estado.status_code in (404, 422)
     datos = r.json()
     # Hay GTFS: las rutas de OSM del mismo lugar no se mezclan.
     assert datos["origen"] == "gtfs"
@@ -237,3 +243,7 @@ async def test_carga_y_consulta_de_un_municipio(conn, pool_de_una_conexion, tmp_
     # Autlán: ni GTFS ni OSM, pero se dice de dónde se buscó.
     vacio = sin.json()
     assert (vacio["origen"], vacio["resumen"]["rutas"], [f["feed"] for f in vacio["feeds"]]) == ("osm", 0, ["osm"])
+
+
+def test_color_de_ruta_solo_si_es_hexadecimal():
+    assert (tr._color("ff8800"), tr._color(""), tr._color(None), tr._color("rojo00")) == ("#FF8800", None, None, None)
