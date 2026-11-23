@@ -69,10 +69,19 @@ raras, resolver de cada tipo, buscar, el cargador de SEPOMEX con un shapefile si
 la competencia de fuera en el Voronoi) y `Mapo.ZonaFixtures` para las vistas. Revisado en
 navegador real con `scripts/capturas/zona.js` en escritorio y celular, claro y oscuro.
 
+## Despliegue
+
+Producción en `7bc4ec3` el 2026-11-23 (revertir: `deploy-20261123`; la migración agrega
+`users.zona_operacion`, que puede quedarse). Respaldo previo en
+`~/srv/mapo-respaldos/antes-sesion29b.dump`. Cargadas en producción las 92 metrópolis y
+las 74,226 colonias (el zip de CONAPO, con el mismo sha256, en
+`~/srv/mapo-crudos/zonas/`). Tiempos en Pixilate: buscar 0.1 s; riesgos de López Cotilla
+0.4 s, Guadalajara 1.8 s, la ZMG 13 s; servicios de la ZMG 2.8 s; Voronoi de farmacias
+en Guadalajara 0.6 s. El dominio responde.
+
 ## Queda
 
 - Bajar los polígonos de CP de SEPOMEX, cargarlos y medirlos contra DENUE.
 - `/perfil` y `/buscador` todavía eligen por estado y municipio (29h y 29c); las capas de
   censo, vivienda, municipios y transporte de `/mapa` todavía piden un estado y un
   municipio (29d).
-- La ZMG en `/riesgos` tarda 64 s en Aerilate: medir en Pixilate.

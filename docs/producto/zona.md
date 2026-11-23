@@ -84,7 +84,8 @@ la URL se reescribe con `zona=`.
   que tardaría minutos. Más grande, la vista dice por qué y qué elegir.
 - Tiempos en Aerilate (Docker en Windows, más lento que Pixilate): una colonia, 1 a 2 s;
   Guadalajara en riesgos, 7 s; la ZMG, 15 s en accesibilidad (5.5 MB de plano) y 64 s en
-  riesgos. Las consultas de `mapo_core` corren sin JIT de Postgres: con punto en polígono
+  riesgos; en Pixilate (producción), la ZMG tarda 13 s en riesgos y 2.8 s en servicios, y
+  Guadalajara 1.8 s en riesgos. Las consultas de `mapo_core` corren sin JIT de Postgres: con punto en polígono
   contra una zona estimaba costos enormes y compilaba 1.4 s una consulta de 0.1 s.
 
 ## Código postal
