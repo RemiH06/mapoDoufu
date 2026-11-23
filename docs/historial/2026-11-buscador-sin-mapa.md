@@ -34,6 +34,9 @@ rubros").
 - **Capturas:** `scripts/capturas/buscador.js`. `comun.js` toma `NAVEGAR_MS` (180 s por
   omisión) para las páginas de dev cuando el montaje de Docker va lento.
 
+Producción en `7758e61` el 2026-11-23 (revertir: `deploy-20261123b`; sin migración). En
+producción, `POST /buscador/sugerir` responde en 5 a 33 ms.
+
 ## Decisiones
 
 - **El vocabulario se queda en `mapo_core`.** Las sugerencias salen del mismo lugar que el
