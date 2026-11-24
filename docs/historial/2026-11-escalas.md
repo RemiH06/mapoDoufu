@@ -33,6 +33,8 @@ Estado de México, Tlaxcala y Yucatán no forman una cobertura válida y siguen
 simplificándose al leer. El censo de la ZMG con dos columnas extra responde en 0.24 s
 (1.1 MB).
 
+Las rampas y el encuadre nuevo, en `2760621` el mismo día (revertir: `deploy-20261124b`).
+
 ## Decisiones
 
 - **El canal lo decide el tipo de dato, no la persona.** Elegir "conteo" ya es elegir
