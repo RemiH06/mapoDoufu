@@ -60,10 +60,16 @@ defmodule Mapo.MapoCore do
   @doc """
   FeatureCollection de AGEBs del censo, con el valor de `indicador` ya
   cruzado en `properties.valor_choropleth` (puede venir `null`, si el
-  AGEB no tiene ese dato: nunca se inventa un cero).
+  AGEB no tiene ese dato: nunca se inventa un cero). Cada AGEB trae su
+  `area_km2` y un punto de dentro (`centro`); con `extras`, esas columnas
+  del censo en `properties.valores` (docs/producto/escalas.md).
   """
-  def coropleta_censo_poblacion(indicador, zona) do
-    get("/censo/choropleth", indicador: indicador, zona: zona)
+  def coropleta_censo_poblacion(indicador, zona, extras \\ []) do
+    # Una clave `extra` por columna: así las lee FastAPI como lista.
+    get(
+      "/censo/choropleth",
+      [indicador: indicador, zona: zona] ++ Enum.map(extras, &{:extra, &1})
+    )
   end
 
   @doc """

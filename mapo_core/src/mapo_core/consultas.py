@@ -22,6 +22,14 @@ from mapo_core.voronoi import PuntoVoronoi
 # casi parte a la mitad lo que viaja hasta el navegador.
 TOLERANCIA_SIMPLIFICACION = 0.0005
 
+
+def dibujo(alias: str = "", param: str = "tolerancia") -> str:
+    """El polígono de AGEB o municipio para dibujar: el simplificado como cobertura
+    (`geom_mapa`, sin huecos entre vecinos; geo_downloader.simplificar_cobertura) o,
+    si el estado no lo tiene, el de siempre simplificado al leer."""
+    a = f"{alias}." if alias else ""
+    return f"COALESCE({a}geom_mapa, ST_Simplify({a}geom, %({param})s, true))"
+
 # Arriba de esto el Voronoi tarda segundos en calcularse y el navegador
 # no lo mueve con fluidez (Guadalajara sin filtro son 97 mil negocios).
 MAX_NEGOCIOS_VORONOI = 5000
@@ -36,6 +44,25 @@ INDICADORES_CHOROPLETH = {
     "tvivhab", "prom_ocup", "vph_inter", "vph_pc", "vph_autom", "vph_cel", "vph_snbien",
 }
 
+# Denominadores naturales que no son indicador propio (sesión 29e): salen del
+# renglón completo del censo (`datos_json`). INEGI pone `*` donde el dato es
+# confidencial; eso llega como null, nunca como cero. Los `VPH_*` se cuentan
+# sobre TVIVPARHAB, no sobre VIVPAR_HAB: en Jalisco 209 AGEB tienen más
+# viviendas con internet que VIVPAR_HAB y ninguna más que TVIVPARHAB.
+DENOMINADORES_CENSO = {
+    "p_12ymas": "P_12YMAS", "p_12ymas_f": "P_12YMAS_F", "p_12ymas_m": "P_12YMAS_M",
+    "tvivparhab": "TVIVPARHAB",
+}
+MAX_EXTRAS = 4
+
+
+def _columna_censo(nombre: str) -> str:
+    if nombre in INDICADORES_CHOROPLETH:
+        return f"c.{nombre}"
+    clave = DENOMINADORES_CENSO[nombre]
+    return (f"CASE WHEN c.datos_json->>'{clave}' ~ '^[0-9]+([.][0-9]+)?$' "
+            f"THEN (c.datos_json->>'{clave}')::float8 END")
+
 
 def feature(cvegeo: str, nombre: str, geojson_geom: str | None, props_extra: dict | None = None) -> dict:
     propiedades = {"cvegeo": cvegeo, "nomgeo": nombre, **(props_extra or {})}
@@ -48,13 +75,21 @@ def feature(cvegeo: str, nombre: str, geojson_geom: str | None, props_extra: dic
 
 async def coropleta(
     pool: AsyncConnectionPool, indicador: str, cve_ent: str | None, cve_muns: list[str] | None,
-    zona: dict | None = None,
+    zona: dict | None = None, extras: list[str] | None = None,
 ) -> list[dict]:
     """AGEBs con el valor de `indicador` del censo: los de un estado (y sus municipios)
     o, con `zona` (validada, zona.py), los que tienen su punto de dentro en ella. Si
-    falta el censo de un AGEB, trae `valor_choropleth: null`, nunca un cero inventado."""
+    falta el censo de un AGEB, trae `valor_choropleth: null`, nunca un cero inventado.
+
+    Cada AGEB trae también su área en km² (del polígono sin simplificar) y un punto
+    de dentro (`centro`, para los círculos), y con `extras`, esas columnas del censo
+    en `valores`: Mapo arma con ellas las tasas y los combinados (docs/producto/escalas.md)."""
     if indicador not in INDICADORES_CHOROPLETH:
         raise ValueError(f"indicador invalido: {indicador}")
+    extras = list(dict.fromkeys(extras or []))
+    if len(extras) > MAX_EXTRAS or any(e not in INDICADORES_CHOROPLETH and e not in DENOMINADORES_CENSO for e in extras):
+        raise ValueError(f"columnas extra invalidas: {extras}")
+    columnas_extra = "".join(f", {_columna_censo(e)}" for e in extras)
 
     params = {"cve_ent": cve_ent, "cve_muns": cve_muns, "tolerancia": TOLERANCIA_SIMPLIFICACION}
     if zona is not None:
@@ -67,8 +102,10 @@ async def coropleta(
 
     async with pool.connection() as conn:
         cursor = await conn.execute(
-            f"""{previo}SELECT a.cvegeo, ST_AsGeoJSON(ST_Simplify(a.geom, %(tolerancia)s, true), 5), c.{indicador}
+            f"""{previo}SELECT a.cvegeo, ST_AsGeoJSON({dibujo('a')}, 5), c.{indicador},
+                       ST_Area(a.geom::geography) / 1e6, ST_X(pt.p), ST_Y(pt.p){columnas_extra}
                 FROM agebs a
+                CROSS JOIN LATERAL (SELECT ST_PointOnSurface(a.geom) AS p) pt
                 LEFT JOIN fuente_censo_poblacion c
                   ON c.cvegeo = a.cvegeo AND c.nivel = 'ageb'
                 WHERE {donde}
@@ -77,11 +114,16 @@ async def coropleta(
         )
         filas = await cursor.fetchall()
 
-    return [
-        feature(cvegeo, cvegeo, geom, {"indicador": indicador, "valor_choropleth": valor})
-        for cvegeo, geom, valor in filas
-        if geom is not None
-    ]
+    features = []
+    for cvegeo, geom, valor, area, lon, lat, *otros in filas:
+        if geom is None:
+            continue
+        props = {"indicador": indicador, "valor_choropleth": valor, "area_km2": round(area, 4),
+                 "centro": [round(lon, 5), round(lat, 5)]}
+        if extras:
+            props["valores"] = dict(zip(extras, otros))
+        features.append(feature(cvegeo, cvegeo, geom, props))
+    return features
 
 
 async def limite_municipios(pool: AsyncConnectionPool, cve_ent: str, cve_muns: list[str]) -> dict | None:

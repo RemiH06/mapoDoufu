@@ -10,6 +10,9 @@ defmodule MapoWeb.MapaLive.Index do
   alias Mapo.Sesiones
   alias Mapo.Sesiones.Anotacion
   alias MapoWeb.Cita
+  alias MapoWeb.Escala
+  alias MapoWeb.LecturaCenso
+  alias MapoWeb.Leyenda
   alias MapoWeb.Marcas
 
   # Cada capa es un acetato sobre el plano (docs/arquitectura/decisiones.md,
@@ -168,7 +171,8 @@ defmodule MapoWeb.MapaLive.Index do
           form={@coropleta_form}
           indicadores={@indicadores}
           activa?={@coropleta_activa?}
-          escala={@coropleta_escala}
+          leyenda={@coropleta_leyenda}
+          opciones={@coropleta_opciones}
         />
         <.cinta_voronoi
           :if={id == "voronoi"}
@@ -182,6 +186,7 @@ defmodule MapoWeb.MapaLive.Index do
           catalogo={@vivienda_catalogo}
           activa?={@vivienda_activa?}
           escala={@vivienda_escala}
+          opciones={@vivienda_opciones}
           meta={@vivienda_meta}
           ficha={@vivienda_ficha}
         />
@@ -317,16 +322,68 @@ defmodule MapoWeb.MapaLive.Index do
   attr :form, :any, required: true
   attr :indicadores, :list, required: true
   attr :activa?, :boolean, required: true
-  attr :escala, :map, default: nil
+  attr :leyenda, :map, default: nil
+  attr :opciones, :map, required: true
 
+  # Qué se lee (indicador, cómo, segundo indicador) se aplica con el botón: pide
+  # datos nuevos. Cómo se pinta (la escala) se aplica al cambiarla, sin pedir nada.
   defp cinta_coropleta(assigns) do
+    l = LecturaCenso.normalizar(assigns.form.params)
+    {_modo, aviso} = LecturaCenso.modo(l)
+    assigns = assign(assigns, l: l, aviso: aviso, dos_tasas?: dos_tasas?(l))
+
     ~H"""
-    <.form for={@form} id="coropleta_capa_form" phx-submit="mostrar_coropleta" class="cinta-campos">
+    <.form
+      for={@form}
+      id="coropleta_capa_form"
+      phx-change="cambiar_coropleta"
+      phx-submit="mostrar_coropleta"
+      class="cinta-campos cinta-lectura"
+    >
       <.input
         field={@form[:indicador]}
         type="select"
         label="Indicador"
         options={@indicadores}
+        class="cinta-control"
+      />
+      <.input
+        field={@form[:como]}
+        type="select"
+        label="Cómo se lee"
+        options={LecturaCenso.lecturas(@l["indicador"])}
+        class="cinta-control"
+      />
+      <.input
+        :if={@l["b"]}
+        field={@form[:b]}
+        type="select"
+        label="B"
+        options={LecturaCenso.conteos_menos(@l["indicador"])}
+        class="cinta-control"
+      />
+      <.input
+        field={@form[:indicador2]}
+        type="select"
+        label="Segundo indicador"
+        prompt="Ninguno"
+        options={@indicadores}
+        class="cinta-control"
+      />
+      <.input
+        :if={@l["indicador2"]}
+        field={@form[:como2]}
+        type="select"
+        label="El segundo, cómo"
+        options={LecturaCenso.lecturas(@l["indicador2"], false)}
+        class="cinta-control"
+      />
+      <.input
+        :if={@dos_tasas?}
+        field={@form[:modo2]}
+        type="select"
+        label="Dos tasas"
+        options={[{"En 3x3", "bivariado"}, {"La segunda como altura", "altura"}]}
         class="cinta-control"
       />
       <div class="cinta-botones">
@@ -339,14 +396,137 @@ defmodule MapoWeb.MapaLive.Index do
         </.button>
       </div>
     </.form>
-    <.escala escala={@escala} />
+
+    <p :if={@aviso} class="cinta-texto">{@aviso}</p>
+
+    <%!-- Leyenda, fórmula y escala en un solo bloque: separados, la cinta
+         crecía hasta tapar el plano. --%>
+    <div :if={@activa? and @leyenda} class="cinta-leyendas">
+      <.leyenda_coropleta leyenda={@leyenda} />
+      <.form_escala
+        :if={@leyenda.modo != "circulos"}
+        id="coropleta_escala"
+        evento="escala_coropleta"
+        opciones={@opciones}
+        tres?={@leyenda.modo == "bivariado"}
+      />
+    </div>
     """
   end
+
+  defp dos_tasas?(l) do
+    l["indicador2"] != nil and LecturaCenso.tipo(l["como"]) == :tasa and
+      LecturaCenso.tipo(l["como2"]) == :tasa
+  end
+
+  attr :leyenda, :map, required: true
+
+  defp leyenda_coropleta(assigns) do
+    ~H"""
+    <div :if={@leyenda.formulas != []} class="escala-formulas">
+      <p :for={t <- @leyenda.formulas}>{t.formula}</p>
+    </div>
+
+    <Leyenda.clases
+      :if={@leyenda.escala}
+      escala={@leyenda.escala}
+      tinta="demografia"
+      titulo={@leyenda.textos.v.nombre}
+      unidad={@leyenda.textos.v.unidad}
+    />
+    <Leyenda.bivariado
+      :if={@leyenda.bivariado}
+      bivariado={@leyenda.bivariado}
+      a={@leyenda.textos.v}
+      b={@leyenda.textos.w}
+    /> <Leyenda.altura :if={@leyenda.altura} altura={@leyenda.altura} texto={@leyenda.textos.h} />
+    <Leyenda.circulos
+      :if={@leyenda.circulos}
+      circulos={@leyenda.circulos}
+      titulo={@leyenda.textos.s.nombre}
+      unidad={@leyenda.textos.s.unidad}
+    />
+    """
+  end
+
+  attr :id, :string, required: true
+  attr :evento, :string, required: true
+  attr :opciones, :map, required: true
+  attr :tres?, :boolean, default: false, doc: "3x3: la paleta y las clases son fijas"
+
+  defp form_escala(assigns) do
+    metodos = Escala.metodos()
+
+    assigns =
+      assign(assigns,
+        form: to_form(Escala.params(assigns.opciones), as: "escala", id: assigns.id),
+        metodos:
+          if(assigns.tres?, do: Enum.reject(metodos, &(elem(&1, 1) == "manual")), else: metodos)
+      )
+
+    ~H"""
+    <details
+      id={"#{@id}_detalles"}
+      class="escala-detalles"
+      phx-mounted={Phoenix.LiveView.JS.ignore_attributes(["open"])}
+    >
+      <summary>Escala: {resumen_escala(@opciones, @tres?)}</summary>
+
+      <.form for={@form} id={"#{@id}_form"} phx-change={@evento} class="cinta-campos cinta-escala">
+        <.input
+          :if={not @tres?}
+          field={@form[:paleta]}
+          type="select"
+          label="Paleta"
+          options={Escala.paletas()}
+          class="cinta-control"
+        />
+        <.input
+          field={@form[:metodo]}
+          type="select"
+          label="Clases por"
+          options={@metodos}
+          class="cinta-control"
+        />
+        <.input
+          :if={not @tres? and @opciones.metodo != "manual"}
+          field={@form[:clases]}
+          type="select"
+          label="Clases"
+          options={Escala.clases_posibles()}
+          class="cinta-control cinta-corto"
+        />
+        <.input
+          :if={not @tres? and @opciones.metodo == "manual"}
+          field={@form[:cortes]}
+          type="text"
+          label="Cortes"
+          placeholder="10, 20, 30"
+          phx-debounce="600"
+          class="cinta-control"
+        /> <.input :if={not @tres?} field={@form[:invertir]} type="checkbox" label="Invertir" />
+      </.form>
+    </details>
+    """
+  end
+
+  defp resumen_escala(o, true), do: "3x3, #{metodo_corto(o.metodo)}"
+
+  defp resumen_escala(o, false) do
+    {paleta, _} = List.keyfind(Escala.paletas(), o.paleta, 1)
+    clases = if o.metodo == "manual", do: "", else: ", #{o.clases} clases"
+
+    "#{String.downcase(paleta)}, #{metodo_corto(o.metodo)}#{clases}#{if o.invertir, do: ", invertida"}"
+  end
+
+  defp metodo_corto(m),
+    do: m |> then(&List.keyfind(Escala.metodos(), &1, 1)) |> elem(0) |> String.downcase()
 
   attr :form, :any, required: true
   attr :catalogo, :map, default: nil
   attr :activa?, :boolean, required: true
   attr :escala, :map, default: nil
+  attr :opciones, :map, required: true
   attr :meta, :map, default: nil
   attr :ficha, :map, default: nil
 
@@ -407,7 +587,13 @@ defmodule MapoWeb.MapaLive.Index do
 
       <p>{@meta["metodo"]}</p>
     </div>
-    <.escala escala={@escala} tinta="urbanismo" />
+
+    <div :if={@activa? and @escala} class="cinta-leyendas">
+      <Leyenda.clases escala={@escala} tinta="urbanismo" />
+      <Leyenda.confianza :if={confianza(@meta)} tipo={confianza(@meta)} tinta="urbanismo" />
+      <.form_escala id="vivienda_escala" evento="escala_vivienda" opciones={@opciones} />
+    </div>
+
     <p :if={@activa? and is_nil(@ficha)} class="cinta-texto">
       {if @meta["nivel"] == "AGEB",
         do: "Toca una AGEB para ver su valor o su rango.",
@@ -694,17 +880,18 @@ defmodule MapoWeb.MapaLive.Index do
 
   defp catalogo_vivienda(socket), do: socket
 
-  attr :escala, :map, default: nil
-  attr :tinta, :string, default: nil, doc: "enfoque del acetato; sin él, demografía"
+  # Vivienda dice qué tan confiable es cada valor cuando la fuente lo mide.
+  defp confianza(%{"indicador" => %{"clave" => "precio_ageb"}}), do: :rango
+  defp confianza(%{"indicador" => %{"clave" => "eic_" <> _}}), do: :cv
+  defp confianza(_), do: nil
 
-  defp escala(assigns) do
+  # Un ráster propio llega pintado en quintiles desde el servidor (la imagen
+  # trae la transparencia de cada uno): su leyenda es fija.
+  attr :escala, :map, default: nil
+
+  defp escala_raster(assigns) do
     ~H"""
-    <div
-      :if={@escala}
-      class="escala"
-      aria-label="Clases por quintil"
-      style={@tinta && "--tinta-escala: var(--f-#{@tinta})"}
-    >
+    <div :if={@escala} class="escala" aria-label="Clases por quintil">
       <ol>
         <li :for={o <- [0.12, 0.26, 0.42, 0.6, 0.8]} style={"opacity: #{o}"}></li>
 
@@ -813,7 +1000,8 @@ defmodule MapoWeb.MapaLive.Index do
             />
           </label>
         </.form>
-        <.escala escala={a.escala} />
+        <.escala_raster :if={a.capa.tipo == "raster"} escala={a.escala} />
+        <Leyenda.clases :if={a.capa.tipo != "raster"} escala={a.escala} />
         <p class="cinta-texto">
           <span :if={a.fecha}>{cifra(a.visibles)} en el rango, de</span> {resumen_capa(a.capa)}
           <span :if={a.capa.repetidas > 0}>
@@ -906,6 +1094,7 @@ defmodule MapoWeb.MapaLive.Index do
             </select>
           </label>
         </.form>
+
         <p class="cinta-texto">
           {if @color == "ruta",
             do: "Cada ruta con el color que le da su GTFS; el grosor dice cada cuánto pasa.",
@@ -1058,6 +1247,7 @@ defmodule MapoWeb.MapaLive.Index do
           <em :if={iso.metodo != "osrm_real"}>(círculo aproximado: OSRM no respondió)</em>
           <b class="num">{personas(@poblacion, i)}</b>
         </span>
+
         <button
           type="button"
           phx-click="quitar_isocrona"
@@ -1072,10 +1262,13 @@ defmodule MapoWeb.MapaLive.Index do
     <dl :if={@poblacion && @poblacion["en_todas"]} class="alcances-suma">
       <div>
         <dt>En todos</dt>
+
         <dd class="num">{personas(@poblacion["en_todas"])}</dd>
       </div>
+
       <div>
         <dt>En alguno</dt>
+
         <dd class="num">{personas(@poblacion["en_alguna"])}</dd>
       </div>
     </dl>
@@ -1087,6 +1280,7 @@ defmodule MapoWeb.MapaLive.Index do
     </p>
 
     <p :if={@poblacion} class="cinta-texto cinta-metodo">{@poblacion["metodo"]}</p>
+
     <p :if={@isocronas != [] and is_nil(@poblacion)} class="cinta-texto">
       No se pudo contar la gente dentro: mapo_core no respondió.
     </p>
@@ -1114,7 +1308,11 @@ defmodule MapoWeb.MapaLive.Index do
        zona: nil,
        indicadores: Enum.map(MapoCore.indicadores_censo(), fn {c, e} -> {e, c} end),
        form: to_form(%{"cve_ent" => "", "cve_mun" => ""}, as: "mapa"),
-       coropleta_form: to_form(%{"indicador" => "pobtot"}, as: "coropleta_capa"),
+       coropleta_form:
+         to_form(LecturaCenso.params(LecturaCenso.normalizar(%{})), as: "coropleta_capa"),
+       coropleta_lectura: nil,
+       coropleta_opciones: Escala.por_omision(),
+       coropleta_valores: nil,
        voronoi_form: to_form(%{"clase_actividad" => ""}, as: "voronoi_capa"),
        isocrona_form: to_form(%{"minutos" => "10"}, as: "isocrona_capa"),
        isocronas: [],
@@ -1127,7 +1325,7 @@ defmodule MapoWeb.MapaLive.Index do
        transporte_activa?: false,
        transporte_meta: nil,
        transporte_color: "frecuencia",
-       coropleta_escala: nil,
+       coropleta_leyenda: nil,
        vivienda_form:
          to_form(%{"indicador" => "eic_alqui", "anio" => "", "segmento" => ""},
            as: "vivienda_capa"
@@ -1135,6 +1333,8 @@ defmodule MapoWeb.MapaLive.Index do
        vivienda_catalogo: nil,
        vivienda_activa?: false,
        vivienda_escala: nil,
+       vivienda_opciones: Escala.por_omision(),
+       vivienda_valores: nil,
        vivienda_meta: nil,
        vivienda_ficha: nil,
        capas_propias: Capas.list_capas_del_usuario(socket.assigns.current_scope),
@@ -1243,18 +1443,67 @@ defmodule MapoWeb.MapaLive.Index do
 
   def handle_event("ordenar", _params, socket), do: {:noreply, socket}
 
-  def handle_event(
-        "mostrar_coropleta",
-        %{"coropleta_capa" => %{"indicador" => indicador}},
+  # Lo que se ve en la cinta sigue a lo elegido (B, el segundo, dos tasas),
+  # pero el plano cambia hasta "Poner" o "Actualizar".
+  def handle_event("cambiar_coropleta", %{"coropleta_capa" => params}, socket) do
+    l = LecturaCenso.normalizar(params)
+
+    {:noreply,
+     assign(socket, coropleta_form: to_form(LecturaCenso.params(l), as: "coropleta_capa"))}
+  end
+
+  def handle_event("mostrar_coropleta", %{"coropleta_capa" => params}, socket) do
+    {:noreply, socket |> poner_coropleta(params) |> sincronizar_url()}
+  end
+
+  # La escala se repinta con los valores que ya están: no se pide nada.
+  def handle_event("escala_coropleta", %{"escala" => params}, socket) do
+    opciones = Escala.opciones(params)
+    socket = assign(socket, coropleta_opciones: opciones)
+
+    socket =
+      case socket.assigns do
+        %{coropleta_activa?: true, coropleta_leyenda: %{} = l, coropleta_valores: valores} ->
+          leyenda = leyenda_coropleta(l.modo, l.textos, valores, opciones)
+
+          socket
+          |> assign(coropleta_leyenda: leyenda)
+          |> push_event("escala_coropleta", estilo_coropleta(leyenda))
+
+        _ ->
+          socket
+      end
+
+    {:noreply, sincronizar_url(socket)}
+  end
+
+  def handle_event("escala_vivienda", %{"escala" => params}, socket) do
+    opciones = Escala.opciones(params)
+    socket = assign(socket, vivienda_opciones: opciones)
+
+    socket =
+      if socket.assigns.vivienda_activa? do
+        escala = Escala.construir(socket.assigns.vivienda_valores, opciones)
+
         socket
-      ) do
-    {:noreply, socket |> poner_coropleta(indicador) |> sincronizar_url()}
+        |> assign(vivienda_escala: escala)
+        |> push_event("escala_vivienda", %{escala: Escala.para_plano(escala)})
+      else
+        socket
+      end
+
+    {:noreply, sincronizar_url(socket)}
   end
 
   def handle_event("quitar_coropleta", _params, socket) do
     {:noreply,
      socket
-     |> assign(coropleta_activa?: false, coropleta_escala: nil)
+     |> assign(
+       coropleta_activa?: false,
+       coropleta_leyenda: nil,
+       coropleta_valores: nil,
+       coropleta_lectura: nil
+     )
      |> push_event("capa_coropleta", %{activa: false})
      |> actualizar_mesa()
      |> sincronizar_url()}
@@ -1379,6 +1628,7 @@ defmodule MapoWeb.MapaLive.Index do
      |> assign(
        vivienda_activa?: false,
        vivienda_escala: nil,
+       vivienda_valores: nil,
        vivienda_meta: nil,
        vivienda_ficha: nil
      )
@@ -1646,8 +1896,8 @@ defmodule MapoWeb.MapaLive.Index do
   end
 
   defp con_escala(geojson, columna) do
-    escala = columna && escala_quintiles(geojson)
-    {:ok, %{geojson: geojson, cortes: escala && escala.cortes}, escala}
+    escala = columna && Escala.de_geojson(geojson)
+    {:ok, %{geojson: geojson, escala: Escala.para_plano(escala)}, escala}
   end
 
   defp resumen_capa(%{tipo: "raster"} = capa), do: "De #{capa.archivo}."
@@ -1690,31 +1940,53 @@ defmodule MapoWeb.MapaLive.Index do
 
   ## Poner cada acetato. Sirven igual al botón de la cinta y a la URL.
 
-  defp poner_coropleta(socket, indicador) do
+  # La lectura se calcula aquí (MapoWeb.LecturaCenso) con las columnas que manda
+  # mapo_core; al hook viajan solo el polígono, su punto de dentro y el valor
+  # de cada canal: `v` color, `s` círculo, `w` el segundo color del 3x3 y `h`
+  # la altura.
+  defp poner_coropleta(socket, params) do
     zona = socket.assigns.zona
+    l = LecturaCenso.normalizar(params)
+    socket = assign(socket, coropleta_form: to_form(LecturaCenso.params(l), as: "coropleta_capa"))
 
     if is_nil(zona) do
       put_flash(socket, :error, "Elige una zona primero.")
     else
-      case MapoCore.coropleta_censo_poblacion(indicador, zona["clave"]) do
+      case MapoCore.coropleta_censo_poblacion(
+             l["indicador"],
+             zona["clave"],
+             LecturaCenso.extras(l)
+           ) do
         {:ok, %{"features" => []}} ->
           put_flash(socket, :error, "Mapo no tiene AGEB o censo cargados en esa zona todavía.")
 
-        {:ok, geojson} ->
-          escala = escala_quintiles(geojson)
+        {:ok, %{"features" => features}} ->
+          {modo, _aviso} = LecturaCenso.modo(l)
+          {valores, textos} = canales_coropleta(l, modo, features)
+          leyenda = leyenda_coropleta(modo, textos, valores, socket.assigns.coropleta_opciones)
 
           socket
           |> assign(
             coropleta_activa?: true,
-            coropleta_escala: escala,
-            coropleta_form: to_form(%{"indicador" => indicador}, as: "coropleta_capa")
+            coropleta_lectura: l,
+            coropleta_valores: valores,
+            coropleta_leyenda: leyenda
           )
-          |> push_event("capa_coropleta", %{
-            activa: true,
-            geojson: geojson,
-            etiqueta: etiqueta_indicador(indicador),
-            cortes: escala && escala.cortes
-          })
+          |> push_event(
+            "capa_coropleta",
+            Map.merge(
+              %{
+                activa: true,
+                modo: modo,
+                textos: textos,
+                geojson: %{
+                  "type" => "FeatureCollection",
+                  "features" => features_coropleta(features, valores)
+                }
+              },
+              estilo_coropleta(leyenda)
+            )
+          )
           |> actualizar_mesa()
 
         {:error, _} ->
@@ -1807,6 +2079,97 @@ defmodule MapoWeb.MapaLive.Index do
     end
   end
 
+  # Qué valor va en cada canal según el modo, con su nombre y su unidad.
+  defp canales_coropleta(l, modo, features) do
+    valores = fn a, como, b ->
+      Enum.map(features, &redondear(LecturaCenso.valor(&1["properties"], a, como, b)))
+    end
+
+    primero =
+      {valores.(l["indicador"], l["como"], l["b"]),
+       LecturaCenso.describir(l["indicador"], l["como"], l["b"])}
+
+    segundo =
+      l["indicador2"] &&
+        {valores.(l["indicador2"], l["como2"], nil),
+         LecturaCenso.describir(l["indicador2"], l["como2"], nil)}
+
+    canales =
+      case modo do
+        "color" ->
+          %{v: primero}
+
+        "circulos" ->
+          %{s: primero}
+
+        "bivariado" ->
+          %{v: primero, w: segundo}
+
+        "altura" ->
+          %{v: primero, h: segundo}
+
+        "color_circulos" ->
+          if LecturaCenso.tipo(l["como"]) == :tasa,
+            do: %{v: primero, s: segundo},
+            else: %{v: segundo, s: primero}
+      end
+
+    {Map.new(canales, fn {k, {vals, _}} -> {k, vals} end),
+     Map.new(canales, fn {k, {_, d}} -> {k, d} end)}
+  end
+
+  defp redondear(v) when is_float(v), do: Float.round(v, 4)
+  defp redondear(v), do: v
+
+  defp features_coropleta(features, valores) do
+    claves = Map.keys(valores)
+    filas = Enum.zip_with(Enum.map(claves, &valores[&1]), & &1)
+
+    Enum.zip_with(features, filas, fn f, fila ->
+      props = Map.new(Enum.zip(Enum.map(claves, &Atom.to_string/1), fila))
+
+      %{
+        "type" => "Feature",
+        "geometry" => f["geometry"],
+        "properties" => Map.merge(Map.take(f["properties"] || %{}, ~w(cvegeo centro)), props)
+      }
+    end)
+  end
+
+  defp leyenda_coropleta(modo, textos, valores, opciones) do
+    %{
+      modo: modo,
+      textos: textos,
+      formulas: textos |> Map.values() |> Enum.reject(&(&1.formula == &1.nombre)) |> Enum.uniq(),
+      escala: if(valores[:v] && modo != "bivariado", do: Escala.construir(valores.v, opciones)),
+      bivariado: if(modo == "bivariado", do: Escala.bivariado(valores.v, valores.w, opciones)),
+      circulos: if(valores[:s], do: Escala.circulos(valores.s)),
+      altura: if(valores[:h], do: altura(valores.h))
+    }
+  end
+
+  defp altura(valores) do
+    case Enum.reject(valores, &is_nil/1) do
+      [] ->
+        nil
+
+      con_dato ->
+        %{min: Enum.min(con_dato), max: Enum.max(con_dato), nulos: Enum.count(valores, &is_nil/1)}
+    end
+  end
+
+  # Lo que cambia con la escala: viaja al poner la capa y al repintarla.
+  defp estilo_coropleta(l) do
+    %{
+      escala: Escala.para_plano(l.escala),
+      bivariado:
+        l.bivariado &&
+          %{a: l.bivariado.a.cortes, b: l.bivariado.b.cortes, colores: l.bivariado.colores},
+      circulos: l.circulos && Map.take(l.circulos, [:max, :radio]),
+      altura: l.altura && Map.take(l.altura, [:min, :max])
+    }
+  end
+
   defp poner_vivienda(socket, params) do
     zona = socket.assigns.zona
     socket = assign(socket, vivienda_form: to_form(params, as: "vivienda_capa"))
@@ -1825,15 +2188,21 @@ defmodule MapoWeb.MapaLive.Index do
           put_flash(socket, :error, "No hay municipios cargados en esa zona todavía.")
 
         {:ok, geojson} ->
-          escala = escala_quintiles(geojson)
+          valores = Enum.map(geojson["features"], & &1["properties"]["valor_choropleth"])
+          escala = Escala.construir(valores, socket.assigns.vivienda_opciones)
           meta = Map.take(geojson, ~w(indicador nivel anio meses segmento metodo version))
 
           socket
-          |> assign(vivienda_activa?: true, vivienda_escala: escala, vivienda_meta: meta)
+          |> assign(
+            vivienda_activa?: true,
+            vivienda_escala: escala,
+            vivienda_valores: valores,
+            vivienda_meta: meta
+          )
           |> push_event("capa_vivienda", %{
             activa: true,
             geojson: geojson,
-            cortes: escala && escala.cortes,
+            escala: Escala.para_plano(escala),
             etiqueta: meta["indicador"]["etiqueta"],
             unidad: meta["indicador"]["unidad"]
           })
@@ -1961,13 +2330,23 @@ defmodule MapoWeb.MapaLive.Index do
 
   defp params_url(a) do
     vivienda = a.vivienda_activa? && a.vivienda_meta
+    l = a.coropleta_activa? && a.coropleta_lectura
 
     [
       zona: a.zona && a.zona["clave"],
-      censo: a.coropleta_activa? && a.coropleta_form[:indicador].value,
+      censo: l && l["indicador"],
+      como: l && no_omision(l["como"], LecturaCenso.lecturas(l["indicador"])),
+      b: l && l["b"],
+      censo2: l && l["indicador2"],
+      como2:
+        l && l["indicador2"] &&
+          no_omision(l["como2"], LecturaCenso.lecturas(l["indicador2"], false)),
+      modo2: l && dos_tasas?(l) && l["modo2"] == "altura" && "altura",
+      esc: l && Escala.a_url(a.coropleta_opciones),
       viv: vivienda && vivienda["indicador"]["clave"],
       anio: vivienda && vivienda["anio"],
       seg: vivienda && vivienda["segmento"],
+      vesc: vivienda && Escala.a_url(a.vivienda_opciones),
       ficha: vivienda && a.vivienda_ficha && a.vivienda_ficha["cvegeo"],
       negocios: a.voronoi_activa? && (a.voronoi_form[:clase_actividad].value || ""),
       municipios: a.coloreado_activa? && "1",
@@ -1979,7 +2358,11 @@ defmodule MapoWeb.MapaLive.Index do
     |> Enum.map(fn {k, v} -> {k, to_string(v)} end)
   end
 
-  @claves_url ~w(zona censo viv anio seg ficha negocios municipios transporte alcance ver sesion)a
+  @claves_url ~w(zona censo como b censo2 como2 modo2 esc viv anio seg vesc ficha negocios municipios transporte alcance ver sesion)a
+
+  # La lectura de omisión (la primera de su lista) no va en el enlace.
+  defp no_omision(como, [{_, como} | _]), do: nil
+  defp no_omision(como, _lecturas), do: como
 
   # Lo que trae la URL, en el orden de `params_url`: si lo reconstruido no es
   # igual (un valor fuera de catálogo), la URL se corrige.
@@ -2017,7 +2400,7 @@ defmodule MapoWeb.MapaLive.Index do
   defp reconstruir(socket, params) do
     socket
     |> ubicar_de_url(params)
-    |> coropleta_de_url(params["censo"])
+    |> coropleta_de_url(params)
     |> vivienda_de_url(params)
     |> voronoi_de_url(params["negocios"])
     |> then(&if(params["municipios"] == "1", do: poner_coloreado(&1), else: &1))
@@ -2085,7 +2468,7 @@ defmodule MapoWeb.MapaLive.Index do
     socket
     |> then(
       &if(a.coropleta_activa?,
-        do: poner_coropleta(&1, a.coropleta_form[:indicador].value),
+        do: poner_coropleta(&1, a.coropleta_lectura),
         else: &1
       )
     )
@@ -2100,11 +2483,24 @@ defmodule MapoWeb.MapaLive.Index do
     |> then(&if(a.vivienda_activa?, do: poner_vivienda(&1, a.vivienda_form.params), else: &1))
   end
 
-  defp coropleta_de_url(socket, indicador) do
-    if Enum.any?(MapoCore.indicadores_censo(), fn {c, _} -> c == indicador end),
-      do: poner_coropleta(socket, indicador),
-      else: socket
+  defp coropleta_de_url(socket, %{"censo" => indicador} = params) when is_binary(indicador) do
+    if Enum.any?(LecturaCenso.indicadores(), fn {c, _} -> c == indicador end) do
+      socket
+      |> assign(coropleta_opciones: Escala.de_url(params["esc"]))
+      |> poner_coropleta(%{
+        "indicador" => indicador,
+        "como" => params["como"],
+        "b" => params["b"],
+        "indicador2" => params["censo2"],
+        "como2" => params["como2"],
+        "modo2" => params["modo2"]
+      })
+    else
+      socket
+    end
   end
+
+  defp coropleta_de_url(socket, _params), do: socket
 
   defp vivienda_de_url(socket, %{"viv" => clave} = params) when is_binary(clave) do
     socket = catalogo_vivienda(socket)
@@ -2114,7 +2510,11 @@ defmodule MapoWeb.MapaLive.Index do
       anios = Enum.map(catalogo["anios_sniiv"] || [], &to_string(&1["anio"]))
       anio = if params["anio"] in anios, do: params["anio"], else: ""
       seg = if params["seg"] in (catalogo["segmentos"] || []), do: params["seg"], else: ""
-      socket = poner_vivienda(socket, %{"indicador" => clave, "anio" => anio, "segmento" => seg})
+
+      socket =
+        socket
+        |> assign(vivienda_opciones: Escala.de_url(params["vesc"]))
+        |> poner_vivienda(%{"indicador" => clave, "anio" => anio, "segmento" => seg})
 
       if socket.assigns.vivienda_activa? and is_binary(params["ficha"]) and
            String.match?(params["ficha"], ~r/^\d{3}$/),
@@ -2184,7 +2584,7 @@ defmodule MapoWeb.MapaLive.Index do
   defp citas(a, "coropleta", enlace) do
     [
       Cita.armar("censo",
-        que: "#{etiqueta_indicador(a.coropleta_form[:indicador].value)} por AGEB, #{lugar(a)}",
+        que: "#{que_coropleta(a.coropleta_lectura)} por AGEB, #{lugar(a)}",
         datos: "2020",
         version: carga("censo", a),
         enlace: enlace
@@ -2446,7 +2846,16 @@ defmodule MapoWeb.MapaLive.Index do
   defp vacio_para_nil(""), do: nil
   defp vacio_para_nil(valor), do: valor
 
-  defp etiqueta_indicador(codigo) do
-    Enum.find_value(MapoCore.indicadores_censo(), codigo, fn {c, e} -> if c == codigo, do: e end)
+  # Qué se cita del censo: cada lectura con su unidad (y su fórmula, si es combinada).
+  defp que_coropleta(l) do
+    [{l["indicador"], l["como"], l["b"]}, {l["indicador2"], l["como2"], nil}]
+    |> Enum.reject(&is_nil(elem(&1, 0)))
+    |> Enum.map_join(" y ", fn {a, como, b} ->
+      d = LecturaCenso.describir(a, como, b)
+
+      if d.formula == d.nombre,
+        do: "#{d.nombre} (#{d.unidad})",
+        else: "#{d.formula} (#{d.unidad})"
+    end)
   end
 end

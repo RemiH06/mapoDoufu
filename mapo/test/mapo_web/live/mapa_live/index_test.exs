@@ -96,7 +96,132 @@ defmodule MapoWeb.MapaLive.IndexTest do
     |> form("#coropleta_capa_form", coropleta_capa: %{"indicador" => "pobtot"})
     |> render_submit()
 
-    assert_push_event(lv, "capa_coropleta", %{activa: true, etiqueta: "Población total"})
+    # Un conteo va en círculos, nunca en color.
+    assert_push_event(lv, "capa_coropleta", %{
+      activa: true,
+      modo: "circulos",
+      textos: %{s: %{nombre: "Población total", unidad: "personas"}}
+    })
+  end
+
+  describe "escalas y dos indicadores" do
+    defp ageb(cvegeo, valor, valores) do
+      %{
+        "type" => "Feature",
+        "geometry" => %{},
+        "properties" => %{
+          "cvegeo" => cvegeo,
+          "indicador" => "vph_inter",
+          "valor_choropleth" => valor,
+          "valores" => valores,
+          "area_km2" => 1.0,
+          "centro" => [-103.3, 20.6]
+        }
+      }
+    end
+
+    defp agebs_internet do
+      %{
+        "type" => "FeatureCollection",
+        "features" => [
+          ageb("1", 10, %{"tvivparhab" => 100, "pobtot" => 400}),
+          ageb("2", 30, %{"tvivparhab" => 60, "pobtot" => 200}),
+          ageb("3", 45, %{"tvivparhab" => 50, "pobtot" => 150}),
+          ageb("4", 5, %{"tvivparhab" => nil, "pobtot" => 20})
+        ]
+      }
+    end
+
+    # Como en la cinta: primero el indicador (cambian las lecturas), luego "%".
+    defp poner_internet_pct(lv) do
+      lv
+      |> form("#coropleta_capa_form", coropleta_capa: %{"indicador" => "vph_inter"})
+      |> render_change()
+
+      lv
+      |> form("#coropleta_capa_form",
+        coropleta_capa: %{"indicador" => "vph_inter", "como" => "pct"}
+      )
+      |> render_submit()
+    end
+
+    defp montar_internet(conn) do
+      yo = self()
+
+      montar_con_ubicacion(conn, fn conn ->
+        send(yo, {:censo, conn.query_string})
+        Req.Test.json(conn, agebs_internet())
+      end)
+    end
+
+    test "una tasa va en color, con su denominador pedido a mapo_core y su fórmula", %{conn: conn} do
+      lv = montar_internet(conn)
+
+      html = poner_internet_pct(lv)
+
+      assert_receive {:censo, query}
+      assert query =~ "extra=tvivparhab"
+
+      assert_push_event(lv, "capa_coropleta", %{modo: "color", geojson: %{"features" => features}})
+
+      assert Enum.map(features, & &1["properties"]["v"]) == [10.0, 50.0, 90.0, nil]
+      assert html =~ "Viviendas con internet ÷ Viviendas particulares habitadas × 100"
+      assert html =~ "Sin dato: 1"
+      assert_patch(lv, "/mapa?zona=ent:14&censo=vph_inter&como=pct")
+    end
+
+    test "cambiar la escala repinta sin pedir datos y queda en el enlace", %{conn: conn} do
+      lv = montar_internet(conn)
+
+      poner_internet_pct(lv)
+
+      assert_receive {:censo, _}
+
+      lv
+      |> form("#coropleta_escala_form",
+        escala: %{"paleta" => "viridis", "metodo" => "naturales", "clases" => "3"}
+      )
+      |> render_change()
+
+      refute_receive {:censo, _}
+      assert_push_event(lv, "escala_coropleta", %{escala: %{claro: [_, _, _], cortes: [_, _]}})
+      assert_patch(lv, "/mapa?zona=ent:14&censo=vph_inter&como=pct&esc=viridis:naturales:3")
+    end
+
+    test "el enlace reconstruye la lectura, el segundo indicador y la escala", %{conn: conn} do
+      stub_estados_y_municipio(fn conn -> Req.Test.json(conn, agebs_internet()) end)
+
+      {:ok, lv, html} =
+        live(
+          conn,
+          ~p"/mapa?zona=ent:14&censo=vph_inter&como=pct&censo2=pobtot&esc=cividis:iguales:4:inv"
+        )
+
+      assert_push_event(lv, "capa_coropleta", %{
+        modo: "color_circulos",
+        escala: %{cortes: [_, _, _]},
+        circulos: %{max: 400}
+      })
+
+      assert html =~ "El área va con el valor"
+    end
+
+    test "dos conteos no se leen juntos y se dice", %{conn: conn} do
+      lv = montar_internet(conn)
+
+      html =
+        lv
+        |> form("#coropleta_capa_form",
+          coropleta_capa: %{
+            "indicador" => "vph_inter",
+            "como" => "conteo",
+            "indicador2" => "pobtot"
+          }
+        )
+        |> render_change()
+
+      assert html =~ "Dos conteos no se leen juntos"
+    end
   end
 
   test "mostrar_coropleta manda la clave de la zona, no un estado y un municipio", %{
@@ -601,8 +726,7 @@ defmodule MapoWeb.MapaLive.IndexTest do
     end
 
     test "los quintiles cuentan aparte los AGEB sin dato, nunca como cero" do
-      escala =
-        MapoWeb.Cifras.escala_quintiles(coropleta_con_valores([nil, 1, 2, 3, 4, 5, nil]))
+      escala = MapoWeb.Escala.de_geojson(coropleta_con_valores([nil, 1, 2, 3, 4, 5, nil]))
 
       assert escala.nulos == 2
       assert hd(escala.limites) == 1
@@ -611,7 +735,7 @@ defmodule MapoWeb.MapaLive.IndexTest do
     end
 
     test "sin valores con dato no hay escala" do
-      assert MapoWeb.Cifras.escala_quintiles(coropleta_con_valores([nil, nil])) == nil
+      assert MapoWeb.Escala.de_geojson(coropleta_con_valores([nil, nil])) == nil
     end
   end
 
@@ -864,7 +988,7 @@ defmodule MapoWeb.MapaLive.IndexTest do
       end)
 
       {:ok, lv, _html} = live(conn, ~p"/mapa?#{[capa: capa.id]}")
-      assert_push_event(lv, "capa_propios", %{cortes: nil})
+      assert_push_event(lv, "capa_propios", %{escala: nil})
 
       Mapo.Repo.delete_all(Mapo.Teams.Membership)
       render_change(lv, "pintar_capa", %{"capa" => capa.id, "columna" => "ventas"})
@@ -889,14 +1013,14 @@ defmodule MapoWeb.MapaLive.IndexTest do
       end)
 
       {:ok, lv, _html} = live(conn, ~p"/mapa?#{[capa: capa.id]}")
-      assert_push_event(lv, "capa_propios", %{cortes: nil})
+      assert_push_event(lv, "capa_propios", %{escala: nil})
 
       html =
         lv
         |> form("#pintar_#{capa.id}")
         |> render_change(%{"capa" => capa.id, "columna" => "ventas"})
 
-      assert html =~ "sin dato: 1"
+      assert html =~ "Sin dato: 1"
       assert_push_event(lv, "capa_propios", %{geojson: geojson, tono: "consumo"})
       valores = Enum.map(geojson["features"], & &1["properties"]["valor_choropleth"])
       assert valores == [10, nil]
@@ -914,7 +1038,7 @@ defmodule MapoWeb.MapaLive.IndexTest do
       assert html =~ "se necesita uno por zona"
 
       render_change(lv, "pintar_capa", %{"capa" => capa.id, "columna" => "ventas"})
-      assert_push_event(lv, "capa_propios", %{cortes: nil})
+      assert_push_event(lv, "capa_propios", %{escala: nil})
     end
 
     test "una capa vectorial viaja con geometría y se pinta por id", %{conn: conn, scope: scope} do
@@ -933,7 +1057,8 @@ defmodule MapoWeb.MapaLive.IndexTest do
       assert geom["type"] == "Polygon"
 
       html = render_change(lv, "pintar_capa", %{"capa" => capa.id, "columna" => "ventas"})
-      assert html =~ "sin dato: 0"
+      assert html =~ "a 7"
+      refute html =~ "Sin dato"
     end
 
     test "un ráster manda el lugar y la imagen se sirve por el scope", %{conn: conn, scope: scope} do
@@ -1149,7 +1274,9 @@ defmodule MapoWeb.MapaLive.IndexTest do
 
       assert_push_event(lv, "capa_vivienda", %{activa: true, etiqueta: "Viviendas rentadas"})
       assert html =~ "Estimación por muestra de la Intercensal 2025."
-      assert html =~ "sin dato: 1"
+      assert html =~ "Sin dato: 1"
+      # La Intercensal trae su CV: la confianza va como transparencia.
+      assert html =~ "Precisión de la Intercensal"
     end
 
     test "con un indicador del censo no manda año ni segmento", %{conn: conn} do
@@ -1253,7 +1380,8 @@ defmodule MapoWeb.MapaLive.IndexTest do
       assert html =~ "por AGEB."
       assert html =~ "no es precio de cierre ni avalúo"
       assert html =~ "Toca una AGEB"
-      assert html =~ "sin dato: 1"
+      assert html =~ "Sin dato: 1"
+      assert html =~ "Precio estimado por rango"
 
       lv = montar_con_ubicacion(conn, precio.([]))
       lv |> element(".pestana[aria-controls=cinta-vivienda]") |> render_click()
@@ -1413,7 +1541,7 @@ defmodule MapoWeb.MapaLive.IndexTest do
       assert html =~ "INEGI. (2021). Censo de Población y Vivienda 2020"
 
       assert html =~
-               "Procesado por Mapo: Población total por AGEB, Jalisco; tabla cargada en Mapo el 2026-11-17."
+               "Procesado por Mapo: Población total (personas) por AGEB, Jalisco; tabla cargada en Mapo el 2026-11-17."
 
       assert html =~ "@misc{inegi_censo2020_mapo_"
       assert html =~ "author = {{Instituto Nacional de Estadística y Geografía}}"

@@ -5,8 +5,8 @@ A diferencia de Gaiarda (que guarda cada poligono como .kml de
 precision completa + .geojson simplificado en disco, y solo une la
 ruta en la tabla), aca el poligono va directo a una columna
 `geometry` en Postgres/PostGIS (`ST_GeomFromGeoJSON`); no hay archivos
-que administrar. La simplificacion para que Leaflet no se ponga lento
-se aplica al leer (`ST_Simplify`), no al guardar.
+que administrar. El dibujo simplificado se guarda aparte (`geom_mapa`,
+`simplificar_cobertura`), con los vecinos compartiendo borde.
 
 Checkpoint por entidad (no uno solo para toda la corrida): si se
 interrumpe a medio camino, `gaiarda estados` original (y esto tambien)
@@ -197,3 +197,54 @@ async def descargar_agebs(cve_ent: str | None = None) -> int:
                 total += 1
             await marcar_hecho(conn, clave)
     return total
+
+
+# Las tablas cuyo dibujo se simplifica como cobertura.
+TABLAS_COBERTURA = ("agebs", "municipios")
+
+
+async def simplificar_cobertura(tabla: str, cve_ent: str | None = None) -> dict[str, int | None]:
+    """Llena `geom_mapa` de un estado (o de todos los que haya) con sus polígonos
+    simplificados juntos (`ST_CoverageSimplify`), para que dos vecinos sigan
+    compartiendo el borde al acercar. Simplificar cada uno por su lado (`ST_Simplify`)
+    abría huecos blancos entre AGEB. Si la cobertura de un estado no es válida
+    (polígonos encimados), se deja vacía y la lectura cae a `ST_Simplify`: el
+    resultado es el número de polígonos simplificados, o None en ese caso."""
+    if tabla not in TABLAS_COBERTURA:
+        raise ValueError(f"tabla sin cobertura: {tabla}")
+    pool = await get_pool()
+    resultado: dict[str, int | None] = {}
+    async with pool.connection() as conn:
+        if cve_ent:
+            estados = [cve_ent]
+        else:
+            cursor = await conn.execute(f"SELECT DISTINCT cve_ent FROM {tabla} ORDER BY 1")
+            estados = [e for (e,) in await cursor.fetchall()]
+        for ent in estados:
+            resultado[ent] = await simplificar_estado(conn, tabla, ent)
+    return resultado
+
+
+async def simplificar_estado(conn, tabla: str, cve_ent: str) -> int | None:
+    """`geom_mapa` de un estado (ver `simplificar_cobertura`)."""
+    if tabla not in TABLAS_COBERTURA:
+        raise ValueError(f"tabla sin cobertura: {tabla}")
+    from mapo_core.consultas import TOLERANCIA_SIMPLIFICACION
+
+    cursor = await conn.execute(
+        f"""SELECT count(*) FROM (SELECT ST_CoverageInvalidEdges(geom) OVER () AS g
+            FROM {tabla} WHERE cve_ent = %(e)s) s WHERE g IS NOT NULL""",
+        {"e": cve_ent},
+    )
+    (invalidos,) = await cursor.fetchone()
+    if invalidos:
+        await conn.execute(f"UPDATE {tabla} SET geom_mapa = NULL WHERE cve_ent = %(e)s", {"e": cve_ent})
+        return None
+    cursor = await conn.execute(
+        f"""UPDATE {tabla} t SET geom_mapa = s.g
+            FROM (SELECT cvegeo, ST_Multi(ST_CoverageSimplify(geom, %(t)s) OVER ()) AS g
+                  FROM {tabla} WHERE cve_ent = %(e)s) s
+            WHERE t.cvegeo = s.cvegeo""",
+        {"e": cve_ent, "t": TOLERANCIA_SIMPLIFICACION},
+    )
+    return cursor.rowcount

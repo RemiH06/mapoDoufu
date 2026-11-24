@@ -4,6 +4,8 @@ defmodule MapoWeb.BuscadorLive.Index do
   import MapoWeb.Cifras
 
   alias Mapo.MapoCore
+  alias MapoWeb.Escala
+  alias MapoWeb.Leyenda
 
   # Modo buscador (docs/producto/buscador.md): una pregunta en español común
   # se vuelve una plantilla con huecos, y la plantilla se resuelve con la misma
@@ -665,25 +667,18 @@ defmodule MapoWeb.BuscadorLive.Index do
             </p>
 
             <p :if={intencion == "donde_poner"} class="leyenda">
-              {leyenda(@resultado["cifras"])} La tinta es la población por AGEB. Ninguna cifra
-              decide sola.
+              {leyenda(@resultado["cifras"])} La tinta es la densidad: personas por km² de cada
+              AGEB. Ninguna cifra decide sola.
             </p>
           </details>
       <% end %>
 
-      <div :if={@escala} class="escala" aria-label="Población por AGEB, clases por quintil">
-        <ol>
-          <li :for={o <- [0.12, 0.26, 0.42, 0.6, 0.8]} style={"opacity: #{o}"}></li>
-
-          <li class="nula" title="Sin dato"></li>
-        </ol>
-
-        <div class="marcas num">
-          <span :for={v <- Enum.take(@escala.limites, 5)}>{cifra(v)}</span>
-          <span>sin dato: {@escala.nulos}</span>
-        </div>
-      </div>
-
+      <Leyenda.clases
+        :if={@escala}
+        escala={@escala}
+        titulo={@resultado["capas"]["coropleta"]["etiqueta"] <> " por km²"}
+        unidad="por quintiles"
+      />
       <ul :if={@resultado["avisos"] != []} class="avisos">
         <li :for={aviso <- @resultado["avisos"]}>{aviso}</li>
       </ul>
@@ -1263,8 +1258,8 @@ defmodule MapoWeb.BuscadorLive.Index do
   end
 
   def handle_async(:resolver, {:ok, {:ok, resultado}}, socket) do
-    capas = resultado["capas"]
-    escala = capas["coropleta"] && escala_quintiles(capas["coropleta"]["geojson"])
+    capas = resultado["capas"] && Map.update(resultado["capas"], "coropleta", nil, &densidad/1)
+    escala = capas["coropleta"] && Escala.de_geojson(capas["coropleta"]["geojson"])
 
     socket =
       Enum.reduce(@capas, socket, fn id, socket ->
@@ -1518,6 +1513,27 @@ defmodule MapoWeb.BuscadorLive.Index do
     )
   end
 
+  # La población por AGEB es un conteo: como coropleta, una AGEB grande se ve
+  # más poblada por ser grande. Se pinta como personas por km²
+  # (docs/producto/escalas.md); sin área, sin dato.
+  defp densidad(nil), do: nil
+
+  defp densidad(capa) do
+    features =
+      Enum.map(capa["geojson"]["features"], fn f ->
+        update_in(f["properties"], fn p ->
+          area = p["area_km2"]
+          v = p["valor_choropleth"]
+          d = if is_number(v) and is_number(area) and area > 0, do: Float.round(v / area, 1)
+          Map.put(p, "valor_choropleth", d)
+        end)
+      end)
+
+    capa
+    |> put_in(["geojson", "features"], features)
+    |> Map.put("etiqueta", "#{capa["etiqueta"]} por km²")
+  end
+
   defp datos_capa(_id, nil, _escala), do: %{activa: false}
 
   defp datos_capa("coropleta", capa, escala) do
@@ -1525,7 +1541,7 @@ defmodule MapoWeb.BuscadorLive.Index do
       activa: true,
       geojson: capa["geojson"],
       etiqueta: capa["etiqueta"],
-      cortes: escala && escala.cortes
+      escala: Escala.para_plano(escala)
     }
   end
 

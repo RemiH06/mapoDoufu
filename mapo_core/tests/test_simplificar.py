@@ -5,6 +5,7 @@ descarta geometrías nulas la tira sin avisar (24 AGEB de la ZMG, visto en la 23
 """
 
 import json
+import math
 
 import pytest
 from fastapi.testclient import TestClient
@@ -42,3 +43,37 @@ async def test_geo_agebs_no_pierde_la_ageb_chica(conn, pool_de_una_conexion):
         app.dependency_overrides.clear()
     assert len(cuerpo["features"]) == 2
     assert all(f["geometry"] for f in cuerpo["features"])
+
+
+@pytest.mark.asyncio
+async def test_la_cobertura_no_abre_huecos_entre_vecinas(conn, pool_de_una_conexion):
+    """Dos AGEB que comparten un borde quebrado: simplificadas por su lado, el
+    borde de cada una se endereza distinto y queda un hueco entre ellas (29e)."""
+    from mapo_core.geo_downloader import simplificar_estado
+
+    # El borde común ondula un poco más que la tolerancia: Douglas-Peucker se
+    # queda con vértices distintos en cada anillo (buscado con shapely).
+    dientes = [(1 + 0.0006 * math.sin(i * math.pi / 3), i / 9) for i in range(10)]
+    izquierda = {"type": "Polygon", "coordinates": [[(0, 0), *dientes, (0, 1), (0, 0)]]}
+    derecha = {"type": "Polygon", "coordinates": [[(2, 0), (2, 1), *reversed(dientes), (2, 0)]]}
+    for cvegeo, forma in [("9903900010010", izquierda), ("9903900010025", derecha)]:
+        await conn.execute(
+            """INSERT INTO agebs (cvegeo, cve_ent, cve_mun, cve_loc, cve_ageb, geom)
+               VALUES (%(c)s, '99', '039', '0001', %(a)s, ST_Multi(ST_SetSRID(ST_GeomFromGeoJSON(%(g)s), 4326)))""",
+            {"c": cvegeo, "a": cvegeo[9:], "g": json.dumps(forma)},
+        )
+
+    hueco = """SELECT ST_Area(ST_Difference(ST_Envelope(ST_Collect(g)), ST_Union(g)))
+               FROM (SELECT {g} AS g FROM agebs WHERE cve_ent = '99') s"""
+    cursor = await conn.execute(hueco.format(g="ST_Simplify(geom, 0.0005, true)"))
+    (antes,) = await cursor.fetchone()
+    assert antes > 0
+
+    assert await simplificar_estado(conn, "agebs", "99") == 2
+    cursor = await conn.execute(hueco.format(g="geom_mapa"))
+    (despues,) = await cursor.fetchone()
+    assert despues < 1e-12
+
+    # La lectura usa el dibujo de la cobertura.
+    filas = await consultas.coropleta(pool_de_una_conexion, "pobtot", "99", None)
+    assert len(filas) == 2

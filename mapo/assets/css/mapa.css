@@ -661,6 +661,111 @@
     width: auto;
     padding-left: 4px;
   }
+  /* 29e: con paleta, cada clase su color; en oscuro la paleta va al revés
+     (más es más claro), igual que en el plano. */
+  .escala li.pinta {
+    background: var(--c);
+  }
+  [data-theme="dark"] .escala li.pinta {
+    background: var(--c-osc);
+  }
+  /* De 3 a 7 clases en el mismo ancho que los 5 quintiles de antes. */
+  .escala ol li:not(.nula),
+  .escala .marcas span {
+    width: calc(230px / var(--n, 5));
+    min-width: 0;
+  }
+  .escala-titulo {
+    font-family: var(--cond);
+    font-size: 14px;
+  }
+  .escala-unidad,
+  .escala-nota {
+    color: var(--text2);
+  }
+  .escala-nota {
+    max-width: 34ch;
+    font-size: 12px;
+  }
+  .circulo-ref {
+    fill: color-mix(in srgb, var(--text) 12%, transparent);
+    stroke: var(--text);
+    stroke-width: 1;
+  }
+  .circulo-guia {
+    stroke: var(--text2);
+    stroke-width: 0.6;
+    stroke-dasharray: 2 2;
+  }
+  .circulo-cifra {
+    fill: var(--text2);
+    font-size: 11px;
+  }
+  .bivariada {
+    display: grid;
+    grid-template-columns: auto auto;
+    align-items: center;
+    gap: 2px 6px;
+    font-size: 11px;
+    color: var(--text2);
+  }
+  .bivariada .eje-b {
+    grid-column: 1;
+    writing-mode: vertical-rl;
+    transform: rotate(180deg);
+    max-height: 72px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .bivariada .eje-a {
+    grid-column: 2;
+  }
+  .escala .rejilla {
+    display: grid;
+    grid-template-columns: repeat(3, 22px);
+  }
+  .escala .rejilla li {
+    width: 22px;
+    height: 22px;
+    margin: 0;
+    border: 0;
+  }
+  .cinta-lectura {
+    flex-wrap: wrap;
+    max-width: 700px;
+  }
+  .cinta-lectura .cinta-control {
+    max-width: 13rem;
+  }
+  /* Leyendas, fórmula y escala de una capa en un solo bloque. */
+  .cinta-leyendas {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    gap: 6px 22px;
+    max-width: 640px;
+  }
+  .escala-formulas {
+    flex-basis: 100%;
+    font-size: 12px;
+    color: var(--text2);
+  }
+  .escala-detalles {
+    flex-basis: 100%;
+    font-size: 13px;
+  }
+  .escala-detalles summary {
+    cursor: pointer;
+    color: var(--text2);
+    text-decoration: underline;
+    text-underline-offset: 2px;
+    width: fit-content;
+  }
+  .cinta-escala {
+    flex-wrap: wrap;
+    margin-top: 4px;
+  }
 
   @media (max-width: 900px) {
     /* La cinta se vuelve un papel vertical con su propio scroll: como tira

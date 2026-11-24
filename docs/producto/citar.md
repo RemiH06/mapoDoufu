@@ -28,6 +28,9 @@ que se está viendo y un texto de cita listo para copiar. Hecho en la sesión 24
 | `zona` | La zona del membrete, como clave de la zona común (`zona.md`): `zona=mun:14039,14120` | `zona.validar` de mapo_core; una que no resuelve se ignora |
 | `ent`, `mun` | Enlaces de antes de la 29b: se leen como `mun:` o `ent:` y la URL se reescribe con `zona` | Dos y tres dígitos |
 | `censo` | Indicador del acetato "Censo por AGEB" | `MapoCore.indicadores_censo/0` |
+| `como`, `b` | Cómo se lee (`pct`, `mil`, `km2`, `ab`, `dif`, `cambio`; sin él, la primera de su lista) y el B de un combinado (`escalas.md`) | `MapoWeb.LecturaCenso.normalizar/1` |
+| `censo2`, `como2`, `modo2` | Segundo indicador, cómo se lee y, con dos tasas, `modo2=altura` (sin él, 3x3) | Lo mismo |
+| `esc`, `vesc` | Escala del censo y de vivienda: `paleta:metodo:clases[:inv]`, o con manual los cortes (`viridis:manual:10,20,30`) | `MapoWeb.Escala.de_url/1`; lo de fuera vuelve a la de omisión |
 | `viv`, `anio`, `seg` | Indicador de vivienda, año y segmento del SNIIV | El catálogo de `/vivienda/catalogo` |
 | `ficha` | Municipio con la ficha de vivienda abierta, por cvegeo (`14039`) | Cinco dígitos; los enlaces de antes de la 29d traen tres y se leen con el primer estado de la zona; mapo_core responde 404 si no existe |
 | `negocios` | "Área por negocio" puesto, con su giro (vacío: todos) | Texto de hasta 60 caracteres; mapo_core lo pasa por la tabla de rubros o como parámetro |

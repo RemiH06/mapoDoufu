@@ -21,8 +21,13 @@ municipios, AGEBs) + censo de población**, vendorizados de verdad:
   `mapo`** (servicio `db`, base `mapo_dev`/`mapo_test`), con su propio
   cliente (`psycopg` v3, sin ORM, mismo estilo directo que el resto de
   `mapo_core`), sin pasar por Ecto. Los polígonos viven en una columna
-  `geometry` real (simplificados al leer con `ST_Simplify`, no al
-  guardar), no como ruta a un archivo como hace Gaiarda
+  `geometry` real, no como ruta a un archivo como hace Gaiarda. El dibujo
+  de AGEB y municipios va aparte en `geom_mapa`, simplificado por estado
+  como cobertura (`ST_CoverageSimplify`, sesión 29e): simplificar cada
+  polígono por su lado (`ST_Simplify`) abría huecos blancos entre vecinas
+  al acercar. Se calcula al cargar (`cli agebs`, `cli municipios`) o con
+  `cli cobertura`; Jalisco tarda unos 4 s. Si la cobertura de un estado no
+  es válida (polígonos encimados), queda vacía y se simplifica al leer
 - `mapo_core/geo_downloader.py` y `censo_downloader.py`: vendorizados
   de `gaiarda/src/gaiarda/{api,downloader}.py` y
   `fuentes/censo_poblacion/{api,downloader}.py`, preservando los

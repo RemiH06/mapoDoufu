@@ -71,8 +71,8 @@ defmodule MapoWeb.BuscadorLive.IndexTest do
           "geojson" => %{
             "type" => "FeatureCollection",
             "features" => [
-              feature(%{"valor_choropleth" => 10}),
-              feature(%{"valor_choropleth" => nil})
+              feature(%{"valor_choropleth" => 10, "area_km2" => 2.0}),
+              feature(%{"valor_choropleth" => nil, "area_km2" => 1.0})
             ]
           },
           "indicador" => "pobtot",
@@ -465,7 +465,14 @@ defmodule MapoWeb.BuscadorLive.IndexTest do
 
     assert html =~ "4,841"
     assert html =~ "población total ÷ negocios del rubro"
-    assert_push_event(lv, "capa_coropleta", %{activa: true, cortes: [10, 10, 10, 10]})
+    # La población por AGEB va como densidad: un conteo nunca es coropleta.
+    assert_push_event(lv, "capa_coropleta", %{
+      activa: true,
+      etiqueta: "Población total por km²",
+      escala: %{cortes: []},
+      geojson: %{"features" => [%{"properties" => %{"valor_choropleth" => 5.0}} | _]}
+    })
+
     assert_push_event(lv, "capa_voronoi", %{activa: true})
     assert_push_event(lv, "capa_puntos", %{activa: false})
     assert_push_event(lv, "piel", %{piel: "comercio"})
@@ -858,8 +865,9 @@ defmodule MapoWeb.BuscadorLive.IndexTest do
       html = resolver_donde_poner(conn, patron: muchos) |> render_async()
 
       assert html =~ "con borde en el plano los 7 mayores"
-      assert html =~ "C5"
-      refute html =~ "C6"
+      # Por la etiqueta del botón: "C6" a secas sale a veces en el token de la sesión.
+      assert html =~ "Ver el foco de C5"
+      refute html =~ "Ver el foco de C6"
       assert html =~ "y 2 más en el plano."
     end
 

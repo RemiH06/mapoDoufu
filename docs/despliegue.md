@@ -326,6 +326,17 @@ $C run --rm -v "$HOME/srv/mapo-crudos/zonas:/crudos:ro" mapo_core python -m mapo
 $C run --rm -v "$HOME/srv/mapo-crudos/zonas:/crudos:ro" mapo_core python -m mapo_core.cli codigos_postales /crudos/CP_14.zip
 ```
 
+## Dibujo sin huecos (sesión 29e)
+
+La columna `geom_mapa` la crea `mapo_core` al arrancar. Para llenarla con los estados
+que ya estaban cargados (`fuentes/geo-censo.md`):
+
+```bash
+$C run --rm mapo_core python -m mapo_core.cli cobertura
+```
+
+Sin ella todo sigue funcionando: la lectura cae a `ST_Simplify`.
+
 ## Operación
 
 ```bash

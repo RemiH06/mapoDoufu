@@ -30,7 +30,7 @@ from mapo_core import (
 )
 from mapo_core import zona as zona_comun
 from mapo_core.coloreado_mapa import PoligonoColoreable, colorear_mapa
-from mapo_core.consultas import INDICADORES_CHOROPLETH, TOLERANCIA_SIMPLIFICACION as _TOLERANCIA_SIMPLIFICACION
+from mapo_core.consultas import INDICADORES_CHOROPLETH, TOLERANCIA_SIMPLIFICACION as _TOLERANCIA_SIMPLIFICACION, dibujo
 from mapo_core.consultas import feature as _feature
 from mapo_core.db import get_pool
 from mapo_core.enigh_resumen import resumen_por_municipio
@@ -126,13 +126,13 @@ async def geo_agebs(
     async with pool.connection() as conn:
         if cve_mun:
             cursor = await conn.execute(
-                """SELECT cvegeo, ST_AsGeoJSON(ST_Simplify(geom, %(tolerancia)s, true), 5)
+                f"""SELECT cvegeo, ST_AsGeoJSON({dibujo()}, 5)
                    FROM agebs WHERE cve_ent = %(cve_ent)s AND cve_mun = %(cve_mun)s ORDER BY cvegeo""",
                 {"cve_ent": cve_ent, "cve_mun": cve_mun, "tolerancia": _TOLERANCIA_SIMPLIFICACION},
             )
         else:
             cursor = await conn.execute(
-                """SELECT cvegeo, ST_AsGeoJSON(ST_Simplify(geom, %(tolerancia)s, true), 5)
+                f"""SELECT cvegeo, ST_AsGeoJSON({dibujo()}, 5)
                    FROM agebs WHERE cve_ent = %(cve_ent)s ORDER BY cvegeo""",
                 {"cve_ent": cve_ent, "tolerancia": _TOLERANCIA_SIMPLIFICACION},
             )
@@ -156,7 +156,7 @@ async def geo_por_clave(peticion: PeticionPorClave, pool: AsyncConnectionPool = 
     no exista en el marco cargado simplemente no regresa."""
     async with pool.connection() as conn:
         cursor = await conn.execute(
-            f"""SELECT cvegeo, ST_AsGeoJSON(ST_Simplify(geom, %(tolerancia)s, true), 5)
+            f"""SELECT cvegeo, ST_AsGeoJSON({dibujo()}, 5)
                FROM {_TABLA_POR_NIVEL[peticion.nivel]} WHERE cvegeo = ANY(%(claves)s) ORDER BY cvegeo""",
             {"claves": peticion.claves, "tolerancia": _TOLERANCIA_SIMPLIFICACION},
         )
@@ -297,6 +297,7 @@ async def censo_choropleth(
     zona: str | None = Query(default=None, max_length=6_000),
     cve_ent: str | None = Query(default=None, pattern=r"^\d{2}$"),
     cve_mun: str | None = Query(default=None, pattern=r"^\d{3}$"),
+    extra: list[str] = Query(default=[], max_length=consultas.MAX_EXTRAS),
     pool: AsyncConnectionPool = Depends(get_pool),
 ) -> dict:
     """Cruza los poligonos de AGEB con el Censo de Poblacion por AGEB,
@@ -306,13 +307,15 @@ async def censo_choropleth(
     poligono trae `valor_choropleth: null`, nunca se inventa un cero."""
     if indicador not in INDICADORES_CHOROPLETH:
         raise HTTPException(400, f"indicador invalido. Usa uno de: {sorted(INDICADORES_CHOROPLETH)}")
+    if invalidas := [e for e in extra if e not in INDICADORES_CHOROPLETH and e not in consultas.DENOMINADORES_CENSO]:
+        raise HTTPException(400, f"columna extra invalida: {invalidas}")
 
     if zona is None:
         if not cve_ent:
             raise HTTPException(422, "hace falta una zona")
-        features = await consultas.coropleta(pool, indicador, cve_ent, [cve_mun] if cve_mun else None)
+        features = await consultas.coropleta(pool, indicador, cve_ent, [cve_mun] if cve_mun else None, extras=extra)
     else:
-        features = await consultas.coropleta(pool, indicador, None, None, zona=_zona_de(zona))
+        features = await consultas.coropleta(pool, indicador, None, None, zona=_zona_de(zona), extras=extra)
     return {"type": "FeatureCollection", "features": features}
 
 
@@ -569,7 +572,7 @@ async def coloreado_municipios(
     estados = [cve_ent] if zona is None and cve_ent else (await _resuelta(pool, _zona_de(zona)))["estados"]
     async with pool.connection() as conn:
         cursor = await conn.execute(
-            "SELECT cvegeo, cve_mun, nombre, ST_AsGeoJSON(ST_Simplify(geom, %(tolerancia)s, true), 5) "
+            f"SELECT cvegeo, cve_mun, nombre, ST_AsGeoJSON({dibujo()}, 5) "
             "FROM municipios WHERE cve_ent = ANY(%(estados)s) ORDER BY cvegeo",
             {"estados": estados, "tolerancia": _TOLERANCIA_SIMPLIFICACION},
         )

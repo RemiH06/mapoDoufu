@@ -40,8 +40,10 @@ Sin año, el SNIIV toma el último año completo (12 meses). Un municipio sin
 registro en el SNIIV ese año queda sin dato, no en cero: el SNIIV no distingue
 "nadie pidió crédito" de "no se reportó".
 
-Los colores son quintiles de los municipios con dato; los que no tienen van
-punteados y se cuentan aparte en la escala.
+Los colores son clases de los municipios con dato (quintiles en la tinta de la capa,
+o la paleta y el método que se elijan en "Escala", `escalas.md`); los que no tienen
+van punteados y se cuentan aparte. En la Intercensal, la transparencia dice la
+precisión: más tenue, mayor coeficiente de variación.
 
 ## Precio de oferta por AGEB
 
@@ -53,9 +55,10 @@ urbana del dataset de vivienda (v8):
   estas llevan color.
 - **Estimado:** un rango ("de $1,030,000 a $3,300,000 por vivienda") y, al lado, en
   cuántas AGEB no vistas de ese municipio la mediana de anuncios cayó dentro. Va
-  sin color y con borde punteado: pintar su punto medio lo haría pasar por dato.
-  La escala cuenta estas AGEB como "sin dato" porque no tienen color, no porque
-  no tengan rango.
+  con borde punteado y sin color, salvo que su rango entero caiga en una clase:
+  entonces lleva esa clase, tenue (desde la 29e). Pintar su punto medio lo haría
+  pasar por dato. La escala cuenta estas AGEB como "sin dato" porque no tienen
+  valor observado, no porque no tengan rango.
 - **Sin dato:** el IIEG no cubre el municipio (Acatlán, Ixtlahuacán, Juanacatlán,
   Zapotlanejo), o tiene menos de 20 AGEB con anuncios para medir un rango (El
   Salto), o la AGEB se parece poco a las que tienen anuncios y el modelo

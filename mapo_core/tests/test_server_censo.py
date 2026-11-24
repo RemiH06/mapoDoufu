@@ -97,3 +97,39 @@ async def test_censo_choropleth_por_zona_toma_los_agebs_con_su_punto_dentro(conn
     assert [f["properties"]["cvegeo"] for f in circulo.json()["features"]] == ["1403900010010"]
     assert len(municipio.json()["features"]) == 2
     assert (sin_zona.status_code, mala.status_code) == (422, 422)
+
+
+@pytest.mark.asyncio
+async def test_censo_choropleth_trae_area_centro_y_columnas_extra(conn, pool_de_una_conexion):
+    await _insertar_ageb(conn, "140390001003", "14", "039", box(0, 0, 0.01, 0.01).__geo_interface__)
+    await conn.execute(
+        """INSERT INTO fuente_censo_poblacion (cvegeo, nivel, cve_ent, cve_mun, vph_inter, datos_json)
+           VALUES ('140390001003', 'ageb', '14', '039', 40,
+                   '{"TVIVPARHAB": "80", "P_12YMAS": "*"}'::jsonb)""",
+    )
+
+    app.dependency_overrides[get_pool] = lambda: pool_de_una_conexion
+    cliente = TestClient(app)
+    respuesta = cliente.get(
+        "/censo/choropleth",
+        params={"indicador": "vph_inter", "cve_ent": "14", "extra": ["tvivparhab", "p_12ymas"]},
+    )
+    app.dependency_overrides.clear()
+
+    assert respuesta.status_code == 200
+    p = respuesta.json()["features"][0]["properties"]
+    # El `*` de INEGI (confidencial) llega como null, nunca como cero.
+    assert p["valores"] == {"tvivparhab": 80.0, "p_12ymas": None}
+    assert p["area_km2"] == pytest.approx(1.23, rel=0.02)
+    assert p["centro"] == [0.005, 0.005]
+
+
+@pytest.mark.asyncio
+async def test_censo_choropleth_columna_extra_fuera_de_lista_da_400(pool_de_una_conexion):
+    app.dependency_overrides[get_pool] = lambda: pool_de_una_conexion
+    cliente = TestClient(app)
+    respuesta = cliente.get(
+        "/censo/choropleth", params={"indicador": "pobtot", "cve_ent": "14", "extra": ["datos_json"]}
+    )
+    app.dependency_overrides.clear()
+    assert respuesta.status_code == 400

@@ -42,12 +42,26 @@ async def _municipios(args) -> None:
     await inicializar_esquema()
     total = await geo_downloader.descargar_municipios(cve_ent=args.estado)
     print(f"{total} municipios guardados/actualizados.")
+    _reportar_cobertura("municipios", await geo_downloader.simplificar_cobertura("municipios", args.estado))
 
 
 async def _agebs(args) -> None:
     await inicializar_esquema()
     total = await geo_downloader.descargar_agebs(cve_ent=args.estado)
     print(f"{total} AGEBs guardados/actualizados.")
+    _reportar_cobertura("agebs", await geo_downloader.simplificar_cobertura("agebs", args.estado))
+
+
+async def _cobertura(args) -> None:
+    await inicializar_esquema()
+    for tabla in geo_downloader.TABLAS_COBERTURA:
+        _reportar_cobertura(tabla, await geo_downloader.simplificar_cobertura(tabla, args.estado))
+
+
+def _reportar_cobertura(tabla: str, resultado: dict) -> None:
+    for ent, n in resultado.items():
+        print(f"{tabla} {ent}: " + (f"{n} dibujos simplificados como cobertura" if n is not None
+                                    else "cobertura no valida, se simplifica al leer"))
 
 
 async def _censo_poblacion(args) -> None:
@@ -521,6 +535,11 @@ def _construir_parser() -> argparse.ArgumentParser:
     p_agebs = subparsers.add_parser("agebs", help="Descarga AGEBs urbanas con su poligono")
     p_agebs.add_argument("--estado", default=None, help="cve_ent, ej. 14 (default: los 32, pesado)")
     p_agebs.set_defaults(fn=_agebs)
+
+    p_cob = subparsers.add_parser(
+        "cobertura", help="Simplifica el dibujo de AGEB y municipios sin huecos entre vecinos (geom_mapa)")
+    p_cob.add_argument("--estado", default=None, help="cve_ent, ej. 14 (default: todos los cargados)")
+    p_cob.set_defaults(fn=_cobertura)
 
     p_censo = subparsers.add_parser("censo_poblacion", help="Descarga el censo de poblacion de un estado")
     p_censo.add_argument("--estado", required=True, help="cve_ent, ej. 14 (obligatorio)")

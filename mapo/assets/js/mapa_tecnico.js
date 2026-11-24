@@ -44,8 +44,17 @@ const valorPrecio = ({fuente, valor, rango_bajo, rango_alto, anio_tabla, cobertu
 // (un punto por negocio) y "pedir_ubicacion" para el punto de partida.
 
 const ENFOQUE = {propios: "consumo", puntos: "comercio", zonas: "comercio", focos: "comercio", coropleta: "demografia", vivienda: "urbanismo", voronoi: "comercio", coloreado: "urbanismo", isocrona: "movilidad", transporte: "movilidad"}
-// Opacidad de la pelicula por clase: mas valor, mas tinta.
+// Opacidad de la pelicula por clase: mas valor, mas tinta (sin escala del servidor).
 const TINTA_QUINTIL = [0.12, 0.26, 0.42, 0.6, 0.8]
+// Con una paleta, cada clase lleva su color y todas la misma opacidad.
+const OPACIDAD_PALETA = 0.82
+// Precisión de la Intercensal por su coeficiente de variación (INEGI): menor
+// a 15 % alta, de 15 a 30 moderada, más baja. Lo menos preciso, más tenue.
+const tenueCV = cv => cv == null ? 1 : cv < 15 ? 1 : cv < 30 ? 0.55 : 0.22
+// Una AGEB estimada cuyo rango entero cae en una clase se pinta así de tenue.
+const TENUE_RANGO = 0.45
+// Altura de la AGEB más alta con la segunda tasa como altura, en metros.
+const ALTURA_MAX = 2500
 const TINTA_COLOREADO = [0.14, 0.32, 0.5, 0.68]
 // Un nivel abajo que en Leaflet (MapLibre usa mosaicos de 512 px).
 const ZOOM_PUNTOS = 13
@@ -69,7 +78,11 @@ const caja = sel => {
   return r && r.width > 0 ? r : null
 }
 
-const porClase = (valores, otro = 0) => ["match", ["get", "k"], ...valores.flatMap((v, k) => [k, v]), otro]
+const porClase = (valores, otro = 0, prop = "k") => ["match", ["get", prop], ...valores.flatMap((v, k) => [k, v]), otro]
+
+const cifraFicha = v => v === null || v === undefined
+  ? "sin dato"
+  : v.toLocaleString("es-MX", {maximumFractionDigits: Math.abs(v) < 10 ? 2 : 1})
 
 export const MapaTecnico = {
   mounted() {
@@ -101,6 +114,9 @@ export const MapaTecnico = {
     this.zonaComun = conZona(this, cuando, {margen: () => this._margen()})
 
     this.handleEvent("capa_coropleta", cuando(datos => this._recibir("coropleta", datos)))
+    // Otra escala sobre los mismos datos: se repinta sin reencuadrar.
+    this.handleEvent("escala_coropleta", cuando(estilo => this._reescalar("coropleta", estilo)))
+    this.handleEvent("escala_vivienda", cuando(estilo => this._reescalar("vivienda", estilo)))
     this.handleEvent("capa_voronoi", cuando(datos => this._recibir("voronoi", datos)))
     this.handleEvent("capa_vivienda", cuando(datos => this._recibir("vivienda", datos)))
     this.handleEvent("capa_coloreado", cuando(datos => this._recibir("coloreado", datos)))
@@ -201,6 +217,21 @@ export const MapaTecnico = {
     this._dibujar(id)
     const recuadro = this.datos[id] && this._recuadro(id, this.datos[id])
     if (recuadro) this.map.fitBounds(recuadro, {padding: this._margen()})
+    // El encuadre cancela la inclinación de la altura: va al terminar.
+    if (id === "coropleta" && recuadro) this.map.once("moveend", () => this._inclinar())
+  },
+
+  _reescalar(id, estilo) {
+    if (!this.datos[id]) return
+    Object.assign(this.datos[id], estilo)
+    this._dibujar(id)
+  },
+
+  // Con la segunda tasa como altura, el plano se inclina; sin ella, vuelve.
+  _inclinar() {
+    const inclinacion = this.datos.coropleta?.modo === "altura" ? 50 : 0
+    if (Math.abs(this.map.getPitch() - inclinacion) < 1) return
+    this.map.easeTo({pitch: inclinacion, duration: 600})
   },
 
   _recuadro(id, d) {
@@ -253,7 +284,13 @@ export const MapaTecnico = {
     const piso = charola ? charola.top : H
     let izq = 20, abajo = H - piso + 20
     if (cinta && cinta.width < W * 0.6) izq = cinta.right + 20
-    else if (cinta) abajo = H - cinta.top + 20
+    else if (cinta) {
+      // Una cinta ancha y alta (leyendas, escala) deja poco arriba: si a su
+      // derecha hay más plano, se encuadra ahí.
+      const arriba = (cinta.top - tope) * W, derecha = (W - cinta.right - 80) * (H - tope - 20)
+      if (arriba >= derecha || W - cinta.right - 80 < 200) abajo = H - cinta.top + 20
+      else izq = cinta.right + 20
+    }
     if (H - tope - abajo < 120) abajo = 20
     if (W - izq - 60 < 200) izq = 20
     return relleno([izq, tope], [60, abajo])
@@ -278,6 +315,7 @@ export const MapaTecnico = {
     this._quitar(id)
     const datos = this.datos[id]
     if (datos) this[`_${id}`](datos, tinta(`--f-${ENFOQUE[id]}`), `a-${id}:`)
+    if (id === "coropleta") this._inclinar()
     this._ordenar()
   },
 
@@ -294,17 +332,37 @@ export const MapaTecnico = {
     this.marcas.alFrente()
   },
 
-  // Coropleta por quintiles: más valor, más tinta; sin dato, solo el borde punteado.
-  _quintiles(p, geojson, cortes, color, extra = () => ({})) {
-    const map = this.map
+  // La escala del servidor (MapoWeb.Escala.para_plano): los cortes y, por tema,
+  // el color de cada clase; con la tinta de la capa, su opacidad. Sin escala,
+  // los quintiles de antes.
+  _pintura(escala, color) {
+    const e = escala || {cortes: []}
+    const colores = oscuro() ? e.oscuro : e.claro
+    if (colores) return {cortes: e.cortes, color: porClase(colores, color), opacidad: OPACIDAD_PALETA, paleta: true}
     const factor = oscuro() ? 0.85 : 1
-    fuente(map, `${p}f`, indexar(geojson, (props, f) => ({k: clase(props.valor_choropleth, cortes || []), ...extra(props, f)})))
-    map.addLayer({id: `${p}relleno`, type: "fill", source: `${p}f`,
-      paint: {"fill-color": color, "fill-opacity": porClase(TINTA_QUINTIL.map(t => t * factor), 0)}})
+    const opacidades = e.opacidades || TINTA_QUINTIL
+    return {cortes: e.cortes, color, opacidad: porClase(opacidades.map(t => t * factor), 0), paleta: false}
+  },
+
+  // Coropleta por clases: cada valor en la suya; sin dato, solo el borde
+  // punteado. `extra` puede poner otra clase (`k`) o volverla tenue (`t`).
+  _quintiles(p, geojson, escala, color, extra = () => ({})) {
+    const map = this.map
+    const pintura = this._pintura(escala, color)
+    fuente(map, `${p}f`, indexar(geojson, (props, f) => ({k: clase(props.valor_choropleth, pintura.cortes), ...extra(props, f, pintura.cortes)})))
+    const tenue = ["coalesce", ["get", "t"], 1]
+    map.addLayer({id: `${p}relleno`, type: "fill", source: `${p}f`, filter: [">=", ["get", "k"], 0],
+      paint: {"fill-color": pintura.color, "fill-opacity": ["*", pintura.opacidad, tenue]}})
+    // Con paleta, el borde es de papel: separa dos vecinas de la misma clase.
     map.addLayer({id: `${p}borde`, type: "line", source: `${p}f`, filter: [">=", ["get", "k"], 0],
-      paint: {"line-color": color, "line-width": 0.5, "line-opacity": 0.6}})
+      paint: pintura.paleta
+        ? {"line-color": tinta("--bg"), "line-width": 0.4, "line-opacity": 0.7}
+        : {"line-color": color, "line-width": 0.5, "line-opacity": 0.6}})
     map.addLayer({id: `${p}sin-dato`, type: "line", source: `${p}f`, filter: ["<", ["get", "k"], 0],
       paint: {"line-color": tinta("--line"), "line-width": 0.6, "line-dasharray": [5, 5]}})
+    // El clic también en lo que no tiene dato: la ficha dice que no lo hay.
+    map.addLayer({id: `${p}toque`, type: "fill", source: `${p}f`, filter: ["<", ["get", "k"], 0],
+      paint: {"fill-color": color, "fill-opacity": 0}})
     return `${p}relleno`
   },
 
@@ -319,7 +377,7 @@ export const MapaTecnico = {
     capas.forEach(c => this._capaPropia(c, tinta(`--f-${c.tono}`), `${p}${c.id}-`))
   },
 
-  _capaPropia({id: capa, puntos, geojson, cortes, raster}, color, p) {
+  _capaPropia({id: capa, puntos, geojson, escala, raster}, color, p) {
     const map = this.map
     if (raster) return this._raster(raster, color, p, capa)
     const circulo = {"circle-radius": 3.5, "circle-color": color, "circle-opacity": 0.9, "circle-stroke-color": tinta("--bg"), "circle-stroke-width": 1}
@@ -335,8 +393,8 @@ export const MapaTecnico = {
     }
     const abrir = (f, lugar) => this._ficha(lugar, llave(f.properties._i))
     const esPunto = ["==", ["geometry-type"], "Point"]
-    if (cortes) {
-      const relleno = this._quintiles(p, geojson, cortes, color)
+    if (escala) {
+      const relleno = this._quintiles(p, geojson, escala, color)
       map.setFilter(relleno, ["!", esPunto])
       this.clic.en(relleno, abrir)
     } else {
@@ -389,23 +447,126 @@ export const MapaTecnico = {
     })
   },
 
-  _coropleta({geojson, etiqueta, cortes}, color, p) {
-    const relleno = this._quintiles(p, geojson, cortes, color)
-    this.clic.en(relleno, (f, lugar) => {
+  // /buscador: un solo indicador, en clases.
+  _coropletaSimple({geojson, etiqueta, escala}, color, p) {
+    const relleno = this._quintiles(p, geojson, escala, color)
+    const abrir = (f, lugar) => {
       const valor = geojson.features[f.properties._i].properties.valor_choropleth
-      ficha(this.map, this.ml, lugar, `<strong>${escapar(etiqueta)}</strong><br>${valor === null || valor === undefined ? "sin dato" : valor.toLocaleString("es-MX")}`)
-    })
+      ficha(this.map, this.ml, lugar, `<strong>${escapar(etiqueta)}</strong><br>${cifraFicha(valor)}`)
+    }
+    this.clic.en(relleno, abrir)
+    this.clic.en(`${p}toque`, abrir)
+  },
+
+  // Censo por AGEB en /mapa (docs/producto/escalas.md). Cada AGEB trae el valor
+  // de cada canal: `v` color, `s` círculo, `w` el segundo color del 3x3, `h`
+  // altura. Un conteo va siempre en círculos, nunca en color.
+  _coropleta(d, color, p) {
+    if (!d.modo) return this._coropletaSimple(d, color, p)
+    const map = this.map
+    const {geojson, modo, escala, bivariado, circulos, altura, textos} = d
+    const props = i => geojson.features[i].properties
+    const abrir = (f, lugar) => this._fichaCenso(lugar, props(f.properties._i), textos)
+
+    if (modo === "circulos") {
+      // Solo el contorno de las AGEB, para saber de dónde es cada círculo.
+      fuente(map, `${p}f`, indexar(geojson))
+      map.addLayer({id: `${p}borde`, type: "line", source: `${p}f`, paint: {"line-color": tinta("--line"), "line-width": 0.5}})
+      map.addLayer({id: `${p}toque`, type: "fill", source: `${p}f`, paint: {"fill-color": color, "fill-opacity": 0}})
+      this.clic.en(`${p}toque`, abrir)
+    } else if (modo === "bivariado") {
+      const datos = indexar(geojson, q => {
+        const a = clase(q.v, bivariado.a), b = clase(q.w, bivariado.b)
+        return {k: a < 0 || b < 0 ? -1 : b * 3 + a}
+      })
+      fuente(map, `${p}f`, datos)
+      map.addLayer({id: `${p}relleno`, type: "fill", source: `${p}f`, filter: [">=", ["get", "k"], 0],
+        paint: {"fill-color": porClase(bivariado.colores, color), "fill-opacity": 0.88}})
+      map.addLayer({id: `${p}borde`, type: "line", source: `${p}f`, filter: [">=", ["get", "k"], 0],
+        paint: {"line-color": tinta("--bg"), "line-width": 0.4, "line-opacity": 0.7}})
+      map.addLayer({id: `${p}sin-dato`, type: "line", source: `${p}f`, filter: ["<", ["get", "k"], 0],
+        paint: {"line-color": tinta("--line"), "line-width": 0.6, "line-dasharray": [5, 5]}})
+      map.addLayer({id: `${p}toque`, type: "fill", source: `${p}f`, filter: ["<", ["get", "k"], 0],
+        paint: {"fill-color": color, "fill-opacity": 0}})
+      this.clic.en(`${p}relleno`, abrir)
+      this.clic.en(`${p}toque`, abrir)
+    } else if (modo === "altura") {
+      const pintura = this._pintura(escala, color)
+      const {min, max} = altura
+      fuente(map, `${p}f`, indexar(geojson, q => ({
+        k: clase(q.v, pintura.cortes),
+        alto: q.h === null || q.h === undefined || max === min ? 0 : Math.round(20 + (q.h - min) / (max - min) * ALTURA_MAX),
+      })))
+      map.addLayer({id: `${p}relleno`, type: "fill-extrusion", source: `${p}f`, filter: [">=", ["get", "k"], 0],
+        paint: {"fill-extrusion-color": pintura.paleta ? pintura.color : color, "fill-extrusion-height": ["get", "alto"],
+          "fill-extrusion-opacity": 0.85}})
+      map.addLayer({id: `${p}sin-dato`, type: "line", source: `${p}f`, filter: ["<", ["get", "k"], 0],
+        paint: {"line-color": tinta("--line"), "line-width": 0.6, "line-dasharray": [5, 5]}})
+      this.clic.en(`${p}relleno`, abrir)
+    } else {
+      const relleno = this._quintiles(p, {type: "FeatureCollection", features: geojson.features.map(f => ({...f, properties: {valor_choropleth: f.properties.v}}))}, escala, color)
+      this.clic.en(relleno, abrir)
+      this.clic.en(`${p}toque`, abrir)
+    }
+
+    if (circulos) this._circulos(p, geojson, circulos, modo === "circulos" ? color : tinta("--text"), abrir)
+  },
+
+  // Círculos proporcionales en el punto de dentro de cada AGEB: el área va con
+  // el valor. Los grandes abajo, para que no tapen a los chicos; un negativo
+  // (A − B) va hueco.
+  _circulos(p, geojson, {max, radio}, color, abrir) {
+    const map = this.map
+    const puntos = geojson.features
+      .map((f, i) => ({type: "Feature", properties: {_i: i, s: f.properties.s, neg: f.properties.s < 0 ? 1 : 0},
+        geometry: {type: "Point", coordinates: f.properties.centro}}))
+      .filter(f => f.properties.s !== null && f.properties.s !== undefined && f.properties.s !== 0 && f.geometry.coordinates)
+    fuente(map, `${p}circulos-f`, {type: "FeatureCollection", features: puntos})
+    const negativo = ["==", ["get", "neg"], 1]
+    // El tamaño de la leyenda es el de cerca (zoom 12); de lejos se encogen
+    // todos en la misma proporción: si no, la metrópoli es una mancha.
+    const raiz = ["sqrt", ["/", ["abs", ["get", "s"]], max || 1]]
+    map.addLayer({id: `${p}circulos`, type: "circle", source: `${p}circulos-f`,
+      layout: {"circle-sort-key": ["-", 0, ["abs", ["get", "s"]]]},
+      paint: {
+        "circle-radius": ["interpolate", ["exponential", 2], ["zoom"], 8, ["*", radio / 8, raiz], 12, ["*", radio, raiz]],
+        "circle-color": ["case", negativo, tinta("--bg"), color],
+        "circle-opacity": ["case", negativo, 0.6, 0.18],
+        "circle-stroke-color": color,
+        // De lejos, con miles de círculos, el trazo entero tapaba el color de abajo.
+        "circle-stroke-width": ["interpolate", ["linear"], ["zoom"], 9, 0.3, 12, 0.9],
+        "circle-stroke-opacity": ["interpolate", ["linear"], ["zoom"], 9, 0.5, 12, 0.9],
+      }})
+    this.clic.en(`${p}circulos`, abrir)
+  },
+
+  _fichaCenso(lugar, props, textos) {
+    const renglon = c => textos[c] && props[c] !== undefined
+      ? `<br>${escapar(textos[c].nombre)}: ${cifraFicha(props[c])} ${escapar(textos[c].unidad)}`
+      : ""
+    ficha(this.map, this.ml, lugar, `<strong>AGEB ${escapar(props.cvegeo)}</strong>${["v", "w", "h", "s"].map(renglon).join("")}`)
   },
 
   // Vivienda: un indicador de una sola fuente, por municipio o por AGEB. El clic abre la
   // ficha del municipio (las cuatro fuentes) en la cinta de la capa.
-  _vivienda({geojson, etiqueta, unidad, cortes}, color, p) {
-    const relleno = this._quintiles(p, geojson, cortes, color, props => ({modelo: props.fuente === "modelo"}))
-    // Precio por AGEB: las estimadas por rango van con borde punteado.
+  // La transparencia dice la confianza: la Intercensal por su CV; el precio
+  // estimado se pinta, tenue, solo si su rango entero cae en una clase (si no,
+  // su punto medio pasaría por dato).
+  _vivienda({geojson, etiqueta, unidad, escala}, color, p) {
+    const confianza = (props, _f, cortes) => {
+      if (props.fuente === "modelo") {
+        const bajo = clase(props.rango_bajo, cortes), alto = clase(props.rango_alto, cortes)
+        return {modelo: true, k: bajo >= 0 && bajo === alto ? bajo : -1, t: TENUE_RANGO}
+      }
+      return {modelo: false, t: tenueCV(props.cv)}
+    }
+    const relleno = this._quintiles(p, geojson, escala, color, confianza)
+    // Precio por AGEB: las estimadas van con borde punteado, se pinten o no.
     this.map.setFilter(`${p}borde`, ["all", [">=", ["get", "k"], 0], ["!", ["get", "modelo"]]])
-    this.map.addLayer({id: `${p}estimada`, type: "line", source: `${p}f`, filter: ["all", [">=", ["get", "k"], 0], ["get", "modelo"]],
+    this.map.setFilter(`${p}sin-dato`, ["all", ["<", ["get", "k"], 0], ["!", ["get", "modelo"]]])
+    this.map.addLayer({id: `${p}estimada`, type: "line", source: `${p}f`, filter: ["get", "modelo"],
       paint: {"line-color": color, "line-width": 1.2, "line-opacity": 0.9, "line-dasharray": [3.3, 2.5]}})
-    this.clic.en(relleno, (f, lugar) => {
+    const abrir = (f, lugar) => {
       const props = geojson.features[f.properties._i].properties
       const {nomgeo, valor_choropleth: valor, cv, nota, cve_mun} = props
       // Por AGEB solo la ventana: la ficha del municipio agranda la cinta y la tapaba.
@@ -418,7 +579,9 @@ export const MapaTecnico = {
         : `${valor.toLocaleString("es-MX", {maximumFractionDigits: 1})} ${escapar(unidad)}${cv != null ? ` · CV ${cv.toLocaleString("es-MX", {maximumFractionDigits: 1})}` : ""}`
       ficha(this.map, this.ml, lugar, `<strong>${escapar(nomgeo)}</strong><br>${escapar(etiqueta)}: ${cifra}`)
       this.pushEvent("ficha_vivienda", {cvegeo: `${props.cve_ent ?? ""}${cve_mun}`})
-    })
+    }
+    this.clic.en(relleno, abrir)
+    this.clic.en(`${p}toque`, abrir)
   },
 
   // Las zonas candidatas son AGEB que ya estan en la coropleta: viaja solo la

@@ -11,9 +11,11 @@ pesado): SQL directo, funciones nativas de PostGIS.
 Los poligonos viven directo en una columna `geometry`, no como ruta a
 un archivo en disco (a diferencia del `geom_path` que usa Gaiarda):
 un solo dato, fuente de verdad, sin necesitar un volumen aparte para
-mapo_core (que hoy no tiene ninguno). La simplificacion para que
-Leaflet no se ponga lento con demasiados vertices se aplica al leer
-(`ST_Simplify` en la consulta), no al guardar.
+mapo_core (que hoy no tiene ninguno). El dibujo de AGEB y municipios
+va simplificado en `geom_mapa`, calculado una vez por estado como
+cobertura (`ST_CoverageSimplify`): simplificar cada poligono por su lado
+abria huecos entre vecinos. Sin `geom_mapa`, se simplifica al leer
+(`ST_Simplify` en la consulta).
 """
 
 from __future__ import annotations
@@ -57,6 +59,9 @@ CREATE TABLE IF NOT EXISTS agebs (
     actualizado  TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 CREATE INDEX IF NOT EXISTS idx_agebs_mun  ON agebs (cve_ent, cve_mun);
+-- Sesión 29e: el dibujo, simplificado como cobertura (geo_downloader.simplificar_cobertura).
+ALTER TABLE agebs      ADD COLUMN IF NOT EXISTS geom_mapa geometry(MultiPolygon, 4326);
+ALTER TABLE municipios ADD COLUMN IF NOT EXISTS geom_mapa geometry(MultiPolygon, 4326);
 CREATE INDEX IF NOT EXISTS idx_agebs_geom ON agebs USING GIST (geom);
 
 -- Localidades del ITER 2020, urbanas y rurales, con su punto (iter_downloader.py).
