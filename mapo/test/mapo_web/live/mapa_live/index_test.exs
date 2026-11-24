@@ -183,6 +183,14 @@ defmodule MapoWeb.MapaLive.IndexTest do
       )
       |> render_change()
 
+      # Cada paleta se ve como su rampa, y la elegida queda marcada.
+      assert has_element?(
+               lv,
+               "label.paleta[title=Viridis][style*='linear-gradient'] input[checked]"
+             )
+
+      assert has_element?(lv, "label.paleta[title='La tinta de la capa'][style*='color-mix']")
+
       refute_receive {:censo, _}
       assert_push_event(lv, "escala_coropleta", %{escala: %{claro: [_, _, _], cortes: [_, _]}})
       assert_patch(lv, "/mapa?zona=ent:14&censo=vph_inter&como=pct&esc=viridis:naturales:3")

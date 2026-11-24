@@ -53,8 +53,21 @@ simplificándose al leer. El censo de la ZMG con dos columnas extra responde en 
 - **El 3x3 tiene su paleta fija** (Stevens) y no acepta cortes manuales.
 - **Los datos propios** se quedan con la escala de omisión por ahora (pendiente).
 
+- **Las paletas se eligen por su rampa** (pedido de Remi, 2026-11-24): un `<select>` nativo
+  no dibuja degradados, así que son botones de opción; el teclado funciona igual.
+- **El encuadre usa el hueco donde los datos salen más grandes** (arriba de la cinta o a
+  su derecha), comparando el zoom que da cada uno (`cameraForBounds`).
+
 ## Bugs reales
 
+- **El primer encuadre comparaba áreas, no zoom.** Medido con el plano quieto: la
+  Intercensal quedaba detrás de la cinta (el límite de México no deja recorrer más el
+  plano), la altura se metía unos pixeles y el 3x3 salía de 98 px de ancho habiendo 280 a
+  la derecha. Algunas capturas, además, agarraban el plano a media animación: hay que
+  esperar a que `isMoving()` sea falso antes de juzgar un encuadre.
+
+- **La rejilla del 3x3 tenía la tercera columna al doble de ancho** (la regla de ancho de
+  las clases le ganaba a la de la rejilla).
 - **`VIVPAR_HAB` no es el denominador de los `VPH_*`.** Con él, 209 AGEB de Jalisco
   tenían más del 100 % de viviendas con internet. Con `TVIVPARHAB`, ninguna.
 - **`ST_Simplify` por polígono abría huecos entre vecinas** (Douglas-Peucker se queda con

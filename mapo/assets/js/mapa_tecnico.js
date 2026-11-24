@@ -111,7 +111,7 @@ export const MapaTecnico = {
       })
     const cuando = alListo(this, this.listo)
     // La zona del membrete (selector común): su contorno se queda como guía.
-    this.zonaComun = conZona(this, cuando, {margen: () => this._margen()})
+    this.zonaComun = conZona(this, cuando, {margen: recuadro => this._margen(recuadro)})
 
     this.handleEvent("capa_coropleta", cuando(datos => this._recibir("coropleta", datos)))
     // Otra escala sobre los mismos datos: se repinta sin reencuadrar.
@@ -216,7 +216,7 @@ export const MapaTecnico = {
     if (id === "transporte" && datos.color) this.colorRutas = datos.color
     this._dibujar(id)
     const recuadro = this.datos[id] && this._recuadro(id, this.datos[id])
-    if (recuadro) this.map.fitBounds(recuadro, {padding: this._margen()})
+    if (recuadro) this.map.fitBounds(recuadro, {padding: this._margen(recuadro)})
     // El encuadre cancela la inclinación de la altura: va al terminar.
     if (id === "coropleta" && recuadro) this.map.once("moveend", () => this._inclinar())
   },
@@ -251,8 +251,8 @@ export const MapaTecnico = {
   // y la respuesta. Se miden al encuadrar para que lo encuadrado quede en el
   // hueco entre ellos: a los lados en escritorio y acostado, arriba y abajo
   // en celular. Si el hueco queda muy chico, se ignora la respuesta.
-  _margen() {
-    if (!("margen" in this.el.dataset)) return this._margenMesa()
+  _margen(recuadro) {
+    if (!("margen" in this.el.dataset)) return this._margenMesa(recuadro)
     const W = window.innerWidth, H = window.innerHeight
     const pregunta = caja(".pregunta"), respuesta = caja(".respuesta")
     const cabecera = caja(".membrete")
@@ -276,7 +276,9 @@ export const MapaTecnico = {
 
   // /mapa: lo encuadrado queda entre la cabecera y la cinta abierta (o la
   // charola). Acostado, la cinta va a la izquierda y empuja ese lado.
-  _margenMesa() {
+  // Con una cinta ancha y alta (leyendas, escala) hay dos huecos, arriba y a su
+  // derecha: se usa en el que los datos (`recuadro`) salen más grandes.
+  _margenMesa(recuadro) {
     const W = window.innerWidth, H = window.innerHeight
     const cabecera = caja(".membrete"), cinta = caja(".cinta:not([hidden])")
     const charola = caja(".charola")
@@ -285,11 +287,12 @@ export const MapaTecnico = {
     let izq = 20, abajo = H - piso + 20
     if (cinta && cinta.width < W * 0.6) izq = cinta.right + 20
     else if (cinta) {
-      // Una cinta ancha y alta (leyendas, escala) deja poco arriba: si a su
-      // derecha hay más plano, se encuadra ahí.
-      const arriba = (cinta.top - tope) * W, derecha = (W - cinta.right - 80) * (H - tope - 20)
-      if (arriba >= derecha || W - cinta.right - 80 < 200) abajo = H - cinta.top + 20
-      else izq = cinta.right + 20
+      const huecos = []
+      if (cinta.top - tope >= 140) huecos.push({izq, abajo: H - cinta.top + 20})
+      if (W - cinta.right - 80 >= 200) huecos.push({izq: cinta.right + 20, abajo})
+      const zoom = h => recuadro ? this.map.cameraForBounds(recuadro, {padding: relleno([h.izq, tope], [60, h.abajo])})?.zoom ?? 0 : 0
+      const mejor = huecos.reduce((a, b) => !a || zoom(b) > zoom(a) ? b : a, null)
+      if (mejor) ({izq, abajo} = mejor)
     }
     if (H - tope - abajo < 120) abajo = 20
     if (W - izq - 60 < 200) izq = 20

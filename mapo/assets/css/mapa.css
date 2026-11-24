@@ -725,7 +725,7 @@
     display: grid;
     grid-template-columns: repeat(3, 22px);
   }
-  .escala .rejilla li {
+  .escala ol.rejilla li:not(.nula) {
     width: 22px;
     height: 22px;
     margin: 0;
@@ -765,6 +765,44 @@
   .cinta-escala {
     flex-wrap: wrap;
     margin-top: 4px;
+  }
+  /* Paletas como su rampa; la elegida con marco de tinta de texto. */
+  .paletas {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    max-width: 330px;
+  }
+  .paletas legend {
+    flex-basis: 100%;
+  }
+  .paleta {
+    display: block;
+    padding: 3px;
+    border: 1.5px solid transparent;
+    cursor: pointer;
+  }
+  .rampa {
+    display: inline-block;
+    width: 44px;
+    height: 11px;
+    border: 1px solid var(--line);
+    background: var(--rampa);
+  }
+  .paleta .rampa {
+    display: block;
+    width: 64px;
+    height: 20px;
+  }
+  [data-theme="dark"] .rampa {
+    background: var(--rampa-osc);
+  }
+  .paleta:has(input:checked) {
+    border-color: var(--text);
+  }
+  .paleta:has(input:focus-visible) {
+    outline: 2px solid var(--accent);
+    outline-offset: 1px;
   }
 
   @media (max-width: 900px) {

@@ -60,6 +60,28 @@ defmodule MapoWeb.Escala do
 
   def por_omision, do: @por_omision
   def paletas, do: Enum.map(@paletas, fn {c, e, _, _} -> {e, c} end)
+
+  @doc """
+  La rampa de una paleta para dibujarla en su botón: un `linear-gradient` por
+  tema, con la misma muestra que pinta el plano (y volteada si se invirtió).
+  La tinta de la capa va de transparente a la tinta (`--tinta-escala`).
+  """
+  def rampa(clave, invertir \\ false) do
+    case colores(clave, 7, invertir) do
+      {:tinta, nil} ->
+        tinta =
+          opacidades(7, invertir)
+          |> Enum.map(&"color-mix(in srgb, var(--tinta-escala) #{round(&1 * 100)}%, transparent)")
+          |> gradiente()
+
+        %{claro: tinta, oscuro: tinta}
+
+      {_, c} ->
+        %{claro: gradiente(c.claro), oscuro: gradiente(c.oscuro)}
+    end
+  end
+
+  defp gradiente(colores), do: "linear-gradient(to right, #{Enum.join(colores, ", ")})"
   def metodos, do: Enum.map(@metodos, fn {c, e} -> {e, c} end)
   def clases_posibles, do: Enum.to_list(@min_clases..@max_clases)
   def colores_bivariado, do: @bivariado

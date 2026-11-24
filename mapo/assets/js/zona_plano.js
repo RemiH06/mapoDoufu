@@ -33,7 +33,7 @@ export function conZona(hook, cuando, {margen = margenHoja} = {}) {
     contorno = geojson
     pintarContorno()
     const caja = bordes(geojson)
-    if (caja) hook.map.fitBounds(caja, {padding: margen(), maxZoom: 15})
+    if (caja) hook.map.fitBounds(caja, {padding: margen(caja), maxZoom: 15})
   }))
 
   hook.handleEvent("dibujar_zona", cuando(({destino}) => {

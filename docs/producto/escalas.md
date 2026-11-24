@@ -74,6 +74,9 @@ El canal lo decide el tipo de cada lectura, no la persona:
   2.5 km, sin dato al ras y punteada).
 - **Dos conteos:** no se leen juntos; la cinta pide pasar uno a tasa.
 
+La paleta del 3x3 es la misma en los dos temas: en oscuro, la celda de las dos tasas
+bajas es la más clara y llama la atención de más (pendiente).
+
 El 3x3 usa terciles (o cortes naturales o intervalos iguales, en 3); manual no aplica.
 
 ## Escala de color
@@ -83,7 +86,9 @@ En cada capa por clases (censo y vivienda; los datos propios usan la de omisión
 - **Paleta:** la tinta de la capa (opacidad por clase, la de antes), viridis, cividis,
   amarillo-verde-azul, naranja-rojo, y tres divergentes (naranja-morado,
   café-verde azulado, rojo-azul). Todas publicadas como aptas para daltonismo
-  (viridis y cividis; ColorBrewer las marca así).
+  (viridis y cividis; ColorBrewer las marca así). Se eligen por su rampa dibujada (la
+  misma del plano, volteada si se invirtió o en tema oscuro); el nombre sale al pasar el
+  cursor y lo leen los lectores de pantalla.
 - **Clases por:** cuantiles (mismas zonas en cada clase), cortes naturales, intervalos
   iguales o manual (los cortes escritos, hasta seis).
 - **Clases:** de 3 a 7.

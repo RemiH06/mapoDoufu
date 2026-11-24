@@ -6,7 +6,7 @@
 //   node mapa29e.js <corrida>
 const fs = require("fs");
 const path = require("path");
-const { BASE, conectado, quieto, iniciar, porCadaVista, carpeta } = require("./comun");
+const { BASE, conectado, iniciar, porCadaVista, carpeta } = require("./comun");
 
 const ZMG = "zona=zm:14.1.01";
 const CASOS = [
@@ -19,6 +19,15 @@ const CASOS = [
   ["7-precio", `${ZMG}&viv=precio_ageb&vesc=orrd:cuantiles:5&ver=vivienda`],
   ["8-intercensal", `${ZMG}&viv=eic_alqui&ver=vivienda`],
 ];
+
+// El encuadre se juzga con el plano detenido: a media animación engaña.
+const detenido = async (p) => {
+  await p.waitForFunction(() => document.querySelector("#mapa-tecnico").planoMapo?.getStyle()?.layers.some((l) => l.id.startsWith("a-")), null, { timeout: 60000 });
+  for (let i = 0, quietas = 0; i < 40 && quietas < 3; i++) {
+    await p.waitForTimeout(500);
+    quietas = (await p.evaluate(() => { const m = document.querySelector("#mapa-tecnico").planoMapo; return m.isMoving() || !m.areTilesLoaded(); })) ? 0 : quietas + 1;
+  }
+};
 
 (async () => {
   const dir = carpeta(process.argv[2] || "mapa29e");
@@ -38,7 +47,7 @@ const CASOS = [
       await p.goto(`${BASE}/mapa?${query}`);
       await conectado(p);
       await p.waitForFunction(() => document.querySelector("#mapa-tecnico").planoMapo, null, { timeout: 60000 });
-      await quieto(p, 3500);
+      await detenido(p);
       await foto(nombre);
       const cinta = await p.locator(".cinta:not([hidden])").innerText().catch(() => "(sin cinta)");
       textos.push(`## ${nombre} ${tn} ${modo} (${Date.now() - t0} ms)\nURL: ${p.url()}\n${cinta}\n`);
@@ -49,19 +58,19 @@ const CASOS = [
       await p.goto(`${BASE}/mapa?${ZMG}&censo=vph_inter&como=pct&esc=viridis:naturales:5&ver=coropleta`);
       await conectado(p);
       await p.waitForFunction(() => document.querySelector("#mapa-tecnico").planoMapo, null, { timeout: 60000 });
-      await quieto(p, 2500);
+      await p.waitForTimeout(3000);
       await p.evaluate(() => document.querySelector("#mapa-tecnico").planoMapo.jumpTo({ center: [-103.35, 20.675], zoom: 15.5 }));
-      await quieto(p, 2500);
+      await p.waitForTimeout(3000);
       await foto("9-de-cerca");
 
       // La escala en manual: se escriben los cortes y se repinta sin recargar.
       await p.locator("#coropleta_escala_detalles summary").click()
       await p.locator("#coropleta_escala_form select[name='escala[metodo]']").selectOption("manual");
-      await quieto(p, 800);
+      await p.waitForTimeout(1500);
       await p.locator("#coropleta_escala_form input[name='escala[cortes]']").fill("50, 75, 90");
-      await quieto(p, 2000);
+      await p.waitForTimeout(3000);
       await p.evaluate(() => document.querySelector("#mapa-tecnico").planoMapo.jumpTo({ center: [-103.35, 20.66], zoom: 11 }));
-      await quieto(p, 1500);
+      await p.waitForTimeout(2500);
       await foto("10-manual");
       textos.push(`## manual ${modo}\nURL: ${p.url()}\n${await p.locator(".cinta:not([hidden])").innerText()}\n`);
     }

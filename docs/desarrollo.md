@@ -93,6 +93,15 @@ node pantallas.js antes         # todas las pantallas; reporte.json con scroll l
 node estados.js antes           # capas propias, coropleta, charola abierta, consulta resuelta
 ```
 
+Con la máquina cargada, el montaje de Windows hace que cada página de dev tarde
+decenas de segundos. Para capturas, una copia dentro del disco de Docker responde en
+menos de uno (no ve los cambios del repo: `docker cp` del archivo a `/tmp/m/...`):
+
+```bash
+docker compose run --rm -d -p 127.0.0.1:1866:4000 --name mapo-rapido mapo   sh -c "mkdir -p /tmp/m && cp -r /app/. /tmp/m/ && cd /tmp/m && exec mix phx.server"
+export MAPO_URL=http://127.0.0.1:1866      # al terminar: docker rm -f mapo-rapido
+```
+
 Hay scripts por sesión (`zona.js`, `buscador.js`, ...) que recorren una
 sola función con su texto en `textos.md`. `TAM=celular,acostado` y
 `MODO=dark` recortan la corrida; `NAVEGAR_MS` sube la espera de cada página
