@@ -1,0 +1,75 @@
+MARGINACIÓN Y TEMPERATURA DE SUPERFICIE, 2020
+Zonas metropolitanas de Guadalajara, Monterrey y Querétaro
+Armado por Mapo (mapo.remlam.dev) con datos públicos. Sustituye a la comparación de siete
+ciudades: aquí todo es de 2020 (temperatura incluida) y no hay marginación de 2010.
+
+QUÉ TRAE
+shapefiles/<GDL, MTY o QRO>/
+  AGEB_<ciudad>_2020.shp      Los AGEB urbanos con marginación y temperatura. Es la capa
+                              de trabajo: 1,790 en GDL, 2,008 en MTY y 580 en QRO.
+  AGEB_<ciudad>_sin_dato.shp  Los AGEB sin índice de CONAPO (o sin población), con el
+                              motivo. Van aparte porque un shapefile no guarda celdas
+                              vacías y ArcGIS las leería como 0.
+  MUN_<ciudad>_2020.shp       Municipios de la zona metropolitana: 7, 16 y 4.
+shapefiles/AGEB_3_ciudades_2020.shp   Los 4,378 AGEB con datos, juntos.
+rasters/LST_<ciudad>_2020_C.tif       Temperatura de superficie en °C, 30 m.
+tablas/       Los mismos AGEB en CSV, el diccionario de campos y las correlaciones.
+procedencia/  Fuente y liga de cada dato, escenas de Landsat y lista de municipios.
+
+Coordenadas: GDL en UTM 13N (EPSG:32613), MTY y QRO en UTM 14N (EPSG:32614), las tres
+juntas en Cónica de Lambert de México (EPSG:6372). Los polígonos son los del Marco
+Geoestadístico del censo 2020 de INEGI.
+
+QUÉ CAMPOS USAR
+- MARG contra LST_C. MARG es el índice de CONAPO con el signo invertido.
+  Ojo: en el índice original (IM_2020) un valor más ALTO es MENOS marginación. Si se usa
+  IM_2020 directo, la correlación sale con el signo al revés.
+- GM_NUM: el grado de marginación, de 1 (muy bajo) a 5 (muy alto). Sirve para pintar.
+- LST_DIF: temperatura menos la mediana de la ciudad. Es la que se usa para comparar entre
+  ciudades, porque cada una tiene otras fechas y otro clima.
+Los demás (indicadores de CONAPO, población, densidad) están en
+tablas/diccionario_campos.csv.
+
+CÓMO SE SACÓ LA TEMPERATURA
+Landsat 8, Collection 2 Level-2, banda térmica: es la temperatura del suelo y los techos
+cerca del mediodía (el satélite pasa a las 17 h UTC), no la del aire. Por ciudad se tomaron las fechas de marzo
+a junio de 2020 con 98 % o más de la mancha urbana despejada, de una sola órbita, y se
+promediaron. Solo cuentan los píxeles limpios en todas esas fechas, para que ningún AGEB
+mezcle días distintos de sus vecinos. El valor del AGEB es el promedio de los píxeles cuyo
+centro cae dentro (lo mismo que Zonal Statistics as Table en ArcGIS con Mean).
+- Guadalajara, 7 fechas: 9 y 25 de marzo, 10 y 26 de abril, 12 y 28 de mayo, 13 de junio.
+- Monterrey, 2 fechas: 2 de marzo y 22 de junio. Las demás tuvieron nubes sobre la ciudad.
+- Querétaro, 5 fechas: 11 y 27 de marzo, 28 de abril, 14 de mayo, 15 de junio.
+
+QUÉ SALE DE LA HIPÓTESIS (tablas/correlacion_por_ciudad.csv)
+Correlación de Spearman entre MARG y LST_C (positiva = más marginado, más caliente):
+
+  Ciudad        AGEB    Spearman   p ajustada   Quinto más marginado menos el menos (°C)
+  Guadalajara   1,790    0.10       0.28         +0.42
+  Monterrey     2,008    0.06       0.47         +0.37
+  Querétaro       580   -0.17       0.0015       -0.76
+
+- Guadalajara y Monterrey: la relación va en el sentido de la hipótesis, pero es débil y no
+  se distingue del azar.
+- Querétaro: la relación va al revés (los AGEB más marginados, un poco más frescos).
+- La fecha pesa. En tablas/correlacion_por_fecha.csv están todas las fechas de 2020 con
+  90 % o más de la mancha urbana despejada: Guadalajara va de -0.39 (31 de julio, en lluvias) a +0.21 (28 de
+  mayo); Querétaro es negativa en todas.
+- Por qué "p ajustada": dos AGEB vecinos se parecen, así que 1,790 AGEB no son 1,790 datos
+  independientes. La columna n_efectivo dice a cuántos equivalen (Clifford, Richardson y
+  Hémon 1989; Dutilleul 1993). La p que da Excel o R sin ese ajuste sale demasiado chica.
+- Correlación no es causa. En ArcGIS Pro, los pasos naturales son Local Bivariate
+  Relationships (dónde sí hay relación) y Geographically Weighted Regression.
+
+LÍMITES
+- Monterrey tiene solo 2 fechas: su mapa es menos firme que los otros dos.
+- Las fechas no son las mismas en las tres ciudades: comparar con LST_DIF, no con LST_C.
+- Solo AGEB urbanos. LST_CELDAS dice cuántos píxeles se promediaron en cada uno (mínimo 4).
+- No se controló por vegetación, altitud ni tipo de suelo, que también mueven la
+  temperatura. En Monterrey, los AGEB más frescos son los de Santiago, al pie de la sierra.
+
+FUENTES (ligas en procedencia/fuentes.csv)
+INEGI, Marco Geoestadístico y Censo de Población y Vivienda 2020 (términos de libre uso).
+CONAPO, Índice de marginación urbana 2020 (datos abiertos). SEDATU, CONAPO e INEGI,
+Metrópolis de México 2020. USGS, Landsat 8 (dominio público), vía Microsoft Planetary
+Computer.

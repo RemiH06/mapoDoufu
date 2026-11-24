@@ -8,6 +8,49 @@ procedencia de cada dato y una guía para recalcular cualquier número en ArcGIS
 
 No lleva agua, emisiones, fuego ni defunciones: eso era del caso de Autlán.
 
+**Entrega vigente desde el 2026-11-24:** solo 2020 y solo Guadalajara, Monterrey y Querétaro,
+en shapefile (sección "Entrega 2020"). Lo demás de este documento describe la de siete
+ciudades, que se conserva.
+
+## Entrega 2020
+
+Hipótesis del equipo: hay correlación entre marginación y temperatura de superficie.
+`scripts/ambiental/ciudades_2020.py` (pasos `base`, `lst` y `entrega`), con
+`LEEME_ciudades_2020.txt`. Sin base de Mapo: todo del productor.
+
+| Dato | Fuente |
+|---|---|
+| Polígonos de AGEB y municipios | INEGI, Marco Geoestadístico del censo 2020 (`889463807469`, `EEa.shp` y `EEmun.shp`) |
+| Población | INEGI, censo 2020 por AGEB (igual a la de CONAPO en los 4,378 AGEB) |
+| Marginación | CONAPO, IMU 2020 |
+| Temperatura | Landsat 8 de 2020, `ST_B10`, Planetary Computer |
+
+**Por qué no la mediana de marzo a mayo.** En 2020 solo estaba Landsat 8. En Monterrey cada
+AGEB tenía unas 2 fechas despejadas, distintas según la nube, con medianas de 28 a 48 °C: la
+mediana por píxel pintaba la nubosidad. La correlación con marginación daba 0.06, contra 0.16
+en las dos fechas más despejadas de ese periodo. Regla: fechas de marzo a junio con 98 % o más
+de la mancha urbana despejada (QA_PIXEL bits 1 a 4), una sola órbita por ciudad, promedio solo
+donde el píxel está limpio en todas. Quedan 7 fechas en Guadalajara, 2 en Monterrey y 5 en
+Querétaro. La entrega de 2025 sí usa la mediana por píxel (con dos satélites); no se revisó
+si Monterrey tiene ahí el mismo defecto.
+
+**Shapefile y vacíos.** El DBF no guarda nulos y ArcGIS los lee como 0: los AGEB sin índice
+van en `AGEB_<ciudad>_sin_dato.shp`.
+
+| Ciudad | AGEB | Temperatura mediana (°C) | Spearman marginación y temperatura | n efectivo | p ajustada | Quinto más marginado menos el menos (°C) |
+|---|---|---|---|---|---|---|
+| Guadalajara | 1,790 | 45.5 | 0.10 | 124 | 0.28 | +0.42 |
+| Monterrey | 2,008 | 42.4 | 0.06 | 160 | 0.47 | +0.37 |
+| Querétaro | 580 | 40.8 | −0.17 | 364 | 0.0015 | −0.76 |
+
+La p se ajusta por autocorrelación espacial (Clifford, Richardson y Hémon; Dutilleul). Con
+campos suaves simulados sin relación rechaza 5 % al 5 % (sin ajustar, 54 %). Por fecha,
+Guadalajara va de −0.39 (31 de julio) a +0.21 (28 de mayo); Querétaro es negativa en todas.
+
+Comprobado: 0 AGEB de CONAPO sin polígono, promedios y celdas iguales a los de QGIS
+(`native:zonalstatisticsfb`) en las tres ciudades, shapefiles sin nulos ni geometrías
+inválidas. Zip en `mapo_core/data/entrega_ciudades_2020_2026-11-24/` (32 MB).
+
 ## Ciudades
 
 Delimitación oficial: SEDATU, CONAPO e INEGI, *Metrópolis de México 2020* (edición

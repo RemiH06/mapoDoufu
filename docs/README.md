@@ -12,7 +12,7 @@
 - [colonias.md](producto/colonias.md): cómo armar el polígono de una colonia en cualquier municipio (oficial, OSM, votación de direcciones sobre manzanas o dibujo del equipo), con el prototipo de López Cotilla.
 - [plan-nacional.md](producto/plan-nacional.md): qué falta para tener el paquete ambiental y el dataset de vivienda en todo el país, y en qué orden.
 - [vista-riesgos.md](producto/vista-riesgos.md): `/riesgos`, cada peligro de una zona por separado con la gente dentro y cerca.
-- [comparacion-ciudades.md](producto/comparacion-ciudades.md): calor, dosel, NDVI, censo y marginación (2020, y 2010 en tablas) por AGEB de la ZMG y seis metrópolis más, con la entrega para ArcGIS y Mapo y cómo comprobar cada número.
+- [comparacion-ciudades.md](producto/comparacion-ciudades.md): calor, dosel, NDVI, censo y marginación (2020, y 2010 en tablas) por AGEB de la ZMG y seis metrópolis más, y la entrega vigente en shapefile, solo 2020, de GDL, MTY y QRO, con la entrega para ArcGIS y Mapo y cómo comprobar cada número.
 - [vista-vivienda.md](producto/vista-vivienda.md): acetato de vivienda en `/mapa`, un indicador de una sola fuente a la vez (por municipio, o el valor de suelo por AGEB) y la ficha con SHF, SNIIV, Intercensal y ENVI por separado.
 - [precio-estimado.md](producto/precio-estimado.md): precio de vivienda estimado por AGEB como rango con cobertura medida; hecha la forma (catastro y rango conformal, validados por bloques), pendiente la escala de mercado.
 - [citar.md](producto/citar.md): enlace permanente de `/mapa` y `/riesgos` (qué parámetros guarda y cómo se validan) y "Cómo citar" con la fuente original primero, en APA y BibTeX, con la versión de la tabla.
