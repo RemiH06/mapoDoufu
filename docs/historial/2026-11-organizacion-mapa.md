@@ -40,6 +40,10 @@ municipio usan la zona común.
   base.
 - **Capturas:** `scripts/capturas/mapa29d.js`.
 
+Producción en `ff12be5` el 2026-11-23 (revertir: `deploy-20261123c`; sin migración). En
+Pixilate, con la ZMG: censo 0.16 s (1,987 AGEB), transporte 0.8 s (332 rutas, 305 con
+color propio), precio por AGEB 0.17 s, municipios 0.3 s y la gente de dos alcances 0.02 s.
+
 ## Decisiones
 
 - **Sin animación de entrada del acetato.** En Leaflet era una transición de CSS sobre su
