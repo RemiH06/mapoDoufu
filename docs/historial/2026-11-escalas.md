@@ -27,6 +27,12 @@ entre AGEB al acercar. Cómo funciona: `docs/producto/escalas.md`.
   referencia, rejilla 3x3 con sus cortes, altura y confianza.
 - **Capturas:** `scripts/capturas/mapa29e.js`.
 
+Producción en `f080be5` el 2026-11-24 (revertir: `deploy-20261124`; sin migración). En
+Pixilate, `cli cobertura` tardó 11 s con los diez estados cargados; los municipios del
+Estado de México, Tlaxcala y Yucatán no forman una cobertura válida y siguen
+simplificándose al leer. El censo de la ZMG con dos columnas extra responde en 0.24 s
+(1.1 MB).
+
 ## Decisiones
 
 - **El canal lo decide el tipo de dato, no la persona.** Elegir "conteo" ya es elegir
