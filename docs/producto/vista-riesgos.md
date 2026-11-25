@@ -118,7 +118,8 @@ en Oaxaca de Juárez cuenta sus 304 mil habitantes. La vista lo avisa cuando pas
 ## Tiempos
 
 En Aerilate (2026-11-25, Docker en Windows): López Cotilla 1.5 s, Guadalajara 2 a 4 s, la
-ZMG 12 s. Antes de la 29g, 0.9, 7 y 64 a 76 s. Lo que pesaba: la gente de la zona leída seis
+ZMG 12 s; en producción, Guadalajara 1.8 s y la ZMG 5.1 s. Antes de la 29g, en Aerilate, 0.9,
+7 y 64 a 76 s. Lo que pesaba: la gente de la zona leída seis
 veces, el área de la zona recalculada por renglón en el uso de suelo (25 s), el punto de
 dentro de cada AGEB recalculado contra cada pedazo (`OFFSET 0` lo evita) y la compilación de
 PostgreSQL (`jit`), que se apaga en estas consultas.
