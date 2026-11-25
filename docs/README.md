@@ -11,7 +11,7 @@
 - [sobrevivencia.md](producto/sobrevivencia.md): qué negocios de DENUE 2019 siguen en 2024 y si les va mejor juntos, en la ZMG y en los 32 estados; estudio en notebook, aparte de Mapo.
 - [colonias.md](producto/colonias.md): cómo armar el polígono de una colonia en cualquier municipio (oficial, OSM, votación de direcciones sobre manzanas o dibujo del equipo), con el prototipo de López Cotilla.
 - [plan-nacional.md](producto/plan-nacional.md): qué falta para tener el paquete ambiental y el dataset de vivienda en todo el país, y en qué orden.
-- [vista-riesgos.md](producto/vista-riesgos.md): `/riesgos`, cada peligro de una zona por separado con la gente dentro y cerca.
+- [vista-riesgos.md](producto/vista-riesgos.md): `/riesgos`, cada peligro de una zona por separado con la gente dentro y cerca; lista, matriz por municipio y mapas chicos, qué dice cada celda y la iconografía.
 - [comparacion-ciudades.md](producto/comparacion-ciudades.md): calor, dosel, NDVI, censo y marginación (2020, y 2010 en tablas) por AGEB de la ZMG y seis metrópolis más, y la entrega vigente en shapefile, solo 2020, de GDL, MTY y QRO, con la entrega para ArcGIS y Mapo y cómo comprobar cada número.
 - [vista-vivienda.md](producto/vista-vivienda.md): acetato de vivienda en `/mapa`, un indicador de una sola fuente a la vez (por municipio, o el valor de suelo por AGEB) y la ficha con SHF, SNIIV, Intercensal y ENVI por separado.
 - [precio-estimado.md](producto/precio-estimado.md): precio de vivienda estimado por AGEB como rango con cobertura medida; hecha la forma (catastro y rango conformal, validados por bloques), pendiente la escala de mercado.
@@ -119,6 +119,7 @@ Qué se construyó en cada etapa, por qué así y qué bugs reales aparecieron.
 - [Escalas y dos indicadores, noviembre 2026](historial/2026-11-escalas.md)
 - [Marcas, segunda vuelta, noviembre 2026](historial/2026-11-marcas.md)
 - [Zonas metropolitanas y avalúos del SHF, noviembre 2026](historial/2026-11-shf-zonas.md)
+- [Riesgos y servicios legibles, noviembre 2026](historial/2026-11-cotejo.md)
 
 ## Gaiarda
 

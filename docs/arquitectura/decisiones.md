@@ -137,6 +137,9 @@ la pantalla era un dashboard genérico.
   demografía, DENUE comercio) y un selector del rótulo la fijaba; con
   varias capas encima, la mesa entera cambiaba de color al mover una.
   Las demás vistas conservan sus pieles.
+- **Íconos por tema** (sesión 29g): peligros y servicios llevan un ícono fijo, siempre junto
+  a su nombre (`MapoWeb.Iconos`; Maki y Temaki, CC0). El plano usa los mismos, con una figura
+  por peligro. Ver `docs/producto/vista-riesgos.md`.
 - **Acetatos:** se multiplican sobre el papel (`mix-blend-mode:
   multiply`); en el modo oscuro van normales, porque `screen` aplanaba
   las clases de la coropleta.

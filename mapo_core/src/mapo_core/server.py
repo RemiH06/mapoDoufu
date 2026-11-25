@@ -1006,6 +1006,24 @@ async def transporte_zona(
     return resultado
 
 
+@app.get("/riesgos/capas")
+async def riesgos_capas(
+    zona: str = Query(max_length=6_000),
+    peligros: str = Query(max_length=200),
+    cerca_m: int = Query(default=1000),
+) -> dict:
+    """Lo que se dibuja de cada peligro pedido (claves separadas por coma), sin contar
+    gente: el acetato "Riesgos" de /mapa."""
+    try:
+        resultado = await riesgos.capas(
+            riesgos.zona_valida(clave=zona), riesgos.cerca_valido(cerca_m), riesgos.peligros_validos(peligros))
+    except riesgos.ZonaInvalida as exc:
+        raise HTTPException(422, str(exc)) from None
+    if resultado is None:
+        raise HTTPException(404, "la zona no toca nada cargado en Mapo")
+    return resultado
+
+
 @app.get("/riesgos/zona")
 async def riesgos_zona(
     cve_ent: str | None = Query(default=None, pattern=r"^\d{2}$"),

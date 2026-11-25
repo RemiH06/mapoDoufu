@@ -95,16 +95,27 @@ que no se ha calculado: `estados_sin_calcular`) y
 el umbral no vuelve a consultar. También el plano (AGEB simplificados a 0.0001° y
 localidades como punto, con los minutos a cada servicio; con más de 5,000 km², a
 0.0004°) y los destinos dentro de la zona o que quedaron como el más cercano de algún
-lugar. La ZMG entera: 2,455 lugares, 5.5 MB, 15 s en Aerilate.
+lugar. Por municipio de la zona va la misma curva
+(`municipios`, con `lugares` en 0 donde no se calcula y su `sin_calcular`), y la zona trae
+`limites` y la gente de cada municipio. La ZMG entera: 2,455 lugares, 5.6 MB, 7 a 10 s en
+Aerilate.
 
 ## La pantalla
 
-- La frase: "733,854 personas, el 49.7 % de 1,476,462 con ruta, viven a más de 15
+- Lista, matriz y mapas chicos, como en `/riesgos` (`vista-riesgos.md`): la celda dice qué
+  parte del grupo vive a más de los minutos elegidos, con los mismos cortes fijos (0, 5, 20 y
+  50 %) y cuánta gente es. Mover los minutos mueve la matriz y las zonas fijas sin consultar.
+- **Cifra parcial:** si lo calculado es menos de la mitad del grupo, la celda dice "parcial" y
+  va rayada. En Mezquitic, "0 % lejos de la primaria" eran 337 de 3,909 niñas y niños, porque
+  las localidades no se calculan. Un municipio sin nada calculado dice "sin calc.".
+- El detalle: "733,854 personas, el 49.7 % de 1,476,462 con ruta, viven a más de 15
   minutos a pie" (Zapopan, centro de salud). El porcentaje es sobre la gente con ruta.
-- El plano pinta un servicio a la vez ("Ver en el plano"): más lejos, más tinta, en
+- El plano pinta un servicio a la vez: más lejos, más tinta, en
   cuatro clases relativas al umbral (hasta la mitad, hasta el umbral, hasta el doble y
   más); sin dato, solo el borde punteado. Al tocar un lugar, su gente y sus minutos.
-- Enlace permanente: `zona`, `modo`, `umbral` (1 a 120) y `servicio`. Un modo o umbral
+- "Abrir en el mapa" lleva el servicio, el modo y los minutos al acetato "Servicios" de
+  `/mapa`.
+- Enlace permanente: `zona`, `modo`, `umbral` (1 a 120), `servicio` y `vista`. Un modo o umbral
   raro cae al valor inicial (a pie, 15); una zona que no resuelve deja la hoja vacía. Límite de 60 consultas por hora por cuenta.
 - "Cómo citar" en cada servicio: la fuente de los destinos (CLUES, DENUE u OSM), el
   censo y OSM como red, con la fecha del cálculo (`citar.md`).

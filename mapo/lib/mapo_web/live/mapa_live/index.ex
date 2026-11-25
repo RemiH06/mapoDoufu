@@ -2,6 +2,7 @@ defmodule MapoWeb.MapaLive.Index do
   use MapoWeb, :live_view
 
   import MapoWeb.Cifras
+  import MapoWeb.Iconos, only: [icono: 1]
 
   require MapoWeb.Marcas
 
@@ -11,6 +12,7 @@ defmodule MapoWeb.MapaLive.Index do
   alias Mapo.Sesiones.Anotacion
   alias Mapo.Teams
   alias MapoWeb.Cita
+  alias MapoWeb.Cotejo
   alias MapoWeb.Escala
   alias MapoWeb.LecturaCenso
   alias MapoWeb.Leyenda
@@ -45,6 +47,16 @@ defmodule MapoWeb.MapaLive.Index do
     "voronoi" => %{nombre: "Área por negocio", fuente: "INEGI · DENUE", enfoque: "comercio"},
     "isocrona" => %{nombre: "Alcance en auto", fuente: "OSRM", enfoque: "movilidad"},
     "transporte" => %{nombre: "Transporte público", fuente: "GTFS · OSM", enfoque: "movilidad"},
+    "riesgos" => %{
+      nombre: "Riesgos",
+      fuente: "Conagua · SEMARNAT · NASA · SMN",
+      enfoque: "laboral"
+    },
+    "servicios" => %{
+      nombre: "Servicios",
+      fuente: "CLUES · DENUE · GTFS · OSM",
+      enfoque: "movilidad"
+    },
     "coloreado" => %{
       nombre: "Municipios",
       fuente: "INEGI · Marco Geoestadístico",
@@ -56,7 +68,7 @@ defmodule MapoWeb.MapaLive.Index do
 
   # Los acetatos que se citan: los de fuentes públicas. "Tus datos" es del
   # equipo y nunca va en un enlace permanente (docs/producto/citar.md).
-  @citables ~w(coropleta vivienda voronoi coloreado isocrona transporte)
+  @citables ~w(coropleta vivienda voronoi coloreado isocrona transporte riesgos servicios)
 
   # Alcances apilados: cada uno con una tinta, en este orden.
   @tintas_isocrona ~w(movilidad urbanismo comercio seguridad demografia)
@@ -90,6 +102,7 @@ defmodule MapoWeb.MapaLive.Index do
         phx-hook="MapaTecnico"
         phx-update="ignore"
         data-mesa="neutra"
+        data-peligros={Cotejo.plano_json()}
         class="plano-gl flex-1 min-h-0 w-full"
       >
       </div>
@@ -201,6 +214,18 @@ defmodule MapoWeb.MapaLive.Index do
           activa?={@transporte_activa?}
           meta={@transporte_meta}
           color={@transporte_color}
+        />
+        <.cinta_riesgos
+          :if={id == "riesgos"}
+          form={@riesgos_form}
+          meta={@riesgos_meta}
+          zona={@zona}
+        />
+        <.cinta_servicios
+          :if={id == "servicios"}
+          form={@servicios_form}
+          meta={@servicios_meta}
+          zona={@zona}
         />
         <div :if={id in @citables and activa?(assigns, id)} class="cinta-citar">
           <button
@@ -1192,6 +1217,207 @@ defmodule MapoWeb.MapaLive.Index do
   defp licencia_feed(%{"licencia" => l}), do: "Licencia #{String.replace(l, "-", " ")}"
 
   attr :form, :any, required: true
+  attr :meta, :map, default: nil
+  attr :zona, :map, default: nil
+
+  # Los peligros de /riesgos, con su figura y su ícono; la gente cerca se cuenta allá.
+  defp cinta_riesgos(assigns) do
+    ~H"""
+    <.form for={@form} id="riesgos_capa_form" phx-submit="mostrar_riesgos" class="cinta-campos">
+      <fieldset class="cinta-peligros">
+        <legend class="etiqueta">Peligros</legend>
+
+        <label :for={{clave, titulo} <- Cotejo.dibujables()}>
+          <input
+            type="checkbox"
+            name="riesgos_capa[peligros][]"
+            value={clave}
+            checked={clave in (@form.params["peligros"] || [])}
+          /> <span style={"color: var(#{Cotejo.tinta(clave)})"}><.icono nombre={clave} /></span>
+          {titulo}
+        </label>
+      </fieldset>
+
+      <.input
+        field={@form[:cerca_m]}
+        type="select"
+        label="Alrededor"
+        options={[
+          {"250 m", "250"},
+          {"500 m", "500"},
+          {"1 km", "1000"},
+          {"2 km", "2000"},
+          {"5 km", "5000"}
+        ]}
+        class="cinta-control"
+      />
+      <div class="cinta-botones">
+        <.button phx-disable-with="Poniendo..." class="boton primario">
+          {if @meta, do: "Actualizar", else: "Poner"}
+        </.button>
+
+        <.button :if={@meta} type="button" phx-click="quitar_riesgos" class="boton">
+          Quitar
+        </.button>
+      </div>
+    </.form>
+
+    <p :if={is_nil(@meta)} class="cinta-texto">
+      Dentro de la zona y a su alrededor. Hasta 5,000 km². Cada peligro por separado: cercanía no dice causa.
+    </p>
+
+    <ul
+      :if={@meta && Cotejo.colores(Enum.map(@meta, & &1["clave"])) != []}
+      class="cinta-clases"
+      aria-label="Colores"
+    >
+      <li :for={[variable, texto, hueco] <- Cotejo.colores(Enum.map(@meta, & &1["clave"]))}>
+        <span
+          class={["muestra-peligro", hueco && "hueca"]}
+          style={"--color: var(#{variable})"}
+          aria-hidden="true"
+        ></span> {texto}
+      </li>
+    </ul>
+
+    <ul :if={@meta} class="cinta-fuentes">
+      <li :for={c <- @meta}>
+        <b>{c["titulo"]}</b>{cuantos(c)}: {c["fuente"]}<span :if={c["fecha_dato"] not in [nil, ""]}>, {c["fecha_dato"]}</span>.
+      </li>
+
+      <li :if={@zona}>
+        <.link
+          class="enlace"
+          navigate={
+            ~p"/riesgos" <>
+              "?" <>
+              MapoWeb.ZonaSelector.query(zona: @zona["clave"], cerca: @form.params["cerca_m"])
+          }
+        >
+          Cuánta gente vive cerca
+        </.link>
+      </li>
+    </ul>
+    """
+  end
+
+  defp cuantos(%{"dibujados" => n, "total" => total}) when n < total,
+    do: " (#{cifra(n)} de #{cifra(total)})"
+
+  defp cuantos(%{"puntos" => true, "total" => total}), do: " (#{cifra(total)})"
+  defp cuantos(_capa), do: ""
+
+  attr :form, :any, required: true
+  attr :meta, :map, default: nil
+  attr :zona, :map, default: nil
+
+  # Los minutos a un servicio, como en /accesibilidad; los grupos de gente, allá.
+  defp cinta_servicios(assigns) do
+    assigns = assign(assigns, servicio: assigns.meta && servicio_puesto(assigns.meta))
+
+    ~H"""
+    <.form
+      for={@form}
+      id="servicios_capa_form"
+      phx-change="cambiar_servicios"
+      phx-submit="mostrar_servicios"
+      class="cinta-campos"
+    >
+      <.input
+        field={@form[:servicio]}
+        type="select"
+        label="Servicio"
+        options={for {c, _, t} <- Cotejo.servicios(@form.params["modo"]), do: {t, c}}
+        class="cinta-control"
+      />
+      <.input
+        field={@form[:modo]}
+        type="select"
+        label="Cómo se llega"
+        options={[{"A pie", "pie"}, {"En auto", "auto"}]}
+        class="cinta-control"
+      />
+      <.input
+        field={@form[:umbral]}
+        type="number"
+        min="1"
+        max="120"
+        step="1"
+        label="Lejos (min)"
+        class="cinta-control"
+      />
+      <div class="cinta-botones">
+        <.button phx-disable-with="Poniendo..." class="boton primario">
+          {if @meta, do: "Actualizar", else: "Poner"}
+        </.button>
+
+        <.button :if={@meta} type="button" phx-click="quitar_servicios" class="boton">
+          Quitar
+        </.button>
+      </div>
+    </.form>
+
+    <p :if={is_nil(@meta)} class="cinta-texto">
+      Minutos por calle de cada AGEB y localidad al más cercano. Hasta 5,000 km²; hoy solo está calculado Jalisco.
+    </p>
+
+    <p :if={@servicio} class="cinta-texto">
+      {cifra(Cotejo.resumen(@servicio, @meta["umbral"]).fuera)} {@servicio["grupo_etiqueta"]} a más de {@meta[
+        "umbral"
+      ]} minutos {frase_modo(@meta["modo"])}.
+    </p>
+
+    <ul :if={@servicio} class="cinta-clases" aria-label="Minutos">
+      <li :for={{texto, tinta} <- clases_minutos(@meta["umbral"])}>
+        <span
+          class="muestra-peligro"
+          style={"--color: color-mix(in srgb, var(--f-movilidad) #{tinta}%, transparent)"}
+          aria-hidden="true"
+        ></span> {texto}
+      </li>
+    </ul>
+
+    <ul :if={@servicio} class="cinta-fuentes">
+      <li>{@servicio["fuente"]}. {@servicio["red"]}. Calculado el {@servicio["fecha"]}.</li>
+
+      <li :if={@zona}>
+        <.link
+          class="enlace"
+          navigate={
+            ~p"/accesibilidad" <>
+              "?" <>
+              MapoWeb.ZonaSelector.query(
+                zona: @zona["clave"],
+                modo: @meta["modo"],
+                umbral: @meta["umbral"],
+                servicio: @servicio["clave"]
+              )
+          }
+        >
+          Todos los servicios de la zona
+        </.link>
+      </li>
+    </ul>
+    """
+  end
+
+  defp servicio_puesto(meta),
+    do: Enum.find(meta["servicios"], &(&1["clave"] == meta["servicio"]))
+
+  defp frase_modo("auto"), do: "en auto"
+  defp frase_modo(_modo), do: "a pie"
+
+  # Los mismos cortes y tintas de assets/js/servicios_capa.js.
+  defp clases_minutos(u) do
+    [
+      {"#{cifra(u / 2)} min o menos", 6},
+      {"#{cifra(u / 2)} a #{u} min", 20},
+      {"#{u} a #{u * 2} min", 50},
+      {"más de #{u * 2} min", 78}
+    ]
+  end
+
+  attr :form, :any, required: true
   attr :activa?, :boolean, required: true
   attr :resumen, :string, default: nil
 
@@ -1387,6 +1613,20 @@ defmodule MapoWeb.MapaLive.Index do
        transporte_activa?: false,
        transporte_meta: nil,
        transporte_color: "frecuencia",
+       riesgos_form:
+         to_form(
+           %{
+             "peligros" => ~w(agua_superficial agua_subterranea descargas retc fuego),
+             "cerca_m" => "1000"
+           },
+           as: "riesgos_capa"
+         ),
+       riesgos_meta: nil,
+       servicios_form:
+         to_form(%{"servicio" => "centro_salud", "modo" => "pie", "umbral" => "15"},
+           as: "servicios_capa"
+         ),
+       servicios_meta: nil,
        coropleta_leyenda: nil,
        vivienda_form:
          to_form(%{"indicador" => "eic_alqui", "anio" => "", "segmento" => ""},
@@ -1404,8 +1644,10 @@ defmodule MapoWeb.MapaLive.Index do
        orden: [
          "propios",
          "isocrona",
+         "riesgos",
          "transporte",
          "voronoi",
+         "servicios",
          "vivienda",
          "coropleta",
          "coloreado"
@@ -1581,6 +1823,32 @@ defmodule MapoWeb.MapaLive.Index do
 
   def handle_event("mostrar_transporte", _params, socket) do
     {:noreply, socket |> poner_transporte() |> sincronizar_url()}
+  end
+
+  def handle_event("mostrar_riesgos", %{"riesgos_capa" => params}, socket),
+    do: {:noreply, socket |> poner_riesgos(params) |> sincronizar_url()}
+
+  def handle_event("quitar_riesgos", _params, socket) do
+    {:noreply,
+     socket
+     |> assign(riesgos_meta: nil)
+     |> push_event("capa_riesgos", %{activa: false})
+     |> sincronizar_url()}
+  end
+
+  # Al pasar a auto se van los servicios que solo van a pie.
+  def handle_event("cambiar_servicios", %{"servicios_capa" => params}, socket),
+    do: {:noreply, assign(socket, servicios_form: form_servicios(params))}
+
+  def handle_event("mostrar_servicios", %{"servicios_capa" => params}, socket),
+    do: {:noreply, socket |> poner_servicios(params) |> sincronizar_url()}
+
+  def handle_event("quitar_servicios", _params, socket) do
+    {:noreply,
+     socket
+     |> assign(servicios_meta: nil)
+     |> push_event("capa_servicios", %{activa: false})
+     |> sincronizar_url()}
   end
 
   def handle_event("color_rutas", %{"color" => color}, socket)
@@ -2086,6 +2354,133 @@ defmodule MapoWeb.MapaLive.Index do
     end
   end
 
+  defp poner_riesgos(socket, params) do
+    zona = socket.assigns.zona
+    pedidos = List.wrap(params["peligros"])
+    peligros = for {c, _} <- Cotejo.dibujables(), c in pedidos, do: c
+
+    cerca =
+      if params["cerca_m"] in ~w(250 500 1000 2000 5000), do: params["cerca_m"], else: "1000"
+
+    socket =
+      assign(socket,
+        riesgos_form: to_form(%{"peligros" => peligros, "cerca_m" => cerca}, as: "riesgos_capa")
+      )
+
+    cond do
+      is_nil(zona) ->
+        put_flash(socket, :error, "Elige una zona primero.")
+
+      peligros == [] ->
+        put_flash(socket, :error, "Elige al menos un peligro.")
+
+      true ->
+        case MapoCore.riesgos_capas(zona["clave"], String.to_integer(cerca), peligros) do
+          {:ok, %{"capas" => capas}} ->
+            socket
+            |> assign(riesgos_meta: Enum.map(capas, &meta_riesgo/1))
+            |> push_event("capa_riesgos", %{
+              activa: true,
+              zona: zona["geojson"],
+              capas: Enum.map(capas, &Map.take(&1, ["clave", "datos"]))
+            })
+            |> actualizar_mesa()
+
+          error ->
+            error_de_zona(socket, "Riesgos", error)
+        end
+    end
+  end
+
+  defp meta_riesgo(capa) do
+    datos = capa["datos"]
+    n = length(datos["features"])
+
+    capa
+    |> Map.delete("datos")
+    |> Map.merge(%{
+      "dibujados" => n,
+      "total" => datos["total"] || n,
+      "puntos" => match?([%{"geometry" => %{"type" => "Point"}} | _], datos["features"])
+    })
+  end
+
+  defp form_servicios(params) do
+    modo = if params["modo"] in ~w(pie auto), do: params["modo"], else: "pie"
+    claves = for {c, _, _} <- Cotejo.servicios(modo), do: c
+    servicio = if params["servicio"] in claves, do: params["servicio"], else: hd(claves)
+
+    umbral =
+      case Integer.parse(params["umbral"] || "") do
+        {u, ""} when u in 1..120 -> "#{u}"
+        _ -> "15"
+      end
+
+    to_form(%{"servicio" => servicio, "modo" => modo, "umbral" => umbral}, as: "servicios_capa")
+  end
+
+  defp poner_servicios(socket, params) do
+    zona = socket.assigns.zona
+    form = form_servicios(params)
+    socket = assign(socket, servicios_form: form)
+    %{"servicio" => clave, "modo" => modo, "umbral" => umbral} = form.params
+    umbral = String.to_integer(umbral)
+
+    if is_nil(zona) do
+      put_flash(socket, :error, "Elige una zona primero.")
+    else
+      case MapoCore.accesibilidad_zona(zona["clave"], modo) do
+        {:ok, %{"servicios" => servicios} = r} ->
+          s = Enum.find(servicios, &(&1["clave"] == clave))
+
+          if s && s["calculado"] do
+            socket
+            |> assign(
+              servicios_meta:
+                r
+                |> Map.take(["servicios", "modo", "zona"])
+                |> Map.merge(%{"servicio" => clave, "umbral" => umbral})
+            )
+            |> push_event("capa_servicios", %{
+              activa: true,
+              zona: r["zona"]["geojson"],
+              plano: solo_servicio(r["plano"], clave),
+              destinos: r["destinos"],
+              servicio: clave,
+              umbral: umbral,
+              titulo: s["titulo"]
+            })
+            |> actualizar_mesa()
+          else
+            put_flash(
+              socket,
+              :error,
+              "Ese servicio no se calcula #{frase_modo(modo)} en #{zona["nombre"]}."
+            )
+          end
+
+        error ->
+          error_de_zona(socket, "Servicios", error)
+      end
+    end
+  end
+
+  # Los minutos de todos los servicios pesan megas: al plano va solo el que se pinta.
+  defp solo_servicio(plano, clave) do
+    update_in(plano["features"], fn fs ->
+      Enum.map(fs, &update_in(&1["properties"]["m"], fn m -> Map.take(m || %{}, [clave]) end))
+    end)
+  end
+
+  defp error_de_zona(socket, que, {:error, {:status, 422, %{"detail" => d}}}) when is_binary(d),
+    do: put_flash(socket, :error, que <> ": " <> d <> ".")
+
+  defp error_de_zona(socket, _que, {:error, {:status, 404, _}}),
+    do: put_flash(socket, :error, "Esa zona no toca nada cargado en Mapo.")
+
+  defp error_de_zona(socket, _que, _error),
+    do: put_flash(socket, :error, "mapo_core no está disponible ahorita mismo.")
+
   defp poner_transporte(socket) do
     zona = socket.assigns.zona
 
@@ -2127,14 +2522,8 @@ defmodule MapoWeb.MapaLive.Index do
           })
           |> actualizar_mesa()
 
-        {:error, {:status, 422, %{"detail" => detalle}}} when is_binary(detalle) ->
-          put_flash(socket, :error, "Transporte: " <> detalle <> ".")
-
-        {:error, {:status, 404, _}} ->
-          put_flash(socket, :error, "Esa zona no toca nada cargado en Mapo.")
-
-        {:error, _} ->
-          put_flash(socket, :error, "mapo_core no está disponible ahorita mismo.")
+        error ->
+          error_de_zona(socket, "Transporte", error)
       end
     end
   end
@@ -2411,6 +2800,11 @@ defmodule MapoWeb.MapaLive.Index do
       negocios: a.voronoi_activa? && (a.voronoi_form[:clase_actividad].value || ""),
       municipios: a.coloreado_activa? && "1",
       transporte: a.transporte_activa? && "1",
+      riesgos: a.riesgos_meta && Enum.join(a.riesgos_form.params["peligros"], ","),
+      cerca: a.riesgos_meta && a.riesgos_form.params["cerca_m"],
+      servicio: a.servicios_meta && a.servicios_meta["servicio"],
+      modo: a.servicios_meta && a.servicios_meta["modo"],
+      umbral: a.servicios_meta && a.servicios_meta["umbral"],
       alcance: alcance_url(a),
       ver: if(a.elegida in Map.keys(@capas) and a.elegida != "propios", do: a.elegida)
     ]
@@ -2418,7 +2812,7 @@ defmodule MapoWeb.MapaLive.Index do
     |> Enum.map(fn {k, v} -> {k, to_string(v)} end)
   end
 
-  @claves_url ~w(zona censo como b censo2 como2 modo2 esc viv anio seg vesc ficha negocios municipios transporte alcance ver sesion)a
+  @claves_url ~w(zona censo como b censo2 como2 modo2 esc viv anio seg vesc ficha negocios municipios transporte riesgos cerca servicio modo umbral alcance ver sesion)a
 
   # La lectura de omisión (la primera de su lista) no va en el enlace.
   defp no_omision(como, [{_, como} | _]), do: nil
@@ -2465,6 +2859,8 @@ defmodule MapoWeb.MapaLive.Index do
     |> voronoi_de_url(params["negocios"])
     |> then(&if(params["municipios"] == "1", do: poner_coloreado(&1), else: &1))
     |> then(&if(params["transporte"] == "1", do: poner_transporte(&1), else: &1))
+    |> riesgos_de_url(params)
+    |> servicios_de_url(params)
     |> isocrona_de_url(params["alcance"])
     |> ver_de_url(params["ver"])
   end
@@ -2539,6 +2935,8 @@ defmodule MapoWeb.MapaLive.Index do
       )
     )
     |> then(&if(a.transporte_activa?, do: poner_transporte(&1), else: &1))
+    |> then(&if(a.riesgos_meta, do: poner_riesgos(&1, a.riesgos_form.params), else: &1))
+    |> then(&if(a.servicios_meta, do: poner_servicios(&1, a.servicios_form.params), else: &1))
     |> then(&if(a.coloreado_activa?, do: poner_coloreado(&1), else: &1))
     |> then(&if(a.vivienda_activa?, do: poner_vivienda(&1, a.vivienda_form.params), else: &1))
   end
@@ -2586,6 +2984,24 @@ defmodule MapoWeb.MapaLive.Index do
   end
 
   defp vivienda_de_url(socket, _params), do: socket
+
+  defp riesgos_de_url(socket, %{"riesgos" => texto} = params) when is_binary(texto) do
+    peligros = texto |> String.split(",") |> Enum.filter(&Cotejo.dibujable?/1)
+
+    if peligros == [],
+      do: socket,
+      else: poner_riesgos(socket, %{"peligros" => peligros, "cerca_m" => params["cerca"]})
+  end
+
+  defp riesgos_de_url(socket, _params), do: socket
+
+  defp servicios_de_url(socket, %{"servicio" => clave} = params) when is_binary(clave) do
+    if Enum.any?(Cotejo.servicios("pie"), &(elem(&1, 0) == clave)),
+      do: poner_servicios(socket, Map.take(params, ~w(servicio modo umbral))),
+      else: socket
+  end
+
+  defp servicios_de_url(socket, _params), do: socket
 
   # El giro es texto libre, como en la cinta: mapo_core lo pasa por la tabla
   # de rubros o lo busca como texto con parámetros, nunca en el SQL.
@@ -2732,6 +3148,25 @@ defmodule MapoWeb.MapaLive.Index do
     end
   end
 
+  defp citas(a, "riesgos", enlace) do
+    for c <- a.riesgos_meta || [] do
+      Cita.armar(Cotejo.fuente_peligro(c["clave"]),
+        que: "#{c["titulo"]}, #{lugar(a)}, por #{c["nivel"]}",
+        datos: c["fecha_dato"] not in [nil, ""] && c["fecha_dato"],
+        enlace: enlace
+      )
+    end
+  end
+
+  defp citas(a, "servicios", enlace) do
+    Cotejo.citas_servicio(
+      a.servicios_meta,
+      a.servicios_meta["servicio"],
+      a.servicios_meta["umbral"],
+      enlace
+    )
+  end
+
   defp citas(a, "coloreado", enlace) do
     [
       Cita.armar("marco",
@@ -2830,6 +3265,8 @@ defmodule MapoWeb.MapaLive.Index do
   defp activa?(assigns, "vivienda"), do: assigns.vivienda_activa?
   defp activa?(assigns, "isocrona"), do: assigns.isocronas != [] or assigns.isocrona_poniendo?
   defp activa?(assigns, "transporte"), do: assigns.transporte_activa?
+  defp activa?(assigns, "riesgos"), do: assigns.riesgos_meta != nil
+  defp activa?(assigns, "servicios"), do: assigns.servicios_meta != nil
 
   defp activas(assigns), do: Enum.filter(assigns.orden, &activa?(assigns, &1))
 
@@ -2870,7 +3307,16 @@ defmodule MapoWeb.MapaLive.Index do
   defp fuente_puesta(%{vivienda_meta: %{"indicador" => %{"fuente" => f}}}, "vivienda"),
     do: f |> String.split(" · ") |> hd()
 
+  # Los que están puestos, cada uno con quien lo publica.
+  defp fuente_puesta(%{riesgos_meta: [_ | _] = capas}, "riesgos"),
+    do: capas |> Enum.map(&publica/1) |> Enum.uniq() |> Enum.join(", ")
+
+  defp fuente_puesta(%{servicios_meta: %{} = meta}, "servicios"),
+    do: meta |> servicio_puesto() |> Map.get("fuente") |> String.split(" ") |> hd()
+
   defp fuente_puesta(_assigns, id), do: @capas[id].fuente |> String.split(" · ") |> hd()
+
+  defp publica(%{"fuente" => fuente}), do: fuente |> String.split([",", " ("]) |> hd()
 
   defp lugar(%{zona: %{"tipo" => "municipios", "municipios" => [m]}}),
     do: Enum.join(Enum.reject([m["nombre"], m["estado"]], &is_nil/1), ", ")

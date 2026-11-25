@@ -87,27 +87,6 @@
     overflow-y: auto;
   }
   /* Casillas de capas (riesgos) */
-  .plano-gl .control-capas {
-    display: grid;
-    gap: 4px;
-    margin: 10px 10px 0 0;
-    padding: 8px 10px;
-    font-family: var(--cond);
-    font-size: 14px;
-    max-width: 260px;
-    background: var(--bg);
-    color: var(--text);
-    border: 1.5px solid var(--line);
-  }
-  .plano-gl .control-capas legend {
-    float: left;
-    font-weight: 700;
-  }
-  .plano-gl .control-capas label {
-    display: flex;
-    gap: 6px;
-    align-items: center;
-  }
   #mapa-tecnico .maplibregl-ctrl-top-right {
     top: 64px;
     right: 10px;
@@ -161,6 +140,7 @@
     display: grid;
     grid-template-columns: auto 1fr;
     min-width: 260px;
+    max-width: 330px;
   }
   .rotulo-titulo {
     grid-column: 1 / -1;
@@ -275,6 +255,28 @@
   }
   .charola-boton {
     display: none;
+  }
+  /* Diez pestañas: donde no caben enteras, más apretadas y sin la nota (la que
+     está encima ya se ve levantada). */
+  @media (min-width: 901px) and (max-width: 1600px) {
+    .charola {
+      gap: 4px;
+      padding: 0 12px;
+    }
+    .pestana {
+      gap: 6px;
+      padding: 8px 9px 10px;
+    }
+    .pestana b {
+      font-size: 15px;
+    }
+    .pestana em {
+      display: none;
+    }
+    .pelicula {
+      width: 14px;
+      height: 16px;
+    }
   }
 
   /* Arrastrar una pestaña reordena la pila (charola.js): la que se mueve
@@ -418,6 +420,7 @@
     color: var(--text2);
     align-self: center;
   }
+  .cinta-fuentes .enlace,
   .cinta-texto .enlace {
     color: var(--accent);
     text-decoration: underline;
@@ -575,6 +578,31 @@
   .muestra-linea.linea-mas { border-top-width: 1.5px; opacity: 0.35; }
   .muestra-linea.linea-sin_dato { border-top: 1.5px dashed var(--f-movilidad); opacity: 0.6; }
   /* Con el color de cada ruta la leyenda solo habla del grosor. */
+  .muestra-peligro {
+    flex: none;
+    width: 14px;
+    height: 14px;
+    border: 1px solid var(--line);
+    background: var(--color);
+  }
+  .muestra-peligro.hueca {
+    background: transparent;
+    border: 2.5px solid var(--color);
+  }
+  .cinta-peligros {
+    display: grid;
+    grid-template-columns: repeat(2, auto);
+    gap: 2px 16px;
+  }
+  .cinta-peligros label {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    min-height: 26px;
+    font-family: var(--cond);
+    font-size: 15px;
+    cursor: pointer;
+  }
   .cinta-clases.sin-tinta .muestra-linea { border-top-color: var(--text2); }
   .cinta-fuentes {
     max-width: 46ch;

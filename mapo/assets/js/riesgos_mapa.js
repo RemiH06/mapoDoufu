@@ -1,53 +1,24 @@
-import {crearPlano, alListo, clics, css, escapar, fuente, quitar, bordes, circulo, ficha, relleno, margenHoja} from "./plano"
+import {crearPlano, alListo, clics, css, escapar, fuente, quitar, bordes, circulo, ficha, margenHoja} from "./plano"
 import {conZona} from "./zona_plano"
+import {cargarPeligros, pintarPeligro, textoPeligro, iconoHtml, tintaDe, coloresDe, esPuntos} from "./peligros"
 
 // Plano de /riesgos. El LiveView decide la zona y manda lo que hay que dibujar:
-// "previa" (el círculo antes de consultar) y "zona" (el contorno y una capa por
-// peligro con puntos). Un clic en el plano propone el centro de un círculo.
-// Cada capa se prende y apaga sola en el control de capas: nunca se suman.
+// "previa" (el círculo antes de consultar), "zona" (el contorno y una capa por
+// peligro) y "solo" (el peligro elegido en la hoja, o ninguno). Un clic en el
+// plano propone el centro de un círculo. Cada capa se prende y apaga sola en la
+// leyenda: nunca se suman.
 
 const raiz = document.documentElement
 
-const COLOR_CAPA = {
-  descargas: "--f-urbanismo",
-  retc: "--f-seguridad",
-  fuego: "--f-movilidad",
-}
-
-function colorPunto(clave) {
-  if (!clave.startsWith("agua_")) return css(COLOR_CAPA[clave] || "--text")
-  return ["match", ["get", "semaforo"],
-    "ROJO", css("--r-rojo"), "AMARILLO", css("--r-amarillo"), "VERDE", css("--r-verde"),
-    css("--text2")]
-}
-
-function textoFicha(clave, p) {
-  const filas = []
-  // MapLibre entrega las listas de propiedades como texto JSON.
-  const incumple = typeof p.incumple === "string" ? JSON.parse(p.incumple) : p.incumple
-  if (clave.startsWith("agua_")) {
-    filas.push(`<b>${escapar(p.nombre || p.clave)}</b>`, escapar(p.cuerpo), `Semáforo: ${escapar(p.semaforo || "sin")}`)
-    if (incumple?.length) filas.push(`Incumple: ${incumple.map(escapar).join(", ")}`)
-  } else if (clave === "descargas") {
-    filas.push(`<b>Descarga con permiso</b>`, `Uso: ${escapar(p.uso)}`,
-      `${escapar(Math.round(p.volumen_anual || 0).toLocaleString("es-MX"))} m³ al año`,
-      `Recibe: ${escapar(p.cuerpo_receptor)}`)
-  } else if (clave === "retc") {
-    filas.push(`<b>${escapar(p.actividad || "Establecimiento")}</b>`, `Último reporte: ${escapar(p.anio)}`)
-  } else if (clave === "fuego") {
-    filas.push(`<b>Foco de calor</b>`, escapar(p.fecha), `Confianza: ${escapar(p.confianza)}`)
-  }
-  return filas.filter(Boolean).join("<br>")
-}
-
-// Control de capas: una casilla por peligro, con cuántos puntos trae.
+// Leyenda y control a la vez: cada peligro con su ícono, su casilla y cuántos hay.
 class ControlCapas {
   constructor(alCambiar) {
     this.alCambiar = alCambiar
   }
   onAdd() {
-    this.el = document.createElement("fieldset")
+    this.el = document.createElement("details")
     this.el.className = "maplibregl-ctrl control-capas"
+    this.el.hidden = true
     this.el.addEventListener("change", e => this.alCambiar(e.target.value, e.target.checked))
     return this.el
   }
@@ -56,15 +27,19 @@ class ControlCapas {
   }
   poner(capas, visibles) {
     this.el.hidden = capas.length === 0
-    this.el.innerHTML = `<legend>Capas</legend>` + capas.map(({clave, titulo, datos}) =>
+    const colores = coloresDe([...visibles])
+    this.el.innerHTML = `<summary>En el plano</summary>` + capas.map(({clave, titulo, datos}) =>
       `<label><input type="checkbox" value="${escapar(clave)}" ${visibles.has(clave) ? "checked" : ""}>
-        ${escapar(titulo)} (${datos.features.length})</label>`).join("")
+        ${iconoHtml(clave, tintaDe(clave))} <span>${escapar(titulo)}${esPuntos(clave) ? ` (${(datos.total ?? datos.features.length).toLocaleString("es-MX")})` : ""}</span></label>`).join("") +
+      (colores.length ? `<ul class="control-colores">${colores.map(([v, t, hueco]) =>
+        `<li><span class="muestra${hueco ? " hueca" : ""}" style="--color:var(${v})"></span>${t}</li>`).join("")}</ul>` : "")
   }
 }
 
 export const RiesgosMapa = {
   mounted() {
     raiz.dataset.piel = "laboral"
+    cargarPeligros(this.el)
     this.capas = []
     this.visibles = new Set()
     this.listo = crearPlano(this.el, {alTema: () => { this._pintar(); this.zonaComun.repintar() }, margen: margenHoja}).then(({map, ml}) => {
@@ -73,10 +48,9 @@ export const RiesgosMapa = {
       this.control = new ControlCapas((clave, si) => {
         if (si) this.visibles.add(clave)
         else this.visibles.delete(clave)
-        if (map.getLayer(`r-${clave}`)) map.setLayoutProperty(`r-${clave}`, "visibility", si ? "visible" : "none")
+        this._visibilidad()
       })
       map.addControl(this.control, "top-right")
-      this.control.poner([], this.visibles)
       this.clic = clics(map, {
         vacio: lugar => this.pushEvent("punto", {lat: lugar.lat, lon: lugar.lng}),
         cursor: () => "crosshair",
@@ -90,7 +64,25 @@ export const RiesgosMapa = {
       this.previa = circulo([lon, lat], radio_m)
       this._pintarPrevia()
     }))
-    this.handleEvent("zona", cuando(({zona, capas}) => this._dibujar(zona, capas)))
+    this.handleEvent("zona", cuando(datos => this._dibujar(datos)))
+    this.handleEvent("solo", cuando(({clave}) => {
+      this._elegir(clave)
+      this._visibilidad()
+    }))
+  },
+
+  // Con uno elegido, solo ese. Sin elegir, los de puntos: los de áreas (acuíferos,
+  // sequía, ANP) taparían todo.
+  _elegir(clave) {
+    this.visibles = new Set(this.capas.map(c => c.clave).filter(c => clave ? c === clave : esPuntos(c)))
+  },
+
+  _visibilidad() {
+    for (const {clave} of this.capas) {
+      const v = this.visibles.has(clave) ? "visible" : "none"
+      for (const id of [`r-${clave}`, `r-${clave}-borde`]) if (this.map.getLayer(id)) this.map.setLayoutProperty(id, "visibility", v)
+    }
+    this.control.poner(this.capas, this.visibles)
   },
 
   _pintarPrevia() {
@@ -102,17 +94,22 @@ export const RiesgosMapa = {
       paint: {"line-color": css("--accent"), "line-width": 2, "line-dasharray": [3, 3]}})
   },
 
-  _dibujar(zona, capas) {
+  _dibujar({zona, limites, capas, solo}) {
     this.previa = null
     this.zonaComun.limpiar()
     this.zona = zona
+    this.limites = limites
     this.capas = capas
-    this.visibles = new Set(capas.map(c => c.clave))
-    this.control.poner(capas, this.visibles)
+    this._elegir(solo)
     this._pintar()
-    const ancho = window.innerWidth > 760
     const caja = bordes(zona)
-    if (caja) this.map.fitBounds(caja, {padding: relleno([ancho ? 460 : 20, 40], [40, ancho ? 40 : 260])})
+    // La hoja puede acabar de cambiar de ancho (lista o matriz). Abierta, la
+    // leyenda tapaba los datos donde el plano es angosto.
+    requestAnimationFrame(() => {
+      const hoja = document.getElementById("hoja").getBoundingClientRect()
+      this.control.el.open = window.innerWidth - hoja.right > 700
+      if (caja) this.map.fitBounds(caja, {padding: margenHoja()})
+    })
   },
 
   _pintar() {
@@ -123,24 +120,18 @@ export const RiesgosMapa = {
     this.clic.fuera("r-")
     if (!this.zona) return
     quitar(map, "zona")
+    fuente(map, "zona-l-f", this.limites)
     fuente(map, "zona-f", this.zona)
-    map.addLayer({id: "zona", type: "line", source: "zona-f", paint: {"line-color": css("--text"), "line-width": 2.5}})
-    for (const {clave, datos} of this.capas) {
-      const id = `r-${clave}`
-      fuente(map, `${id}-f`, datos)
-      map.addLayer({
-        id, type: "circle", source: `${id}-f`,
-        layout: {visibility: this.visibles.has(clave) ? "visible" : "none"},
-        paint: {
-          "circle-radius": clave === "fuego" ? 4 : 7,
-          "circle-color": colorPunto(clave),
-          "circle-opacity": 0.9,
-          "circle-stroke-color": css("--bg"),
-          "circle-stroke-width": 1.5,
-        },
-      })
-      this.clic.en(id, (f, lugar) => ficha(map, this.ml, lugar, textoFicha(clave, f.properties)))
+    // Las áreas debajo de los límites y los puntos encima de todo.
+    const poner = capa => {
+      const id = pintarPeligro(map, "r-", capa, this.visibles.has(capa.clave))
+      this.clic.en(id, (f, lugar) => ficha(map, this.ml, lugar, textoPeligro(capa.clave, capa.datos.features[f.properties._i].properties)))
     }
+    this.capas.filter(c => !esPuntos(c.clave)).forEach(poner)
+    map.addLayer({id: "zona-l", type: "line", source: "zona-l-f", paint: {"line-color": css("--line"), "line-width": 1}})
+    map.addLayer({id: "zona", type: "line", source: "zona-f", paint: {"line-color": css("--text"), "line-width": 2.5}})
+    this.capas.filter(c => esPuntos(c.clave)).forEach(poner)
+    this._visibilidad()
   },
 
   destroyed() {

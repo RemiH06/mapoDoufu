@@ -1,0 +1,550 @@
+/* Cotejo: la lista, la matriz y los mapas chicos de /riesgos y /accesibilidad
+   (MapoWeb.Cotejo). Las clases van de 0 a 4 con cortes fijos, los mismos en
+   todas las columnas. Contraste medido: 4.5:1 o más en las cinco clases, en los
+   dos temas. */
+
+:root {
+  /* Peligros en el plano: cada uno con su figura además de su tinta. */
+  --p-descargas: #0B6E99;
+  --p-retc: #5B2A86;
+  --p-fuego: #C2410C;
+  --p-agua-sin: #8A4B08;
+  --p-agua-con: #1D6FB8;
+  --p-anp: #2E7D32;
+  /* Categorías del Monitor de Sequía de México (SMN), con sus colores. */
+  --msm-sin: #E8E8E8;
+  --msm-d0: #FFFF00;
+  --msm-d1: #FCD37F;
+  --msm-d2: #FFAA00;
+  --msm-d3: #E60000;
+  --msm-d4: #730000;
+}
+[data-theme="dark"] {
+  --p-descargas: #7CC4E8;
+  --p-retc: #C9A7F5;
+  --p-fuego: #FFA366;
+  --p-agua-sin: #E0A15C;
+  --p-agua-con: #7DB8F0;
+  --p-anp: #8FD19A;
+  --msm-sin: #4A4A4A;
+}
+
+@layer components {
+  .icono-tema {
+    flex: none;
+    display: inline-block;
+    vertical-align: -3px;
+  }
+
+  .cotejo-peligros {
+    --clase-tinta: #1E5F66;
+    --clase-3: 52%;
+  }
+  .cotejo-servicios {
+    --clase-tinta: #9A4F12;
+    --clase-3: 50%;
+  }
+  [data-theme="dark"] .cotejo-peligros {
+    --clase-tinta: #8FD8DE;
+    --clase-3: 42%;
+  }
+  [data-theme="dark"] .cotejo-servicios {
+    --clase-tinta: #F5C48F;
+    --clase-3: 38%;
+  }
+  .riesgos [data-clase] {
+    background: var(--clase-fondo, transparent);
+    color: var(--clase-texto, var(--text));
+  }
+  .riesgos [data-clase="1"] {
+    --clase-fondo: color-mix(in srgb, var(--clase-tinta) 13%, var(--bg));
+  }
+  .riesgos [data-clase="2"] {
+    --clase-fondo: color-mix(in srgb, var(--clase-tinta) 28%, var(--bg));
+  }
+  .riesgos [data-clase="3"] {
+    --clase-fondo: color-mix(in srgb, var(--clase-tinta) var(--clase-3), var(--bg));
+  }
+  .riesgos [data-clase="4"] {
+    --clase-fondo: var(--clase-tinta);
+    --clase-texto: var(--bg);
+  }
+  .riesgos [data-estado="rayada"] {
+    background: repeating-linear-gradient(135deg, transparent 0 5px, color-mix(in srgb, var(--line) 30%, transparent) 5px 6px);
+    color: var(--text2);
+  }
+  /* Los colores del Monitor no cambian con el tema; su texto, según el fondo. */
+  .riesgos [data-color="sin"] {
+    background: transparent;
+  }
+  .riesgos [data-color="D0"] {
+    background: var(--msm-d0);
+    color: #1A1A1A;
+  }
+  .riesgos [data-color="D1"] {
+    background: var(--msm-d1);
+    color: #1A1A1A;
+  }
+  .riesgos [data-color="D2"] {
+    background: var(--msm-d2);
+    color: #1A1A1A;
+  }
+  .riesgos [data-color="D3"] {
+    background: var(--msm-d3);
+    color: #FFFBF5;
+  }
+  .riesgos [data-color="D4"] {
+    background: var(--msm-d4);
+    color: #FFFBF5;
+  }
+
+  /* Barra: cómo verlo, cambiar la zona, abrir en el mapa */
+  .cotejo-barra {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    align-items: center;
+    gap: 8px 16px;
+    margin: 10px 0 4px;
+  }
+  .cotejo-vistas {
+    display: flex;
+  }
+  .cotejo-vistas .chico + .chico {
+    border-left: 0;
+  }
+  .cotejo-vistas [aria-pressed="true"] {
+    border-color: var(--text);
+    background: var(--text);
+    color: var(--bg);
+  }
+  .cotejo-acciones {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px 16px;
+  }
+  .riesgos .enlace {
+    font-family: var(--cond);
+    font-weight: 500;
+    font-size: 15px;
+    display: inline-flex;
+    align-items: center;
+    min-height: 28px;
+    color: var(--text);
+    text-decoration: underline;
+    text-underline-offset: 3px;
+    cursor: pointer;
+  }
+  .riesgos .enlace:disabled {
+    color: var(--text2);
+    text-decoration: none;
+    cursor: default;
+  }
+  /* Con la zona ya consultada, los campos en un renglón */
+  .riesgos-cuerpo form.en-linea {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0 24px;
+    margin: 6px 0 0;
+    padding: 0;
+    border: 0;
+  }
+  .riesgos-cuerpo form.en-linea .fieldset {
+    margin: 0;
+    padding: 0;
+  }
+  .riesgos-cuerpo form.en-linea label {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+  }
+  .riesgos-cuerpo form.en-linea .campo {
+    width: auto;
+    min-width: 84px;
+    max-width: 120px;
+    padding-block: 3px;
+    min-height: 32px;
+  }
+
+  .hoja.riesgos.ancha {
+    width: min(760px, calc(100vw - 420px));
+  }
+  .hoja.riesgos.cotejo-servicios.ancha {
+    width: min(860px, calc(100vw - 400px));
+  }
+
+  /* Cifra con clase */
+  .cotejo-ficha {
+    display: inline-flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    min-width: 76px;
+    min-height: 40px;
+    padding: 3px 7px;
+    line-height: 1.15;
+    border: 1px solid var(--line);
+  }
+  .cotejo-ficha:not([data-estado]) {
+    border-color: transparent;
+  }
+  .cotejo-ficha b,
+  .cotejo-matriz td b {
+    font-weight: 500;
+    font-size: 15px;
+    white-space: nowrap;
+  }
+  .riesgos [data-color] b,
+  .riesgos [data-estado] b {
+    font-family: var(--cond);
+    font-size: 15px;
+    white-space: normal;
+  }
+  .cotejo-ficha small,
+  .cotejo-matriz td small {
+    display: block;
+    font-family: var(--cond);
+    font-size: 12px;
+    line-height: 1.15;
+  }
+
+  /* Lista: un peligro o servicio por renglón */
+  .cotejo-lista {
+    display: grid;
+  }
+  .cotejo-grupo {
+    font-family: var(--cond);
+    font-weight: 600;
+    font-size: 15px;
+    color: var(--text2);
+    margin: 14px 0 4px;
+  }
+  .cotejo-renglon {
+    border-top: 1px solid var(--line);
+  }
+  .cotejo-renglon > h3 > button {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    min-height: 48px;
+    padding: 4px 0;
+    text-align: left;
+    cursor: pointer;
+  }
+  .cotejo-renglon > h3 > button:disabled {
+    cursor: default;
+  }
+  .cotejo-nombre {
+    flex: 1;
+    font-family: var(--cond);
+    font-weight: 600;
+    font-size: 17px;
+    line-height: 1.15;
+  }
+  .cotejo-renglon > h3 > button:hover:not(:disabled) .cotejo-nombre {
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+  .cotejo-renglon.abierto {
+    border-top: 3px solid var(--clase-tinta);
+  }
+  .cotejo-renglon .bloque {
+    border-top: 0;
+    padding: 2px 0 12px 28px;
+  }
+  .cotejo-renglon > .secundario {
+    padding: 0 0 8px 28px;
+  }
+  .riesgos-resultado .secundario {
+    font-size: 14px;
+    line-height: 1.35;
+    color: var(--text2);
+  }
+  .riesgos-resultado .cotejo-lista > .secundario {
+    margin-bottom: 8px;
+  }
+  .riesgos details.metodo {
+    margin-top: 6px;
+    font-size: 13px;
+    line-height: 1.4;
+    color: var(--text2);
+  }
+  .riesgos details.metodo summary {
+    font-family: var(--cond);
+    font-size: 14px;
+    min-height: 24px;
+    cursor: pointer;
+  }
+
+  /* Matriz */
+  .cotejo-matriz {
+    overflow-x: auto;
+    position: relative;
+  }
+  .cotejo-matriz table {
+    border-collapse: separate;
+    border-spacing: 2px;
+    width: 100%;
+  }
+  .cotejo-matriz th {
+    font-family: var(--cond);
+    font-weight: 600;
+    font-size: 14px;
+    line-height: 1.1;
+    text-align: left;
+    vertical-align: bottom;
+  }
+  .cotejo-matriz thead button {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 4px;
+    width: 100%;
+    min-width: 62px;
+    min-height: 50px;
+    padding: 4px 2px;
+    font-size: 13px;
+    text-align: center;
+    border-bottom: 3px solid transparent;
+    cursor: pointer;
+  }
+  .cotejo-matriz thead small {
+    font-weight: 500;
+    font-size: 12px;
+    color: var(--text2);
+  }
+  .cotejo-servicios .cotejo-matriz thead button {
+    min-width: 54px;
+  }
+  .cotejo-matriz thead button:hover:not(:disabled) {
+    border-bottom-color: var(--line);
+  }
+  .cotejo-matriz thead th.activa button {
+    border-bottom-color: var(--text);
+  }
+  .cotejo-matriz thead button:disabled {
+    color: var(--text2);
+    cursor: default;
+  }
+  .cotejo-matriz tbody th,
+  .cotejo-matriz td {
+    vertical-align: middle;
+    height: 44px;
+  }
+  .cotejo-matriz td {
+    text-align: center;
+    padding: 3px 3px;
+    line-height: 1.1;
+  }
+  .cotejo-matriz td.activa {
+    outline: 1.5px solid var(--text);
+    outline-offset: -1px;
+  }
+  .cotejo-matriz .cotejo-zona {
+    position: sticky;
+    left: 0;
+    z-index: 1;
+    min-width: 104px;
+    max-width: 160px;
+    padding-right: 6px;
+    background: var(--bg);
+  }
+  .cotejo-matriz .cotejo-zona small {
+    display: block;
+    font-weight: 500;
+    font-size: 12px;
+    color: var(--text2);
+  }
+  .cotejo-matriz .cotejo-gente {
+    text-align: right;
+    font-size: 13px;
+    white-space: nowrap;
+    padding-right: 6px;
+  }
+  .cotejo-matriz tr.total > * {
+    border-bottom: 1.5px solid var(--text);
+  }
+  .cotejo-quitar {
+    min-width: 24px;
+    min-height: 24px;
+    font-size: 18px;
+    line-height: 1;
+    cursor: pointer;
+  }
+
+  /* Leyenda de clases */
+  .cotejo-leyenda {
+    font-family: var(--cond);
+    font-size: 13px;
+    line-height: 1.3;
+    color: var(--text2);
+    display: grid;
+    gap: 3px;
+  }
+  .cotejo-leyenda ul {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 2px 12px;
+  }
+  .cotejo-leyenda li {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    color: var(--text);
+  }
+  .cotejo-muestra {
+    width: 18px;
+    height: 13px;
+    border: 1px solid var(--line);
+    flex: none;
+  }
+
+  /* Mapas chicos */
+  .cotejo-mapas {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    gap: 12px;
+  }
+  .cotejo-mapas[hidden] {
+    display: none;
+  }
+  .cotejo-mapa {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    text-align: left;
+    padding: 6px;
+    border: 1px solid var(--line);
+    background: var(--bg);
+    cursor: pointer;
+  }
+  .cotejo-mapa:hover:not(:disabled) {
+    border-color: var(--text);
+  }
+  .cotejo-mapa.activa {
+    outline: 2px solid var(--text);
+    outline-offset: -1px;
+  }
+  .cotejo-mapa:disabled {
+    cursor: default;
+  }
+  .cotejo-mapa-titulo {
+    display: flex;
+    gap: 6px;
+    min-height: 34px;
+    font-family: var(--cond);
+    font-weight: 600;
+    font-size: 15px;
+    line-height: 1.1;
+  }
+  .cotejo-lienzo,
+  .cotejo-lienzo canvas {
+    display: block;
+    width: 100%;
+  }
+  .cotejo-mapa .cotejo-ficha {
+    margin-top: auto;
+    flex-direction: row;
+    gap: 8px;
+    align-items: baseline;
+    min-height: 28px;
+  }
+
+  /* Leyenda y casillas del plano de /riesgos */
+  .plano-gl .control-capas {
+    margin: 10px 10px 0 0;
+    max-width: 250px;
+    font-family: var(--cond);
+    font-size: 14px;
+    line-height: 1.2;
+    background: var(--bg);
+    color: var(--text);
+    border: 1.5px solid var(--line);
+  }
+  .control-capas summary {
+    padding: 6px 10px;
+    font-weight: 700;
+    cursor: pointer;
+  }
+  .control-capas label,
+  .control-colores {
+    padding: 2px 10px;
+  }
+  .control-capas label {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+    min-height: 26px;
+  }
+  .control-colores {
+    display: grid;
+    gap: 2px;
+    margin-top: 4px;
+    padding-block: 6px;
+    border-top: 1px dashed var(--line);
+  }
+  .control-colores li {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+  }
+  .control-colores .muestra {
+    width: 12px;
+    height: 12px;
+    flex: none;
+    border: 1px solid var(--line);
+    background: var(--color);
+  }
+  .control-colores .muestra.hueca {
+    background: transparent;
+    border: 2.5px solid var(--color);
+  }
+
+  @media (max-width: 1023px) {
+    .hoja.riesgos.ancha,
+    .hoja.riesgos.cotejo-servicios.ancha {
+      width: min(560px, 62vw);
+    }
+  }
+  @media (max-width: 760px) {
+    .hoja.riesgos.ancha,
+    .hoja.riesgos.cotejo-servicios.ancha {
+      width: auto;
+    }
+    .cotejo-mapas {
+      grid-template-columns: repeat(2, 1fr);
+    }
+    .cotejo-matriz .cotejo-zona {
+      min-width: 92px;
+      max-width: 110px;
+    }
+    .cotejo-vistas .chico {
+      min-height: 36px;
+    }
+    /* Manda el ancho: la gente de la zona está en la lista */
+    .cotejo-matriz .cotejo-gente {
+      display: none;
+    }
+    .hoja.riesgos .hoja-cab h1 {
+      font-size: 20px;
+    }
+    .hoja.riesgos .hoja-cab .tipo {
+      display: none;
+    }
+  }
+  @media (max-height: 500px) and (max-width: 900px) {
+    .hoja.riesgos.ancha,
+    .hoja.riesgos.cotejo-servicios.ancha {
+      width: 52vw;
+      top: 92px;
+    }
+    .hoja.riesgos .hoja-cab .tipo {
+      display: none;
+    }
+    .hoja.riesgos .hoja-cab h1 {
+      font-size: 19px;
+    }
+  }
+}

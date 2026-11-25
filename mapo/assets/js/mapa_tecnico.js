@@ -2,6 +2,8 @@ import {crearPlano, alListo, clics, css, oscuro, escapar, fuente, quitar, indexa
 import {Marcas} from "./marcas"
 import {ESTADOS_BBOX} from "./estados_bbox"
 import {conZona} from "./zona_plano"
+import {cargarPeligros, pintarPeligro, textoPeligro, esPuntos} from "./peligros"
+import {pintarServicio} from "./servicios_capa"
 
 // La url viene del archivo de alguien: solo se vuelve liga si es http(s).
 const valorFicha = (columna, valor) =>
@@ -43,7 +45,7 @@ const valorPrecio = ({fuente, valor, rango_bajo, rango_alto, anio_tabla, cobertu
 // /buscador usa este mismo hook: le manda las mismas capas, mas "puntos"
 // (un punto por negocio) y "pedir_ubicacion" para el punto de partida.
 
-const ENFOQUE = {propios: "consumo", puntos: "comercio", zonas: "comercio", focos: "comercio", coropleta: "demografia", vivienda: "urbanismo", voronoi: "comercio", coloreado: "urbanismo", isocrona: "movilidad", transporte: "movilidad"}
+const ENFOQUE = {propios: "consumo", puntos: "comercio", zonas: "comercio", focos: "comercio", coropleta: "demografia", vivienda: "urbanismo", voronoi: "comercio", coloreado: "urbanismo", isocrona: "movilidad", transporte: "movilidad", riesgos: "laboral", servicios: "movilidad"}
 // Opacidad de la pelicula por clase: mas valor, mas tinta (sin escala del servidor).
 const TINTA_QUINTIL = [0.12, 0.26, 0.42, 0.6, 0.8]
 // Con una paleta, cada clase lleva su color y todas la misma opacidad.
@@ -87,6 +89,7 @@ const cifraFicha = v => v === null || v === undefined
 export const MapaTecnico = {
   mounted() {
     if (this.el.dataset.mesa) raiz.dataset.piel = this.el.dataset.mesa
+    cargarPeligros(this.el)
     this.colorRutas = "frecuencia"
     this.datos = Object.fromEntries(Object.keys(ENFOQUE).map(id => [id, null]))
     this.orden = Object.keys(ENFOQUE)
@@ -123,6 +126,8 @@ export const MapaTecnico = {
     this.handleEvent("capa_coloreado", cuando(datos => this._recibir("coloreado", datos)))
     this.handleEvent("capa_isocrona", cuando(datos => this._recibir("isocrona", datos)))
     this.handleEvent("capa_transporte", cuando(datos => this._recibir("transporte", datos)))
+    this.handleEvent("capa_riesgos", cuando(datos => this._recibir("riesgos", datos)))
+    this.handleEvent("capa_servicios", cuando(datos => this._recibir("servicios", datos)))
     this.handleEvent("capa_puntos", cuando(datos => this._recibir("puntos", datos)))
     this.handleEvent("capa_propios", cuando(capa => {
       this.propias = [...this.propias.filter(c => c.id !== capa.id), capa]
@@ -241,6 +246,7 @@ export const MapaTecnico = {
       case "puntos": return recuadroDePuntos(d.puntos.map(p => [p.lon, p.lat]))
       case "isocrona": return bordes(...d.isocronas.map(i => i.poligono))
       case "transporte": return bordes(d.rutas)
+      case "riesgos": case "servicios": return bordes(d.zona)
       case "propios": return bordes(...d.capas.map(c =>
         c.raster ? {type: "MultiPoint", coordinates: [[c.raster.oeste, c.raster.sur], [c.raster.este, c.raster.norte]]}
           : c.puntos ? {type: "MultiPoint", coordinates: c.puntos.map(p => [p.lon, p.lat])}
@@ -689,6 +695,20 @@ export const MapaTecnico = {
         : "Sin pasadas útiles de 7 a 9 de un día hábil"
     const dia = vd ? `<br>${vd.toLocaleString("es-MX")} viajes en el día` : ""
     return `<strong>${nombre}</strong><br>${quien}<br>${paso}${dia}`
+  },
+
+  // Los mismos peligros de /riesgos: figura, tinta e ícono de cada uno. Las áreas
+  // van debajo de los puntos.
+  _riesgos({capas}, _color, p) {
+    for (const capa of [...capas].sort((a, b) => esPuntos(a.clave) - esPuntos(b.clave))) {
+      const id = pintarPeligro(this.map, p, capa)
+      this.clic.en(id, (f, lugar) =>
+        ficha(this.map, this.ml, lugar, textoPeligro(capa.clave, capa.datos.features[f.properties._i].properties)))
+    }
+  },
+
+  _servicios(datos, _color, p) {
+    pintarServicio(this.map, this.ml, p, datos, this.clic)
   },
 
   _coloreado({geojson}, color, p) {

@@ -274,7 +274,12 @@ export function margenHoja() {
   const hoja = document.getElementById("hoja")?.getBoundingClientRect()
   const ancho = window.innerWidth
   if (!hoja || hoja.width === 0) return 30
-  if (hoja.width > ancho * 0.6) return relleno([20, 40], [20, 260])
+  // De orilla a orilla, es la charola del celular; ancha con hueco, la matriz.
+  if (hoja.width > ancho * 0.85) {
+    const tope = (document.querySelector(".membrete")?.getBoundingClientRect().bottom ?? 20) + 16
+    const abajo = window.innerHeight - hoja.top + 16
+    return window.innerHeight - tope - abajo >= 140 ? relleno([20, tope], [20, abajo]) : relleno([20, 40], [20, 260])
+  }
   if (hoja.left < ancho / 2) return relleno([hoja.right + 20, 40], [40, 40])
   return relleno([20, 40], [ancho - hoja.left + 20, 20])
 }

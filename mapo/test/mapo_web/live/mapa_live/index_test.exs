@@ -387,6 +387,191 @@ defmodule MapoWeb.MapaLive.IndexTest do
     assert mostrar_voronoi(lv) =~ "no toca nada cargado en Mapo"
   end
 
+  describe "riesgos y servicios" do
+    defp capa_riesgo(clave, titulo, n, total) do
+      punto = %{
+        "type" => "Feature",
+        "properties" => %{"fecha" => "2025-03-01"},
+        "geometry" => %{"type" => "Point", "coordinates" => [-103.3, 20.6]}
+      }
+
+      %{
+        "clave" => clave,
+        "titulo" => titulo,
+        "fuente" => "NASA FIRMS, VIIRS S-NPP",
+        "fecha_dato" => "2025",
+        "nivel" => "punto (píxel de 375 m)",
+        "metodo" => "Un foco es un píxel.",
+        "datos" => %{
+          "type" => "FeatureCollection",
+          "total" => total,
+          "features" => List.duplicate(punto, n)
+        }
+      }
+    end
+
+    test "pone los peligros elegidos, dice cuántos se dibujan y los cita", %{conn: conn} do
+      lv =
+        montar_con_municipio(conn, fn conn ->
+          assert conn.request_path == "/riesgos/capas"
+          assert conn.params["zona"] == "mun:14039"
+          assert conn.params["peligros"] == "fuego"
+          assert conn.params["cerca_m"] == "500"
+          Req.Test.json(conn, %{"capas" => [capa_riesgo("fuego", "Focos de calor", 2, 3000)]})
+        end)
+
+      html =
+        lv
+        |> form("#riesgos_capa_form", riesgos_capa: %{peligros: ["fuego"], cerca_m: "500"})
+        |> render_submit()
+
+      assert html =~ "(2 de 3,000)"
+      assert_push_event(lv, "capa_riesgos", %{activa: true, capas: [%{"clave" => "fuego"}]})
+      assert_patch(lv) =~ "riesgos=fuego&cerca=500"
+      assert has_element?(lv, ".rotulo dd", "NASA FIRMS")
+
+      assert has_element?(
+               lv,
+               "#cinta-riesgos .cinta-fuentes a[href='/riesgos?zona=mun:14039&cerca=500']"
+             )
+
+      lv |> element("#citar-riesgos") |> render_click()
+      assert has_element?(lv, "#cita-riesgos", "Focos de calor, Guadalajara")
+
+      render_click(lv, "quitar_riesgos", %{})
+      assert_push_event(lv, "capa_riesgos", %{activa: false})
+    end
+
+    test "sin zona o sin peligros no pide nada", %{conn: conn} do
+      stub_estados_y_municipio(fn _conn -> raise "no debería llamarse" end)
+      {:ok, lv, _html} = live(conn, ~p"/mapa")
+      params = %{"peligros" => ["fuego"], "cerca_m" => "1000"}
+
+      assert render_submit(lv, "mostrar_riesgos", %{"riesgos_capa" => params}) =~
+               "Elige una zona primero"
+
+      lv = montar_con_municipio(conn, fn _conn -> raise "no debería llamarse" end)
+
+      assert render_submit(lv, "mostrar_riesgos", %{
+               "riesgos_capa" => %{"peligros" => ["inventado"], "cerca_m" => "7"}
+             }) =~ "Elige al menos un peligro"
+    end
+
+    test "el enlace de /riesgos abre el acetato; lo que no es del catálogo se ignora", %{
+      conn: conn
+    } do
+      stub_estados_y_municipio(fn conn ->
+        assert conn.params["peligros"] == "fuego"
+        Req.Test.json(conn, %{"capas" => [capa_riesgo("fuego", "Focos de calor", 1, 1)]})
+      end)
+
+      {:ok, lv, _html} =
+        live(
+          conn,
+          "/mapa?zona=mun:14039&riesgos=fuego,defunciones,x&cerca=2000&ver=riesgos"
+        )
+
+      assert_push_event(lv, "capa_riesgos", %{activa: true})
+      assert has_element?(lv, "#cinta-riesgos:not([hidden])")
+      assert has_element?(lv, "#pestana-riesgos[aria-pressed=true]")
+    end
+
+    defp respuesta_servicios do
+      %{
+        "zona" => %{
+          "clave" => "mun:14039",
+          "nombre" => "Guadalajara",
+          "geojson" => %{"type" => "Polygon", "coordinates" => []}
+        },
+        "modo" => "pie",
+        "servicios" => [
+          %{
+            "clave" => "centro_salud",
+            "titulo" => "Centro de salud",
+            "grupo_etiqueta" => "personas",
+            "calculado" => true,
+            "total" => 1000,
+            "sin_ruta" => 0,
+            "dentro" => for(m <- 0..120, do: if(m < 15, do: 100, else: 600)),
+            "fuente" => "CLUES de la Secretaría de Salud (DGIS)",
+            "red" => "OSM, perfil foot.lua",
+            "fecha" => "2026-11-22"
+          },
+          %{"clave" => "supermercado", "titulo" => "Supermercado", "calculado" => false}
+        ],
+        "plano" => %{
+          "type" => "FeatureCollection",
+          "features" => [
+            %{
+              "type" => "Feature",
+              "geometry" => %{"type" => "Point", "coordinates" => [-103, 20]},
+              "properties" => %{
+                "c" => "1",
+                "t" => "ageb",
+                "p" => 10,
+                "m" => %{"centro_salud" => 4, "supermercado" => 9}
+              }
+            }
+          ]
+        },
+        "destinos" => %{"type" => "FeatureCollection", "features" => []}
+      }
+    end
+
+    test "el enlace de /accesibilidad abre el servicio con sus minutos", %{conn: conn} do
+      stub_estados_y_municipio(fn conn ->
+        assert conn.request_path == "/accesibilidad/zona"
+        Req.Test.json(conn, respuesta_servicios())
+      end)
+
+      {:ok, lv, _html} =
+        live(
+          conn,
+          "/mapa?zona=mun:14039&servicio=centro_salud&modo=pie&umbral=15&ver=servicios"
+        )
+
+      # Al plano va solo el servicio pintado, no los minutos de todos.
+      assert_push_event(lv, "capa_servicios", %{
+        servicio: "centro_salud",
+        umbral: 15,
+        plano: plano
+      })
+
+      assert [%{"properties" => %{"m" => m}}] = plano["features"]
+      assert m == %{"centro_salud" => 4}
+
+      assert has_element?(lv, "#cinta-servicios", "400 personas a más de 15 minutos a pie")
+      assert has_element?(lv, ".rotulo dd", "CLUES")
+      lv |> element("#citar-servicios") |> render_click()
+      assert has_element?(lv, "#cita-servicios", "Centro de salud")
+
+      html =
+        render_submit(lv, "mostrar_servicios", %{
+          "servicios_capa" => %{"servicio" => "supermercado", "modo" => "pie", "umbral" => "999"}
+        })
+
+      assert html =~ "Ese servicio no se calcula a pie en Guadalajara"
+    end
+
+    test "en auto se van los servicios que solo van a pie", %{conn: conn} do
+      stub_estados_y_municipio(fn _conn -> raise "no debería llamarse" end)
+      {:ok, lv, _html} = live(conn, ~p"/mapa")
+      opcion = "#servicios_capa_form option[value=parada_transporte]"
+      assert has_element?(lv, opcion)
+
+      render_change(lv, "cambiar_servicios", %{
+        "servicios_capa" => %{
+          "servicio" => "parada_transporte",
+          "modo" => "auto",
+          "umbral" => "x"
+        }
+      })
+
+      refute has_element?(lv, opcion)
+      assert has_element?(lv, "#servicios_capa_form option[value=centro_salud][selected]")
+    end
+  end
+
   describe "transporte" do
     defp respuesta_transporte(origen, feeds, rutas \\ []) do
       %{
@@ -696,7 +881,9 @@ defmodule MapoWeb.MapaLive.IndexTest do
       stub_estados_y_municipio(fn _conn -> raise "no debería llamarse" end)
       {:ok, lv, _html} = live(conn, ~p"/mapa")
 
-      orden = ~w(coropleta propios isocrona transporte voronoi vivienda coloreado)
+      orden =
+        ~w(coropleta propios isocrona riesgos transporte voronoi servicios vivienda coloreado)
+
       render_hook(lv, "ordenar", %{"orden" => orden})
       assert_push_event(lv, "orden_capas", %{orden: ^orden})
       assert ["pestana-coropleta" | _] = pestanas(lv)
@@ -724,8 +911,10 @@ defmodule MapoWeb.MapaLive.IndexTest do
         orden: [
           "propios",
           "isocrona",
+          "riesgos",
           "transporte",
           "voronoi",
+          "servicios",
           "vivienda",
           "coloreado",
           "coropleta"

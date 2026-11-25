@@ -267,6 +267,22 @@ async def _municipios_tocados(cur, sql: str, params: dict) -> list[dict]:
     return await cur.fetchall()
 
 
+async def limites(conn, cvegeos: list[str]) -> list[dict]:
+    """Contornos simplificados de municipios (cvegeo, nombre y geometría), para dibujar
+    sus límites dentro de una zona."""
+    cur = conn.cursor(row_factory=dict_row)
+    await cur.execute(
+        "SELECT cvegeo, nombre, ST_AsGeoJSON(ST_SimplifyPreserveTopology(coalesce(geom_mapa, geom), 0.0005), 5) AS gj"
+        " FROM municipios WHERE cvegeo = ANY(%(m)s) AND geom IS NOT NULL ORDER BY cvegeo", {"m": cvegeos})
+    return [{"cvegeo": f["cvegeo"], "nombre": f["nombre"], "geometry": json.loads(f["gj"])} for f in await cur.fetchall()]
+
+
+def limites_geojson(filas: list[dict]) -> dict:
+    return {"type": "FeatureCollection", "features": [
+        {"type": "Feature", "geometry": f["geometry"], "properties": {"cvegeo": f["cvegeo"], "nombre": f["nombre"]}}
+        for f in filas]}
+
+
 async def resolver(conn, zona: dict) -> dict | None:
     """Nombre, polígono simplificado, área y municipios de una zona validada. None si
     no hay nada cargado con esa clave (un CP sin colonias, municipios sin cargar)."""

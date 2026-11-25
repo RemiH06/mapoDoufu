@@ -35,6 +35,8 @@ que se está viendo y un texto de cita listo para copiar. Hecho en la sesión 24
 | `ficha` | Municipio con la ficha de vivienda abierta, por cvegeo (`14039`) | Cinco dígitos; los enlaces de antes de la 29d traen tres y se leen con el primer estado de la zona; mapo_core responde 404 si no existe |
 | `negocios` | "Área por negocio" puesto, con su giro (vacío: todos) | Texto de hasta 60 caracteres; mapo_core lo pasa por la tabla de rubros o como parámetro |
 | `municipios=1` | Acetato "Municipios" puesto | Solo `1` |
+| `riesgos`, `cerca` | Acetato "Riesgos": claves separadas por coma y metros alrededor | Los peligros dibujables de `MapoWeb.Cotejo` y las cinco cercanías; lo demás se ignora |
+| `servicio`, `modo`, `umbral` | Acetato "Servicios" | Los servicios del modo, `pie` o `auto`, de 1 a 120 minutos; lo raro cae a centro de salud, a pie, 15 |
 | `alcance` | Alcances en auto: `lat,lon,minutos`, hasta cinco separados por `;` (`isocronas.md`) | Lat 14 a 33.5, lon −119 a −85, de 1 a 120 minutos; uno que no pasa se salta |
 | `ver` | Cinta abierta | Los acetatos de la pantalla, menos "Tus datos" |
 | `sesion`, `capa` | Del equipo (ya existían) | El scope; no van en la cita |
@@ -47,16 +49,18 @@ rutas. `piel` (la piel fijada, hasta la 29d) se ignora: la mesa de `/mapa` es ne
 
 ### `/riesgos`
 
-`zona=&cerca=`, con la clave de la zona común (`zona.md`); el círculo es
+`zona=&cerca=&peligro=&vista=`, con la clave de la zona común (`zona.md`); el círculo es
 `zona=cir:lon,lat,radio`. Se escribe al terminar una consulta. Al abrirlo se
-consulta igual que con el botón, con el mismo límite de 30 por hora; una zona
+consulta igual que con el botón, con el mismo límite de 60 por hora. `peligro` (el abierto)
+y `vista` (`lista`, `matriz` o `mapas`, solo si no es la que saldría sola) se ignoran si no
+existen; las zonas fijas no van. Una zona
 que no resuelve, un radio fuera de 0.1 a 25 km o una cercanía que no es de la
 lista dejan la hoja vacía. Los enlaces de antes de la 29b
 (`modo=municipio&ent=&mun=` y `modo=circulo&lat=&lon=&radio=`) siguen abriendo.
 
 ### `/accesibilidad`
 
-`zona=&modo=&umbral=&servicio=` (`ent` y `mun` en los enlaces de antes de la 29b). Se
+`zona=&modo=&umbral=&servicio=&vista=` (`ent` y `mun` en los enlaces de antes de la 29b). Se
 escribe al terminar la consulta y al mover el umbral o el servicio del plano. Un modo que
 no es `pie` o `auto` o un umbral fuera de 1 a 120 caen al valor inicial (a pie, 15); una
 zona que no resuelve deja la hoja vacía. La

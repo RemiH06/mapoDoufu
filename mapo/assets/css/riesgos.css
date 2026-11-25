@@ -150,9 +150,6 @@
     #accesibilidad-map .leyenda-acc {
       display: none;
     }
-    #riesgos-map .control-capas {
-      display: none;
-    }
     .hoja.riesgos {
       width: auto;
     }
@@ -168,7 +165,6 @@
       width: 290px;
       top: 64px;
     }
-    #riesgos-map .control-capas,
     #accesibilidad-map .leyenda-acc {
       display: none;
     }

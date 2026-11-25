@@ -135,6 +135,16 @@ defmodule Mapo.MapoCore do
   end
 
   @doc """
+  Solo lo que se dibuja de cada peligro pedido (lista de claves), sin contar
+  gente: el acetato "Riesgos" de `/mapa`.
+  """
+  def riesgos_capas(zona, cerca_m, peligros) do
+    get("/riesgos/capas", [zona: zona, cerca_m: cerca_m, peligros: Enum.join(peligros, ",")],
+      receive_timeout: 60_000
+    )
+  end
+
+  @doc """
   Rutas y paradas de transporte público que pasan por una zona (clave de la
   zona común; docs/fuentes/gtfs.md): las del GTFS con su frecuencia en hora
   pico o, si ningún GTFS la toca, las de OSM sin horarios (`"origen"` dice

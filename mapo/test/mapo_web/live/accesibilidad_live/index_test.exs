@@ -4,7 +4,7 @@ defmodule MapoWeb.AccesibilidadLive.IndexTest do
   import Phoenix.LiveViewTest
   import Mapo.ZonaFixtures
 
-  alias MapoWeb.AccesibilidadLive.Index
+  alias MapoWeb.Cotejo
 
   setup :register_and_log_in_user
 
@@ -98,9 +98,9 @@ defmodule MapoWeb.AccesibilidadLive.IndexTest do
 
   test "resumen resta la gente sin ruta y lee el minuto del umbral" do
     s = %{"total" => 1000, "sin_ruta" => 100, "dentro" => dentro()}
-    assert Index.resumen(s, 15) == %{dentro: 400, fuera: 500, con_ruta: 900}
-    assert Index.resumen(s, 4) == %{dentro: 0, fuera: 900, con_ruta: 900}
-    assert Index.resumen(s, 500).dentro == 700
+    assert Cotejo.resumen(s, 15) == %{dentro: 400, fuera: 500, con_ruta: 900}
+    assert Cotejo.resumen(s, 4) == %{dentro: 0, fuera: 900, con_ruta: 900}
+    assert Cotejo.resumen(s, 500).dentro == 700
   end
 
   test "cada servicio por separado, con su grupo, su fuente y lo que falta", %{conn: conn} do
@@ -110,7 +110,7 @@ defmodule MapoWeb.AccesibilidadLive.IndexTest do
     end)
 
     {:ok, lv, html} = live(conn, ~p"/accesibilidad")
-    assert html =~ "aquí no hay índice"
+    assert html =~ "sin índice"
 
     html = consultar(lv)
 
@@ -119,6 +119,14 @@ defmodule MapoWeb.AccesibilidadLive.IndexTest do
     assert html =~ "a más de 15 minutos a pie"
     assert has_element?(lv, "#servicio-centro_salud .procedencia", "CLUES")
     assert html =~ "INEGI reserva el dato en 2 lugares"
+    # Con menos de la mitad del grupo calculado no hay cifra (337 de 3,909 en Mezquitic).
+    assert has_element?(
+             lv,
+             "#servicio-primaria_publica .cotejo-ficha[data-estado=rayada]",
+             "parcial"
+           )
+
+    lv |> element("#ver-primaria_publica") |> render_click()
     assert has_element?(lv, "#servicio-primaria_publica", "personas de 6 a 11 años")
 
     assert has_element?(
@@ -163,6 +171,94 @@ defmodule MapoWeb.AccesibilidadLive.IndexTest do
     assert render(lv) =~ "a más de 30 minutos"
   end
 
+  describe "matriz" do
+    defp metropoli do
+      m = fn lugares, sin_calcular ->
+        %{
+          "lugares" => lugares,
+          "total" => 100,
+          "sin_ruta" => 0,
+          "reservados" => 0,
+          "sin_calcular" => sin_calcular,
+          "dentro" => for(i <- 0..120, do: if(i < 20, do: 40, else: 100))
+        }
+      end
+
+      resultado("pie")
+      |> put_in(["zona", "municipios"], [
+        %{"cvegeo" => "14039", "nombre" => "Guadalajara", "poblacion" => 100},
+        %{"cvegeo" => "14051", "nombre" => "Juanacatlán", "poblacion" => 100}
+      ])
+      |> put_in(["zona", "poblacion"], 1000)
+      |> update_in(["servicios"], fn [salud | resto] ->
+        salud =
+          Map.put(salud, "municipios", %{"14039" => m.(40, 0), "14051" => m.(0, 0)})
+
+        [
+          salud
+          | Enum.map(resto, &if(&1["calculado"], do: Map.put(&1, "municipios", %{}), else: &1))
+        ]
+      end)
+    end
+
+    test "municipios por servicio, y el umbral los mueve sin consultar", %{conn: conn} do
+      stub(fn conn -> Req.Test.json(conn, metropoli()) end)
+      {:ok, lv, _} = live(conn, ~p"/accesibilidad")
+      consultar(lv)
+
+      assert has_element?(lv, "#vista-matriz[aria-pressed=true]")
+      assert has_element?(lv, "#matriz-zona td[data-clase='4']", "56 %")
+      assert has_element?(lv, "#matriz-14039 td[data-clase='4']", "60 %")
+      assert has_element?(lv, "#matriz-14051 td[data-estado=rayada]", "sin calc.")
+      assert has_element?(lv, "#matriz button[phx-value-clave=supermercado][disabled]")
+
+      lv |> form("#accesibilidad_form", acc: %{umbral: "20"}) |> render_change()
+      assert has_element?(lv, "#matriz-14039 td[data-clase='0']", "0 %")
+    end
+
+    test "una zona fija se sigue moviendo con el umbral y se suelta al cambiar de modo", %{
+      conn: conn
+    } do
+      stub(fn conn ->
+        if conn.query_params["zona"] == "mun:14061",
+          do: responde(conn),
+          else:
+            Req.Test.json(
+              conn,
+              put_in(metropoli(), ["zona", "clave"], conn.query_params["zona"])
+              |> put_in(["modo"], conn.query_params["modo"])
+            )
+      end)
+
+      {:ok, lv, _} = live(conn, ~p"/accesibilidad")
+      consultar(lv)
+      lv |> element("#vista-matriz") |> render_click()
+      lv |> element("#fijar") |> render_click()
+      elegir_zona(lv, "zm:14.1.01")
+      render_async(lv)
+
+      fija = "#matriz tr[id^=matriz-fija]"
+      assert has_element?(lv, "#{fija} td[data-clase='4']", "56 %")
+      lv |> form("#accesibilidad_form", acc: %{umbral: "30"}) |> render_change()
+      assert has_element?(lv, "#{fija} td[data-clase='3']", "22 %")
+
+      lv |> form("#accesibilidad_form", acc: %{modo: "auto"}) |> render_change()
+      render_async(lv)
+      refute has_element?(lv, fija)
+    end
+
+    test "abrir en el mapa lleva el servicio, el modo y los minutos", %{conn: conn} do
+      stub(&responde/1)
+      {:ok, lv, _} = live(conn, ~p"/accesibilidad")
+      consultar(lv)
+
+      assert has_element?(
+               lv,
+               "#abrir-mapa[href='/mapa?zona=mun:14061&servicio=centro_salud&modo=pie&umbral=15&ver=servicios']"
+             )
+    end
+  end
+
   test "cambiar el modo vuelve a consultar", %{conn: conn} do
     stub(&responde/1)
     {:ok, lv, _} = live(conn, ~p"/accesibilidad")
@@ -180,11 +276,11 @@ defmodule MapoWeb.AccesibilidadLive.IndexTest do
     {:ok, lv, _} = live(conn, ~p"/accesibilidad")
     consultar(lv)
 
-    render_click(lv, "ver", %{"servicio" => "primaria_publica"})
+    render_click(lv, "ver", %{"clave" => "primaria_publica"})
     assert_push_event(lv, "estilo", %{servicio: "primaria_publica"})
     assert has_element?(lv, "#servicio-primaria_publica.activo")
 
-    render_click(lv, "ver", %{"servicio" => "supermercado"})
+    render_click(lv, "ver", %{"clave" => "supermercado"})
     assert has_element?(lv, "#servicio-primaria_publica.activo")
   end
 

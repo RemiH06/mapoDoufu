@@ -399,7 +399,7 @@ async def zona(pool: AsyncConnectionPool, z: dict, modo: str) -> dict | None:
                SELECT a.cvegeo AS clave, a.cve_ent, a.cve_mun, 'ageb' AS tipo, c.datos_json AS d,
                       ST_AsGeoJSON(ST_SimplifyPreserveTopology(a.geom, %(tol)s), 5) AS gj
                FROM agebs a JOIN fuente_censo_poblacion c ON c.cvegeo = a.cvegeo
-                    CROSS JOIN LATERAL (SELECT ST_PointOnSurface(a.geom) AS p) pt
+                    CROSS JOIN LATERAL (SELECT ST_PointOnSurface(a.geom) AS p OFFSET 0) pt
                WHERE a.geom && (SELECT geom FROM z) AND {dentro.format(p="pt.p")}
                UNION ALL
                SELECT l.cvegeo, l.cve_ent, l.cve_mun, 'localidad', l.datos, ST_AsGeoJSON(l.geom, 5)
@@ -429,10 +429,13 @@ async def zona(pool: AsyncConnectionPool, z: dict, modo: str) -> dict | None:
             cargas.setdefault(r["servicio"], {})[r["cve_ent"]] = r
         municipios = [(m["cve_ent"], m["cve_mun"]) for m in resuelta["municipios"]]
         await cur.execute(
-            """SELECT EXISTS (SELECT 1 FROM transporte_paradas WHERE feed <> 'osm'
-                              AND (cve_ent, cve_mun) IN (SELECT * FROM unnest(%(e)s::text[], %(m)s::text[]))) AS hay""",
+            """SELECT DISTINCT cve_ent || cve_mun AS mun FROM transporte_paradas WHERE feed <> 'osm'
+               AND (cve_ent, cve_mun) IN (SELECT * FROM unnest(%(e)s::text[], %(m)s::text[]))""",
             {"e": [e for e, _ in municipios], "m": [m for _, m in municipios]})
-        con_gtfs = (await cur.fetchone())["hay"]
+        muns_gtfs = {f["mun"] for f in await cur.fetchall()}
+        con_gtfs = bool(muns_gtfs)
+        muns = [e + m for e, m in municipios]
+        limites = await zona_comun.limites(conn, muns)
         # Para citar al productor de cada GTFS, no a Mapo.
         await cur.execute(
             """SELECT DISTINCT f.feed, f.titulo, f.productor, f.pagina, f.licencia, f.fecha_ref::text AS fecha_ref
@@ -445,7 +448,7 @@ async def zona(pool: AsyncConnectionPool, z: dict, modo: str) -> dict | None:
                SELECT * FROM (
                  SELECT d.servicio, d.id, d.nombre, d.lat, d.lon, {dentro.format(p="pt.p")} AS en_zona
                  FROM accesibilidad_destinos d
-                      CROSS JOIN LATERAL (SELECT ST_SetSRID(ST_MakePoint(d.lon, d.lat), 4326) AS p) pt
+                      CROSS JOIN LATERAL (SELECT ST_SetSRID(ST_MakePoint(d.lon, d.lat), 4326) AS p OFFSET 0) pt
                  WHERE d.cve_ent = ANY(%(es)s)) q
                WHERE en_zona OR id = ANY(%(ids)s)""",
             {**params, "es": estados, "ids": usados})
@@ -465,7 +468,18 @@ async def zona(pool: AsyncConnectionPool, z: dict, modo: str) -> dict | None:
         por_lugar = minutos.get(s.clave, {})
         cuenta = lambda u: u["cve_ent"] in por_estado and (u["tipo"] == "ageb" or not s.solo_agebs)  # noqa: E731
         cubiertos = [u for u in lugares_zona if cuenta(u)]
-        c = curva([(_valor(u["d"], s.grupo), por_lugar.get(u["clave"], (None, None))[0]) for u in cubiertos])
+        curva_de = lambda us: curva(  # noqa: E731
+            [(_valor(u["d"], s.grupo), por_lugar.get(u["clave"], (None, None))[0]) for u in us])
+        c = curva_de(cubiertos)
+        # La misma cuenta por municipio, para la matriz: `lugares` en 0 es "aquí no se calcula".
+        por_mun = {}
+        for mun in muns:
+            suyos = [u for u in cubiertos if u["cve_ent"] + u["cve_mun"] == mun]
+            con_gtfs_mun = not s.solo_cobertura or mun in muns_gtfs
+            otros = [_valor(u["d"], s.grupo) for u in lugares_zona
+                     if u["cve_ent"] + u["cve_mun"] == mun and not cuenta(u)]
+            por_mun[mun] = {**curva_de(suyos), "lugares": len(suyos) if con_gtfs_mun else 0,
+                            "sin_calcular": sum(v for v in otros if v is not None)}
         # La gente de los lugares que no se calculan se dice aparte, nunca como lejos.
         fuera = [_valor(u["d"], s.grupo) for u in lugares_zona if not cuenta(u)]
         una = next(iter(por_estado.values()))
@@ -473,6 +487,7 @@ async def zona(pool: AsyncConnectionPool, z: dict, modo: str) -> dict | None:
                           "sin_calcular": sum(v for v in fuera if v is not None),
                           "sin_calcular_lugares": len(fuera),
                           "estados_sin_calcular": [e for e in estados if e not in por_estado],
+                          "municipios": por_mun,
                           "fecha": max(r["calculado"] for r in por_estado.values()),
                           "destinos_estado": sum(r["destinos"] for r in por_estado.values()),
                           "metodo": metodo(s, modo),
@@ -488,6 +503,13 @@ async def zona(pool: AsyncConnectionPool, z: dict, modo: str) -> dict | None:
         {"type": "Feature", "geometry": {"type": "Point", "coordinates": [round(p["lon"], 6), round(p["lat"], 6)]},
          "properties": {"s": p["servicio"], "n": p["nombre"]}}
         for p in puntos]}
+    poblacion = {m: [v for u in lugares_zona if u["cve_ent"] + u["cve_mun"] == m
+                     and (v := _valor(u["d"], "POBTOT")) is not None] for m in muns}
+    for m in resuelta["municipios"]:
+        valores = poblacion[m["cve_ent"] + m["cve_mun"]]
+        m["poblacion"] = sum(valores) if valores else None
+    resuelta["poblacion"] = sum(v for u in lugares_zona if (v := _valor(u["d"], "POBTOT")) is not None)
+    resuelta["limites"] = zona_comun.limites_geojson(limites)
     return {
         "zona": resuelta,
         "modo": modo,
