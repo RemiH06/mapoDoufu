@@ -26,4 +26,8 @@ delimitación, el SUN 2018, y los avalúos por año detrás de cada serie. Detal
   haría pasar por dato propio.
 - **2026 fuera de los avalúos.** Está a medias y no dice hasta qué mes.
 
+Producción en `72fc888` el 2026-11-24 (revertir: `deploy-20261124d`; sin migración ni
+carga). Comprobado ahí: Tonalá con la zona, Guadalajara con la suya y Tamazula con la del
+estado.
+
 Capturas: `scripts/capturas/shf23b.js`.
