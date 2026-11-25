@@ -205,6 +205,8 @@ async def _clues(args) -> None:
 
 
 async def _similares(args) -> None:
+    import json
+
     from mapo_core import similares
 
     await inicializar_esquema()
