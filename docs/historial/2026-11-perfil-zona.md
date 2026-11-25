@@ -18,6 +18,11 @@ desglose. Cómo funciona: [perfil.md](../producto/perfil.md).
 - **Notas por zona:** `notas_perfil.zona`; `cve_ent` y `cve_mun` se quedan para poder regresar.
 - **Capturas:** `scripts/capturas/perfil29h.js`.
 
+Producción en `094672b` el 2026-11-25 (revertir: `deploy-20261125b`; con migración, la columna
+`zona` puede quedarse; respaldo previo `mapo_prod-20261125-1135.dump`), con `cli similares`
+corrido (31 s). En Pixilate: una colonia 0.25 s, Guadalajara 0.4, la ZMG 1.4, Jalisco 6.6; los
+parecidos, 0.25 s o menos. Mismas cifras que dev.
+
 ## Decisiones
 
 - **Reparto por área, no por punto.** `/riesgos` y `/accesibilidad` cuentan la AGEB entera donde

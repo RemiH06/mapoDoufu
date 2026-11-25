@@ -112,4 +112,4 @@ Económicos, el IMSS, el SESNSP o EFIPEM. Un dibujo se calcula al vuelo con el m
 ## Tiempos
 
 En Aerilate: una colonia 0.8 s, Guadalajara 1.7 s, la ZMG 5.6 s, Jalisco 21 s; los parecidos,
-menos de 1 s.
+menos de 1 s. En Pixilate: 0.25, 0.4, 1.4 y 6.6 s; los parecidos, 0.25 s o menos.
