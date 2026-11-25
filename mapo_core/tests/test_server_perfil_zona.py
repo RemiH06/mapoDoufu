@@ -1,14 +1,23 @@
 import pytest
+import pytest_asyncio
 from fastapi.testclient import TestClient
 
 from mapo_core.db import get_pool
 from mapo_core.server import app
 
 
+@pytest_asyncio.fixture(autouse=True)
+async def _municipio(conn):
+    """El municipio tiene que estar en el marco: sin él no hay zona que describir."""
+    await conn.execute(
+        "INSERT INTO municipios (cvegeo, cve_ent, cve_mun, nombre, geom) VALUES ('14039', '14', '039', 'Guadalajara',"
+        " ST_Multi(ST_MakeEnvelope(-103.4, 20.6, -103.3, 20.7, 4326)))")
+
+
 async def _insertar_censo_municipio(conn, cve_ent, cve_mun, pobtot):
     await conn.execute(
         """INSERT INTO fuente_censo_poblacion (cvegeo, nivel, cve_ent, cve_mun, pobtot, datos_json)
-           VALUES (%(cvegeo)s, 'municipio', %(cve_ent)s, %(cve_mun)s, %(pobtot)s, '{}'::jsonb)""",
+           VALUES (%(cvegeo)s, 'municipio', %(cve_ent)s, %(cve_mun)s, %(pobtot)s, jsonb_build_object('POBTOT', %(pobtot)s::int))""",
         {"cvegeo": f"{cve_ent}{cve_mun}", "cve_ent": cve_ent, "cve_mun": cve_mun, "pobtot": pobtot},
     )
 
@@ -32,10 +41,12 @@ async def test_perfil_zona_sin_censo_trae_demografia_null(pool_de_una_conexion):
     app.dependency_overrides[get_pool] = lambda: pool_de_una_conexion
     cliente = TestClient(app)
 
-    respuesta = cliente.get("/perfil_zona", params={"cve_ent": "14", "cve_mun": "999"})
+    respuesta = cliente.get("/perfil_zona", params={"cve_ent": "14", "cve_mun": "039"})
+    sin_marco = cliente.get("/perfil_zona", params={"cve_ent": "14", "cve_mun": "999"})
 
     assert respuesta.status_code == 200
     assert respuesta.json()["demografia"] is None
+    assert sin_marco.status_code == 404
     app.dependency_overrides.clear()
 
 
@@ -80,13 +91,15 @@ async def test_perfil_zona_trae_comercio_real(conn, pool_de_una_conexion):
 
 
 @pytest.mark.asyncio
-async def test_perfil_zona_sin_negocios_trae_comercio_en_cero_no_null(pool_de_una_conexion):
+async def test_perfil_zona_sin_negocios_es_cero_si_el_estado_tiene_denue_y_null_si_no(conn, pool_de_una_conexion):
     app.dependency_overrides[get_pool] = lambda: pool_de_una_conexion
     cliente = TestClient(app)
+    sin_denue = cliente.get("/perfil_zona", params={"zona": "mun:14039"}).json()
+    await _insertar_negocio(conn, "1", "papeleria", cve_mun="120")
 
-    respuesta = cliente.get("/perfil_zona", params={"cve_ent": "14", "cve_mun": "039"})
+    cuerpo = cliente.get("/perfil_zona", params={"zona": "mun:14039"}).json()
 
-    cuerpo = respuesta.json()
+    assert sin_denue["comercio"] is None
     assert cuerpo["comercio"]["total_negocios"] == 0
     assert cuerpo["comercio"]["top_clases_actividad"] == []
     app.dependency_overrides.clear()
@@ -111,8 +124,9 @@ async def test_perfil_zona_trae_consumo_real(conn, pool_de_una_conexion):
     respuesta = cliente.get("/perfil_zona", params={"cve_ent": "14", "cve_mun": "039"})
 
     cuerpo = respuesta.json()
-    assert cuerpo["consumo"]["n_hogares_muestra"] == 2
-    assert cuerpo["consumo"]["periodo"] == "diario"
+    assert cuerpo["consumo"]["zona"]["n_hogares_muestra"] == 2
+    assert cuerpo["consumo"]["zona"]["periodo"] == "diario"
+    assert cuerpo["consumo"]["estado"]["n_hogares_muestra"] == 2
     app.dependency_overrides.clear()
 
 
@@ -140,6 +154,8 @@ async def test_perfil_zona_trae_seguridad_real_del_anio_mas_reciente(conn, pool_
     assert cuerpo["seguridad"]["anio"] == 2024
     assert cuerpo["seguridad"]["total_delitos"] == 7  # solo 2024: Homicidio(2) + Robo(5), no el 2023
     assert cuerpo["seguridad"]["por_tipo"][0] == ["Robo", 5]
+    assert [a["total"] for a in cuerpo["seguridad"]["serie"]] == [10, 7]
+    assert cuerpo["seguridad"]["por_mil"] is None  # un solo mes: no es un año
     app.dependency_overrides.clear()
 
 

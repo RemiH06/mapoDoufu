@@ -141,6 +141,9 @@ def test_cngmd_guarda_la_respuesta_tal_cual(tmp_path):
 
 @pytest.mark.asyncio
 async def test_perfil_trae_cada_fuente_aparte(conn, pool_de_una_conexion, tmp_path):
+    await conn.execute(
+        "INSERT INTO municipios (cvegeo, cve_ent, cve_mun, nombre, geom) SELECT '14' || m, '14', m, 'Mun ' || m,"
+        " ST_Multi(ST_MakeEnvelope(-103.4, 20.6, -103.3, 20.7, 4326)) FROM unnest(ARRAY['001', '039']) m")
     await ce.cargar(pool_de_una_conexion, "14", _ce(tmp_path / "ce.zip"))
     for a in (2021, 2022, 2023):
         for f in efipem.leer(_efipem(tmp_path / f"e{a}.zip", anios=(a,)), anios=1):

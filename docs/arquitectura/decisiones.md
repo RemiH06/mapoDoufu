@@ -16,7 +16,9 @@ Ninguna pantalla resume una decisión en un número que esconda su
 metodología (¿un homicidio pesa igual que un robo sin violencia?). Se
 muestran los datos crudos lado a lado y quien usa Mapo decide. Viene
 de Gaiarda (seguridad por tipo de delito, sin puntaje) y aplica a todo
-lo nuevo: el perfil de zona junta las 5 secciones sin ponderarlas.
+lo nuevo: el perfil de zona junta sus documentos sin ponderarlos, y las zonas
+parecidas se ordenan por cuántas variables caen en una banda declarada, no por
+una distancia (`docs/producto/perfil.md`).
 
 Las recomendaciones (zonas candidatas, `../producto/buscador.md`) siguen la
 misma regla: son filtros a la vista, no una calificación. Se descartó un
@@ -185,9 +187,10 @@ la pantalla era un dashboard genérico.
   plano de los AGEB del municipio (cinco hasta la sesión 28, que sumó
   "Hacienda municipal" y anexos de otras fuentes dentro de la cédula y
   el libro mayor, cada uno con su fuente al pie), que el servidor arma como un solo
-  trazo SVG (442 AGEB de Guadalajara son unos 30 KB). Si una fuente no
+  trazo SVG (442 AGEB de Guadalajara son unos 30 KB; desde la 29h, un plano
+  de verdad en la cabeza, para cualquier zona, con ocho documentos). Si una fuente no
   cubre el municipio, su documento sigue en la mesa y lo dice. La
-  consulta va en la URL (`/perfil?cve_ent=14&cve_mun=039`) para
+  consulta va en la URL (`/perfil?zona=mun:14039`) para
   compartirla, y el perfil (unos 3 s) y el plano se piden con
   `start_async` para no congelar la vista. Cada documento lleva al pie
   las notas del equipo (ver "Tus marcas", abajo).
@@ -286,7 +289,7 @@ la pantalla era un dashboard genérico.
   y la geometría genérica las admiten sin cambiar la tabla.
 - **Un lápiz por persona del equipo** (29f), no un selector de color: así el
   color de una marca solo dice de quién es. Antes todas iban en lápiz rojo.
-- **Notas de `/perfil`:** cuelgan de equipo, municipio y documento
+- **Notas de `/perfil`:** cuelgan de equipo, zona y documento
   (`notas_perfil`), no de una sesión ni de un punto. Cualquier miembro las
   escribe y borra, como las marcas.
 
@@ -303,7 +306,7 @@ historial en [2026-10-anti-vibecode.md](../historial/2026-10-anti-vibecode.md)):
 - **El lema de la portada no promete decir qué hacer:** "Los datos
   abiertos de México sobre la mesa, para que tu equipo decida dónde". La
   decisión es del equipo; Mapo pone la evidencia.
-- **Esqueleto en `/perfil`:** mientras consulta, los cinco papeles ya
+- **Esqueleto en `/perfil`:** mientras consulta, los papeles ya
   están en su lugar con renglones en blanco. Nunca los documentos reales
   vacíos, que dirían "no hay datos".
 

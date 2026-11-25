@@ -20,6 +20,7 @@
 - [escalas.md](producto/escalas.md): escala de color por clases (paleta, método, clases, invertir), lecturas del censo (conteo en círculos, tasas, combinados con su fórmula), dos indicadores (círculos, 3x3, altura) y la confianza como transparencia.
 - [isocronas.md](producto/isocronas.md): alcances en auto apilados en `/mapa` (hasta cinco), con la gente dentro de cada uno, en todos y en alguno, y cómo se cuenta.
 - [transporte.md](producto/transporte.md): acetato "Transporte público" en `/mapa` (rutas del GTFS con cada cuánto pasan en hora pico, o de OSM sin horarios) y las paradas como servicio en `/accesibilidad`.
+- [perfil.md](producto/perfil.md): `/perfil` de cualquier zona: qué nivel tiene cada dato, cómo se estima una colonia (medido contra manzanas) y cómo se buscan zonas parecidas sin puntaje.
 - [zona.md](producto/zona.md): la zona común de todas las vistas (estado, municipios, metrópoli, colonia, CP, dibujo o círculo), su clave en la URL, la zona guardada en la cuenta y cómo calcula cada vista con ella.
 - [marcas.md](producto/marcas.md): marcas del equipo en la sesión y en `/mapa`: las cinco formas y sus topes, la nota larga y el lápiz por persona.
 - [datos-propios.md](producto/datos-propios.md): archivos del equipo (tabla, vectorial, ráster) como acetato, su cruce con fuentes públicas, la distancia entre capas y el valor de un ráster: formatos, límites, ubicación, procedencia, permisos y qué se guarda.
@@ -120,6 +121,7 @@ Qué se construyó en cada etapa, por qué así y qué bugs reales aparecieron.
 - [Marcas, segunda vuelta, noviembre 2026](historial/2026-11-marcas.md)
 - [Zonas metropolitanas y avalúos del SHF, noviembre 2026](historial/2026-11-shf-zonas.md)
 - [Riesgos y servicios legibles, noviembre 2026](historial/2026-11-cotejo.md)
+- [Perfil de cualquier zona y zonas que se parecen, noviembre 2026](historial/2026-11-perfil-zona.md)
 
 ## Gaiarda
 

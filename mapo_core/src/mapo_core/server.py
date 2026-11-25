@@ -14,17 +14,14 @@ from pydantic import BaseModel, Field
 from mapo_core import (
     accesibilidad,
     buscador,
-    censos_economicos,
-    cngmd,
     consultas,
     cruce,
     datos_geo,
     datos_propios,
-    efipem,
-    imss_asegurados,
     localidades,
-    rezago_social,
+    perfil,
     riesgos,
+    similares,
     transporte,
     vivienda_vista,
 )
@@ -33,7 +30,6 @@ from mapo_core.coloreado_mapa import PoligonoColoreable, colorear_mapa
 from mapo_core.consultas import INDICADORES_CHOROPLETH, TOLERANCIA_SIMPLIFICACION as _TOLERANCIA_SIMPLIFICACION, dibujo
 from mapo_core.consultas import feature as _feature
 from mapo_core.db import get_pool
-from mapo_core.enigh_resumen import resumen_por_municipio
 from mapo_core.isocronas import MAX_ISOCRONAS, calcular_isocrona
 from mapo_core.isocronas import poblacion as poblacion_isocronas
 from mapo_core.osrm_client import OSRMClient
@@ -602,92 +598,42 @@ async def coloreado_municipios(
     }
 
 
-async def _seguridad_de(pool: AsyncConnectionPool, cve_ent: str, cve_mun: str) -> dict | None:
-    """Delitos del año mas reciente disponible para este municipio,
-    agrupados por tipo. A proposito NO se combina en un solo "puntaje
-    de seguridad" (mismo criterio que ya usa Gaiarda en su feature de
-    Rutas): eso implicaria decisiones de metodologia que no se deben
-    esconder detras de un numero. None si no hay ningun dato cargado
-    todavia para este municipio (SESNSP se carga a mano, ver
-    `sesnsp_ingesta.py`)."""
-    async with pool.connection() as conn:
-        cursor_anio = await conn.execute(
-            "SELECT max(anio) FROM fuente_sesnsp_delitos_municipal WHERE cve_ent = %(cve_ent)s AND cve_mun = %(cve_mun)s",
-            {"cve_ent": cve_ent, "cve_mun": cve_mun},
-        )
-        (anio,) = await cursor_anio.fetchone()
-        if anio is None:
-            return None
-
-        cursor_tipos = await conn.execute(
-            """SELECT tipo_delito, sum(cantidad) FROM fuente_sesnsp_delitos_municipal
-               WHERE cve_ent = %(cve_ent)s AND cve_mun = %(cve_mun)s AND anio = %(anio)s
-               GROUP BY tipo_delito ORDER BY sum(cantidad) DESC""",
-            {"cve_ent": cve_ent, "cve_mun": cve_mun, "anio": anio},
-        )
-        por_tipo = await cursor_tipos.fetchall()
-
-    return {
-        "anio": anio,
-        "total_delitos": sum(cantidad for _tipo, cantidad in por_tipo),
-        "por_tipo": [[tipo, cantidad] for tipo, cantidad in por_tipo],
-    }
-
-
 @app.get("/perfil_zona")
-async def perfil_zona(cve_ent: str, cve_mun: str, pool: AsyncConnectionPool = Depends(get_pool)) -> dict:
-    """Perfil de un municipio: demografia (censo), comercio (DENUE),
-    consumo (ENIGH), seguridad (SESNSP) y laboral (ENOE), ya con datos
-    propios de mapo_core. Laboral es la unica seccion a nivel entidad,
-    no municipio (la ENOE no tiene representatividad municipal)."""
-    async with pool.connection() as conn:
-        cursor = await conn.execute(
-            """SELECT pobtot, pobfem, pobmas, graproes, pea, pocupada, pdesocup, tothog, vivtot
-               FROM fuente_censo_poblacion
-               WHERE cve_ent = %(cve_ent)s AND cve_mun = %(cve_mun)s AND nivel = 'municipio'""",
-            {"cve_ent": cve_ent, "cve_mun": cve_mun},
-        )
-        fila = await cursor.fetchone()
+async def perfil_zona(
+    zona: str | None = Query(default=None, max_length=6_000),
+    cve_ent: str | None = Query(default=None, pattern=r"^\d{2}$"),
+    cve_mun: str | None = Query(default=None, pattern=r"^\d{3}$"),
+    pool: AsyncConnectionPool = Depends(get_pool),
+) -> dict:
+    """Perfil de una zona (clave de zona.py, o un municipio como antes de la 29h): cada
+    documento con su nivel y su fuente. Ver docs/producto/perfil.md."""
+    try:
+        resultado = await perfil.perfil(pool, _zona_de(zona, cve_ent, cve_mun))
+    except perfil.ConsultaInvalida as exc:
+        raise HTTPException(422, str(exc)) from None
+    if resultado is None:
+        raise HTTPException(404, "la zona no toca nada cargado en Mapo")
+    return resultado
 
-        cursor_total = await conn.execute(
-            "SELECT count(*) FROM fuente_denue_negocios WHERE cve_ent = %(cve_ent)s AND cve_mun = %(cve_mun)s",
-            {"cve_ent": cve_ent, "cve_mun": cve_mun},
-        )
-        (total_negocios,) = await cursor_total.fetchone()
 
-        cursor_clases = await conn.execute(
-            """SELECT clase_actividad, count(*) FROM fuente_denue_negocios
-               WHERE cve_ent = %(cve_ent)s AND cve_mun = %(cve_mun)s AND clase_actividad IS NOT NULL
-               GROUP BY clase_actividad ORDER BY count(*) DESC LIMIT 10""",
-            {"cve_ent": cve_ent, "cve_mun": cve_mun},
-        )
-        top_clases = await cursor_clases.fetchall()
-
-        consumo = await resumen_por_municipio(conn, cve_ent, cve_mun, columna="gasto_mon", por_dia=True)
-
-    demografia = None
-    if fila is not None:
-        campos = ["pobtot", "pobfem", "pobmas", "graproes", "pea", "pocupada", "pdesocup", "tothog", "vivtot"]
-        demografia = dict(zip(campos, fila))
-
-    return {
-        "cve_ent": cve_ent,
-        "cve_mun": cve_mun,
-        "demografia": demografia,
-        "comercio": {
-            "total_negocios": total_negocios,
-            "top_clases_actividad": [[clase, cantidad] for clase, cantidad in top_clases],
-        },
-        "consumo": consumo,
-        "seguridad": await _seguridad_de(pool, cve_ent, cve_mun),
-        "laboral": await consultas.laboral_de(pool, cve_ent),
-        "empleo_formal": await imss_asegurados.empleo_municipio(pool, cve_ent, cve_mun),
-        # Sesión 28: cada fuente aparte, con su año y su método.
-        "economia": await censos_economicos.municipio(pool, cve_ent, cve_mun),
-        "hacienda": await efipem.municipio(pool, cve_ent, cve_mun),
-        "rezago_social": await rezago_social.municipio(pool, cve_ent, cve_mun),
-        "planeacion": await cngmd.municipio(pool, cve_ent, cve_mun),
-    }
+@app.get("/perfil_zona/similares")
+async def perfil_similares(
+    zona: str = Query(max_length=6_000),
+    areas: str = Query(default="", max_length=200),
+    margen: str = Query(default="cerca", max_length=20),
+    donde: str = Query(default="todo", max_length=20),
+    pool: AsyncConnectionPool = Depends(get_pool),
+) -> dict:
+    """Zonas del mismo nivel que se parecen en las áreas pedidas, con el desglose
+    variable por variable. Sin puntaje. Ver docs/producto/perfil.md."""
+    try:
+        resultado = await similares.buscar(pool, _zona_de(zona), areas=[a for a in areas.split(",") if a],
+                                           margen=margen, donde=donde)
+    except (similares.ConsultaInvalida, perfil.ConsultaInvalida) as exc:
+        raise HTTPException(422, str(exc)) from None
+    if resultado is None:
+        raise HTTPException(404, "la zona no toca nada cargado en Mapo")
+    return resultado
 
 
 @app.get("/buscador/catalogo")

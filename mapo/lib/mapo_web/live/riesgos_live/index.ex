@@ -98,6 +98,13 @@ defmodule MapoWeb.RiesgosLive.Index do
               <.link id="abrir-mapa" class="enlace" navigate={ruta_mapa(@consultada, @peligro)}>
                 Abrir en el mapa
               </.link>
+              <.link
+                id="abrir-perfil"
+                class="enlace"
+                navigate={"/perfil?" <> ZonaSelector.query(zona: @consultada[:zona])}
+              >
+                Su perfil
+              </.link>
             </div>
           </div>
 

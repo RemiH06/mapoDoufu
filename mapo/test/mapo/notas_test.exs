@@ -8,7 +8,7 @@ defmodule Mapo.NotasTest do
 
   defp attrs(extra \\ %{}) do
     Map.merge(
-      %{"cve_ent" => "14", "cve_mun" => "039", "documento" => "comercio", "texto" => "  ojo  "},
+      %{"zona" => "mun:14039", "documento" => "comercio", "texto" => "  ojo  "},
       extra
     )
   end
@@ -16,7 +16,7 @@ defmodule Mapo.NotasTest do
   test "create_nota/3 saves it trimmed, with its author, and broadcasts it" do
     scope = user_scope_fixture()
     team = team_fixture(scope)
-    Notas.subscribe(team.id, "14", "039")
+    Notas.subscribe(team.id, "mun:14039")
 
     assert {:ok, nota} = Notas.create_nota(scope, team.id, attrs())
     assert nota.texto == "ojo"
@@ -33,22 +33,41 @@ defmodule Mapo.NotasTest do
 
     assert %{documento: [_], texto: [_]} = errors_on(cs)
 
-    assert {:error, cs} = Notas.create_nota(scope, team.id, attrs(%{"cve_mun" => "39"}))
-    assert %{cve_mun: [_]} = errors_on(cs)
+    for mala <- ["14039", "xx:1", "mun:", "mun:14039\n", "col:1 2", nil] do
+      assert {:error, cs} = Notas.create_nota(scope, team.id, attrs(%{"zona" => mala}))
+      assert %{zona: [_ | _]} = errors_on(cs)
+    end
   end
 
-  test "list_notas/4 returns only that team and municipio, oldest first" do
+  test "list_notas/3 returns only that team and zona, oldest first" do
     scope = user_scope_fixture()
     team = team_fixture(scope)
     otro = team_fixture(scope, %{name: "otro"})
 
     {:ok, primera} = Notas.create_nota(scope, team.id, attrs(%{"texto" => "primera"}))
     {:ok, segunda} = Notas.create_nota(scope, team.id, attrs(%{"texto" => "segunda"}))
-    {:ok, _} = Notas.create_nota(scope, team.id, attrs(%{"cve_mun" => "120"}))
+    {:ok, _} = Notas.create_nota(scope, team.id, attrs(%{"zona" => "mun:14120"}))
     {:ok, _} = Notas.create_nota(scope, otro.id, attrs())
 
-    assert Enum.map(Notas.list_notas(scope, team.id, "14", "039"), & &1.id) ==
+    assert Enum.map(Notas.list_notas(scope, team.id, "mun:14039"), & &1.id) ==
              [primera.id, segunda.id]
+  end
+
+  test "a note hangs from any zona, a drawing too" do
+    scope = user_scope_fixture()
+    team = team_fixture(scope)
+    dibujo = "pol:" <> Enum.map_join(1..200, ";", &"-103.#{10_000 + &1},20.#{60_000 + &1}")
+
+    for zona <- ["ent:14", "zm:14.1.01", "col:14098_0135", "cir:-103.35,20.67,2500", dibujo] do
+      assert {:ok, nota} = Notas.create_nota(scope, team.id, attrs(%{"zona" => zona}))
+      assert nota.cve_ent == nil
+      assert [%{zona: ^zona}] = Notas.list_notas(scope, team.id, zona)
+    end
+
+    # De un solo municipio se guarda también como antes, para poder regresar de versión.
+    assert {:ok, %{cve_ent: "14", cve_mun: "039"}} = Notas.create_nota(scope, team.id, attrs())
+    varios = attrs(%{"zona" => "mun:14039,14120"})
+    assert {:ok, %{cve_ent: nil}} = Notas.create_nota(scope, team.id, varios)
   end
 
   test "only team members can list, create or delete" do
@@ -57,7 +76,7 @@ defmodule Mapo.NotasTest do
     {:ok, nota} = Notas.create_nota(scope, team.id, attrs())
     outsider = user_scope_fixture()
 
-    assert_raise MatchError, fn -> Notas.list_notas(outsider, team.id, "14", "039") end
+    assert_raise MatchError, fn -> Notas.list_notas(outsider, team.id, "mun:14039") end
     assert_raise MatchError, fn -> Notas.create_nota(outsider, team.id, attrs()) end
     assert_raise MatchError, fn -> Notas.delete_nota(outsider, team.id, nota.id) end
   end
@@ -70,7 +89,7 @@ defmodule Mapo.NotasTest do
 
     assert_raise Ecto.NoResultsError, fn -> Notas.delete_nota(scope, otro.id, nota.id) end
 
-    Notas.subscribe(team.id, "14", "039")
+    Notas.subscribe(team.id, "mun:14039")
     assert {:ok, _} = Notas.delete_nota(scope, team.id, nota.id)
     id = nota.id
     assert_received {:nota_borrada, ^id}

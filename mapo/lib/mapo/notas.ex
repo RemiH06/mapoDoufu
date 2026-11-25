@@ -1,7 +1,7 @@
 defmodule Mapo.Notas do
   @moduledoc """
   Notas del equipo sobre los documentos de `/perfil`: cada una cuelga de un
-  equipo, un municipio y uno de los cinco documentos. No son geometricas
+  equipo, una zona (su clave de la zona común) y uno de los ocho documentos. No son geometricas
   (por eso no van en `anotaciones`, que son marcas sobre el plano).
 
   Igual que las anotaciones, son un pizarron del equipo: cualquier miembro
@@ -15,39 +15,35 @@ defmodule Mapo.Notas do
   alias Mapo.Teams
   alias Mapo.Notas.NotaPerfil
 
-  @doc "Notas de un equipo sobre un municipio, mas antigua primero, con autor precargado."
-  def list_notas(%Scope{} = scope, team_id, cve_ent, cve_mun) do
+  @doc "Notas de un equipo sobre una zona, mas antigua primero, con autor precargado."
+  def list_notas(%Scope{} = scope, team_id, zona) do
     true = Teams.role_in_team(scope, team_id) != nil
 
     Repo.all(
       from n in NotaPerfil,
-        where: n.team_id == ^team_id and n.cve_ent == ^cve_ent and n.cve_mun == ^cve_mun,
+        where: n.team_id == ^team_id and n.zona == ^zona,
         order_by: [n.inserted_at, n.id],
         preload: :user
     )
   end
 
-  def topico(team_id, cve_ent, cve_mun), do: "notas:#{team_id}:#{cve_ent}#{cve_mun}"
+  def topico(team_id, zona), do: "notas:#{team_id}:#{zona}"
 
-  def subscribe(team_id, cve_ent, cve_mun) do
-    Phoenix.PubSub.subscribe(Mapo.PubSub, topico(team_id, cve_ent, cve_mun))
+  def subscribe(team_id, zona) do
+    Phoenix.PubSub.subscribe(Mapo.PubSub, topico(team_id, zona))
   end
 
-  def unsubscribe(team_id, cve_ent, cve_mun) do
-    Phoenix.PubSub.unsubscribe(Mapo.PubSub, topico(team_id, cve_ent, cve_mun))
+  def unsubscribe(team_id, zona) do
+    Phoenix.PubSub.unsubscribe(Mapo.PubSub, topico(team_id, zona))
   end
 
   defp broadcast(%NotaPerfil{} = nota, mensaje) do
-    Phoenix.PubSub.broadcast(
-      Mapo.PubSub,
-      topico(nota.team_id, nota.cve_ent, nota.cve_mun),
-      mensaje
-    )
+    Phoenix.PubSub.broadcast(Mapo.PubSub, topico(nota.team_id, nota.zona), mensaje)
   end
 
   @doc """
-  Crea una nota y la transmite. `attrs` lleva `"cve_ent"`, `"cve_mun"`,
-  `"documento"` y `"texto"`. Requiere ser miembro del equipo.
+  Crea una nota y la transmite. `attrs` lleva `"zona"`, `"documento"` y
+  `"texto"`. Requiere ser miembro del equipo.
   """
   def create_nota(%Scope{} = scope, team_id, attrs) do
     true = Teams.role_in_team(scope, team_id) != nil

@@ -74,11 +74,10 @@ defmodule Mapo.MapoCoreTest do
     assert {:ok, %{"num_colores" => 0}} = MapoCore.coloreado_municipios("ent:14")
   end
 
-  test "perfil_zona/2 manda cve_ent y cve_mun" do
+  test "perfil_zona/1 manda la clave de zona" do
     Req.Test.stub(Mapo.MapoCore, fn conn ->
       assert conn.request_path == "/perfil_zona"
-      assert conn.params["cve_ent"] == "14"
-      assert conn.params["cve_mun"] == "039"
+      assert conn.params["zona"] == "col:14098_0135"
 
       Req.Test.json(conn, %{
         "demografia" => nil,
@@ -87,7 +86,7 @@ defmodule Mapo.MapoCoreTest do
       })
     end)
 
-    assert {:ok, %{"laboral" => nil}} = MapoCore.perfil_zona("14", "039")
+    assert {:ok, %{"laboral" => nil}} = MapoCore.perfil_zona("col:14098_0135")
   end
 
   test "isocrona_calcular/4 manda un POST con el cuerpo correcto" do

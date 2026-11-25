@@ -139,6 +139,7 @@ docker compose exec mapo_core python -m mapo_core.cli ambiental --crudos /app/da
 docker compose exec mapo_core python -m mapo_core.cli metropolis          # Metrópolis de México 2020 (CSV del paquete), zona común
 docker compose exec mapo_core python -m mapo_core.cli colonias /app/data/colonias/imc2020_shp.zip   # colonias de CONAPO, todo el país (~3 min)
 docker compose exec mapo_core python -m mapo_core.cli codigos_postales /app/data/colonias/CP_14.zip  # polígonos de CP de SEPOMEX, bajados a mano
+docker compose exec mapo_core python -m mapo_core.cli similares --estado 14   # variables de municipios y colonias para /perfil (2.5 min); después de recargar censo, DENUE, accesibilidad, CE, IMSS, SESNSP o EFIPEM
 docker compose exec mapo_core python -m mapo_core.cli status
 ```
 

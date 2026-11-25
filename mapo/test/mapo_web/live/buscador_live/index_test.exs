@@ -329,7 +329,7 @@ defmodule MapoWeb.BuscadorLive.IndexTest do
 
     {:ok, lv, _html} = live(conn, ~p"/buscador?#{[q: "¿Cómo es Zapopan?"]}")
 
-    assert_redirect(lv, ~p"/perfil?#{[cve_ent: "14", cve_mun: "120"]}", 1000)
+    assert_redirect(lv, "/perfil?zona=mun:14120", 1000)
   end
 
   test "al escribir pide sugerencias y con la caja vacía se van", %{conn: conn} do
@@ -584,7 +584,7 @@ defmodule MapoWeb.BuscadorLive.IndexTest do
     {:ok, lv, _html} = live(conn, ~p"/buscador")
     lv |> form("#pregunta_form", pregunta: %{texto: "¿Cómo es Zapopan?"}) |> render_submit()
 
-    assert_redirect(lv, ~p"/perfil?#{[cve_ent: "14", cve_mun: "120"]}", 1000)
+    assert_redirect(lv, "/perfil?zona=mun:14120", 1000)
   end
 
   test "el 422 de mapo_core se muestra con su mensaje", %{conn: conn} do

@@ -1252,7 +1252,7 @@ defmodule MapoWeb.BuscadorLive.Index do
   def handle_async(:resolver, {:ok, {:ok, %{"perfil" => perfil}}}, socket) do
     {:noreply,
      push_navigate(socket,
-       to: ~p"/perfil?#{Map.take(perfil, ["cve_ent", "cve_mun"])}",
+       to: "/perfil?zona=mun:#{perfil["cve_ent"]}#{perfil["cve_mun"]}",
        replace: true
      )}
   end

@@ -54,9 +54,6 @@ defmodule Mapo.MapoCore do
   @doc "FeatureCollection de los municipios de un estado, sin polígono (igual que `estados/0`)."
   def municipios(cve_ent), do: get("/geo/municipios", cve_ent: cve_ent, geometria: false)
 
-  @doc "FeatureCollection de los AGEB urbanos de un municipio, con polígono simplificado."
-  def agebs(cve_ent, cve_mun), do: get("/geo/agebs", cve_ent: cve_ent, cve_mun: cve_mun)
-
   @doc """
   FeatureCollection de AGEBs del censo, con el valor de `indicador` ya
   cruzado en `properties.valor_choropleth` (puede venir `null`, si el
@@ -201,12 +198,25 @@ defmodule Mapo.MapoCore do
   def isocronas_poblacion(poligonos), do: post("/isocronas/poblacion", %{poligonos: poligonos})
 
   @doc """
-  Perfil de un municipio, una sección por enfoque: demografía (censo),
-  comercio (DENUE), consumo (ENIGH), seguridad (SESNSP) y laboral (ENOE).
-  Una sección viene `nil` si su fuente no cubre el municipio. Laboral es
-  del estado entero: la ENOE no es representativa por municipio.
+  Perfil de una zona (clave de la zona común; docs/producto/perfil.md): lo que
+  baja hasta la zona (censo, vivienda, servicios a pie, DENUE) y lo que solo
+  existe por municipio o por estado, cada documento con su nivel. Una sección
+  viene `nil` si su fuente no la cubre. 422 si la zona es demasiado grande.
   """
-  def perfil_zona(cve_ent, cve_mun), do: get("/perfil_zona", cve_ent: cve_ent, cve_mun: cve_mun)
+  def perfil_zona(zona), do: get("/perfil_zona", [zona: zona], receive_timeout: 90_000)
+
+  @doc """
+  Zonas del mismo nivel que se parecen a una, variable por variable y sin
+  puntaje. `opts`: `:areas` (lista, vacía es todas), `:margen` y `:donde`.
+  """
+  def perfil_similares(zona, opts \\ []) do
+    get("/perfil_zona/similares",
+      zona: zona,
+      areas: Enum.join(opts[:areas] || [], ","),
+      margen: opts[:margen] || "cerca",
+      donde: opts[:donde] || "todo"
+    )
+  end
 
   @doc """
   Resuelve el ruteo de vehículos (VRP) con capacidad y ventanas de

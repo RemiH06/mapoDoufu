@@ -18,7 +18,7 @@ planeación del Censo de Gobiernos Municipales 2025. Fichas en `../fuentes/`:
   2023, ingresos y egresos por capítulo y los instrumentos de planeación. Las notas del
   equipo también cuelgan de él (`hacienda` en `NotaPerfil`).
 - Pruebas: `test_fuentes_municipales.py` (6) y una de LiveView. Capturas:
-  `scripts/capturas/perfil28.js`.
+  `scripts/capturas/perfil28.js` (la 29h lo reemplazó por `perfil29h.js`).
 
 ## Por qué así
 

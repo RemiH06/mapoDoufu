@@ -31,6 +31,7 @@ import {LogisticaMap} from "./logistica_map"
 import {RiesgosMapa} from "./riesgos_mapa"
 import {AccesibilidadMapa} from "./accesibilidad_mapa"
 import {MapasChicos} from "./mapas_chicos"
+import {PerfilMapa} from "./perfil_mapa"
 
 const csrfToken = document.querySelector("meta[name='csrf-token']").getAttribute("content")
 const liveSocket = new LiveSocket("/live", Socket, {
@@ -45,6 +46,7 @@ const liveSocket = new LiveSocket("/live", Socket, {
     RiesgosMapa,
     AccesibilidadMapa,
     MapasChicos,
+    PerfilMapa,
   },
 })
 

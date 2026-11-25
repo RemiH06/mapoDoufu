@@ -1,49 +1,116 @@
-/* /perfil: sobre el plano del municipio quedan cinco documentos, uno por
-   enfoque, cada uno con su piel y su forma de papel (cédula, libro mayor,
-   ticket, expediente, tarjeta de checador). */
+/* /perfil (docs/producto/perfil.md): la cabeza con el plano de la zona y ocho
+   documentos, uno por enfoque, cada uno con su piel y su forma de papel
+   (cédula, ficha de obra, hoja de ruta, libro mayor, ticket, expediente,
+   tarjeta de checador, cuenta pública). Los parecidos, en similares.css. */
 
 @layer components {
-  .plano {
-    position: fixed;
-    inset: 0;
-    color: var(--line);
-    opacity: 0.35;
-    overflow: hidden;
-    pointer-events: none;
+  /* Cabeza: quién es la zona y su plano, en un solo pliego. */
+  .perfil-cabeza {
+    display: grid;
+    grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
+    gap: 0 24px;
+    margin: 8px 0 20px;
+    padding: 18px 20px;
   }
-  .plano svg {
-    width: 100%;
-    height: 100%;
+  .perfil-quien {
+    display: grid;
+    gap: 12px;
+    align-content: start;
   }
-
-  /* Consulta: el lugar como título y los selects anotados a mano */
-  .consulta {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: end;
-    gap: 12px 24px;
-    padding: 14px 18px;
-    margin: 8px 0 32px;
-  }
-  .consulta h1 {
+  .perfil-quien h1 {
     font-family: var(--cond);
     font-weight: 700;
     font-size: 34px;
-    line-height: 1;
-    margin-right: auto;
+    line-height: 1.05;
+    text-wrap: balance;
   }
-  .consulta .membrete-select {
-    font-size: 20px;
-    border-bottom: 1.5px dashed var(--line);
-    max-width: 16rem;
+  /* El selector repite el nombre: aquí ya es el título. */
+  .perfil-quien .zona-elegida .zona-nombre {
+    display: none;
   }
-  .consulta p {
-    flex-basis: 100%;
+  .perfil-plano {
+    position: relative;
+    min-height: 440px;
+    border: 1.5px solid var(--text);
+  }
+  .leyenda-perfil {
+    margin: 8px 0 0 8px;
+  }
+  .leyenda-perfil .corto {
+    display: none;
+  }
+  .leyenda-perfil .nota-leyenda {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin: 4px 0 0;
+    font-weight: 400;
+  }
+  .leyenda-perfil.leyenda-acc .muestra.punto {
+    background: color-mix(in srgb, var(--f-demografia) 55%, var(--bg));
+  }
+  .perfil-cifras dd {
+    white-space: nowrap;
+  }
+  .perfil-cifras {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    border-top: 1.5px solid var(--text);
+  }
+  .perfil-cifras > div {
+    padding: 8px 10px 8px 0;
+    border-bottom: 1px dashed var(--line);
+  }
+  .perfil-cifras dt {
+    font-family: var(--cond);
+    font-size: 14px;
     color: var(--text2);
-    max-width: 70ch;
   }
-  .consulta .aviso {
+  .perfil-cifras dd {
+    font-size: 21px;
+    line-height: 1.2;
+  }
+  .perfil-estimada {
+    margin-top: 8px;
+    font-size: 13px;
+    color: var(--text2);
+  }
+  .perfil-estimada summary {
+    cursor: pointer;
+    min-height: 24px;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+  .perfil-ir,
+  .perfil-indice {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 2px 16px;
+    font-family: var(--cond);
+    font-size: 15px;
+  }
+  .perfil-ir a,
+  .perfil-indice a {
+    min-height: 28px;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+    text-decoration-color: var(--line);
+  }
+  .perfil-ir a:hover,
+  .perfil-indice a:hover {
+    text-decoration-color: currentColor;
+  }
+  .perfil-indice {
+    margin-bottom: 28px;
+  }
+  .perfil-cabeza .aviso,
+  .similares .aviso {
     color: var(--accent);
+  }
+  .perfil-cabeza .falta {
+    font-size: 14px;
+    color: var(--text2);
+    max-width: 60ch;
   }
   .consultando {
     max-width: max-content;
@@ -85,6 +152,39 @@
   }
   .documento .fuente {
     margin-top: 12px;
+  }
+  .documento {
+    scroll-margin-top: 12px;
+  }
+  .documento h3 {
+    font-family: var(--cond);
+    font-weight: 600;
+    font-size: 16px;
+    margin: 14px 0 4px;
+  }
+  .documento .grande {
+    font-size: 28px;
+    line-height: 1.15;
+  }
+  /* Dentro de un papel ancho, dos columnas. */
+  .dos {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0 32px;
+    align-items: start;
+  }
+  /* De quién es el dato: si no es de la zona, se nota. */
+  .nivel {
+    width: fit-content;
+    margin: -4px 0 10px;
+    font-family: var(--cond);
+    font-size: 14px;
+    color: var(--text2);
+  }
+  .nivel.ajeno {
+    padding: 0 8px;
+    border: 1.5px dashed var(--accent);
+    color: var(--accent);
   }
   .documento .falta {
     font-size: 13px;
@@ -166,7 +266,7 @@
 
   /* Cédula censal: casillas de formulario */
   .d-demografia {
-    grid-column: span 4;
+    grid-column: span 5;
     --giro: -0.5deg;
   }
   .casillas {
@@ -179,38 +279,233 @@
     border: 1px solid var(--line);
     margin: -1px 0 0 -1px;
   }
-  .casilla.ancha {
-    grid-column: 1 / -1;
-  }
-  .casilla dt {
+  .casilla small {
     font-family: var(--cond);
     font-size: 13px;
     color: var(--text2);
   }
-  .casilla dd {
-    font-family: var(--mono);
-    font-size: 18px;
+  .piramide {
+    margin-bottom: 14px;
   }
-  .casilla.ancha dd {
-    font-size: 30px;
+  .piramide figcaption,
+  .piramide-fila {
+    display: grid;
+    grid-template-columns: 1fr 62px 1fr;
   }
-  .reparto {
+  .piramide figcaption {
+    font-family: var(--cond);
+    font-size: 14px;
+    color: var(--text2);
+    margin-bottom: 4px;
+  }
+  .piramide figcaption b {
+    font-weight: 500;
+    color: var(--text);
+  }
+  .piramide figcaption > :first-child {
+    text-align: right;
+  }
+  .piramide-fila {
+    border-top: 1px solid var(--bg);
+  }
+  .piramide-edad {
     display: flex;
-    height: 12px;
-    margin-top: 6px;
-    border: 1px solid var(--text);
+    align-items: center;
+    justify-content: center;
+    font-family: var(--cond);
+    font-size: 13px;
+    line-height: 1;
+    color: var(--text2);
+    white-space: nowrap;
   }
-  .reparto span {
+  .piramide-lado {
+    display: flex;
+    background: color-mix(in srgb, var(--film) 7%, transparent);
+  }
+  .piramide-lado:first-child {
+    justify-content: flex-end;
+  }
+  .piramide-lado i {
     background: var(--film);
   }
-  .reparto span + span {
-    background: color-mix(in srgb, var(--film) 35%, var(--bg));
+  .piramide-lado:last-child i {
+    background: color-mix(in srgb, var(--film) 55%, var(--bg));
+  }
+
+  /* Una tira por partes, de menos a más tinta, con su leyenda en texto. */
+  .tramos {
+    display: flex;
+    gap: 2px;
+    height: 14px;
+    background: color-mix(in srgb, var(--film) 7%, transparent);
+  }
+  .tramos i,
+  .muestra[data-i] {
+    background: var(--film);
+  }
+  .tramos i[data-i="0"],
+  .muestra[data-i="0"] {
+    background: color-mix(in srgb, var(--film) 25%, var(--bg));
+  }
+  .tramos i[data-i="1"],
+  .muestra[data-i="1"] {
+    background: color-mix(in srgb, var(--film) 45%, var(--bg));
+  }
+  .tramos i[data-i="2"],
+  .muestra[data-i="2"] {
+    background: color-mix(in srgb, var(--film) 65%, var(--bg));
+  }
+  .tramos i[data-i="3"],
+  .muestra[data-i="3"] {
+    background: color-mix(in srgb, var(--film) 82%, var(--bg));
+  }
+  .documento .muestra {
+    display: inline-block;
+    width: 14px;
+    height: 10px;
+    flex: none;
+  }
+  .tramos-leyenda {
+    display: grid;
+    gap: 2px;
+    margin-top: 6px;
+    font-size: 13px;
+  }
+  .tramos-leyenda li {
+    display: grid;
+    grid-template-columns: auto minmax(0, 7.5em) 4.5em minmax(0, 1fr);
+    gap: 8px;
+    align-items: center;
+  }
+  .tramos-leyenda b {
+    font-weight: 500;
+    text-align: right;
+  }
+  .tramos-leyenda small {
+    color: var(--text2);
+    font-size: 13px;
+  }
+  .columnas {
+    margin: 12px 0 4px;
+  }
+  .columnas figcaption {
+    font-family: var(--cond);
+    font-size: 14px;
+    color: var(--text2);
+  }
+  .columnas ol {
+    display: flex;
+    gap: 4px;
+    height: 96px;
+    margin-top: 6px;
+  }
+  .columnas li {
+    flex: 1;
+    max-width: 44px;
+    display: grid;
+    grid-template-rows: minmax(0, 1fr) auto;
+    justify-items: center;
+  }
+  .columnas i {
+    width: 100%;
+    align-self: end;
+    background: var(--film);
+    min-height: 1px;
+  }
+  .columnas i.incompleto {
+    background: repeating-linear-gradient(
+      135deg,
+      var(--film) 0 2px,
+      color-mix(in srgb, var(--film) 25%, var(--bg)) 2px 6px
+    );
+  }
+  .columnas span {
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--text2);
+  }
+
+  /* Hoja de ruta: un servicio por renglón, con su ícono y su tira. */
+  .rutas {
+    display: grid;
+    gap: 9px;
+  }
+  .rutas li {
+    display: grid;
+    grid-template-columns: 18px minmax(0, 1fr) auto;
+    gap: 2px 8px;
+    align-items: center;
+    font-size: 13px;
+  }
+  .rutas svg {
+    width: 15px;
+    height: 15px;
+    fill: var(--film);
+  }
+  .ruta-nombre {
+    font-family: var(--cond);
+    font-size: 15px;
+    line-height: 1.1;
+  }
+  .ruta-nombre small {
+    display: block;
+    font-size: 13px;
+    color: var(--text2);
+  }
+  .rutas .tramos {
+    grid-column: 2 / -1;
+    grid-row: 2;
+    height: 9px;
+  }
+  .rutas b {
+    grid-column: 3;
+    grid-row: 1;
+    font-weight: 500;
+  }
+  .rutas .falta {
+    grid-column: 2 / -1;
+    margin: 0;
+  }
+  /* Cerca es lo que importa: lleva la tinta entera. */
+  .d-servicios .tramos i[data-i="0"],
+  .d-servicios .muestra[data-i="0"] {
+    background: var(--film);
+  }
+  .d-servicios .tramos i[data-i="1"],
+  .d-servicios .muestra[data-i="1"] {
+    background: color-mix(in srgb, var(--film) 50%, var(--bg));
+  }
+  .d-servicios .tramos i[data-i="2"],
+  .d-servicios .muestra[data-i="2"] {
+    background: color-mix(in srgb, var(--film) 18%, var(--bg));
+  }
+  .ruta-leyenda {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 2px 12px;
+    margin-bottom: 10px;
+    font-family: var(--cond);
+    font-size: 14px;
+    color: var(--text2);
+  }
+  .ruta-leyenda li {
+    display: flex;
+    align-items: center;
+    gap: 6px;
   }
 
   /* Libro mayor: renglones, columna de cantidades, total doblemente subrayado */
+  .d-vivienda {
+    grid-column: span 4;
+    --giro: 0.3deg;
+  }
+  .d-servicios {
+    grid-column: span 3;
+    --giro: -0.3deg;
+  }
   .d-comercio {
-    grid-column: span 5;
-    --giro: 0.4deg;
+    grid-column: span 9;
+    --giro: 0.2deg;
   }
   .libro {
     width: 100%;
@@ -307,7 +602,7 @@
 
   /* Expediente: pestaña de carpeta y máquina de escribir */
   .d-seguridad {
-    grid-column: span 7;
+    grid-column: span 6;
     --giro: 0.3deg;
     margin-top: 22px;
     padding-left: 34px;
@@ -349,6 +644,29 @@
   .barras .num {
     text-align: right;
   }
+  .barras .num small {
+    display: inline-block;
+    min-width: 4.2em;
+    color: var(--text2);
+    font-size: 13px;
+  }
+  .barras .resto {
+    color: var(--text2);
+  }
+  .barras .carril {
+    display: flex;
+    height: 10px;
+  }
+  .barras.cien {
+    grid-template-columns: minmax(0, 9.5em) 1fr auto;
+  }
+  .dos .barras {
+    grid-template-columns: minmax(0, 11em) 1fr auto;
+  }
+  /* Los porcentajes llevan el cien a la vista. */
+  .barras.cien .carril {
+    background: color-mix(in srgb, var(--film) 10%, transparent);
+  }
   .barra {
     height: 10px;
     background: var(--film);
@@ -367,7 +685,7 @@
 
   /* Tarjeta de checador: columnas y el sello del reloj */
   .d-laboral {
-    grid-column: span 5;
+    grid-column: span 6;
     --giro: -0.4deg;
   }
   .d-laboral .sello {
@@ -399,7 +717,7 @@
 
   /* Cuenta pública: hacienda municipal (sesión 28), con el sello como la tarjeta. */
   .d-hacienda {
-    grid-column: span 7;
+    grid-column: span 12;
     --giro: 0.3deg;
   }
   .d-hacienda .sello {
@@ -428,21 +746,17 @@
   .d-hacienda dd {
     font-family: var(--mono);
   }
-  .d-hacienda h3,
-  .anexo h3 {
-    font-family: var(--cond);
-    font-weight: 600;
-    font-size: 16px;
-    margin: 12px 0 6px;
-  }
   /* Una segunda fuente dentro del mismo documento, separada por una raya. */
   .anexo {
     margin-top: 14px;
     padding-top: 6px;
     border-top: 1px solid var(--line);
   }
-  .anexo .libro + .libro {
+  .anexo .dos .libro {
     margin-top: 8px;
+  }
+  .d-hacienda .libro {
+    max-width: 640px;
   }
 
   /* Mientras llega el perfil: el papel en su lugar con renglones en blanco,
@@ -491,20 +805,43 @@
   }
 
   @media (max-width: 1100px) {
+    .perfil-cifras dd {
+      font-size: 18px;
+    }
+    .perfil-cabeza {
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    }
     .d-demografia,
-    .d-comercio,
-    .d-laboral,
-    .d-hacienda {
+    .d-vivienda {
       grid-column: span 6;
     }
+    .d-servicios,
     .d-consumo {
-      grid-column: span 4;
+      grid-column: span 5;
     }
+    .d-comercio,
     .d-seguridad {
-      grid-column: span 8;
+      grid-column: span 7;
+    }
+    .d-laboral {
+      grid-column: span 12;
     }
   }
   @media (max-width: 760px) {
+    .perfil-cabeza {
+      grid-template-columns: minmax(0, 1fr);
+      gap: 16px;
+      padding: 14px;
+    }
+    .perfil-plano {
+      min-height: 320px;
+    }
+    .perfil-quien h1 {
+      font-size: 28px;
+    }
+    .perfil-cifras {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
     .documentos {
       grid-template-columns: minmax(0, 1fr);
       gap: 34px;
@@ -518,18 +855,43 @@
       justify-self: center;
       width: 100%;
     }
-    .barras {
+    .dos {
+      grid-template-columns: minmax(0, 1fr);
+    }
+    .d-hacienda .libro td.n {
+      white-space: normal;
+    }
+    /* La leyenda, en una tira: entera taparía medio plano. */
+    .leyenda-perfil.leyenda-acc {
+      max-width: none;
+      font-size: 12px;
+    }
+    .leyenda-perfil ul {
+      display: flex;
+    }
+    .leyenda-perfil.leyenda-acc li {
+      display: grid;
+      gap: 0;
+      width: 42px;
+    }
+    .leyenda-perfil.leyenda-acc li .muestra {
+      width: 100%;
+    }
+    .leyenda-perfil .largo {
+      display: none;
+    }
+    .leyenda-perfil .corto {
+      display: block;
+    }
+    .barras,
+    .dos .barras {
       grid-template-columns: minmax(0, 1fr) 30% auto;
     }
-    .consulta h1 {
-      font-size: 28px;
+    .tramos-leyenda li {
+      grid-template-columns: auto minmax(0, 1fr) auto;
     }
-    .consulta .ubicacion > span[aria-hidden] {
-      display: none;
-    }
-    .libro th:nth-child(3),
-    .libro td:nth-child(3) {
-      display: none;
+    .tramos-leyenda small {
+      grid-column: 2 / -1;
     }
   }
 }

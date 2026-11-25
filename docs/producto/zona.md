@@ -3,8 +3,8 @@
 Una sola forma de decir "dónde" en todas las vistas (sesión 29b): un estado, uno o
 varios municipios, una metrópoli, una colonia, un código postal o un polígono dibujado
 en el plano. El mismo selector está en la hoja de `/riesgos` y `/accesibilidad` y en el
-membrete de `/mapa`. `/perfil` y `/buscador` todavía eligen por estado y municipio: se
-pasan en la 29h y la 29c.
+membrete de `/mapa`, y en la cabeza de `/perfil` (29h). `/buscador` todavía elige por
+estado y municipio.
 
 ## Cómo se usa
 
@@ -73,6 +73,9 @@ la URL se reescribe con `zona=`.
   otro lado hubiera competencia. En Guadalajara, con farmacias, 1,106 de fuera compiten y
   76 se quedan con parte del municipio. Sus celdas van con un velo y su punto hueco. Si el
   margen toca un estado sin DENUE en Mapo, se dice.
+- **`/perfil`** (29h): municipios enteros por clave; una colonia, un CP o un dibujo con el
+  censo repartido por área, porque por punto la mayoría de las colonias queda sin gente
+  ([perfil.md](perfil.md)).
 - **Las demás capas de `/mapa`** (29d): el censo y el precio por AGEB, las AGEB con su
   punto de dentro en la zona (`zona.filtro_agebs`: estado, municipios y metrópoli van por
   clave, que da lo mismo y tarda 0.1 a 0.7 s contra 44 s por geometría en un estado);

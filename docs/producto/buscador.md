@@ -14,7 +14,7 @@ lo dice.
 | `cuantos` | "¿Cuántos supermercados hay en Guadalajara y Tlaquepaque?" | rubro o sector, municipios | Conteo de DENUE por municipio y los puntos en el mapa |
 | `cuantos_cerca` | "¿Cuántas farmacias hay a 10 minutos de aquí?" | rubro o sector, punto, minutos | Isócrona desde el punto (`/isocronas/calcular`, con su `metodo`) y negocios del rubro dentro de ella. Es la única consulta nueva: isócrona y negocios ya existen por separado |
 | `donde_contratar` | "¿Dónde busco gente de 18 a 24 años en Zapopan?" | rango de edad, municipios | Coropleta del censo del rango (`/censo/choropleth`) y desocupación de la ENOE, que es estatal y así se dice |
-| `perfil` | "¿Cómo es Tlaquepaque?" | un municipio | La pantalla `/perfil` |
+| `perfil` | "¿Cómo es Tlaquepaque?" | un municipio | La pantalla `/perfil?zona=mun:...` |
 
 "¿Dónde faltan servicios públicos?" es `donde_poner` con un rubro de
 gobierno, salud o educación y el filtro `solo_publicos`.

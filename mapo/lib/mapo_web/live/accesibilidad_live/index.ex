@@ -105,6 +105,13 @@ defmodule MapoWeb.AccesibilidadLive.Index do
               >
                 Abrir en el mapa
               </.link>
+              <.link
+                id="abrir-perfil"
+                class="enlace"
+                navigate={"/perfil?" <> ZonaSelector.query(zona: @consultada.zona)}
+              >
+                Su perfil
+              </.link>
             </div>
           </div>
 

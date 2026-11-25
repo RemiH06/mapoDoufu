@@ -204,6 +204,16 @@ async def _clues(args) -> None:
     print(json.dumps(resumen, ensure_ascii=False))
 
 
+async def _similares(args) -> None:
+    from mapo_core import similares
+
+    await inicializar_esquema()
+    try:
+        print(json.dumps(await similares.cargar_estado(await get_pool(), args.estado), ensure_ascii=False))
+    except similares.ConsultaInvalida as exc:
+        raise SystemExit(str(exc)) from None
+
+
 async def _accesibilidad(args) -> None:
     import os
     from pathlib import Path
@@ -632,6 +642,12 @@ def _construir_parser() -> argparse.ArgumentParser:
     p_acc.add_argument("--osrm-pie", help="URL del OSRM con foot.lua (si no, MAPO_OSRM_PIE_URL)")
     p_acc.add_argument("--osrm-auto", help="URL del OSRM con car.lua (si no, MAPO_OSRM_URL)")
     p_acc.set_defaults(fn=_accesibilidad)
+
+    p_sim = subparsers.add_parser(
+        "similares", help="Variables de municipios y colonias para buscar zonas parecidas (reemplaza el estado)"
+    )
+    p_sim.add_argument("--estado", required=True, help="cve_ent de 2 dígitos")
+    p_sim.set_defaults(fn=_similares)
 
     p_tr = subparsers.add_parser(
         "transporte", help="GTFS de transporte público de transporte.FEEDS (reemplaza cada feed cargado)"

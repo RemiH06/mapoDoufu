@@ -81,8 +81,9 @@ function estilo({base, frontera}) {
 // recarga el estilo entero y tira las capas del hook, que las vuelve a poner
 // con las tintas nuevas desde los datos que guardó. Llevarse las capas al
 // estilo nuevo (transformStyle) tronaba el render de MapLibre a medio cambio.
-// `margen` da el relleno para encuadrar México al abrir (lo que tapa la hoja).
-export async function crearPlano(el, {escala = "bottom-right", alTema, margen = () => 20} = {}) {
+// `margen` da el relleno para encuadrar México al abrir (lo que tapa la hoja). Con
+// `gestos`, la rueda pide Ctrl y el dedo, dos: para un plano dentro de una página.
+export async function crearPlano(el, {escala = "bottom-right", alTema, margen = () => 20, gestos = false} = {}) {
   const recursos = await cargar()
   const {ml} = recursos
   const map = new ml.Map({
@@ -97,6 +98,7 @@ export async function crearPlano(el, {escala = "bottom-right", alTema, margen = 
     dragRotate: false,
     pitchWithRotate: false,
     touchPitch: false,
+    cooperativeGestures: gestos,
     attributionControl: {compact: true},
     locale: TEXTOS,
   })

@@ -695,6 +695,21 @@ CREATE TABLE IF NOT EXISTS codigos_postales (
 );
 CREATE INDEX IF NOT EXISTS idx_cp_geom ON codigos_postales USING GIST (geom);
 
+-- Sesión 29h: las variables de cada municipio y colonia para buscar zonas parecidas
+-- (similares.py, `cli similares`). Se calcula de las demás tablas: se puede borrar.
+CREATE TABLE IF NOT EXISTS similares_zonas (
+    nivel       TEXT NOT NULL,      -- municipio | colonia
+    clave       TEXT NOT NULL,      -- clave de zona: mun:14039, col:14098_0135
+    nombre      TEXT NOT NULL,
+    detalle     TEXT,
+    cve_ent     TEXT NOT NULL,
+    mun         TEXT NOT NULL,      -- cve_ent || cve_mun
+    pobtot      INTEGER,
+    valores     JSONB NOT NULL,     -- {variable: valor o null}
+    actualizado TIMESTAMPTZ NOT NULL DEFAULT now(),
+    PRIMARY KEY (nivel, clave)
+);
+
 CREATE TABLE IF NOT EXISTS descargas_checkpoint (
     clave         TEXT PRIMARY KEY,
     completado_en TIMESTAMPTZ NOT NULL DEFAULT now()
