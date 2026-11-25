@@ -4,6 +4,8 @@ defmodule Mapo.Teams.Membership do
 
   schema "team_memberships" do
     field :role, Ecto.Enum, values: [:owner, :admin, :member]
+    # Con qué color salen sus marcas en las sesiones del equipo (--lapiz-N, 1 a 6).
+    field :lapiz, :integer, default: 1
     belongs_to :team, Mapo.Teams.Team
     belongs_to :user, Mapo.Accounts.User
 

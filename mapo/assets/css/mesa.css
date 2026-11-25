@@ -50,6 +50,31 @@
   --cinta: rgba(150, 150, 150, 0.45);
 }
 
+/* Lápices de las marcas: uno fijo por persona del equipo (1 a 6) y grafito (0)
+   para quien ya no está en él. No cambian con la piel: son de la persona.
+   Medidos contra el papel blanco y el de la sesión (claro) y contra el negro y
+   la cianotipia (oscuro): 4.6:1 o más. Separados entre sí con visión normal,
+   deuteranopía y protanopía (CIE76 de 18 o más); por si no basta, cada marca
+   lleva además la firma de quien la puso. */
+:root {
+  --lapiz-0: #5C5C5C;
+  --lapiz-1: #B3301C;
+  --lapiz-2: #0E22D2;
+  --lapiz-3: #04748F;
+  --lapiz-4: #7A0DA7;
+  --lapiz-5: #0F3819;
+  --lapiz-6: #460D31;
+}
+:root[data-theme="dark"] {
+  --lapiz-0: #B8B8B8;
+  --lapiz-1: #FF9E85;
+  --lapiz-2: #87C3FF;
+  --lapiz-3: #67FFFE;
+  --lapiz-4: #CB58F8;
+  --lapiz-5: #62E54C;
+  --lapiz-6: #F244BB;
+}
+
 @layer components {
   body {
     background: var(--bg);

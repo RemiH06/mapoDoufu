@@ -219,7 +219,15 @@ docker compose exec mapo_core python -m mapo_core.cli taxonomia --estado 14   --
   `longPollFallbackMs`, LiveView cae a longpoll y sale el aviso de "No
   encontramos conexión a internet". La cura de fondo sería tener el
   código en el sistema de archivos de WSL en vez de montarlo desde
-  Windows.
+  Windows. Con la máquina cargada llega a 20 s o más por página; para
+  revisar en navegador conviene una copia fuera del montaje, en otro
+  puerto, que responde en 0.3 s (y `docker cp mapo/assets/. mapo-copia:/tmp/app/assets`
+  después de cada cambio):
+
+  ```bash
+  docker compose run -d --no-deps --name mapo-copia -p 127.0.0.1:1899:4000 mapo sh -c     "mkdir /tmp/app && cd /app && cp -r lib assets config priv mix.exs mix.lock test .formatter.exs deps _build /tmp/app/ && cd /tmp/app && exec mix phx.server"
+  docker rm -f mapo-copia   # al terminar
+  ```
 - **`mix phx.gen.context` en Phoenix 1.8 agrega "scope" automático si
   el nombre de un campo `:references` coincide con el patrón de
   dueño único** (ej. un `user_id` en un recurso nuevo): mete una

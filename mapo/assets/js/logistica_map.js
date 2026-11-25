@@ -102,8 +102,9 @@ export const LogisticaMap = {
         el.className = "marca-parada"
         m = new this.ml.Marker({element: el, draggable: true})
           .setLngLat([p.lon, p.lat])
-          .setPopup(new this.ml.Popup({offset: 16, focusAfterOpen: false, maxWidth: "300px"}))
+          // En este orden: `addTo` quita el oyente de Enter y espacio que pone `setPopup`.
           .addTo(this.map)
+          .setPopup(new this.ml.Popup({offset: 16, focusAfterOpen: false, maxWidth: "300px"}))
         m.on("dragend", () => {
           const {lat, lng} = m.getLngLat()
           this.pushEvent("mover", {id: p.id, lat, lon: lng})

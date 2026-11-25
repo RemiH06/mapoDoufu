@@ -771,7 +771,14 @@ defmodule MapoWeb.MapaLive.IndexTest do
       scope: scope
     } do
       sesion = con_sesion(scope)
-      {:ok, _} = Sesiones.create_anotacion(scope, sesion, 20.67, -103.35, "aquí")
+
+      {:ok, _} =
+        Sesiones.create_anotacion(scope, sesion, %{
+          "lat" => 20.67,
+          "lon" => -103.35,
+          "texto" => "aquí"
+        })
+
       stub_estados_y_municipio(fn _ -> raise "no debería llamarse" end)
 
       {:ok, lv, _html} = live(conn, ~p"/mapa?sesion=#{sesion.id}")

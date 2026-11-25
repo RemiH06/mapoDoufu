@@ -13,7 +13,7 @@
 │   ├── lib/mapo/            contextos: Accounts, Teams, Sesiones, Notas, MapoCore (cliente HTTP)
 │   ├── lib/mapo_web/live/   una carpeta por pantalla (mapa_live, perfil_live, logistica_live, ...)
 │   │                        y marcas.ex (eventos de marcas, compartido por /mapa y la sesión)
-│   ├── assets/js/           plano.js (el plano común, MapLibre), un hook por mapa, marcas.js y la portada
+│   ├── assets/js/           plano.js (el plano común, MapLibre), un hook por mapa, marcas.js (con marcas_trazos.js) y la portada
 │   │                        (sin npm; MapLibre, pmtiles, los estilos de Protomaps y anime.js en assets/vendor/)
 │   └── priv/static/plano/   worker de MapLibre, letras, íconos y frontera del mapa base
 └── mapo_core/               Python + FastAPI. Datos y motor de decisión

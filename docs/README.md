@@ -21,6 +21,7 @@
 - [isocronas.md](producto/isocronas.md): alcances en auto apilados en `/mapa` (hasta cinco), con la gente dentro de cada uno, en todos y en alguno, y cómo se cuenta.
 - [transporte.md](producto/transporte.md): acetato "Transporte público" en `/mapa` (rutas del GTFS con cada cuánto pasan en hora pico, o de OSM sin horarios) y las paradas como servicio en `/accesibilidad`.
 - [zona.md](producto/zona.md): la zona común de todas las vistas (estado, municipios, metrópoli, colonia, CP, dibujo o círculo), su clave en la URL, la zona guardada en la cuenta y cómo calcula cada vista con ella.
+- [marcas.md](producto/marcas.md): marcas del equipo en la sesión y en `/mapa`: las cinco formas y sus topes, la nota larga y el lápiz por persona.
 - [datos-propios.md](producto/datos-propios.md): archivos del equipo (tabla, vectorial, ráster) como acetato, su cruce con fuentes públicas, la distancia entre capas y el valor de un ráster: formatos, límites, ubicación, procedencia, permisos y qué se guarda.
 
 ## Arquitectura
@@ -116,6 +117,7 @@ Qué se construyó en cada etapa, por qué así y qué bugs reales aparecieron.
 - [Buscador sin mapa, autocompletado y menú de rubros, noviembre 2026](historial/2026-11-buscador-sin-mapa.md)
 - [Organización de `/mapa`: mesa neutra, pila arrastrable, alcances apilados y rutas con color, noviembre 2026](historial/2026-11-organizacion-mapa.md)
 - [Escalas y dos indicadores, noviembre 2026](historial/2026-11-escalas.md)
+- [Marcas, segunda vuelta, noviembre 2026](historial/2026-11-marcas.md)
 
 ## Gaiarda
 

@@ -54,8 +54,10 @@ export function conZona(hook, cuando, {margen = margenHoja} = {}) {
   }
 }
 
-function dibujar(map, {alTerminar, alCancelar}) {
-  const vertices = []
+// También lo usan las marcas (marcas.js) para su polígono: `inicio` es el primer
+// vértice y `tinta`, la del lápiz de quien dibuja.
+export function dibujar(map, {alTerminar, alCancelar, inicio = null, tinta = () => css("--accent")}) {
+  const vertices = inicio ? [inicio] : []
   let cursor = null
   let terminado = false
   let pendiente = null
@@ -85,7 +87,7 @@ function dibujar(map, {alTerminar, alCancelar}) {
       ...vertices.map((v, i) => ({type: "Feature", properties: {primero: i === 0}, geometry: {type: "Point", coordinates: v}})),
     ]}
     fuente(map, "zdib-f", datos)
-    const acento = css("--accent")
+    const acento = tinta()
     map.addLayer({id: "zdib-relleno", type: "fill", source: "zdib-f", filter: ["==", ["geometry-type"], "Polygon"],
       paint: {"fill-color": acento, "fill-opacity": 0.12}})
     map.addLayer({id: "zdib-linea", type: "line", source: "zdib-f", filter: ["==", ["geometry-type"], "LineString"],

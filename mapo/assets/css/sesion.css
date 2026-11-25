@@ -1,6 +1,6 @@
 /* /sesiones/:id: el plano compartido del equipo. Las anotaciones son marcas
-   a mano en lápiz rojo (el acento), con su nota al lado; nunca se mezclan con
-   lo impreso. La hoja de la sesión va pegada abajo a la izquierda. */
+   a mano en el lápiz de quien las puso (--lapiz), con su nota al lado; nunca se
+   mezclan con lo impreso. La hoja de la sesión va pegada abajo a la izquierda. */
 
 @layer components {
   #mapa-colaborativo {
@@ -73,7 +73,7 @@
   .marca-punto {
     position: absolute;
     inset: 0;
-    border: 2.5px solid var(--accent);
+    border: 2.5px solid var(--lapiz, var(--accent));
     border-radius: 48% 52% 44% 56% / 55% 45% 55% 45%;
     rotate: -12deg;
     background: color-mix(in srgb, var(--bg) 55%, transparent);
@@ -87,7 +87,7 @@
     height: 6px;
     margin: -3px 0 0 -3px;
     border-radius: 50%;
-    background: var(--accent);
+    background: var(--lapiz, var(--accent));
   }
   .marca-texto {
     position: absolute;
@@ -98,7 +98,7 @@
     font-family: var(--mano);
     font-size: 17px;
     line-height: 1.15;
-    color: var(--accent);
+    color: var(--lapiz, var(--accent));
     text-shadow: 0 0 2px var(--bg), 0 0 4px var(--bg), 0 0 6px var(--bg);
     pointer-events: none;
   }
@@ -108,7 +108,7 @@
     content: "";
     position: absolute;
     inset: -2px;
-    border: 2px solid var(--accent);
+    border: 2px solid var(--lapiz, var(--accent));
     border-radius: 50%;
     opacity: 0;
     animation: onda-marca 0.9s cubic-bezier(0.2, 0.7, 0.2, 1) 2;
@@ -124,29 +124,6 @@
     }
   }
 
-  /* El círculo a mano: un trazo de lápiz que se pasa un poco del inicio. El
-     color va por CSS para seguir al tema sin redibujar. */
-  .trazo-marca {
-    stroke: var(--accent);
-    fill: none;
-    cursor: pointer;
-  }
-  .trazo-marca.nueva {
-    stroke-dasharray: 2000;
-    animation: trazo-marca 0.7s ease-out;
-  }
-  @keyframes trazo-marca {
-    from {
-      stroke-dashoffset: 2000;
-    }
-    to {
-      stroke-dashoffset: 0;
-    }
-  }
-  .guia-marca {
-    stroke: var(--accent);
-    opacity: 0.7;
-  }
   .marca-nota {
     display: block;
     width: max-content;
@@ -154,16 +131,65 @@
     font-family: var(--mano);
     font-size: 17px;
     line-height: 1.15;
-    color: var(--accent);
+    color: var(--lapiz, var(--accent));
     text-shadow: 0 0 2px var(--bg), 0 0 4px var(--bg), 0 0 6px var(--bg);
     cursor: pointer;
   }
-  .marca-nota.vacia {
+  .marca-asa {
+    display: inline-block;
     width: 12px;
     height: 12px;
-    border: 2px solid var(--accent);
+    border: 2px solid var(--lapiz, var(--accent));
     border-radius: 50%;
     background: var(--bg);
+    vertical-align: middle;
+  }
+  /* La firma: dos letras de quien la puso, para no depender del color */
+  .marca-firma {
+    display: none;
+    margin-left: 4px;
+    font-family: var(--cond);
+    font-weight: 600;
+    font-size: 12px;
+    vertical-align: super;
+  }
+  .con-firmas .marca-firma {
+    display: inline;
+  }
+  /* A medio dibujo, las marcas ya puestas no atrapan el clic */
+  .marcando .maplibregl-marker,
+  .marcando .maplibregl-marker * {
+    pointer-events: none !important;
+  }
+
+  /* De quién es cada lápiz */
+  .lapices {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 2px 14px;
+    max-height: 9em;
+    overflow-y: auto;
+    font-family: var(--cond);
+    font-size: 15px;
+  }
+  .lapices li {
+    display: flex;
+    align-items: baseline;
+    gap: 5px;
+    min-width: 0;
+  }
+  .lapiz-firma {
+    font-weight: 600;
+    font-size: 13px;
+    color: var(--lapiz);
+    border-bottom: 2.5px solid var(--lapiz);
+  }
+  .lapiz-autor {
+    overflow-wrap: anywhere;
+  }
+  .lapices .secundario {
+    color: var(--text2);
   }
 
   /* Con qué forma pone marca el siguiente clic */
@@ -211,6 +237,33 @@
     font-size: 18px;
     min-height: 36px;
   }
+  .ficha-marca textarea.campo {
+    font-family: var(--sans);
+    font-size: 15px;
+    line-height: 1.4;
+    border: 1.5px solid var(--line);
+    padding: 6px 8px;
+    resize: vertical;
+    max-height: 35dvh;
+  }
+  .ficha-texto {
+    font-family: var(--mano);
+    font-size: 19px;
+    line-height: 1.2;
+    color: var(--lapiz);
+    overflow-wrap: anywhere;
+  }
+  .ficha-detalle {
+    max-height: min(35dvh, 260px);
+    overflow-y: auto;
+    font-size: 15px;
+    line-height: 1.45;
+    white-space: pre-line;
+    overflow-wrap: anywhere;
+  }
+  .pista-forma .corto {
+    display: none;
+  }
   .chico.primario {
     background: var(--text);
     border-color: var(--text);
@@ -221,6 +274,35 @@
     color: var(--accent);
   }
 
+  @media (max-width: 760px), (max-height: 500px) {
+    /* Un renglón que se desliza: la lista entera tapaba medio plano */
+    .lapices {
+      flex-wrap: nowrap;
+      overflow-x: auto;
+    }
+    .lapices li {
+      flex: none;
+    }
+    .hoja-sesion {
+      grid-template-columns: minmax(0, 1fr);
+    }
+    .herramientas button {
+      padding: 3px 8px;
+    }
+    .ficha-detalle,
+    .ficha-marca textarea.campo {
+      max-height: 20dvh;
+    }
+    .ficha-detalle {
+      font-size: 14px;
+    }
+    .pista-forma .largo {
+      display: none;
+    }
+    .pista-forma .corto {
+      display: inline;
+    }
+  }
   @media (max-width: 760px) {
     #mapa-colaborativo .maplibregl-ctrl-top-right {
       top: var(--alto-cabecera);

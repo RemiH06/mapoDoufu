@@ -39,7 +39,13 @@ defmodule MapoWeb.SesionLive.ShowTest do
 
     {:ok, lv, _html} = live(conn, ~p"/sesiones/#{sesion}")
 
-    {:ok, anotacion} = Sesiones.create_anotacion(scope, sesion, 19.4326, -99.1332, "hola equipo")
+    {:ok, anotacion} =
+      Sesiones.create_anotacion(scope, sesion, %{
+        "lat" => 19.4326,
+        "lon" => -99.1332,
+        "texto" => "hola equipo"
+      })
+
     id = anotacion.id
     autor = scope.user.email
 
@@ -81,7 +87,13 @@ defmodule MapoWeb.SesionLive.ShowTest do
   } do
     team = team_fixture(scope)
     sesion = sesion_fixture(scope, team)
-    {:ok, anotacion} = Sesiones.create_anotacion(scope, sesion, 19.0, -99.0, "original")
+
+    {:ok, anotacion} =
+      Sesiones.create_anotacion(scope, sesion, %{
+        "lat" => 19.0,
+        "lon" => -99.0,
+        "texto" => "original"
+      })
 
     member = user_fixture()
 
@@ -107,7 +119,13 @@ defmodule MapoWeb.SesionLive.ShowTest do
   } do
     team = team_fixture(scope)
     sesion = sesion_fixture(scope, team)
-    {:ok, anotacion} = Sesiones.create_anotacion(scope, sesion, 19.0, -99.0, "borrame")
+
+    {:ok, anotacion} =
+      Sesiones.create_anotacion(scope, sesion, %{
+        "lat" => 19.0,
+        "lon" => -99.0,
+        "texto" => "borrame"
+      })
 
     {:ok, lv, _html} = live(conn, ~p"/sesiones/#{sesion}")
 
@@ -116,6 +134,43 @@ defmodule MapoWeb.SesionLive.ShowTest do
     id = anotacion.id
     assert_push_event(lv, "anotacion_borrada", %{id: ^id})
     assert_raise Ecto.NoResultsError, fn -> Sesiones.get_anotacion!(anotacion.id) end
+  end
+
+  test "the pencil list says whose marks are on the map and follows them live", %{
+    conn: conn,
+    scope: scope
+  } do
+    team = team_fixture(scope)
+    sesion = sesion_fixture(scope, team)
+    membresia = membership_fixture(%{team_id: team.id})
+    otra = Mapo.Accounts.get_user!(membresia.user_id)
+    {:ok, lv, _html} = live(conn, ~p"/sesiones/#{sesion}")
+    refute has_element?(lv, ".lapices")
+
+    render_hook(lv, "elegir_herramienta", %{"herramienta" => "flecha"})
+    assert has_element?(lv, ".pista", "lo que señala")
+
+    render_hook(lv, "crear_anotacion", %{
+      "forma" => "flecha",
+      "coords" => [[-99.0, 19.0], [-99.1, 19.1]],
+      "texto" => "",
+      "detalle" => "con detalle"
+    })
+
+    assert_push_event(lv, "nueva_anotacion", %{forma: "flecha", detalle: "con detalle", lapiz: 1})
+    assert has_element?(lv, ".lapices li", "tú")
+
+    {:ok, marca} =
+      Sesiones.create_anotacion(Mapo.Accounts.Scope.for_user(otra), sesion, %{
+        "lat" => 19.0,
+        "lon" => -99.0
+      })
+
+    assert render(lv) =~ "--lapiz: var(--lapiz-2)"
+    assert has_element?(lv, ".lapices li", otra.email)
+
+    render_hook(lv, "borrar_anotacion", %{"id" => marca.id})
+    refute has_element?(lv, ".lapices li", otra.email)
   end
 
   test "presence: a second viewer connecting shows up in the first viewer's list", %{

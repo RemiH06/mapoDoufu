@@ -9,6 +9,7 @@ defmodule MapoWeb.MapaLive.Index do
   alias Mapo.MapoCore
   alias Mapo.Sesiones
   alias Mapo.Sesiones.Anotacion
+  alias Mapo.Teams
   alias MapoWeb.Cita
   alias MapoWeb.Escala
   alias MapoWeb.LecturaCenso
@@ -132,20 +133,18 @@ defmodule MapoWeb.MapaLive.Index do
           </label>
         </.form>
          <Marcas.selector :if={@sesion} herramienta={@herramienta} />
-        <p :if={@sesiones != []} class="cinta-texto">
-          <%= cond do %>
-            <% is_nil(@sesion) -> %>
-              Elige una sesión para ver sus marcas y poner nuevas.
-            <% @herramienta == "circulo" -> %>
-              Un clic en el centro y otro en la orilla. {marcas(@num_marcas)}.
-            <% true -> %>
-              Clic en el plano para poner una marca. {marcas(@num_marcas)}.
+        <p :if={@sesiones != []} class="cinta-texto pista-forma">
+          <%= if @sesion do %>
+            <Marcas.pista herramienta={@herramienta} /> {marcas(map_size(@marcas))}.
+          <% else %>
+            Elige una sesión para ver sus marcas y poner nuevas.
           <% end %>
           
           <.link :if={@sesion} navigate={~p"/sesiones/#{@sesion}"} class="enlace">
             Abrir la sesión
           </.link>
         </p>
+         <Marcas.lapices :if={@sesion} marcas={@marcas} yo={@current_scope.user.email} />
       </section>
       
       <section
@@ -1386,7 +1385,7 @@ defmodule MapoWeb.MapaLive.Index do
        sesiones: sesiones,
        sesion: nil,
        herramienta: "punto",
-       num_marcas: 0,
+       marcas: %{},
        url_params: [],
        reconstruida?: false,
        citando: nil,
@@ -1763,12 +1762,6 @@ defmodule MapoWeb.MapaLive.Index do
     {:noreply, socket |> ubicar(zona) |> reaplicar_capas() |> sincronizar_url()}
   end
 
-  def handle_info({:anotacion_creada, _} = mensaje, socket),
-    do: {:noreply, Marcas.mensaje(mensaje, update(socket, :num_marcas, &(&1 + 1)))}
-
-  def handle_info({:anotacion_borrada, _} = mensaje, socket),
-    do: {:noreply, Marcas.mensaje(mensaje, update(socket, :num_marcas, &(&1 - 1)))}
-
   def handle_info(mensaje, socket) when Marcas.mensaje_de_marca(mensaje),
     do: {:noreply, Marcas.mensaje(mensaje, socket)}
 
@@ -1786,7 +1779,7 @@ defmodule MapoWeb.MapaLive.Index do
     nueva = id && Enum.find(socket.assigns.sesiones, &(to_string(&1.id) == id))
 
     nueva =
-      nueva && Mapo.Teams.role_in_team(socket.assigns.current_scope, nueva.team_id) && nueva
+      nueva && Teams.role_in_team(socket.assigns.current_scope, nueva.team_id) && nueva
 
     cond do
       previa && nueva && previa.id == nueva.id ->
@@ -1801,9 +1794,13 @@ defmodule MapoWeb.MapaLive.Index do
         anotaciones = if nueva, do: Sesiones.list_anotaciones(nueva.id), else: []
 
         socket
-        |> assign(sesion: nueva, num_marcas: length(anotaciones))
+        |> assign(sesion: nueva)
+        |> Marcas.poner(anotaciones)
         |> assign(elegida: if(nueva, do: "marcas", else: socket.assigns.elegida))
-        |> push_event("marcas", %{anotaciones: Enum.map(anotaciones, &Anotacion.a_mapa/1)})
+        |> push_event("marcas", %{
+          anotaciones: Enum.map(anotaciones, &Anotacion.a_mapa/1),
+          lapiz: if(nueva, do: Teams.lapiz_in_team(socket.assigns.current_scope, nueva.team_id))
+        })
         |> modo_marcas()
     end
   end

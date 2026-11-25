@@ -111,6 +111,7 @@ defmodule Mapo.Teams do
            {:ok, _membership} <-
              %Membership{}
              |> Membership.changeset(%{team_id: team.id, user_id: scope.user.id, role: :owner})
+             |> con_lapiz()
              |> Repo.insert() do
         broadcast_team(scope, {:created, team})
         team
@@ -266,7 +267,36 @@ defmodule Mapo.Teams do
   def create_membership(attrs) do
     %Membership{}
     |> Membership.changeset(attrs)
+    |> con_lapiz()
     |> Repo.insert()
+  end
+
+  # El lápiz menos usado del equipo: con más de seis personas se repiten (la
+  # firma de cada marca las distingue).
+  defp con_lapiz(%Ecto.Changeset{valid?: true} = changeset) do
+    team_id = Ecto.Changeset.get_field(changeset, :team_id)
+
+    usos =
+      Repo.all(
+        from m in Membership,
+          where: m.team_id == ^team_id,
+          group_by: m.lapiz,
+          select: {m.lapiz, count()}
+      )
+      |> Map.new()
+
+    Ecto.Changeset.put_change(changeset, :lapiz, Enum.min_by(1..6, &Map.get(usos, &1, 0)))
+  end
+
+  defp con_lapiz(changeset), do: changeset
+
+  @doc "El lápiz del scope en un equipo, o 0 (grafito) si no es miembro."
+  def lapiz_in_team(%Scope{} = scope, team_id) do
+    Repo.one(
+      from m in Membership,
+        where: m.team_id == ^team_id and m.user_id == ^scope.user.id,
+        select: m.lapiz
+    ) || 0
   end
 
   @doc """

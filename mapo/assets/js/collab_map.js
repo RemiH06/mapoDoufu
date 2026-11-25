@@ -1,4 +1,4 @@
-import {crearPlano, alListo, clics} from "./plano"
+import {crearPlano, alListo, clics, relleno} from "./plano"
 import {Marcas} from "./marcas"
 
 // Mapa colaborativo de una sesion: el plano con las marcas del equipo
@@ -12,16 +12,21 @@ export const CollabMap = {
     this.claveVista = `mapo:sesion:${this.el.dataset.sesionId}:plano`
     const vistaGuardada = this._leerVistaGuardada()
 
-    this.listo = crearPlano(this.el, {alTema: () => this.marcas.repintar()}).then(({map, ml}) => {
+    this.listo = crearPlano(this.el, {alTema: () => this.marcas.repintar(), margen: () => this._margen()}).then(({map, ml}) => {
       this.map = map
       if (vistaGuardada) map.jumpTo({center: [vistaGuardada.lon, vistaGuardada.lat], zoom: vistaGuardada.zoom})
-      const clic = clics(map, {vacio: lugar => this.marcas.clic(lugar), cursor: () => "crosshair"})
+      const clic = clics(map, {
+        activo: () => !this.marcas.dibujando(),
+        vacio: lugar => this.marcas.clic(lugar),
+        cursor: () => "crosshair",
+      })
       clic.cursor()
       this.marcas = new Marcas(map, ml, {push: (e, p) => this.pushEvent(e, p), clic})
+      this.marcas.lapiz = this.el.dataset.lapiz
       this.marcas.poner(anotacionesIniciales)
       // Primera visita a la sesión: encuadra las marcas que ya puso el equipo.
       const bordes = this.marcas.bordes()
-      if (!vistaGuardada && bordes) map.fitBounds(bordes, {padding: 80, maxZoom: 14})
+      if (!vistaGuardada && bordes) map.fitBounds(bordes, {padding: this._margen(), maxZoom: 14})
       map.on("moveend", () => this._guardarVista())
     })
     const cuando = alListo(this, this.listo)
@@ -30,6 +35,23 @@ export const CollabMap = {
     this.handleEvent("anotacion_actualizada", cuando(anotacion => this.marcas.actualizar(anotacion)))
     this.handleEvent("anotacion_borrada", cuando(({id}) => this.marcas.quitar(id)))
     this.handleEvent("herramienta", cuando(({herramienta}) => this.marcas.usar(herramienta)))
+  },
+
+  // Lo que dejan libre el membrete y la hoja de la sesión: ahí se encuadran las
+  // marcas y se recorren las fichas. La hoja va abajo en celular, a la derecha
+  // acostado y abajo a la izquierda en escritorio.
+  _margen() {
+    const W = window.innerWidth, H = window.innerHeight
+    const caja = sel => document.querySelector(sel)?.getBoundingClientRect()
+    const hoja = caja("#hoja-sesion"), tope = (caja(".membrete")?.bottom ?? 0) + 14
+    if (!hoja?.width) return relleno([20, tope], [20, 20])
+    if (hoja.width > W * 0.6) {
+      const abajo = H - hoja.top + 24
+      return relleno([20, tope], [20, H - tope - abajo < 160 ? 20 : abajo])
+    }
+    return hoja.left < W / 2
+      ? relleno([hoja.right + 20, tope], [60, 20])
+      : relleno([20, tope], [W - hoja.left + 20, 20])
   },
 
   _leerVistaGuardada() {

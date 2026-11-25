@@ -106,6 +106,7 @@ export const MapaTecnico = {
           vacio: lugar => this._clicVacio(lugar),
         })
         this.marcas = new Marcas(map, ml, {push: (e, p) => this.pushEvent(e, p), clic: this.clic})
+        this.marcas.activar(false)
         map.on("mousemove", e => this._resaltar(e.point))
         map.on("mouseout", () => this._resaltar(null))
       })
@@ -157,10 +158,11 @@ export const MapaTecnico = {
     }))
     this.handleEvent("modo_marcas", cuando(({activo}) => {
       this.modoMarcas = activo
-      if (!activo) this.marcas.cancelar()
+      this.marcas.activar(activo)
       this.clic.cursor()
     }))
-    this.handleEvent("marcas", cuando(({anotaciones}) => {
+    this.handleEvent("marcas", cuando(({anotaciones, lapiz}) => {
+      this.marcas.lapiz = lapiz ?? 1
       this.marcas.poner(anotaciones)
       const bordesMarcas = this.marcas.bordes()
       if (bordesMarcas) this.map.fitBounds(bordesMarcas, {padding: this._margen(), maxZoom: 14})

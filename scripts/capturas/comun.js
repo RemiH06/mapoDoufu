@@ -83,6 +83,15 @@ async function iniciar() {
   return { browser, estado, ids };
 }
 
+// Solo entra: sin visitar las páginas del equipo, que con dev lento son minutos.
+async function iniciarSinIds() {
+  const browser = await chromium.launch({ args: ARGS_GPU });
+  const { ctx } = await entrar(browser);
+  const estado = await ctx.storageState();
+  await ctx.close();
+  return { browser, estado };
+}
+
 // Un contexto por tamaño y modo, con el modo puesto antes de cargar.
 async function porCadaVista(browser, estado, fn) {
   for (const tn of elegidos(Object.keys(TAMANOS), "TAM")) {
@@ -102,4 +111,4 @@ function carpeta(nombre) {
   return dir;
 }
 
-module.exports = { BASE, conectado, quieto, iniciar, entrar, porCadaVista, carpeta };
+module.exports = { BASE, conectado, quieto, iniciar, iniciarSinIds, entrar, porCadaVista, carpeta };

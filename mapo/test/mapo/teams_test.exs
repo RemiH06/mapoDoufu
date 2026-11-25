@@ -116,6 +116,20 @@ defmodule Mapo.TeamsTest do
       assert membership.role == :owner
     end
 
+    test "each new member takes the least used pencil of the team" do
+      # quien crea el equipo toma el 1
+      team = team_fixture(user_scope_fixture())
+      nueva = fn -> membership_fixture(%{team_id: team.id}) end
+
+      membresias = for _ <- 2..6, do: nueva.()
+      assert Enum.map(membresias, & &1.lapiz) == [2, 3, 4, 5, 6]
+
+      # con los seis ocupados se repite; el que se desocupa vuelve a usarse
+      assert nueva.().lapiz == 1
+      Teams.delete_membership(Enum.at(membresias, 1))
+      assert nueva.().lapiz == 3
+    end
+
     test "create_membership/1 with invalid data returns error changeset" do
       assert {:error, %Ecto.Changeset{}} = Teams.create_membership(@invalid_attrs)
     end

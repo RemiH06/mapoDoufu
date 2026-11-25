@@ -220,7 +220,7 @@ export function ficha(map, ml, lugar, contenido, opciones = {}) {
   return popup
 }
 
-function alcanzar(map, popup) {
+export function alcanzar(map, popup) {
   const el = popup.getElement()
   if (!el || !popup.isOpen()) return
   const caja = el.getBoundingClientRect(), lienzo = map.getContainer().getBoundingClientRect()

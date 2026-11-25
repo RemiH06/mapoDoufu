@@ -278,9 +278,11 @@ la pantalla era un dashboard genérico.
 - **No es un acetato:** va encima de todos sin mezclarse, no se reordena
   y no pone piel. Con su cinta abierta, el clic en el plano pone marca y
   le gana a la isócrona.
-- **Formas:** punto y círculo (centro y radio en metros, dibujado como
-  lápiz). `forma` y la geometría genérica dejan lugar a flechas y trazo
-  libre sin cambiar la tabla.
+- **Formas:** punto, círculo, flecha, trazo libre y polígono (las tres
+  últimas, desde la sesión 29f; [marcas.md](../producto/marcas.md)). `forma`
+  y la geometría genérica las admiten sin cambiar la tabla.
+- **Un lápiz por persona del equipo** (29f), no un selector de color: así el
+  color de una marca solo dice de quién es. Antes todas iban en lápiz rojo.
 - **Notas de `/perfil`:** cuelgan de equipo, municipio y documento
   (`notas_perfil`), no de una sesión ni de un punto. Cualquier miembro las
   escribe y borra, como las marcas.

@@ -22,6 +22,7 @@ defmodule MapoWeb.SesionLive.Show do
         phx-update="ignore"
         data-sesion-id={@sesion.id}
         data-anotaciones={Jason.encode!(@anotaciones_json)}
+        data-lapiz={@lapiz}
         class="plano-gl flex-1 min-h-0 w-full"
         role="region"
         aria-label="Plano compartido de la sesión"
@@ -36,17 +37,10 @@ defmodule MapoWeb.SesionLive.Show do
 
         <Marcas.selector herramienta={@herramienta} />
         <p class="pista">
-          <span class="largo">
-            {if @herramienta == "circulo",
-              do: "Un clic en el centro y otro en la orilla para encerrar una zona.",
-              else: "Clic en el plano para poner una marca."} Tócala para cambiar su nota o borrarla. Todo el equipo la ve al instante.
-          </span>
-          <span class="corto">
-            {if @herramienta == "circulo",
-              do: "Toca el centro y luego la orilla.",
-              else: "Toca el plano para poner una marca."}
-          </span>
+          <Marcas.pista herramienta={@herramienta} />
+          <span class="largo">Toca una marca para leerla, cambiarla o borrarla.</span>
         </p>
+        <Marcas.lapices marcas={@marcas} yo={@current_scope.user.email} />
         <.link navigate={~p"/mapa?#{[sesion: @sesion.id]}"} class="mano a-mapa">
           Ver las marcas con las capas de datos
         </.link>
@@ -56,7 +50,13 @@ defmodule MapoWeb.SesionLive.Show do
             <span class="secundario">Nadie más está viendo la sesión.</span>
           <% else %>
             <span class="secundario">Viendo ahora:</span>
-            <span :for={correo <- @presentes} class="mano">{correo}</span>
+            <span
+              :for={{correo, lapiz} <- @presentes}
+              class="mano"
+              style={"color: var(--lapiz-#{lapiz})"}
+            >
+              {correo}
+            </span>
           <% end %>
         </p>
       </section>
@@ -70,23 +70,28 @@ defmodule MapoWeb.SesionLive.Show do
     sesion = Sesiones.get_sesion!(scope, id)
     team = Teams.get_team!(scope, sesion.team_id)
     topico = Sesiones.topico_sesion(sesion.id)
+    lapiz = Teams.lapiz_in_team(scope, sesion.team_id)
 
     if connected?(socket) do
       Sesiones.subscribe_sesion(sesion.id)
 
       {:ok, _ref} =
         MapoWeb.Presence.track(self(), topico, to_string(scope.user.id), %{
-          email: scope.user.email
+          email: scope.user.email,
+          lapiz: lapiz
         })
     end
 
     anotaciones = Sesiones.list_anotaciones(sesion.id)
 
     {:ok,
-     assign(socket,
+     socket
+     |> Marcas.poner(anotaciones)
+     |> assign(
        sesion: sesion,
        team: team,
        topico: topico,
+       lapiz: lapiz,
        herramienta: "punto",
        presentes: presentes_en(topico, scope.user.id),
        anotaciones_json: Enum.map(anotaciones, &Anotacion.a_mapa/1)
@@ -116,7 +121,7 @@ defmodule MapoWeb.SesionLive.Show do
     topico
     |> MapoWeb.Presence.list()
     |> Enum.reject(fn {key, _} -> key == propio_key end)
-    |> Enum.map(fn {_user_id, %{metas: [meta | _]}} -> meta.email end)
+    |> Enum.map(fn {_user_id, %{metas: [meta | _]}} -> {meta.email, meta.lapiz} end)
     |> Enum.uniq()
     |> Enum.sort()
   end

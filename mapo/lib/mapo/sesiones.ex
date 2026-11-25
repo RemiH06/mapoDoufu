@@ -71,11 +71,25 @@ defmodule Mapo.Sesiones do
     |> Repo.insert()
   end
 
-  @doc "Anotaciones de una sesion, mas antigua primero, con quien las creo precargado."
+  @doc "Anotaciones de una sesion, mas antigua primero, con quien las creo y su lapiz."
   def list_anotaciones(sesion_id) do
-    Repo.all(from a in Anotacion, where: a.sesion_id == ^sesion_id, order_by: a.inserted_at)
-    |> Repo.preload(:user)
+    Repo.all(
+      from a in con_autor(), where: a.sesion_id == ^sesion_id, order_by: [a.inserted_at, a.id]
+    )
   end
+
+  # El lapiz sale de la membresia de hoy: quien ya no esta en el equipo queda
+  # en grafito (0).
+  defp con_autor do
+    from a in Anotacion,
+      join: s in assoc(a, :sesion),
+      left_join: m in Membership,
+      on: m.team_id == s.team_id and m.user_id == a.user_id,
+      preload: :user,
+      select_merge: %{lapiz: coalesce(m.lapiz, 0)}
+  end
+
+  defp recargar(%Anotacion{id: id}), do: Repo.one!(from a in con_autor(), where: a.id == ^id)
 
   @topic_prefix "sesion:"
 
@@ -100,28 +114,29 @@ defmodule Mapo.Sesiones do
   end
 
   @doc """
-  Crea una anotacion en `lat`/`lon` y la transmite en vivo a todos los
-  que esten viendo la misma sesion (incluido quien la crea), sea en
-  `/sesiones/:id` o en `/mapa`. Requiere que el scope sea miembro del
-  equipo dueno de la sesion.
+  Crea una anotacion y la transmite en vivo a todos los que esten viendo
+  la misma sesion (incluido quien la crea), sea en `/sesiones/:id` o en
+  `/mapa`. Requiere que el scope sea miembro del equipo dueno de la sesion.
 
-  `forma` dice como se dibuja (`"punto"` si no se da). Un `"circulo"`
-  guarda su centro en `lat`/`lon` y pide `"radio_m"` en metros.
+  `params` es lo que manda el plano: `"forma"` (`"punto"` si no viene),
+  `"texto"` (la etiqueta), `"detalle"` (la nota larga) y el lugar, que
+  depende de la forma (`Anotacion.geom/1`); el circulo pide `"radio_m"`.
   """
-  def create_anotacion(%Scope{} = scope, %Sesion{} = sesion, lat, lon, texto, forma \\ %{}) do
+  def create_anotacion(%Scope{} = scope, %Sesion{} = sesion, params) do
     true = Teams.role_in_team(scope, sesion.team_id) != nil
 
     attrs = %{
-      "texto" => texto,
-      "geom" => %Geo.Point{coordinates: {lon, lat}, srid: 4326},
-      "forma" => Map.get(forma, "forma", "punto"),
-      "radio_m" => Map.get(forma, "radio_m"),
+      "texto" => params["texto"] || "",
+      "detalle" => params["detalle"] || "",
+      "geom" => Anotacion.geom(params),
+      "forma" => params["forma"] || "punto",
+      "radio_m" => params["radio_m"],
       "sesion_id" => sesion.id,
       "user_id" => scope.user.id
     }
 
     with {:ok, anotacion} <- %Anotacion{} |> Anotacion.changeset(attrs) |> Repo.insert() do
-      anotacion = Repo.preload(anotacion, :user)
+      anotacion = recargar(anotacion)
       broadcast_sesion(sesion.id, {:anotacion_creada, anotacion})
       {:ok, anotacion}
     end
@@ -131,18 +146,20 @@ defmodule Mapo.Sesiones do
   def get_anotacion!(id), do: Repo.get!(Anotacion, id)
 
   @doc """
-  Cambia el texto de una anotacion existente y transmite el cambio en
-  vivo. Requiere que el scope sea miembro del equipo dueno, y que la
+  Cambia la nota (`"texto"`) o la nota larga (`"detalle"`) de una anotacion
+  y transmite el cambio en vivo. Requiere que el scope sea miembro del equipo dueno, y que la
   anotacion de verdad pertenezca a `sesion` (no a otra sesion cuyo id
   alguien haya adivinado).
   """
-  def update_anotacion(%Scope{} = scope, %Sesion{} = sesion, %Anotacion{} = anotacion, texto) do
+  def update_anotacion(%Scope{} = scope, %Sesion{} = sesion, %Anotacion{} = anotacion, params) do
     true = Teams.role_in_team(scope, sesion.team_id) != nil
     true = anotacion.sesion_id == sesion.id
 
     with {:ok, anotacion} <-
-           anotacion |> Anotacion.changeset(%{"texto" => texto}) |> Repo.update() do
-      anotacion = Repo.preload(anotacion, :user)
+           anotacion
+           |> Anotacion.changeset_texto(Map.take(params, ~w(texto detalle)))
+           |> Repo.update() do
+      anotacion = recargar(anotacion)
       broadcast_sesion(sesion.id, {:anotacion_actualizada, anotacion})
       {:ok, anotacion}
     end
