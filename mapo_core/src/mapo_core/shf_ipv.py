@@ -6,11 +6,19 @@ por categoría (nueva, usada, tipología, clase) y sin serie general. Sale de
 avalúos de crédito hipotecario: deja fuera la compra de contado y la informal.
 No trae precio en pesos. Ver docs/fuentes/shf.md.
 
+Qué municipios forman cada zona y con cuántos avalúos se calcula cada serie no
+están en la API: son la respuesta de la SHF por transparencia (2026-11-20), en
+`shf_zonas.csv` y `shf_avaluos.csv` (scripts/shf/extraer.py).
+
 La API territorial regresa el valor "inicial" y "final" entre dos trimestres; con
 el mismo trimestre en los dos lados da el índice de ese trimestre.
 """
 
 from __future__ import annotations
+
+import csv
+from functools import cache
+from pathlib import Path
 
 import httpx
 
@@ -18,6 +26,9 @@ from mapo_core.db import get_pool
 
 BASE = "https://sniiv.sedatu.gob.mx/api/ShfPriceAPI"
 _TIMEOUT = 120.0
+_AQUI = Path(__file__).parent
+# La respuesta llega a 2026, pero ese año está a medias: no se compara con los demás.
+ULTIMO_ANIO_COMPLETO = 2025
 
 
 class RespuestaInvalida(Exception):
@@ -98,3 +109,43 @@ async def descargar() -> dict[str, int]:
     for f in filas:
         conteo[f["nivel"]] = conteo.get(f["nivel"], 0) + 1
     return conteo
+
+
+@cache
+def zonas() -> dict[str, tuple[str, str]]:
+    """cvegeo -> (clave de la zona en la serie, nombre), según el SUN 2018."""
+    with open(_AQUI / "shf_zonas.csv", encoding="utf-8", newline="") as f:
+        return {r["cvegeo"]: (r["clave"], r["nombre"]) for r in csv.DictReader(f)}
+
+
+@cache
+def _avaluos() -> dict[str, dict[int, int]]:
+    series: dict[str, dict[int, int]] = {}
+    with open(_AQUI / "shf_avaluos.csv", encoding="utf-8", newline="") as f:
+        for r in csv.DictReader(f):
+            if int(r["anio"]) <= ULTIMO_ANIO_COMPLETO:
+                series.setdefault(r["clave"], {})[int(r["anio"])] = int(r["avaluos"])
+    return series
+
+
+def avaluos(clave: str) -> dict | None:
+    """Avalúos detrás de la serie de un municipio o de una zona: los del último año
+    completo y los del año con menos. En una zona, además cuántos son de sus
+    municipios sin índice propio. None si la SHF no los dio (estados)."""
+    serie = _avaluos().get(clave)
+    if serie is None:
+        return None
+    minimo = min(serie, key=serie.__getitem__)
+    datos = {
+        "anio": ULTIMO_ANIO_COMPLETO,
+        "total": serie[ULTIMO_ANIO_COMPLETO],
+        "minimo": {"anio": minimo, "total": serie[minimo]},
+    }
+    miembros = [m for m, (z, _nombre) in zonas().items() if z == clave]
+    if miembros:
+        propios = [m for m in miembros if m in _avaluos()]
+        datos["sin_indice"] = {
+            "municipios": len(miembros) - len(propios),
+            "total": datos["total"] - sum(_avaluos()[m][ULTIMO_ANIO_COMPLETO] for m in propios),
+        }
+    return datos

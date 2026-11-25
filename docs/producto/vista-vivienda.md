@@ -70,11 +70,16 @@ se abre su ventana; la ficha del municipio no, porque agranda la cinta y la tapa
 
 ## Ficha del municipio
 
-- **SHF:** la serie del municipio si SHF la publica; si no, la del estado, y lo
-  dice ("Del estado: SHF no lo publica para este municipio"). Último índice,
+- **SHF:** la serie del municipio si SHF la publica; si no, la de su zona
+  metropolitana (SUN 2018, `../fuentes/shf.md`); si tampoco, la del estado, y siempre
+  dice cuál es ("De la zona metropolitana de Guadalajara (SUN 2018): SHF no lo publica
+  para este municipio"). En el municipio y la zona, los avalúos del último año completo
+  y los del año con menos; en la zona, además, cuántos salen de municipios sin índice
+  propio como el que se está viendo. Los avalúos del estado no los dio la SHF. El
+  acetato `shf_anual` no usa la zona: solo pinta donde hay serie propia. Último índice,
   cambio en un año y la serie trimestral como línea, con la base 2018 = 100
   punteada; cada trimestre trae su valor al pasar el cursor y la tabla completa
-  va plegada en "Ver la serie". La zona metropolitana no se usa: ver Pendiente.
+  va plegada en "Ver la serie".
 - **SNIIV:** último año completo, acciones y monto promedio por segmento (solo con
   las acciones que traen monto), y los cuatro destinos con más acciones.
 - **Intercensal 2025:** viviendas habitadas, tenencia y escrituras, cada valor con
@@ -97,13 +102,5 @@ se abre su ventana; la ficha del municipio no, porque agranda la cinta y la tapa
 
 ## Pendiente
 
-- Serie de la zona metropolitana cuando el municipio no tiene la suya. SHF no
-  publica qué municipios forman cada una de sus 8 zonas: su nota metodológica
-  (4 páginas, 2026) solo dice "zonas metropolitanas". La página de precios del
-  SNIIV dice que la delimitación es la del Sistema Urbano Nacional 2018, pero su
-  catálogo municipal solo está en PDF y no se pudo bajar. Usarlo sería suponer
-  que el SNIIV describe bien al SHF. Decisión (2026-11-19): preguntarle a SHF por
-  transparencia y no suponer la delimitación mientras tanto. Lo que se pregunta,
-  en `../fuentes/shf.md`, "Zonas metropolitanas: pregunta a la SHF".
 - Rezago habitacional municipal del SNIIV, si hace falta (`steps.md`, sesión 20).
 - Tonalá: el rango cubre lo prometido pero el orden de sus AGEB es débil (pocos anuncios); ver `dataset-vivienda.md`.

@@ -12,6 +12,7 @@ from __future__ import annotations
 
 from psycopg_pool import AsyncConnectionPool
 
+from mapo_core import shf_ipv
 from mapo_core import zona as zona_comun
 from mapo_core.consultas import TOLERANCIA_SIMPLIFICACION, dibujo, feature
 from mapo_core.precio_estimado import OBSERVADAS
@@ -312,9 +313,11 @@ async def ficha(pool: AsyncConnectionPool, cve_ent: str, cve_mun: str) -> dict |
         if fila is None:
             return None
 
-        # SHF: la serie del municipio si SHF la publica; si no, la del estado, dicho.
+        # SHF: la serie del municipio si SHF la publica; si no, la de su zona
+        # metropolitana; si tampoco, la del estado. El nivel siempre va dicho.
         shf = None
-        for nivel, clave in (("municipio", cve_ent + cve_mun), ("estado", cve_ent)):
+        zona_shf, nombre_zona = shf_ipv.zonas().get(cve_ent + cve_mun, (None, None))
+        for nivel, clave in (("municipio", cve_ent + cve_mun), ("zm", zona_shf), ("estado", cve_ent)):
             cursor = await conn.execute(
                 """SELECT nombre, anio, trimestre, indice FROM fuente_shf_ipv
                    WHERE nivel = %(n)s AND clave = %(c)s AND categoria = 'General'
@@ -327,7 +330,8 @@ async def ficha(pool: AsyncConnectionPool, cve_ent: str, cve_mun: str) -> dict |
                 antes = next((s for s in serie if s[1] == ultimo[1] - 1 and s[2] == ultimo[2]), None)
                 shf = {
                     "nivel": nivel,
-                    "nombre": ultimo[0],
+                    "nombre": nombre_zona if nivel == "zm" else ultimo[0],
+                    "avaluos": shf_ipv.avaluos(clave),
                     "serie": [[a, t, round(i, 2)] for _n, a, t, i in serie],
                     "ultimo": {"anio": ultimo[1], "trimestre": ultimo[2], "indice": round(ultimo[3], 2)},
                     "variacion_anual": round((ultimo[3] / antes[3] - 1) * 100, 2) if antes else None,

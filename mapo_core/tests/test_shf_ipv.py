@@ -48,3 +48,34 @@ def test_nacional_un_valor_por_trimestre():
     datos["series"][0]["values"] = [209.07]
     with pytest.raises(shf_ipv.RespuestaInvalida):
         shf_ipv.leer_nacional(datos)
+
+
+def test_zonas_de_la_respuesta_de_la_shf():
+    por_zona: dict[str, int] = {}
+    for clave, _nombre in shf_ipv.zonas().values():
+        por_zona[clave] = por_zona.get(clave, 0) + 1
+    assert por_zona == {
+        "ZM Tijuana": 3, "ZM Valle México": 76, "ZM León": 2, "ZM Guadalajara": 10, "ZM Toluca": 16,
+        "ZM Monterrey": 18, "ZM PueblaTlax": 39, "ZM Querétaro": 5,
+    }
+    assert shf_ipv.zonas()["14101"] == ("ZM Guadalajara", "Guadalajara")
+    assert "14085" not in shf_ipv.zonas()
+
+
+def test_avaluos_de_zona_municipio_y_estado():
+    # 41,514 de la zona menos los de Guadalajara, Zapopan, Tlaquepaque y Tlajomulco.
+    assert shf_ipv.avaluos("ZM Guadalajara") == {
+        "anio": 2025, "total": 41514, "minimo": {"anio": 2010, "total": 31738},
+        "sin_indice": {"municipios": 6, "total": 41514 - 4492 - 10040 - 4110 - 13500},
+    }
+    # Huejotzingo tiene índice desde 2005, pero en 2008 se apoyó en 36 avalúos.
+    assert shf_ipv.avaluos("21074")["minimo"] == {"anio": 2008, "total": 36}
+    assert "sin_indice" not in shf_ipv.avaluos("21074")
+    assert shf_ipv.avaluos("14") is None
+
+
+def test_ninguna_zona_tiene_menos_avaluos_que_sus_municipios():
+    for clave, _nombre in set(shf_ipv.zonas().values()):
+        miembros = [m for m, (z, _n) in shf_ipv.zonas().items() if z == clave]
+        for anio, total in shf_ipv._avaluos()[clave].items():
+            assert total >= sum(shf_ipv._avaluos().get(m, {}).get(anio, 0) for m in miembros), (clave, anio)

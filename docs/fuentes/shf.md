@@ -67,23 +67,67 @@ reporte del IIEG de ese trimestre:
 - La SHF no publica licencia. El SNIIV dice "fuente: Sociedad Hipotecaria Federal".
   Citarla así.
 
-## Zonas metropolitanas: pregunta a la SHF
+## Zonas metropolitanas y avalúos
 
-La SHF no publica qué municipios forman cada una de sus 8 zonas ni con qué
-delimitación las arma (`../producto/vista-vivienda.md`, Pendiente). Por eso se le
-pregunta por la Plataforma Nacional de Transparencia (sujeto obligado: Sociedad
-Hipotecaria Federal, S.N.C.):
+La API no dice qué municipios forman cada zona ni con cuántos avalúos se calcula
+cada serie. Se preguntó por transparencia a la Sociedad Hipotecaria Federal
+(enviada el 2026-11-19); respondió con oficio del 2026-11-20, recibido el 2026-11-24, y dos archivos. Son dos tablas
+fijas dentro de `mapo_core`, que no pasan por la base:
 
-1. Municipios de cada zona, con su clave de INEGI.
-2. Delimitación oficial que usa (SEDATU, CONAPO e INEGI 2015, Sistema Urbano
-   Nacional 2018, Metrópolis de México 2020 u otra) y su versión.
-3. Si la composición de las zonas cambió desde 2005, y cuándo. Lo mismo para los
-   municipios con índice propio, que pasaron de 69 a 74 en 2022-I según los
-   reportes del IIEG.
-4. Si la serie de una zona usa los avalúos de todos sus municipios o solo los de
-   los que tienen índice propio.
-5. Número de avalúos por zona, municipio y trimestre, o al nivel que exista.
+| Archivo | Qué trae |
+|---|---|
+| `shf_zonas.csv` | Los 169 municipios de las 8 zonas, con su clave en el Sistema Urbano Nacional 2018 (SUN) |
+| `shf_avaluos.csv` | Avalúos por año, 2005 a 2026, de los 74 municipios y las 8 zonas (1,804 filas) |
 
-Enviada el 2026-11-19; la SHF tiene hasta el 2026-12-18 para responder (hasta el
-2027-01-01 si pide ampliación). Mientras no haya respuesta, la ficha de vivienda no muestra serie de zona: un
-municipio sin serie propia ve la de su estado.
+Salen del ZIP de la respuesta con `uv run scripts/shf/extraer.py <zip>`. El XLSX trae
+las 417 filas de todo el SUN; se quedan las 8 zonas con serie. El nombre de la serie
+(`ZM Valle México`, `ZM PueblaTlax`) se liga a mano con la clave del SUN.
+
+| Zona | Clave SUN | Municipios | Con índice propio | Avalúos 2025 | De municipios con índice propio |
+|---|---|---|---|---|---|
+| Guadalajara | M14.01 | 10 | 4 | 41,514 | 77 % |
+| León | M11.03 | 2 | 1 | 14,441 | 93 % |
+| Monterrey | M19.01 | 18 | 4 | 51,959 | 52 % |
+| Puebla-Tlaxcala | M21.01 | 39 | 2 | 12,110 | 55 % |
+| Querétaro | M22.01 | 5 | 3 | 15,193 | 99.7 % |
+| Tijuana | M02.03 | 3 | 1 | 9,480 | 92 % |
+| Toluca | M15.02 | 16 | 2 | 6,267 | 40 % |
+| Valle de México | M09.01 | 76 | 8 | 66,167 | 49 % |
+
+### Qué contestó y qué no
+
+1. **Municipios y delimitación:** contestado, SUN 2018.
+2. **Municipios con índice propio:** de 69 a 74 en 2022-I; la serie de Miguel
+   Hidalgo, Guadalajara, Metepec, Monterrey y Corregidora se reconstruyó
+   hacia atrás hasta 2005.
+3. **Si la composición de las zonas cambió desde 2005:** no lo dice. Con una sola
+   delimitación, Mapo toma las zonas como fijas.
+4. **Si la zona usa los avalúos de todos sus municipios:** no lo dice, pero los datos
+   sí. Los avalúos de cada zona superan cada año a los de sus municipios con índice,
+   y el índice de la zona se sale del rango de esos municipios en Puebla-Tlaxcala (50
+   de 86 trimestres). No puede ser un promedio solo de ellos.
+5. **Avalúos:** por año, no por trimestre. 2026 está a medias (el archivo no dice
+   hasta qué mes) y Mapo no lo muestra.
+
+### Validación (2026-11-24)
+
+- Las 74 claves de municipio del archivo son exactamente las 74 de la API.
+- Ninguna zona tiene, ningún año, menos avalúos que la suma de sus municipios
+  (prueba en `test_shf_ipv.py`).
+- Donde un solo municipio pesa más de 90 % de los avalúos, la zona es casi él: León y
+  Tijuana difieren de su municipio menos de 0.25 % en los 86 trimestres.
+- El índice de la zona queda entre los de sus municipios con índice en los 86
+  trimestres en Guadalajara, Monterrey, Querétaro y Valle de México, y en 85 en
+  Toluca. En León y Tijuana (un solo municipio) y Puebla-Tlaxcala (dos, 55 % de los
+  avalúos) no tiene por qué.
+
+### Límites
+
+- **Series con pocos avalúos.** Huejotzingo tiene índice desde 2005, pero en 2008 se
+  apoya en 36 avalúos; Tlacolula de Matamoros, en 6 en 2005. La SHF no dice
+  un mínimo. La ficha muestra los avalúos del último año completo y los del año con
+  menos.
+- **Una zona puede decir poco del municipio que la ve.** Huimilpan y Apaseo el Alto
+  juntos ponen 44 de los 15,193 avalúos de Querétaro. La ficha da esa cuenta.
+- La delimitación de 2018 no es Metrópolis de México 2020 (`zonas.md`): la ZM de
+  Guadalajara del índice tiene 10 municipios y la de 2020, 7.

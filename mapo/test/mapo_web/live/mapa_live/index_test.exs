@@ -1190,16 +1190,41 @@ defmodule MapoWeb.MapaLive.IndexTest do
       })
     end
 
+    defp shf_de("101") do
+      %{
+        "nivel" => "zm",
+        "nombre" => "Guadalajara",
+        "serie" => [[2005, 1, 50.0], [2026, 2, 235.65]],
+        "ultimo" => %{"anio" => 2026, "trimestre" => 2, "indice" => 235.65},
+        "variacion_anual" => 9.5,
+        "avaluos" => %{
+          "anio" => 2025,
+          "total" => 41_514,
+          "minimo" => %{"anio" => 2010, "total" => 31_738},
+          "sin_indice" => %{"municipios" => 6, "total" => 9372}
+        }
+      }
+    end
+
+    defp shf_de(_cve_mun) do
+      %{
+        "nivel" => "municipio",
+        "nombre" => "Guadalajara",
+        "serie" => [[2005, 1, 50.0], [2026, 2, 238.62]],
+        "ultimo" => %{"anio" => 2026, "trimestre" => 2, "indice" => 238.62},
+        "variacion_anual" => 9.64,
+        "avaluos" => %{
+          "anio" => 2025,
+          "total" => 4492,
+          "minimo" => %{"anio" => 2010, "total" => 2253}
+        }
+      }
+    end
+
     defp ficha(conn) do
       Req.Test.json(conn, %{
         "nombre" => "Guadalajara",
-        "shf" => %{
-          "nivel" => "municipio",
-          "nombre" => "Guadalajara",
-          "serie" => [[2005, 1, 50.0], [2026, 2, 238.62]],
-          "ultimo" => %{"anio" => 2026, "trimestre" => 2, "indice" => 238.62},
-          "variacion_anual" => 9.64
-        },
+        "shf" => shf_de(conn.params["cve_mun"]),
         "sniiv" => %{
           "anio" => 2025,
           "segmentos" => [
@@ -1333,6 +1358,8 @@ defmodule MapoWeb.MapaLive.IndexTest do
       # Serie del SHF: la línea, la base 2018 y la tabla plegada.
       assert html =~ ~s(class="serie-linea")
       assert html =~ "Índice SHF de Guadalajara: de 50.0 en 2005 T1 a 238.6 en 2026 T2"
+      assert html =~ "Avalúos en 2025" and html =~ "4,492"
+      refute html =~ "sin índice propio"
       assert html =~ "<title>2026 T2: 238.6</title>"
       assert html =~ "Ver la serie"
       assert html =~ "34.1 % · CV 3.3"
@@ -1342,6 +1369,25 @@ defmodule MapoWeb.MapaLive.IndexTest do
 
       html = lv |> element("#ficha-vivienda button", "Cerrar") |> render_click()
       refute html =~ ~s(id="ficha-vivienda")
+    end
+
+    test "sin serie propia, la ficha trae la de la zona y cuántos avalúos la sostienen", %{
+      conn: conn
+    } do
+      lv = montar_vivienda(conn)
+
+      lv
+      |> form("#vivienda_capa_form", vivienda_capa: %{"indicador" => "eic_alqui"})
+      |> render_submit()
+
+      html = render_hook(lv, "ficha_vivienda", %{"cvegeo" => "14101"})
+
+      assert html =~ "De la zona metropolitana de Guadalajara (SUN 2018)"
+
+      assert html =~
+               "9,372 de los 41,514 avalúos de la zona son de sus 6 municipios sin índice propio"
+
+      assert html =~ "Menos avalúos, 2010"
     end
 
     test "el precio de oferta va por AGEB y sin datos del estado lo dice", %{conn: conn} do
@@ -1644,6 +1690,10 @@ defmodule MapoWeb.MapaLive.IndexTest do
       assert html =~ "Datos de 2025, segmento Media."
       assert html =~ "Índice SHF" and html =~ "Encuesta Intercensal 2025" and html =~ "ENVI"
       assert html =~ "ficha de vivienda de Guadalajara"
+
+      # La ficha que la URL escribe hoy (cvegeo) se abre igual que la de tres dígitos.
+      {:ok, lv, _html} = live(conn, ~p"/mapa?ent=14&viv=sniiv_acciones&ficha=14039")
+      assert has_element?(lv, "#ficha-vivienda", "Guadalajara")
     end
 
     test "un año o segmento fuera del catálogo no llega a mapo_core", %{conn: conn} do

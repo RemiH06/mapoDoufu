@@ -4,6 +4,7 @@ import pytest
 from fastapi.testclient import TestClient
 from shapely.geometry import box
 
+from mapo_core import shf_ipv
 from mapo_core.db import get_pool
 from mapo_core.server import app
 
@@ -149,3 +150,30 @@ async def test_fecha_de_carga_por_estado_y_tabla_cerrada(conn, cliente):
     assert cliente.get("/fuentes/carga", params={"tabla": "eic2025", "cve_ent": "98"}).json()["cargada"] is None
     assert cliente.get("/fuentes/carga", params={"tabla": "agebs; DROP"}).status_code == 400
     assert cliente.get("/fuentes/carga", params={"tabla": "sniiv", "cve_ent": "9'"}).status_code == 422
+
+
+@pytest.mark.asyncio
+async def test_ficha_usa_la_serie_de_la_zona_si_el_municipio_no_tiene(conn, cliente, monkeypatch):
+    await _municipios(conn)
+    await _fuentes(conn)
+    await conn.execute(
+        """INSERT INTO fuente_shf_ipv (nivel, clave, nombre, categoria, anio, trimestre, indice)
+           VALUES ('zm', 'ZM Prueba', 'ZM Prueba', 'General', 2025, 2, 100),
+                  ('zm', 'ZM Prueba', 'ZM Prueba', 'General', 2026, 2, 104)"""
+    )
+    monkeypatch.setattr(shf_ipv, "zonas", lambda: {
+        "99039": ("ZM Prueba", "Prueba"), "99098": ("ZM Prueba", "Prueba"),
+    })
+    monkeypatch.setattr(shf_ipv, "_avaluos", lambda: {"ZM Prueba": {2024: 80, 2025: 100}, "99039": {2024: 75, 2025: 70}})
+
+    def shf(cve_mun):
+        return cliente.get("/vivienda/ficha", params={"cve_ent": "99", "cve_mun": cve_mun}).json()["shf"]
+
+    # Con serie propia gana la propia, aunque esté en la zona.
+    assert shf("039")["nivel"] == "municipio"
+    assert shf("039")["avaluos"] == {"anio": 2025, "total": 70, "minimo": {"anio": 2025, "total": 70}}
+    zona = shf("098")
+    assert (zona["nivel"], zona["nombre"], zona["variacion_anual"]) == ("zm", "Prueba", pytest.approx(4.0))
+    assert zona["avaluos"]["sin_indice"] == {"municipios": 1, "total": 30}
+    # Fuera de la zona sigue la del estado, sin avalúos.
+    assert shf("120")["nivel"] == "estado" and shf("120")["avaluos"] is None

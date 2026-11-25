@@ -45,7 +45,7 @@ Una por fuente: de dónde sale, cómo se carga, sus problemas conocidos y las ci
 - [localidades.md](fuentes/localidades.md): las 189,432 localidades del Censo 2020 (ITER) de todo el país, con su punto, validadas contra los totales; destino de la distancia en Mapo.
 - [edificios.md](fuentes/edificios.md): huellas de edificios de Overture Maps (OSM, Microsoft y Google) recortadas a una caja, con su validación contra el censo por manzana.
 - [iieg-oferta.md](fuentes/iieg-oferta.md): precios de oferta de vivienda del IIEG por anuncio y colonia, seis municipios de la ZMG; el MEDV del dataset de vivienda desde la v8.
-- [shf.md](fuentes/shf.md): índice SHF de precios de la vivienda, trimestral desde 2005, por estado, 8 zonas metropolitanas y 74 municipios.
+- [shf.md](fuentes/shf.md): índice SHF de precios de la vivienda, trimestral desde 2005, por estado, 8 zonas metropolitanas y 74 municipios; qué municipios forman cada zona y con cuántos avalúos.
 - [sniiv.md](fuentes/sniiv.md): créditos y subsidios para vivienda por municipio y año (SNIIV), por organismo, destino y segmento de valor.
 - [eic2025.md](fuentes/eic2025.md): Intercensal 2025, bloque de vivienda por municipio (tenencia, escrituras, servicios) con su precisión.
 - [acuiferos.md](fuentes/acuiferos.md), [renameca.md](fuentes/renameca.md), [repda.md](fuentes/repda.md), [retc.md](fuentes/retc.md), [siap.md](fuentes/siap.md), [firms.md](fuentes/firms.md), [uso-suelo.md](fuentes/uso-suelo.md), [anp.md](fuentes/anp.md), [sequia.md](fuentes/sequia.md), [defunciones.md](fuentes/defunciones.md): fuentes ambientales cargadas (sesión 22).
@@ -118,6 +118,7 @@ Qué se construyó en cada etapa, por qué así y qué bugs reales aparecieron.
 - [Organización de `/mapa`: mesa neutra, pila arrastrable, alcances apilados y rutas con color, noviembre 2026](historial/2026-11-organizacion-mapa.md)
 - [Escalas y dos indicadores, noviembre 2026](historial/2026-11-escalas.md)
 - [Marcas, segunda vuelta, noviembre 2026](historial/2026-11-marcas.md)
+- [Zonas metropolitanas y avalúos del SHF, noviembre 2026](historial/2026-11-shf-zonas.md)
 
 ## Gaiarda
 
