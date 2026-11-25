@@ -78,7 +78,6 @@ export function dibujar(map, {alTerminar, alCancelar, inicio = null, tinta = () 
 
   const pintar = () => {
     if (terminado) return
-    quitar(map, "zdib")
     const linea = cursor && vertices.length ? [...vertices, cursor] : [...vertices]
     const datos = {type: "FeatureCollection", features: [
       ...(linea.length >= 2 ? [{type: "Feature", properties: {}, geometry: {type: "LineString", coordinates: linea}}] : []),
@@ -86,7 +85,12 @@ export function dibujar(map, {alTerminar, alCancelar, inicio = null, tinta = () 
         geometry: {type: "Polygon", coordinates: [[...vertices, vertices[0]]]}}] : []),
       ...vertices.map((v, i) => ({type: "Feature", properties: {primero: i === 0}, geometry: {type: "Point", coordinates: v}})),
     ]}
+    // Solo se cambian los datos: rehacer fuente y capas en cada movimiento del
+    // cursor las dejaba vacías un instante y el dibujo parpadeaba. Faltan al
+    // empezar y tras un cambio de tema.
     fuente(map, "zdib-f", datos)
+    texto()
+    if (map.getLayer("zdib-vertices")) return
     const acento = tinta()
     map.addLayer({id: "zdib-relleno", type: "fill", source: "zdib-f", filter: ["==", ["geometry-type"], "Polygon"],
       paint: {"fill-color": acento, "fill-opacity": 0.12}})
@@ -95,7 +99,6 @@ export function dibujar(map, {alTerminar, alCancelar, inicio = null, tinta = () 
     map.addLayer({id: "zdib-vertices", type: "circle", source: "zdib-f", filter: ["==", ["geometry-type"], "Point"],
       paint: {"circle-radius": ["case", ["get", "primero"], 6, 4], "circle-color": css("--bg"),
         "circle-stroke-color": acento, "circle-stroke-width": 2}})
-    texto()
   }
 
   const terminar = cerrar => {
