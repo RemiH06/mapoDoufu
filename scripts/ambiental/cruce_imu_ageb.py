@@ -53,10 +53,16 @@ def leer_imu(crudos: Path) -> pd.DataFrame:
     return d
 
 
-def cruzar(crudos: Path, ent: str, imu: pd.DataFrame) -> tuple[gpd.GeoDataFrame, dict]:
-    sigla, archivo = ESTADOS[ent]
-    g = gpd.read_file(f"zip://{(crudos / archivo).as_posix()}!conjunto_de_datos/{ent}a.shp")
+def leer_marco(crudos: Path, ent: str) -> gpd.GeoDataFrame:
+    """Capa de AGEB urbanos (<EE>a.shp) del Marco Geoestadístico, leída dentro del zip."""
+    g = gpd.read_file(f"zip://{(crudos / ESTADOS[ent][1]).as_posix()}!conjunto_de_datos/{ent}a.shp")
     assert g["CVEGEO"].is_unique
+    return g
+
+
+def cruzar(crudos: Path, ent: str, imu: pd.DataFrame) -> tuple[gpd.GeoDataFrame, dict]:
+    sigla = ESTADOS[ent][0]
+    g = leer_marco(crudos, ent)
     # En el marco CVE_AGEB son 4 caracteres; en el IMU es la clave completa (= CVEGEO).
     i = imu[imu["CVE_AGEB"].str[:2] == ent]
     g = g.merge(i[["CVE_AGEB"] + IMU].rename(columns={"CVE_AGEB": "CVEGEO"}), on="CVEGEO", how="left")
@@ -97,46 +103,59 @@ def escribir_shp(g: gpd.GeoDataFrame, ruta: Path) -> None:
     g.to_file(ruta, driver="ESRI Shapefile", encoding="utf-8", promote_to_multi=True)
 
 
+def estados_en(crudos: Path) -> list[str]:
+    return [e for e, (_, z) in ESTADOS.items() if (crudos / z).exists()]
+
+
+def entrega(crudos: Path, salida: Path, anterior: Path | None = None) -> tuple[pd.DataFrame, pd.DataFrame | None]:
+    """Escribe la carpeta de entrega; regresa los conteos y la comparación (o None)."""
+    if salida.exists():
+        sys.exit(f"{salida} ya existe: borrarla o dar otra salida")
+    estados = estados_en(crudos)
+    if not estados:
+        sys.exit("no hay zips del marco en la carpeta de crudos")
+    for sub in ("shapefiles", "tablas", "procedencia"):
+        (salida / sub).mkdir(parents=True)
+    imu = leer_imu(crudos)
+    conteos, tablas = [], []
+    for ent in estados:
+        sigla = ESTADOS[ent][0]
+        g, c = cruzar(crudos, ent, imu)
+        conteos.append(c)
+        con = g[g["IM_2020"].notna()].copy()
+        con["POB_TOTAL"] = con["POB_TOTAL"].astype("int32")
+        con["GM_NUM"] = con["GM_NUM"].astype("int32")
+        escribir_shp(con, salida / "shapefiles" / f"AGEB_{sigla}_IMU_2020.shp")
+        # El DBF no guarda vacíos y ArcGIS los lee como 0: los AGEB sin índice van aparte.
+        escribir_shp(g.loc[g["IM_2020"].isna(), ["CVEGEO", "CVE_ENT", "CVE_MUN", "CVE_LOC", "AGEB", "METROPOLI", "geometry"]],
+                     salida / "shapefiles" / f"AGEB_{sigla}_sin_indice.shp")
+        tablas.append(g.drop(columns="geometry"))
+    t, p = salida / "tablas", salida / "procedencia"
+    tabla = pd.concat(tablas, ignore_index=True)
+    tabla.to_csv(t / "agebs_imu_2020.csv", index=False, encoding="utf-8-sig")
+    conteos = pd.DataFrame(conteos)
+    conteos.to_csv(t / "conteos.csv", index=False, encoding="utf-8-sig")
+    archivos = ["IMU_2020.zip"] + [ESTADOS[e][1] for e in estados]
+    pd.DataFrame({"archivo": archivos, "sha256": [sha256(crudos / f) for f in archivos]}).to_csv(
+        p / "archivos_de_entrada.csv", index=False, encoding="utf-8-sig")
+    comp = None
+    if anterior:
+        comp = comparar(anterior, tabla)
+        comp.to_csv(t / "comparacion_entrega_anterior.csv", index=False, encoding="utf-8-sig")
+    shutil.copy(AQUI / "LEEME_cruce_imu_ageb.txt", salida / "LEEME.txt")
+    return conteos, comp
+
+
 def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--crudos", type=Path, required=True)
     ap.add_argument("--salida", type=Path, required=True)
     ap.add_argument("--anterior", type=Path)
     a = ap.parse_args()
-    if a.salida.exists():
-        sys.exit(f"{a.salida} ya existe: borrarla o dar otra --salida")
-    estados = [e for e, (_, z) in ESTADOS.items() if (a.crudos / z).exists()]
-    if not estados:
-        sys.exit("no hay zips del marco en --crudos")
-    for sub in ("shapefiles", "tablas", "procedencia"):
-        (a.salida / sub).mkdir(parents=True)
-    imu = leer_imu(a.crudos)
-    conteos, tablas = [], []
-    for ent in estados:
-        sigla = ESTADOS[ent][0]
-        g, c = cruzar(a.crudos, ent, imu)
-        conteos.append(c)
-        con = g[g["IM_2020"].notna()].copy()
-        con["POB_TOTAL"] = con["POB_TOTAL"].astype("int32")
-        con["GM_NUM"] = con["GM_NUM"].astype("int32")
-        escribir_shp(con, a.salida / "shapefiles" / f"AGEB_{sigla}_IMU_2020.shp")
-        # El DBF no guarda vacíos y ArcGIS los lee como 0: los AGEB sin índice van aparte.
-        escribir_shp(g.loc[g["IM_2020"].isna(), ["CVEGEO", "CVE_ENT", "CVE_MUN", "CVE_LOC", "AGEB", "METROPOLI", "geometry"]],
-                     a.salida / "shapefiles" / f"AGEB_{sigla}_sin_indice.shp")
-        tablas.append(g.drop(columns="geometry"))
-        print(c)
-    t, p = a.salida / "tablas", a.salida / "procedencia"
-    tabla = pd.concat(tablas, ignore_index=True)
-    tabla.to_csv(t / "agebs_imu_2020.csv", index=False, encoding="utf-8-sig")
-    pd.DataFrame(conteos).to_csv(t / "conteos.csv", index=False, encoding="utf-8-sig")
-    archivos = ["IMU_2020.zip"] + [ESTADOS[e][1] for e in estados]
-    pd.DataFrame({"archivo": archivos, "sha256": [sha256(a.crudos / f) for f in archivos]}).to_csv(
-        p / "archivos_de_entrada.csv", index=False, encoding="utf-8-sig")
-    if a.anterior:
-        comp = comparar(a.anterior, tabla)
-        comp.to_csv(t / "comparacion_entrega_anterior.csv", index=False, encoding="utf-8-sig")
+    conteos, comp = entrega(a.crudos, a.salida, a.anterior)
+    print(conteos.to_string(index=False))
+    if comp is not None:
         print(comp.T.to_string())
-    shutil.copy(AQUI / "LEEME_cruce_imu_ageb.txt", a.salida / "LEEME.txt")
 
 
 if __name__ == "__main__":

@@ -191,13 +191,14 @@ uv run --script scripts/ambiental/cruce_imu_ageb.py --crudos DIR --salida DIR \
 ```
 
 - Llave: `CVEGEO` del marco contra `CVE_AGEB` de la hoja `IMU_2020` (13 caracteres). En el
-  marco, `CVE_AGEB` son solo 4: en la salida se renombra `AGEB`. 332 claves de NL y QRO
-  llevan letra, así que la tabla de Excel debe leerla como texto.
+  marco, `CVE_AGEB` son solo 4: en la salida se renombra `AGEB`. 306 claves del IMU de NL y
+  QRO llevan letra al final, así que la tabla de Excel debe leerla como texto.
 - Cruza cada estado cuyo zip esté en `--crudos` (14, 19 o 22) y falla si una clave del IMU
   queda sin polígono. Los AGEB sin índice van a `AGEB_<EE>_sin_indice.shp`.
 - Corrida del 2026-11-26 (NL y QRO): 2,456 de 2,765 y 845 de 889 AGEB con índice, ninguna
-  clave suelta. En las dos metrópolis salen los mismos 2,008 y 580 AGEB de la entrega 2020
-  y los mismos valores (diferencias de 0.00005 por su redondeo a 4 decimales).
+  clave suelta. En las dos metrópolis salen los mismos 2,008 y 580 AGEB de la entrega 2020,
+  con el mismo grado; los valores difieren solo por su redondeo (índice a 6 decimales,
+  indicadores a 4).
 
 ## Límites
 

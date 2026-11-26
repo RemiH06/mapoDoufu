@@ -50,7 +50,8 @@ Ojo con el signo: en IM_2020 e IMN_2020 un valor más ALTO es MENOS marginación
 CÓMO HACER EL MISMO CRUCE EN ARCGIS PRO
 1. Descomprimir 19_nuevoleon.zip y agregar conjunto_de_datos/19a.shp (igual con 22a.shp).
 2. Geoprocessing > Excel To Table: IMU_2020.xls, hoja IMU_2020.
-   Revisar que CVE_AGEB quede como texto: hay claves con letra (por ejemplo ...006A).
+   Revisar que CVE_AGEB quede como texto: 306 claves de los dos estados llevan letra
+   al final (por ejemplo 190020001025A).
 3. Clic derecho en 19a > Joins and Relates > Add Join:
    - Input Join Field: CVEGEO
    - Join Table: la tabla del paso 2
@@ -62,9 +63,10 @@ Deben salir los mismos conteos de arriba y los mismos valores, AGEB por AGEB.
 COMPARACIÓN CON LA ENTREGA DEL 24 DE NOVIEMBRE
 (marginacion_temperatura_2020_GDL_MTY_QRO.zip)
 Los AGEB de las zonas metropolitanas de este cruce (METROPOLI distinto de Ninguna) son los
-mismos 2,008 de Monterrey y 580 de Querétaro de esa entrega. IM_2020, IMN_2020 y GM_2020
-coinciden exactos; los indicadores difieren a lo más en 0.00005, porque esa entrega los
-redondeó a 4 decimales. Detalle por campo en tablas/comparacion_entrega_anterior.csv.
+mismos 2,008 de Monterrey y 580 de Querétaro de esa entrega, con el mismo grado
+(GM_2020) en todos. Los valores difieren solo por el redondeo de esa entrega: a lo más
+0.0000005 en IM_2020 e IMN_2020 (6 decimales) y 0.00005 en los indicadores (4 decimales).
+Detalle por campo en tablas/comparacion_entrega_anterior.csv.
 
 FUENTES
 INEGI, Marco Geoestadístico, Censo de Población y Vivienda 2020 (términos de libre uso):
