@@ -1,0 +1,74 @@
+CRUCE DE AGEB URBANOS CON EL ÍNDICE DE MARGINACIÓN URBANA 2020
+Nuevo León y Querétaro, estado completo
+
+Armado por Mapo (mapo.remlam.dev) con tres archivos, tal como los publica cada productor:
+  19_nuevoleon.zip y 22_queretaro.zip   INEGI, Marco Geoestadístico 2020
+  IMU_2020.zip                          CONAPO, Índice de marginación urbana 2020
+Su sha256 está en procedencia/archivos_de_entrada.csv, para confirmar que son los mismos.
+
+QUÉ TRAE
+shapefiles/
+  AGEB_<NL o QRO>_IMU_2020.shp   Los AGEB urbanos con su índice: 2,456 en Nuevo León y
+                                 845 en Querétaro. Es la capa de trabajo.
+  AGEB_<NL o QRO>_sin_indice.shp Los AGEB urbanos del marco que no vienen en el IMU de
+                                 CONAPO: 309 en Nuevo León y 44 en Querétaro. Van aparte
+                                 porque un shapefile no guarda celdas vacías y ArcGIS las
+                                 leería como 0.
+tablas/
+  agebs_imu_2020.csv              Los 3,654 AGEB urbanos de los dos estados, con y sin índice.
+  conteos.csv                     Cuántos AGEB hay en cada archivo y cuántos se cruzaron.
+  comparacion_entrega_anterior.csv  Ver "Comparación con la entrega del 24 de noviembre".
+
+Coordenadas: las mismas del Marco Geoestadístico (Cónica Conforme de Lambert, ITRF2008,
+equivalente a EPSG:6372). Los polígonos no se tocaron.
+
+CÓMO SE CRUZÓ
+Uno a uno por la clave del AGEB:
+  campo CVEGEO de <EE>a.shp (marco)  =  campo CVE_AGEB de la hoja IMU_2020 (CONAPO)
+Las dos son la clave de 13 caracteres: entidad (2), municipio (3), localidad (4), AGEB (4).
+Ojo: en el marco también hay un campo CVE_AGEB, pero ahí son solo los 4 caracteres del
+AGEB. En estas capas se llama AGEB para no confundirlo.
+
+Resultado: cada clave del IMU de los dos estados encontró su polígono (ninguna quedó
+suelta) y ningún polígono se repitió.
+
+  Estado      AGEB urbanos en el marco   En el IMU   Cruzados   Sin índice
+  Nuevo León          2,765                2,456       2,456        309
+  Querétaro             889                  845         845         44
+
+CAMPOS
+CVEGEO, CVE_ENT, CVE_MUN, CVE_LOC, AGEB  Claves del marco de INEGI.
+NOM_MUN, NOM_LOC, POB_TOTAL y los indicadores (P6A14NAE a OVHAC), IM_2020, GM_2020 e
+IMN_2020  Copiados del IMU sin cambios. Su significado está en la hoja Diccionario del
+mismo IMU_2020.xls.
+GM_NUM     El grado de marginación como número, de 1 (muy bajo) a 5 (muy alto). Sirve para
+           pintar y ordenar.
+METROPOLI  Monterrey o Querétaro si el municipio es de la zona metropolitana (Metrópolis de
+           México 2020, SEDATU, CONAPO e INEGI); Ninguna si no.
+Ojo con el signo: en IM_2020 e IMN_2020 un valor más ALTO es MENOS marginación.
+
+CÓMO HACER EL MISMO CRUCE EN ARCGIS PRO
+1. Descomprimir 19_nuevoleon.zip y agregar conjunto_de_datos/19a.shp (igual con 22a.shp).
+2. Geoprocessing > Excel To Table: IMU_2020.xls, hoja IMU_2020.
+   Revisar que CVE_AGEB quede como texto: hay claves con letra (por ejemplo ...006A).
+3. Clic derecho en 19a > Joins and Relates > Add Join:
+   - Input Join Field: CVEGEO
+   - Join Table: la tabla del paso 2
+   - Join Table Field: CVE_AGEB
+4. Export Features para guardar el resultado. Los AGEB con IM_2020 vacío son los que el IMU
+   no trae.
+Deben salir los mismos conteos de arriba y los mismos valores, AGEB por AGEB.
+
+COMPARACIÓN CON LA ENTREGA DEL 24 DE NOVIEMBRE
+(marginacion_temperatura_2020_GDL_MTY_QRO.zip)
+Los AGEB de las zonas metropolitanas de este cruce (METROPOLI distinto de Ninguna) son los
+mismos 2,008 de Monterrey y 580 de Querétaro de esa entrega. IM_2020, IMN_2020 y GM_2020
+coinciden exactos; los indicadores difieren a lo más en 0.00005, porque esa entrega los
+redondeó a 4 decimales. Detalle por campo en tablas/comparacion_entrega_anterior.csv.
+
+FUENTES
+INEGI, Marco Geoestadístico, Censo de Población y Vivienda 2020 (términos de libre uso):
+https://www.inegi.org.mx/contenidos/productos/prod_serv/contenidos/espanol/bvinegi/productos/geografia/marcogeo/889463807469/19_nuevoleon.zip
+https://www.inegi.org.mx/contenidos/productos/prod_serv/contenidos/espanol/bvinegi/productos/geografia/marcogeo/889463807469/22_queretaro.zip
+CONAPO, Índice de marginación urbana 2020 (datos abiertos):
+https://conapo.segob.gob.mx/work/models/CONAPO/Datos_Abiertos/Marginacion/IMU_2020.zip

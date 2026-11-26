@@ -180,6 +180,25 @@ Que la clave se repita no garantiza los mismos límites. Los AGEB que solo exist
 quedan sin columnas de cambio; repartirlos por superficie no se hizo (pediría el marco
 geoestadístico de 2010).
 
+## Cruce AGEB e IMU
+
+Solo el cruce, sin temperatura, a partir de los tres zips del productor (marco 2020 de
+cada estado e `IMU_2020.zip`) y del estado completo, para rehacerlo con los mismos archivos.
+
+```bash
+uv run --script scripts/ambiental/cruce_imu_ageb.py --crudos DIR --salida DIR \
+  [--anterior marginacion_temperatura_2020_GDL_MTY_QRO.zip]
+```
+
+- Llave: `CVEGEO` del marco contra `CVE_AGEB` de la hoja `IMU_2020` (13 caracteres). En el
+  marco, `CVE_AGEB` son solo 4: en la salida se renombra `AGEB`. 332 claves de NL y QRO
+  llevan letra, así que la tabla de Excel debe leerla como texto.
+- Cruza cada estado cuyo zip esté en `--crudos` (14, 19 o 22) y falla si una clave del IMU
+  queda sin polígono. Los AGEB sin índice van a `AGEB_<EE>_sin_indice.shp`.
+- Corrida del 2026-11-26 (NL y QRO): 2,456 de 2,765 y 845 de 889 AGEB con índice, ninguna
+  clave suelta. En las dos metrópolis salen los mismos 2,008 y 580 AGEB de la entrega 2020
+  y los mismos valores (diferencias de 0.00005 por su redondeo a 4 decimales).
+
 ## Límites
 
 - Una temporada (secas de 2025). Censo y marginación de 2020 (la de 2010, aparte y solo en
